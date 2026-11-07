@@ -208,6 +208,9 @@ try{
      nextDisabled:document.querySelector('button[aria-label="Página siguiente"]')?.disabled,
      pointInStage:!!document.elementFromPoint(r.left+r.width*.82,r.top+r.height*.55)?.closest('.hn-book-stage')}})()`);
    await swipe(h.x,h.y,h.x-135,h.y);
+   // A complete page curl lasts 780 ms: inspect the final page, not the
+   // middle of its animation (the touch synthesizer itself stops at 440 ms).
+   await sleep(600);
    const sideways=await js(`({count:document.querySelector('.hn-book-counter strong').textContent,
     hosts:document.querySelectorAll('.hn-book-flip-host').length})`);
    const gestureTrace=await js('window.__bookGestureTrace');
