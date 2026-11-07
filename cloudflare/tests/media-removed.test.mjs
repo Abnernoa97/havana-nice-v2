@@ -14,7 +14,7 @@ test('one private R2 binding serves Chat plus Familia; no legacy bridge or secon
  assert.match(worker,/handleChatMedia\(request,env,url,origin,identity\)/);
  assert.match(worker,/readChatMedia\(request,env,match\[1\],url,origin\)/);
  assert.match(worker,/media: 'private-r2-chat-and-family'/);
- const media=src('src/chat-media.js');
+ const media=src('src/modules/chat/chat-media.js');
  assert.match(media,/reserveFamilyStorage\(env,size,id\)/);
  assert.match(media,/\.uploadPart\(number,request\.body\)/);
  assert.match(media,/decorateChatMessages/);
@@ -22,7 +22,7 @@ test('one private R2 binding serves Chat plus Familia; no legacy bridge or secon
  assert.match(media,/chat_media_grants/);
 });
 test('canonical message deletion revokes private R2 media and keeps old text deletion semantics',()=>{
- const source=src('src/message-removal.js');
+ const source=src('src/modules/chat/message-removal.js');
  assert.match(source,/DELETE FROM chat_messages WHERE seq=\?/);
  assert.match(source,/UPDATE chat_messages SET reply_to_seq=NULL/);
  assert.match(source,/DELETE FROM chat_media_objects WHERE id=\?/);
