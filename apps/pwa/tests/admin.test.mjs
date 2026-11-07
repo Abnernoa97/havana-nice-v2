@@ -142,9 +142,9 @@ test('Access to musicians uses only server-confirmed list changes and fresh hist
  const confirmedCreate=access.indexOf('setMembers(previous=>previous.some(item=>item.actor_id===result.member.actor_id)');
  assert.ok(creation>0&&confirmedCreate>creation,'Do not display a created musician before D1 confirmed it');
  assert.match(access,/setHistory\(previous=>\{const next=\{\.\.\.previous\};delete next\[person\.actor_id\];return next;\}\)/);
- assert.match(access,/historyErrors\[person\.actor_id\]/);
+ assert.match(directory,/historyErrors\[person\.actor_id\]/);
  assert.match(access,/No se pudo consultar el historial en Cloudflare/);
- assert.match(access,/role="alert">\{historyErrors\[person\.actor_id\]\}/);
+ assert.match(directory,/role="alert">\{historyErrors\[person\.actor_id\]\}/);
 });
 
 test('only Administrator-created active names reach the session-minting endpoint',()=>{
