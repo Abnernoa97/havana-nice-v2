@@ -10,6 +10,9 @@ type BookEngine={
  flipPrev:(corner:'top'|'bottom')=>void;
  turnToPage:(page:number)=>void;
  destroy:()=>void;
+ startUserTouch:(point:{x:number;y:number})=>void;
+ userMove:(point:{x:number;y:number},touch:boolean)=>void;
+ userStop:(point:{x:number;y:number})=>void;
  updateFromHtml:(pages:NodeListOf<HTMLElement>|HTMLElement[])=>void;
  loadFromHTML:(pages:NodeListOf<HTMLElement>|HTMLElement[])=>void;
  getCurrentPageIndex:()=>number;
@@ -34,7 +37,7 @@ export default function BookReader({pages}:{pages:BookPage[]}){
  const structureRef=useRef('');
  const busyRef=useRef(false);
  const pendingImages=useRef<BookPage[]|null>(null);
- const touchStart=useRef<{id:number;x:number;y:number;at:number;vertical:boolean}|null>(null);
+ const touchStart=useRef<{id:number;x:number;y:number;at:number;vertical:boolean;corner:boolean;dragging:boolean}|null>(null);
  const count=pages.length+1; // The first Admin image is the cover, never repeated.
  const countRef=useRef(count);
  countRef.current=count;
@@ -179,28 +182,57 @@ export default function BookReader({pages}:{pages:BookPage[]}){
  // StPageFlip delays normal touch taps by 250 ms, so a quick tap can be
  // silently ignored. Give every intentional tap one deterministic turn.
  // Drags and horizontal swipes remain owned by StPageFlip, without duplication.
+ // One touch owner, with directional intent. StPageFlip still owns the
+ // paper geometry, shadows and animation. Browser-native vertical scrolling
+ // is never prevented; only deliberate horizontal gestures turn pages.
+ const relativePoint=(x:number,y:number)=>{
+  const rect=mountRef.current?.querySelector('.stf__block')?.getBoundingClientRect();
+  return {x:rect?x-rect.left:0,y:rect?y-rect.top:0};
+ };
  const onPointerDown=(event:ReactPointerEvent<HTMLDivElement>)=>{
-  if(!event.isPrimary||busyRef.current)return;
-  touchStart.current={id:event.pointerId,x:event.clientX,y:event.clientY,at:performance.now(),vertical:false};
+  if(event.pointerType==='mouse'||!event.isPrimary||busyRef.current)return;
+  const rect=event.currentTarget.getBoundingClientRect();
+  if(!rect.width||!rect.height)return;
+  const x=(event.clientX-rect.left)/rect.width;
+  const y=(event.clientY-rect.top)/rect.height;
+  touchStart.current={id:event.pointerId,x:event.clientX,y:event.clientY,
+   at:performance.now(),vertical:false,corner:(x<0.14||x>0.86)&&(y<0.23||y>0.77),dragging:false};
  };
  const onPointerMove=(event:ReactPointerEvent<HTMLDivElement>)=>{
   const start=touchStart.current;
-  if(!start||start.id!==event.pointerId||start.vertical)return;
+  if(!start||start.id!==event.pointerId||start.vertical||busyRef.current)return;
   const dx=Math.abs(event.clientX-start.x);
   const dy=Math.abs(event.clientY-start.y);
-  if(dy>10&&dy>dx*1.15)start.vertical=true;
+  if(dy>10&&dy>dx*1.15){start.vertical=true;return;}
+  // A deliberate corner drag directly folds a live page. A normal swipe
+  // does not fold early; it turns exactly once on release.
+  if(!start.corner||dx<12||dx<=dy*1.2)return;
+  const engine=instance.current;
+  if(!engine)return;
+  if(!start.dragging){
+   engine.startUserTouch(relativePoint(start.x,start.y));
+   start.dragging=true;
+  }
+  engine.userMove(relativePoint(event.clientX,event.clientY),true);
  };
  const onPointerUp=(event:ReactPointerEvent<HTMLDivElement>)=>{
   const start=touchStart.current;
   touchStart.current=null;
   if(!start||start.id!==event.pointerId||start.vertical||busyRef.current)return;
-  if(Math.abs(event.clientX-start.x)>7||Math.abs(event.clientY-start.y)>7)return;
-  if(performance.now()-start.at>650)return;
+  if(start.dragging){
+   instance.current?.userStop(relativePoint(event.clientX,event.clientY));
+   return;
+  }
+  const dx=event.clientX-start.x;
+  const dy=event.clientY-start.y;
+  if(Math.abs(dx)>=30&&Math.abs(dx)>Math.abs(dy)*1.2){
+   flip(dx<0?'next':'prev');
+   return;
+  }
+  if(Math.abs(dx)>7||Math.abs(dy)>7||performance.now()-start.at>650)return;
   const bounds=event.currentTarget.getBoundingClientRect();
   if(bounds.width===0)return;
   const fraction=(event.clientX-bounds.left)/bounds.width;
-  // Two-page layout turns left/right like a real book; on phones the
-  // backward corner is intentionally smaller to favor next-page taps.
   flip(fraction<(orientation==='landscape'?0.5:0.24)?'prev':'next');
  };
  useEffect(()=>{
@@ -246,6 +278,11 @@ export default function BookReader({pages}:{pages:BookPage[]}){
    <button type="button" aria-pressed={mode==='scroll'} onClick={()=>setMode('scroll')}>Desplazar</button>
   </div>
   {mode==='flip'&&!failure?<div className="hn-book-stage" data-orientation={orientation}
+   // Intercept the library's native touch listeners at capture, not its
+   // renderer. React pointer events arbitrate vertical vs horizontal gestures.
+   onTouchStartCapture={event=>event.stopPropagation()}
+   onTouchMoveCapture={event=>event.stopPropagation()}
+   onTouchEndCapture={event=>event.stopPropagation()}
    onPointerDown={onPointerDown} onPointerMove={onPointerMove}
    onPointerUp={onPointerUp}
    onPointerCancel={()=>{touchStart.current=null;}}>
