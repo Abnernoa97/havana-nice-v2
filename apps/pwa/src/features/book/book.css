@@ -11,21 +11,43 @@
 .hn-book-stage{width:100%;max-width:1140px;min-width:0;min-height:0;
   height:clamp(440px,min(64vw,74svh),700px);
   margin:0 auto;position:relative;overflow:hidden;isolation:isolate;
-  overscroll-behavior:contain;touch-action:none}
+  overscroll-behavior:auto;touch-action:pan-y; background:radial-gradient(ellipse 52% 46% at 50% 53%,#253a2818,transparent 82%)}
 .hn-book-mount{width:100%;height:100%;min-width:0;position:relative}
-.hn-book-flip-host{width:100%;height:100%;position:relative;margin:0 auto;touch-action:none}
-.hn-book-flip-host.stf__parent{touch-action:none}
+.hn-book-flip-host{width:100%;height:100%;position:relative;margin:0 auto;touch-action:pan-y}
+.hn-book-flip-host.stf__parent{touch-action:pan-y}
 .hn-book-flip-host .stf__wrapper{position:relative;box-sizing:border-box;
   width:100%;height:100%;padding-bottom:0!important}
-.hn-book-flip-host .stf__block{width:100%;height:100%;touch-action:none}
+.hn-book-flip-host .stf__block{width:100%;height:100%;touch-action:pan-y}
 .hn-book-mount.hn-book-turning .stf__block{pointer-events:none}
 .hn-book-source{display:none}
 
-.hn-book-leaf{width:100%;height:100%;overflow:hidden;position:relative;background:var(--book-paper);color:var(--book-ink);border:1px solid #dddcd3;box-shadow:inset 0 0 4px #382d2215}
+.hn-book-leaf{width:100%;height:100%;overflow:hidden;position:relative;background:var(--book-paper);color:var(--book-ink);border:1px solid #d7d1c3;box-shadow:inset 0 1px 0 #fff9,inset 2px 0 7px #342c201c;touch-action:pan-y}
 .hn-book-leaf img{display:block;width:100%;height:100%;object-fit:cover;object-position:center;background:var(--book-paper);user-select:none;-webkit-user-drag:none}
 .hn-book-contain img{object-fit:contain}
+
+/* Editorial photo print: cream paper, a restrained photographic mat and the
+   slight inward shadow of pages bound at the spine. All decoration is static,
+   inside each leaf: the PageFlip engine still owns the only animation. */
+.hn-book-photo{background:linear-gradient(90deg,#e5dfd2 0%,#faf7f0 7%,#fffdfa 55%,#f5f0e7 100%)}
+.hn-book-photo>img{position:absolute;left:3.25%;top:2.2%;width:93.5%;height:92%;
+  border:1px solid #8e867432;box-shadow:0 2px 4px #2b28141e;background:#f4f1e9}
+.hn-book-photo::before{content:"";position:absolute;inset:0 auto 0 0;
+  width:4%;background:linear-gradient(90deg,#493e2e3b,#fff8ee36 55%,transparent);
+  z-index:2;pointer-events:none}
+.hn-book-photo::after{content:"";position:absolute;inset:1.2%;
+  border:1px solid #8d765326;box-shadow:inset 0 0 0 1px #fff7;
+  pointer-events:none;z-index:1}
 .hn-book-front{background:#153428;color:white;isolation:isolate}
 .hn-book-front>img{position:absolute;inset:0;z-index:-2}
+
+/* Bookbinding detail: a narrow wrapped-cloth spine and a fine cover inset.
+   Unlike an animated overlay this causes no additional frame-by-frame work. */
+.hn-book-front::before,.hn-book-back::before{content:"";position:absolute;
+  inset:0 auto 0 0;width:5%;background:linear-gradient(90deg,#071810a3,#f3edc029 62%,transparent);
+  z-index:2;pointer-events:none}
+.hn-book-front::after,.hn-book-back::after{content:"";position:absolute;inset:2.2%;
+  border:1px solid #f3e7c57a;box-shadow:inset 0 0 0 3px #0b20151e;
+  pointer-events:none;z-index:2}
 .hn-book-cover-shade{position:absolute;inset:0;z-index:-1;background:linear-gradient(165deg,#152c237a 0%,#142b2308 38%,#10261fc0 100%)}
 .hn-book-cover-heading{position:absolute;top:9%;left:9%;right:9%;display:flex;flex-direction:column;gap:13px}
 .hn-book-cover-heading small{font-size:9px;font-weight:700;letter-spacing:.22em}
@@ -41,7 +63,7 @@
 .hn-book-counter{display:grid;justify-items:center;gap:6px;min-width:155px}
 .hn-book-counter>strong{font:400 20px Georgia,serif}
 .hn-book-counter>strong span{color:#a2aea4;margin:0 5px}
-.hn-book-counter small{font-size:10px;text-align:center;color:#6f8070}
+.hn-book-counter small{font-size:10px;text-align:center;color:#6f8070;max-width:195px;line-height:1.35}
 .hn-book-progress{height:3px;width:100%;background:#cad4c6;border-radius:5px;overflow:hidden}
 .hn-book-progress span{height:100%;display:block;background:#35674b;transition:width .45s}
 .hn-book-scroll{display:grid;gap:18px;width:min(100%,560px);margin:auto;max-height:75vh;overflow-y:auto;overscroll-behavior:contain;scroll-snap-type:y proximity;padding:5px}
