@@ -170,6 +170,9 @@ jobs:
       - name: Build iPhone PWA
         run: npm run build:pwa
 
+      - name: Verify BOOK 3D in real headless Chrome on phone and desktop viewports
+        run: node scripts/book-browser-qa.mjs
+
       - name: Archive one clean V2 PWA preview for browser QA
         uses: actions/upload-artifact@v4
         with:
