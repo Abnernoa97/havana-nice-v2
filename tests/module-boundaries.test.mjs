@@ -139,7 +139,7 @@ test('Familia HAVANA NICE is one isolated HOME module with existing session and 
 
 test('Family gallery follows the One UI-inspired real-data layout and BOOK has safe navigation',()=>{
  const ui=read('apps/pwa/src/MemberFamily.tsx');
- const css=read('apps/pwa/src/visual.css');
+ const css=read('apps/pwa/src/styles/home/home.css');
  assert.match(ui,/className="hn-family-cover"/);
  assert.match(ui,/className="hn-family-cover-text"/);
  assert.match(ui,/className="hn-family-album-caption"/);
@@ -170,7 +170,7 @@ test('Family gallery follows the One UI-inspired real-data layout and BOOK has s
 
 test('M09: four-column Familia viewer accepts only authorized Worker file grants',()=>{
  const ui=read('apps/pwa/src/FamilyMediaGallery.tsx');
- const css=read('apps/pwa/src/family-gallery.css');
+ const css=read('apps/pwa/src/styles/family/gallery.css');
  const member=read('apps/pwa/src/MemberFamily.tsx');
  const admin=read('apps/pwa/src/AdminFamily.tsx');
  const shared=read('packages/shared/src/family.ts');

@@ -59,7 +59,7 @@ test('Android and PWA share one authenticated media-availability fetch without o
 
 test('PWA attachment menu only offers Fotos and Video, with distinct media filters',()=>{
  const src=read('apps/pwa/src/App.tsx');
- const css=read('apps/pwa/src/styles.css');
+ const css=read('apps/pwa/src/styles/chat/chat.css');
  const icon=read('apps/pwa/src/ChatComposerIcon.tsx');
  const start=src.indexOf("composerPanel==='attachments'&&<div");
  const end=src.indexOf("composerPanel==='emojis'&&<div",start);
@@ -202,7 +202,7 @@ test('Native photo-cache housekeeping touches only stale incomplete V2 transfers
 
 test('Web/Admin originals are fully downloaded once before opening, without forced gray letterboxes',()=>{
  const web=read('apps/pwa/src/ChatMediaView.tsx');
- const css=read('apps/pwa/src/styles.css');
+ const css=read('apps/pwa/src/styles/chat/chat.css');
  assert.match(web,/await image\.blob\(\)/);
  assert.match(web,/URL\.createObjectURL\(blob\)/);
  assert.match(web,/<img src=\{ready\} alt="Fotografía ampliada"/);

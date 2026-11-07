@@ -25,8 +25,8 @@ test('Existing PWA login remains canonical and HOME only mounts after authentica
  assert.match(source,/restoreNamedChatSession/);
  assert.match(source,/session&&activeScreen!=='chat'&&<VisualApp/);
  assert.match(source,/member-chat-hidden/);
- assert.match(read('apps/pwa/src/styles.css'),/\.member-chat-hidden\{display:none\}/);
- assert.match(read('apps/pwa/src/main.tsx'),/import '\.\/visual\.css'/);
+ assert.match(read('apps/pwa/src/styles/chat/chat.css'),/\.member-chat-hidden\{display:none\}/);
+ assert.match(read('apps/pwa/src/main.tsx'),/import '\.\/styles\/home\/home\.css'/);
  assert.doesNotMatch(read('apps/pwa/src/VisualApp.tsx'),/startNamedChatSession|restoreNamedChatSession|localStorage|indexedDB|adminLogin|\/api\/chat\/session/);
 });
 test('Visual preview cannot independently open protected Chat',()=>{

@@ -1,6 +1,6 @@
 import {useEffect,useRef,useState,type KeyboardEvent} from 'react';
 import {HAVANA_V2_DEV_API_BASE_URL,type FamilyMediaItem} from '@havana/shared';
-import './family-gallery.css';
+import './styles/family/gallery.css';
 
 // Private files must be granted by the existing Worker, never loaded from external hosts.
 export function familyPrivateMediaUrl(value:string|null|undefined):string|null{
