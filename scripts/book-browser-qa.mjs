@@ -1,205 +1,157 @@
 import assert from 'node:assert/strict';
 import {spawn,spawnSync} from 'node:child_process';
 import {createServer} from 'node:http';
-import {readFileSync,existsSync} from 'node:fs';
+import {readFileSync,existsSync,mkdtempSync,rmSync} from 'node:fs';
 import {join,resolve,sep,extname} from 'node:path';
-import {Script} from 'node:vm';
+import {tmpdir} from 'node:os';
 
-// Browser-only regression test for the BUILT BOOK, not a second renderer.
-// It runs a fake six-photo edition in memory: no D1/R2 writes, no accounts,
-// no changes to live Book or Familia media.
+// Actual Chrome and wall-clock requestAnimationFrame. Fake private images only:
+// this browser suite never writes to HAVANA's real D1, R2 or accounts.
 const dist=resolve('apps/pwa/dist');
-assert.ok(existsSync(join(dist,'book.html')),'Build PWA before the BOOK browser QA');
-
+assert.ok(existsSync(join(dist,'book.html')),'Build PWA first');
 const candidates=['google-chrome','google-chrome-stable','chromium','chromium-browser'];
-const executable=candidates.find(cmd=>spawnSync('which',[cmd],{encoding:'utf8'}).status===0);
-assert.ok(executable,'A real Chromium/Chrome binary is required for turn+layout QA');
-
+const browser=candidates.find(x=>spawnSync('which',[x],{encoding:'utf8'}).status===0);
+assert.ok(browser,'Chrome/Chromium required');
 const mime={'.html':'text/html','.js':'text/javascript','.css':'text/css',
  '.svg':'image/svg+xml','.png':'image/png','.webmanifest':'application/manifest+json'};
 const pages=Array.from({length:6},(_,i)=>({
- id:'browser-qa-page-'+i,
- url:'/api/book/media/'+String(i+1).repeat(32),
- fit:'cover',
- position:(i+1)*100,
- published:true
+ id:'book-qa-'+i,position:(i+1)*100,published:true,fit:'cover',
+ url:'/api/book/media/'+String(i+1).repeat(32)
 }));
-const bootstrap=`<script>
-// Chrome virtual-time moves timers without rendering normal display frames.
-// This QA-only window uses deterministic 60fps callbacks so we can assert
-// real StPageFlip state changes without changing any production source.
-window.requestAnimationFrame=(callback)=>setTimeout(()=>callback(performance.now()),16);
-window.cancelAnimationFrame=(id)=>clearTimeout(id);
-window.ReactNativeWebView={
- postMessage(message){
-  if(message==='havana-v2-book-ready')
-   queueMicrotask(()=>dispatchEvent(new CustomEvent('havana-v2-book-auth',
-    {detail:'${'A'.repeat(64)}'})));
- }
-};
-const getFetch=window.fetch.bind(window);
-let renew=0;
-window.fetch=(input,options)=>{
- const address=typeof input==='string'?input:input.url;
- if(address.includes('/api/book/pages')){
-  renew++;
-  const pages=${JSON.stringify(pages)}.map(p=>({...p,url:p.url.slice(0,-1)+(renew%10)}));
-  return Promise.resolve(new Response(JSON.stringify({section:'BOOK HAVANA NICE',pages}),
-   {status:200,headers:{'content-type':'application/json','access-control-allow-origin':'*'}}));
- }
- return getFetch(input,options);
-};
-</script>`;
-const fixture=`<script>
-(async()=>{
- window.__qaRafCount=0;
- const frame=()=>{window.__qaRafCount++;requestAnimationFrame(frame);};
- requestAnimationFrame(frame);
- const sleep=(ms)=>new Promise(r=>setTimeout(r,ms));
- const wait=async(selector)=>{
-  for(let i=0;i<75;i++){
-   const el=document.querySelector(selector);
-   if(el)return el;
-   await sleep(80);
-  }
-  throw Error('Missing '+selector);
- };
- const rect=el=>{
-  const r=el.getBoundingClientRect();
-  return {x:r.x,y:r.y,width:r.width,height:r.height};
- };
- const measure=()=>{
-  const stage=document.querySelector('.hn-book-stage');
-  const wrapper=document.querySelector('.hn-book-flip-host .stf__wrapper');
-  return {stage:rect(stage),wrapper:rect(wrapper),scrollX:scrollX,
-   scrollY:scrollY,docWidth:document.documentElement.scrollWidth,
-   windowWidth:innerWidth,
-   count:document.querySelector('.hn-book-counter strong')?.textContent?.trim(),
-   turning:!!document.querySelector('.hn-book-turning'),
-   pageElements:document.querySelectorAll('.stf__item').length,
-   samplePage:document.querySelector('.stf__item')?.style.transform||'',
-   hosts:document.querySelectorAll('.hn-book-flip-host').length,
-   rafCount:window.__qaRafCount||0,
-   time:performance.now(),engine:engineStatus()};
- };
- // Read only the mounted React ref in this fake-photo browser fixture.
- // Production components expose no debug globals or test-only APIs.
- const getEngine=()=>{
-  const stage=document.querySelector('.hn-book-stage');
-  if(!stage)return null;
-  const key=Object.keys(stage).find(k=>k.startsWith('__reactFiber$'));
-  let depth=0;
-  for(let fiber=key?stage[key]:null;fiber&&depth++<24;fiber=fiber.return){
-   let steps=0;
-   for(let h=fiber.memoizedState;h&&steps++<80;h=h.next){
-    const app=h.memoizedState?.current;
-    if(app&&typeof app.flipNext==='function'&&typeof app.getPageCollection==='function')return app;
-   }
-  }
-  return null;
- };
- const engineStatus=()=>{
-  const a=getEngine();
-  if(!a)return 'not-found';
-  try{return{page:a.getCurrentPageIndex(),count:a.getPageCount(),
-    orientation:a.getOrientation(),state:a.getState(),bounds:a.getBoundsRect(),
-    spread:a.getPageCollection().getCurrentSpreadIndex(),
-    last:a.getPageCollection().getSpreadIndexByPage(a.getPageCount()-1)};}
-  catch(e){return String(e)}
- };
- const near=(a,b)=>Math.abs(a-b)<1.2;
- const stable=(a,b)=>
-  near(a.stage.x,b.stage.x)&&near(a.stage.y,b.stage.y)&&
-  near(a.stage.width,b.stage.width)&&near(a.stage.height,b.stage.height)&&
-  near(a.wrapper.height,b.wrapper.height)&&
-  near(a.scrollX,b.scrollX)&&near(a.scrollY,b.scrollY)&&
-  b.docWidth<=b.windowWidth+2&&b.hosts===1;
- try{
-  await wait('.hn-book-flip-host .stf__wrapper');
-  await sleep(200);
-  const initial=measure();
-  if(initial.stage.height<150||initial.wrapper.height<150)
-   throw Error('BOOK stage/wrapper collapsed: '+JSON.stringify(initial));
-  const next=document.querySelector('button[aria-label="Página siguiente"]');
-  if(!next||next.disabled)throw Error('Next button not ready');
-  next.click();await sleep(900);
-  const second=measure();
-  if(second.count===initial.count||!stable(initial,second)){
-   const app=getEngine();
-   if(app&&second.count===initial.count){app.flipNext('bottom');await sleep(900);}
-   throw Error('First flip moved viewport or missed animation: '+
-    JSON.stringify({initial,second,direct:measure()}));
-  }
-  const stage=document.querySelector('.hn-book-stage');
-  const r=stage.getBoundingClientRect(),x=r.left+r.width*.81,y=r.top+r.height*.55;
-  for(const name of ['pointerdown','pointerup'])
-   stage.dispatchEvent(new PointerEvent(name,{bubbles:true,pointerId:1,
-    isPrimary:true,clientX:x,clientY:y,pointerType:'touch'}));
-  await sleep(900);
-  const third=measure();
-  if(third.count===second.count||!stable(initial,third))
-   throw Error('Quick tap failed or shifted viewport: '+JSON.stringify({second,third}));
-  dispatchEvent(new Event('havana-v2-book-refresh'));
-  await sleep(180);
-  const renewed=measure();
-  if(!stable(initial,renewed))
-   throw Error('Grant renewal recreated BOOK or shifted viewport: '+JSON.stringify(renewed));
-  const success={initial,second,third,renewed};
-  document.documentElement.setAttribute('data-book-browser-qa','PASS');
-  document.documentElement.setAttribute('data-book-browser-details',JSON.stringify(success));
- }catch(error){
-  document.documentElement.setAttribute('data-book-browser-qa','FAIL');
-  document.documentElement.setAttribute('data-book-browser-error',String(error.message||error));
- }
-})();
-</script>`;
-
-// Check inline QA JavaScript before invoking Chrome; do not silently accept
-// an unexecuted fixture as a successful visual test.
-const qaCode=fixture.slice('<script>'.length,-'</script>'.length);
-new Script(qaCode,{filename:'book-browser-fixture.js'});
-let page=readFileSync(join(dist,'book.html'),'utf8');
-assert.ok(page.includes('</head>')&&page.includes('</body>'));
-page=page.replace('</head>',bootstrap+'</head>')
- .replace('</body>',fixture+'</body>');
-
+const boot=[
+ 'window.ReactNativeWebView={postMessage(message){',
+ 'if(message==="havana-v2-book-ready")',
+ 'queueMicrotask(()=>dispatchEvent(new CustomEvent("havana-v2-book-auth",{detail:"'+('A'.repeat(64))+'"})));',
+ '}};',
+ 'const originalFetch=window.fetch.bind(window);let refreshCount=0;',
+ 'window.fetch=(input,options)=>{',
+ 'const name=typeof input==="string"?input:input.url;',
+ 'if(name.includes("/api/book/pages")){refreshCount++;',
+ 'return Promise.resolve(new Response(JSON.stringify({section:"BOOK HAVANA NICE",',
+ 'pages:'+JSON.stringify(pages)+'.map(p=>({...p,url:p.url+"?grant="+refreshCount}))',
+ '}),{status:200,headers:{"content-type":"application/json"}}));}',
+ 'return originalFetch(input,options);};'
+].join('\n');
 const server=createServer((req,res)=>{
- const pathname=new URL(req.url||'/', 'http://localhost').pathname;
- if(pathname==='/book-browser-test.html'){
-  res.writeHead(200,{'Content-Type':'text/html; charset=utf-8'});res.end(page);return;
+ const name=new URL(req.url||'/', 'http://127.0.0.1').pathname;
+ if(name.startsWith('/api/book/media/')){
+  const svg='<svg xmlns="http://www.w3.org/2000/svg" width="640" height="900"><rect width="640" height="900" fill="#284a39"/><path d="M10 450 L640 600" stroke="#efe6ce" stroke-width="40"/></svg>';
+  res.writeHead(200,{'content-type':'image/svg+xml','cache-control':'no-store'});res.end(svg);return;
  }
- const file=resolve(dist,'.'+pathname);
- if(!file.startsWith(dist+sep)||!existsSync(file)){
-  res.writeHead(404);res.end();return;
- }
- res.writeHead(200,{'Content-Type':mime[extname(file)]||'application/octet-stream'});
+ const file=resolve(dist,'.'+name);
+ if(!file.startsWith(dist+sep)||!existsSync(file)){res.writeHead(404);res.end();return}
+ res.writeHead(200,{'content-type':mime[extname(file)]||'application/octet-stream'});
  res.end(readFileSync(file));
 });
-await new Promise(done=>server.listen(0,'127.0.0.1',done));
-const port=server.address().port;
-try{
- for(const [size,label] of [['390,844','phone'],['1024,800','desktop']]){
-  const args=['--headless=new','--no-sandbox','--disable-gpu','--disable-dev-shm-usage',
-   '--disable-background-networking','--no-first-run','--no-default-browser-check',
-   '--window-size='+size,'--virtual-time-budget=7200','--dump-dom',
-   'http://127.0.0.1:'+port+'/book-browser-test.html'];
-  const output=await new Promise((done,reject)=>{
-   const child=spawn(executable,args,{stdio:['ignore','pipe','pipe']});
-   let stdout='',stderr='';
-   child.stdout.on('data',b=>{stdout+=b.toString()});
-   child.stderr.on('data',b=>{stderr+=b.toString().slice(-1200)});
-   child.on('error',reject);
-   child.on('exit',code=>done({code,stdout,stderr}));
-  });
-  const marker=/data-book-browser-qa="([^"]+)"/.exec(output.stdout);
-  const problem=/data-book-browser-error="([^"]+)"/.exec(output.stdout);
-  console.log('BOOK '+label+': '+(marker?.[1]||'NO RESULT'),
-   'code='+output.code,'error='+(problem?.[1]||'none'));
-  assert.equal(output.code,0,'Chrome process failed: '+output.stderr.slice(-500));
-  assert.equal(marker?.[1],'PASS','Real BOOK 3D browser QA failed: '+
-   (problem?.[1]||output.stdout.slice(-500)));
+await new Promise(ok=>server.listen(0,'127.0.0.1',ok));
+const servePort=server.address().port;
+const profile=mkdtempSync(join(tmpdir(),'havana-book-cdp-'));
+const cdpPort=9339;
+const chrome=spawn(browser,[
+ '--headless=new','--no-sandbox','--disable-dev-shm-usage',
+ '--no-first-run','--no-default-browser-check',
+ '--remote-debugging-port='+cdpPort,'--remote-allow-origins=*',
+ '--user-data-dir='+profile,'--window-size=1200,900','about:blank'
+],{stdio:['ignore','ignore','pipe']});
+let errors='';chrome.stderr.on('data',v=>errors=(errors+v.toString()).slice(-2500));
+const pending=new Map();
+let ws,sequence=0;
+const sleep=ms=>new Promise(done=>setTimeout(done,ms));
+function rpc(method,params={},timeout=12000){
+ return new Promise((resolve,reject)=>{
+  const id=++sequence;
+  const timer=setTimeout(()=>{pending.delete(id);reject(Error('CDP timeout: '+method))},timeout);
+  pending.set(id,{resolve:r=>{clearTimeout(timer);resolve(r)},
+   reject:e=>{clearTimeout(timer);reject(e)}});
+  ws.send(JSON.stringify({id,method,params}));
+ });
+}
+async function js(expression,timeout=17000){
+ const reply=await rpc('Runtime.evaluate',{expression,awaitPromise:true,returnByValue:true},timeout);
+ if(reply.result?.exceptionDetails)throw Error('Chrome exception: '+
+  JSON.stringify(reply.result.exceptionDetails).slice(0,1000));
+ return reply.result?.result?.value;
+}
+async function attach(){
+ for(let i=0;i<110;i++){
+  if(chrome.exitCode!==null)throw Error('Chrome exited: '+errors);
+  try{
+   const response=await fetch('http://127.0.0.1:'+cdpPort+'/json');
+   const items=await response.json();
+   const page=items.find(p=>p.type==='page'&&p.webSocketDebuggerUrl);
+   if(page){
+    ws=new WebSocket(page.webSocketDebuggerUrl);
+    await new Promise((done,fail)=>{ws.onopen=done;ws.onerror=()=>fail(Error('CDP connect'))});
+    ws.onmessage=event=>{
+     const data=JSON.parse(event.data);
+     if(data.id&&pending.has(data.id)){
+      const task=pending.get(data.id);pending.delete(data.id);
+      if(data.error)task.reject(Error(JSON.stringify(data.error)));else task.resolve(data);
+     }
+    };
+    return;
+   }
+  }catch{}
+  await sleep(100);
  }
- console.log('PASS: Chrome phone+desktop stable stage, animated turns, quick taps, grant refresh');
+ throw Error('Chrome DevTools not ready: '+errors);
+}
+const scenario=[
+ '(async()=>{',
+ 'const sleep=ms=>new Promise(r=>setTimeout(r,ms));',
+ 'const until=async(fn,label)=>{for(let i=0;i<80;i++){if(fn())return;await sleep(50);}throw Error("Timeout "+label)};',
+ 'await until(()=>document.querySelector(".hn-book-flip-host .stf__wrapper"),"BOOK mounted");',
+ 'await sleep(120);',
+ 'const rect=el=>{const r=el.getBoundingClientRect();return {x:r.x,y:r.y,w:r.width,h:r.height}};',
+ 'const snap=()=>{const stage=document.querySelector(".hn-book-stage");',
+ 'const wrapper=document.querySelector(".hn-book-flip-host .stf__wrapper");',
+ 'return {stage:rect(stage),wrapper:rect(wrapper),x:scrollX,y:scrollY,',
+ 'docWidth:document.documentElement.scrollWidth,width:innerWidth,',
+ 'count:document.querySelector(".hn-book-counter strong")?.textContent?.trim(),',
+ 'hosts:document.querySelectorAll(".hn-book-flip-host").length}};',
+ 'const original=snap();',
+ 'if(original.stage.h<200||original.wrapper.h<200)throw Error("Collapsed "+JSON.stringify(original));',
+ 'const equal=(x,y)=>Math.abs(x-y)<1.5;',
+ 'const stable=(a,b)=>equal(a.stage.x,b.stage.x)&&equal(a.stage.y,b.stage.y)&&',
+ 'equal(a.stage.w,b.stage.w)&&equal(a.stage.h,b.stage.h)&&equal(a.wrapper.h,b.wrapper.h)&&',
+ 'equal(a.x,b.x)&&equal(a.y,b.y)&&b.docWidth<=b.width+2&&b.hosts===1;',
+ 'const next=document.querySelector("button[aria-label=\\"Página siguiente\\"]");',
+ 'if(!next||next.disabled)throw Error("Next is disabled");',
+ 'next.click();await until(()=>snap().count!==original.count,"first turn");',
+ 'await sleep(100);const first=snap();',
+ 'if(!stable(original,first))throw Error("First turn shifted viewport "+JSON.stringify({original,first}));',
+ 'const stage=document.querySelector(".hn-book-stage"),r=stage.getBoundingClientRect();',
+ 'const x=r.left+r.width*.8,y=r.top+r.height*.5;',
+ 'stage.dispatchEvent(new PointerEvent("pointerdown",{bubbles:true,pointerId:9,isPrimary:true,pointerType:"touch",clientX:x,clientY:y}));',
+ 'stage.dispatchEvent(new PointerEvent("pointerup",{bubbles:true,pointerId:9,isPrimary:true,pointerType:"touch",clientX:x,clientY:y}));',
+ 'await until(()=>snap().count!==first.count,"quick tap");',
+ 'await sleep(100);const tapped=snap();',
+ 'if(!stable(original,tapped))throw Error("Tap shifted viewport "+JSON.stringify({original,tapped}));',
+ 'dispatchEvent(new Event("havana-v2-book-refresh"));await sleep(180);',
+ 'const renewed=snap();',
+ 'if(!stable(original,renewed))throw Error("Grant refresh rebuilt book "+JSON.stringify({original,renewed}));',
+ 'return {original,first,tapped,renewed};',
+ '})()'
+].join('\n');
+try{
+ await attach();
+ await rpc('Page.enable');await rpc('Runtime.enable');
+ await rpc('Page.addScriptToEvaluateOnNewDocument',{source:boot});
+ for(const [width,height,label] of [[390,844,'phone'],[1024,800,'desktop']]){
+  await rpc('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile:width<700});
+  await rpc('Page.navigate',{url:'http://127.0.0.1:'+servePort+'/book.html'});
+  const result=await js(scenario,17500);
+  assert.ok(result,'Browser BOOK test must return result');
+  assert.equal(result.original.width,width,'Actual Chrome emulated width mismatch');
+  console.log('BOOK 3D '+label+': PASS '+result.original.count+' -> '+
+   result.first.count+' -> '+result.tapped.count+
+   '; stage y='+result.original.stage.y+' -> '+result.renewed.stage.y+
+   ', instances='+result.renewed.hosts);
+ }
+ console.log('PASS: real Chrome frame animation, mobile taps, stable layout and grant renewal');
 }finally{
+ try{ws?.close()}catch{}
+ chrome.kill('SIGTERM');
  await new Promise(done=>server.close(done));
+ rmSync(profile,{recursive:true,force:true});
 }
