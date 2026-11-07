@@ -151,7 +151,13 @@ try{
  console.log('PASS: real Chrome frame animation, mobile taps, stable layout and grant renewal');
 }finally{
  try{ws?.close()}catch{}
+ const exit=chrome.exitCode!==null?Promise.resolve():
+  new Promise(done=>chrome.once('exit',done));
  chrome.kill('SIGTERM');
+ await Promise.race([exit,sleep(3000)]);
  await new Promise(done=>server.close(done));
- rmSync(profile,{recursive:true,force:true});
+ // Chromium's child renderer sometimes writes its profile after the parent
+ // exits. Clean it best-effort; a transient temp-file race is not a BOOK bug.
+ try{rmSync(profile,{recursive:true,force:true,maxRetries:8,retryDelay:150});}
+ catch(error){console.warn('Chrome temp profile cleanup:',String(error));}
 }
