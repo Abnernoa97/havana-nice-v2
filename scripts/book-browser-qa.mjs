@@ -194,9 +194,19 @@ try{
        x:e.clientX??e.touches?.[0]?.clientX,y:e.clientY??e.touches?.[0]?.clientY,
        type:e.pointerType,scrollY});
      },true);
-    }return true;})()`);
-   const h=await js(`(()=>{const r=document.querySelector('.hn-book-stage').getBoundingClientRect();
-    return {x:r.left+r.width*.82,y:r.top+r.height*.55}})()`);
+    }
+    const stage=document.querySelector('.hn-book-stage');
+    for(const name of ['pointerdown','pointermove','pointerup','pointercancel']){
+     stage.addEventListener(name,e=>window.__bookGestureTrace.push({name:'stage-'+name,
+      type:e.pointerType,scrollY}),false);
+    }
+    return true;})()`);
+   const h=await js(`(()=>{const stage=document.querySelector('.hn-book-stage');
+    const r=stage.getBoundingClientRect();
+    return {x:r.left+r.width*.82,y:r.top+r.height*.55,
+     turning:!!stage.querySelector('.hn-book-turning'),
+     nextDisabled:document.querySelector('button[aria-label="Página siguiente"]')?.disabled,
+     pointInStage:!!document.elementFromPoint(r.left+r.width*.82,r.top+r.height*.55)?.closest('.hn-book-stage')}})()`);
    await swipe(h.x,h.y,h.x-135,h.y);
    const sideways=await js(`({count:document.querySelector('.hn-book-counter strong').textContent,
     hosts:document.querySelectorAll('.hn-book-flip-host').length})`);
