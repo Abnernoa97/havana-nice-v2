@@ -66,23 +66,6 @@ jobs:
           node ../scripts/worker-release-preflight.mjs "$BUNDLE"
           echo "SUCCESS: V2 Worker bundled and guarded from source, no production changes"
 
-      # A one-time source-authentic release handoff. This exports only PUBLIC compiled
-      # repository code, no env vars, session credentials, R2 files or secrets.
-      # Remove this temporary handoff after installing the canonical version.
-      - name: One-time transfer of canonical BOOK Worker bundle to authorized Cloudflare session
-        if: "${{ github.event.head_commit.message == 'ci(v2): export canonical BOOK Worker bundle from main' }}"
-        shell: bash
-        run: |
-          set -euo pipefail
-          JS="$(find /tmp/havana-v2-worker-preview -name 'index.js' -print -quit)"
-          test -s "$JS"
-          echo "HNV2_WRANGLER_COMMIT=$GITHUB_SHA"
-          echo "HNV2_WRANGLER_BUNDLE_SHA256=$(sha256sum "$JS" | awk '{print $1}')"
-          echo HNV2_BUNDLE_BEGIN
-          base64 -w 4096 "$JS"
-          echo
-          echo HNV2_BUNDLE_END
-
       - name: Preserve canonical Worker preview for live-version equivalence review
         uses: actions/upload-artifact@v4
         with:
@@ -93,30 +76,6 @@ jobs:
 
       - name: Verify one SHA-256 preserves old sessions and private-media grants
         run: node --test tests/worker-hash-parity.test.mjs
-
-      # One-time read-only staged version QA, no traffic switch and no private data.
-      - name: Smoke test unserved canonical BOOK Worker via version override
-        if: "${{ github.event.head_commit.message == 'ci(v2): smoke-test staged BOOK Worker version' }}"
-        shell: bash
-        run: |
-          set -euo pipefail
-          BASE="https://havana-nice-v2-dev.soloaplicaciones97.workers.dev"
-          H='Cloudflare-Workers-Version-Overrides: havana-nice-v2-dev="bc1ef5a0-8ed8-440f-af6f-3df85eda0403"'
-          echo "Overridden health:"
-          curl -fsS -H "$H" "$BASE/health" | tee /tmp/book-override-health.json
-          grep -q '"database":"ok"' /tmp/book-override-health.json
-          for ENDPOINT in /api/book/pages /api/book/admin/pages /api/family/albums /api/calendar/events /api/repertoire/songs /api/chat/messages; do
-            STATUS="$(curl -sS -o /tmp/book-override-private.json -w '%{http_code}' -H "$H" "$BASE$ENDPOINT")"
-            echo "$ENDPOINT -> $STATUS"
-            test "$STATUS" = "401"
-          done
-          STATUS="$(curl -sS -o /tmp/book-override-denied-upload.json -w '%{http_code}' -H "$H" -X POST -H 'Content-Type: image/jpeg' --data-binary 'no-public-upload' "$BASE/api/book/admin/pages")"
-          echo "Unauthorized Book write: $STATUS"
-          test "$STATUS" = "401"
-          STATUS="$(curl -sS -o /tmp/book-override-grant.json -w '%{http_code}' -H "$H" "$BASE/api/book/media/00000000000000000000000000000000")"
-          echo "Invalid private grant: $STATUS"
-          test "$STATUS" = "404"
-          echo 'Staged-only BOOK auth, catalog, existing modules, and R2 privacy: PASS'
 
       - name: Verify standalone V2 media status before new storage
         run: npm run test:media -w @havana/cloudflare
@@ -484,6 +443,28 @@ jobs:
             test "$HTTP" = "401"
             grep -q '"error"' /tmp/hnv2-live-private.json
           done
+
+      - name: Verify live BOOK privacy without creating or changing user media
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE="https://havana-nice-v2-dev.soloaplicaciones97.workers.dev"
+          STATUS="$(curl -sS -o /tmp/v2-book-member-denied.json -w '%{http_code}' "$BASE/api/book/pages")"
+          test "$STATUS" = "401"
+          STATUS="$(curl -sS -o /tmp/v2-book-admin-denied.json -w '%{http_code}' "$BASE/api/book/admin/pages")"
+          test "$STATUS" = "401"
+          STATUS="$(curl -sS -o /tmp/v2-book-upload-denied.json -w '%{http_code}' -X POST \
+            -H 'Content-Type: image/jpeg' --data-binary 'anonymous-denied' "$BASE/api/book/admin/pages")"
+          test "$STATUS" = "401"
+          STATUS="$(curl -sS -o /tmp/v2-book-grant-denied.json -w '%{http_code}' \
+            "$BASE/api/book/media/00000000000000000000000000000000")"
+          test "$STATUS" = "404"
+          STATUS="$(curl -sS -o /dev/null -w '%{http_code}' -X OPTIONS "$BASE/api/book/admin/pages" \
+            -H 'Origin: https://havana-nice-v2.pages.dev' \
+            -H 'Access-Control-Request-Method: POST' \
+            -H 'Access-Control-Request-Headers: Authorization, Content-Type')"
+          test "$STATUS" = "204"
+          echo "BOOK API authenticated and private on the live canonical Worker"
 
       - name: Verify live Familia HAVANA NICE and existing Chat Calendar Repertoire privacy
         shell: bash
