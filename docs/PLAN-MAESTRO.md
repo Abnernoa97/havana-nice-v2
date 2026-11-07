@@ -1,3 +1,15 @@
+## Corrección de baja de músicos y archivos R2 · 07/11/2026
+
+- [x] **Fallo localizado:** Fer tenía 6 archivos de Chat asociados a `chat_media_objects.sender_id`, que referencia `chat_members` sin eliminación en cascada. La confirmación de Administración se mostraba, pero la transacción D1 fallaba por clave foránea.
+- [x] **Borrado coherente:** `cloudflare/src/modules/admin/member-admin.js` ahora retira explícitamente las dependencias de Chat, Familia y subidas incompletas antes de quitar el músico. Conserva los mensajes de otros músicos y desasigna únicamente sus entradas de Calendario.
+- [x] **Sin archivos R2 huérfanos:** migración aditiva `0026_member_delete_media_cleanup.sql` y limpieza duradera `shared/member-media-cleanup.js`. Las claves R2 se registran en la **misma transacción D1**; R2 se limpia después y, si falla, los elementos permanecen pendientes y siguen contando contra la cuota de 9.5 GB. Administración muestra el número pendiente y permite reintentar.
+- [x] **Confirmación informada:** Administración muestra archivos de Chat, archivos de Familia, subidas pendientes y fechas asignadas antes del diálogo irreversible. La acción sigue requiriendo sesión Admin y confirmación del nombre exacto.
+- [x] **Validación automática:** [CI completo 42387212879 aprobado](https://github.com/Abnernoa97/havana-nice-v2/actions/runs/42387212879), con pruebas del borrado, bloqueo por FK, contabilización y reintento R2.
+- [x] **Publicación V2:** Worker **v60** al 100 %, siete vínculos originales (D1, R2, DO y Admin) intactos. La migración 0026 se aplicó solo a D1 V2; cola nueva vacía, sin borrado de datos reales. Se confirmó **Andy, Fer, Noa**, cero violaciones de claves foráneas y la PWA independiente publicada.
+- [ ] **QA física:** tras cerrar y reabrir sesión administrativa, comprobar el nuevo resumen y el borrado que el propietario autorice. Durante esta reparación **no se eliminó ningún músico ni archivo**.
+
+**El plan funcional permanece en 12/46.** No tocar el repositorio original, HAVANA CLOUD ni instalar una APK nueva por esta corrección.
+
 # Estado del repositorio independiente — 07/11/2026
 
 - [x] Fuente V2 copiada a la raíz de `Abnernoa97/havana-nice-v2`, `main`, sin heredar la historia Git de la aplicación original.
@@ -51,7 +63,7 @@
 - [ ] **S09d/S10d · Próxima fase técnica:** dividir la coordinación interna de sesiones/socket/reconexión con estado único y pruebas antes de tocar el controlador Worker. No introducir motores duplicados, polling antiguo ni cachés alternativos.
 - [ ] **QA físico de aceptación:** confirmar en iPhone y Android, una vez instalados los paquetes correspondientes, textos, multimedia R2, carga de historial, reacciones, menú de edición/borrado, cola offline y regreso instantáneo a tiempo real.
 
-**Alcance confirmado:** repositorio nuevo `Abnernoa97/havana-nice-v2`, solo `main`. La PWA es publicada automáticamente desde fuente; el Worker remoto **permanece v59** con sus siete bindings y la última **APK firmada 0.0.13 no fue recompilada**. Las pruebas automáticas no se presentan como QA física. Estos subpasos no modifican el tablero funcional **12/46**.
+**Alcance confirmado:** repositorio nuevo `Abnernoa97/havana-nice-v2`, solo `main`. La PWA es publicada automáticamente desde fuente; el Worker remoto **está en v60** con sus siete bindings y la última **APK firmada 0.0.13 no fue recompilada**. Las pruebas automáticas no se presentan como QA física. Estos subpasos no modifican el tablero funcional **12/46**.
 
 ### Próxima depuración de fondo, sin alterar comportamiento
 
@@ -62,7 +74,7 @@
 - [ ] **S13 · Limpieza CSS/dependencias:** inspección semántica de media queries y librerías; no borrar reglas útiles, migraciones D1 ni ejecutar upgrades forzados.
 - [ ] **S14 · QA real:** iPhone PWA Calendario al momento, Chat y medios R2, y paridad nativa Android en el paquete aprobado posterior. Sin marcar como cerrado por pasar CI.
 
-**Estado de publicación:** fuente PWA despliega desde el nuevo `main`; **Worker activo permanece en v59** con siete bindings sin alteraciones de datos, y **APK Android firmada sigue siendo la anterior**. Refactorizaciones de fuente no equivalen a desplegar un backend nuevo ni a publicar la APK.
+**Estado de publicación:** fuente PWA despliega desde el nuevo `main`; **Worker activo está en v60** con siete bindings sin alteraciones de datos, y **APK Android firmada sigue siendo la anterior**. Refactorizaciones de fuente no equivalen a desplegar un backend nuevo ni a publicar la APK.
 
 # HAVANA NICE V2 — PLAN MAESTRO ÚNICO
 
