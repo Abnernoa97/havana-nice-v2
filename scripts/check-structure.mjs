@@ -98,7 +98,8 @@ for(const path of sources){
 }
 const entrypoints=[
  'apps/pwa/src/app/main.tsx','apps/pwa/src/app/admin-main.tsx',
- 'apps/pwa/src/app/visual-main.tsx','apps/android/App.tsx','cloudflare/src/index.ts'
+ 'apps/pwa/src/app/visual-main.tsx','apps/pwa/src/app/native-book-main.tsx',
+ 'apps/android/App.tsx','cloudflare/src/index.ts'
 ];
 const seen=new Set(),queue=[...entrypoints];
 while(queue.length){
