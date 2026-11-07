@@ -57,7 +57,7 @@ jobs:
           NODE
 
       - name: Install exact dependencies
-        working-directory: v2
+        working-directory: .
         run: npm ci
 
       - name: Generate native Android project
