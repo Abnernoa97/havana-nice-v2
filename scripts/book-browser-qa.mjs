@@ -46,6 +46,9 @@ window.fetch=(input,options)=>{
 </script>`;
 const fixture=`<script>
 (async()=>{
+ window.__qaRafCount=0;
+ const frame=()=>{window.__qaRafCount++;requestAnimationFrame(frame);};
+ requestAnimationFrame(frame);
  const sleep=(ms)=>new Promise(r=>setTimeout(r,ms));
  const wait=async(selector)=>{
   for(let i=0;i<75;i++){
@@ -66,7 +69,12 @@ const fixture=`<script>
    scrollY:scrollY,docWidth:document.documentElement.scrollWidth,
    windowWidth:innerWidth,
    count:document.querySelector('.hn-book-counter strong')?.textContent?.trim(),
-   hosts:document.querySelectorAll('.hn-book-flip-host').length};
+   turning:!!document.querySelector('.hn-book-turning'),
+   pageElements:document.querySelectorAll('.stf__item').length,
+   samplePage:document.querySelector('.stf__item')?.style.transform||'',
+   hosts:document.querySelectorAll('.hn-book-flip-host').length,
+   rafCount:window.__qaRafCount||0,
+   time:performance.now()};
  };
  const near=(a,b)=>Math.abs(a-b)<1.2;
  const stable=(a,b)=>
