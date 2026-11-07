@@ -29,7 +29,7 @@ test('installed Chat local storage keys stay compatible across cleanup releases'
 
 test('Android native and iPhone PWA share the same Chat decisions, not alternate backends',()=>{
  const android=read('apps/android/App.tsx');
- const pwa=read('apps/pwa/src/App.tsx');
+ const pwa=read('apps/pwa/src/app/App.tsx');
  const common=[
   'restoreNamedChatSession','getChatSnapshot','reconcileChatSnapshot',
   'reconcileUpdatedMessage','reconcileDeletedMessage','reconcileReactions',
@@ -48,7 +48,7 @@ test('Android and PWA share one authenticated media-availability fetch without o
  const shared=read('packages/shared/src/index.ts');
  assert.match(shared,/export async function getChatMediaAvailability/);
  assert.match(shared,/cache:'no-store'/);
- for(const path of ['apps/android/App.tsx','apps/pwa/src/App.tsx']){
+ for(const path of ['apps/android/App.tsx','apps/pwa/src/app/App.tsx']){
   const source=read(path);
   assert.match(source,/getChatMediaAvailability\(session\)/);
   if(path.includes('/android/'))assert.match(source,/uploadNativeChatFile/);
@@ -58,7 +58,7 @@ test('Android and PWA share one authenticated media-availability fetch without o
 });
 
 test('PWA attachment menu only offers Fotos and Video, with distinct media filters',()=>{
- const src=read('apps/pwa/src/App.tsx');
+ const src=read('apps/pwa/src/app/App.tsx');
  const css=read('apps/pwa/src/styles/chat/chat.css');
  const icon=read('apps/pwa/src/features/chat/ChatComposerIcon.tsx');
  const start=src.indexOf("composerPanel==='attachments'&&<div");
@@ -89,7 +89,7 @@ test('PWA attachment menu only offers Fotos and Video, with distinct media filte
 });
 
 test('PWA camera icon requests camera capture directly instead of media gallery',()=>{
- const src=read('apps/pwa/src/App.tsx');
+ const src=read('apps/pwa/src/app/App.tsx');
  assert.match(src,/const openCamera=\(\)=>/);
  assert.match(src,/cameraPicker\.current\?\.click\(\)/);
  assert.match(src,/onClick=\{openCamera\}/);
@@ -141,7 +141,7 @@ test('Android native: two gallery filters, camera direct, no legacy extra menu',
 });
 
 test('Emoji stays enabled; microphone is informative until M03',()=>{
- const pwa=read('apps/pwa/src/App.tsx');
+ const pwa=read('apps/pwa/src/app/App.tsx');
  const native=read('apps/android/App.tsx');
  assert.match(pwa,/aria-label="Insertar emoji"/);
  assert.match(native,/accessibilityLabel="Insertar emoji"/);
@@ -159,7 +159,7 @@ test('V2 does not contain an external storage service binding',()=>{
 });
 
 test('Media-only bubbles remain visual across Chat PWA, native and Administrator',()=>{
- const pwa=read('apps/pwa/src/App.tsx');
+ const pwa=read('apps/pwa/src/app/App.tsx');
  const android=read('apps/android/App.tsx');
  const admin=read('apps/pwa/src/features/chat/AdminChatGeneral.tsx');
  assert.match(pwa,/!message\.media&&<div>\{message\.text\}<\/div>/);
@@ -212,7 +212,7 @@ test('Web/Admin originals are fully downloaded once before opening, without forc
 
 test('one real original-quality R2 uploader for Chat PWA with Familia fast multipart',()=>{
  const uploader=read('apps/pwa/src/services/chat-media-upload.ts');
- const member=read('apps/pwa/src/App.tsx');
+ const member=read('apps/pwa/src/app/App.tsx');
  const backend=read('cloudflare/src/chat-media.js');
  assert.match(uploader,/!begin\.multipart/);
  assert.match(uploader,/5\*1024\*1024/);

@@ -20,18 +20,18 @@ test('Existing Android login and Chat engine stay in one mounted App',()=>{
  assert.doesNotMatch(read('apps/android/NativeMemberHome.tsx'),/startNamedChatSession|AsyncStorage|WebView|session\.token|fetch\(/);
 });
 test('Existing PWA login remains canonical and HOME only mounts after authenticated session',()=>{
- const source=read('apps/pwa/src/App.tsx');
+ const source=read('apps/pwa/src/app/App.tsx');
  assert.match(source,/startNamedChatSession\(name\.trim\(\)\)/);
  assert.match(source,/restoreNamedChatSession/);
  assert.match(source,/session&&activeScreen!=='chat'&&<VisualApp/);
  assert.match(source,/member-chat-hidden/);
  assert.match(read('apps/pwa/src/styles/chat/chat.css'),/\.member-chat-hidden\{display:none\}/);
- assert.match(read('apps/pwa/src/main.tsx'),/import '\.\/styles\/home\/home\.css'/);
- assert.doesNotMatch(read('apps/pwa/src/VisualApp.tsx'),/startNamedChatSession|restoreNamedChatSession|localStorage|indexedDB|adminLogin|\/api\/chat\/session/);
+ assert.match(read('apps/pwa/src/app/main.tsx'),/import '\.\.\/styles\/home\/home\.css'/);
+ assert.doesNotMatch(read('apps/pwa/src/app/VisualApp.tsx'),/startNamedChatSession|restoreNamedChatSession|localStorage|indexedDB|adminLogin|\/api\/chat\/session/);
 });
 test('Visual preview cannot independently open protected Chat',()=>{
- const visual=read('apps/pwa/src/VisualApp.tsx');
- const preview=read('apps/pwa/src/visual-main.tsx');
+ const visual=read('apps/pwa/src/app/VisualApp.tsx');
+ const preview=read('apps/pwa/src/app/visual-main.tsx');
  assert.match(preview,/<VisualApp preview \/>/);
  assert.match(visual,/if\(target==='chat'&&!onNavigate\)return/);
  assert.doesNotMatch(visual,/new WebSocket|admin\.html/);
@@ -42,6 +42,6 @@ test('PWA and Android availability remain truthful without duplicating HOME',()=
  assert.match(data,/description:string;ready:boolean;nativeReady:boolean/);
  assert.match(data,/id:'repertoire'[^\n]*ready:true,nativeReady:true/);
  assert.match(data,/id:'calendar'[^\n]*ready:true,nativeReady:true/);
- assert.match(read('apps/pwa/src/VisualApp.tsx'),/item\.ready\?'DISPONIBLE':'EN PREPARACIÓN'/);
+ assert.match(read('apps/pwa/src/app/VisualApp.tsx'),/item\.ready\?'DISPONIBLE':'EN PREPARACIÓN'/);
  assert.match(read('apps/android/NativeMemberHome.tsx'),/module\.nativeReady\?'Disponible':'En preparación'/);
 });

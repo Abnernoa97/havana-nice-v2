@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 const read=p=>readFileSync(new URL(p,import.meta.url),'utf8');
-const ui=read('../src/AdminApp.tsx');
+const ui=read('../src/app/AdminApp.tsx');
 const panel=read('../src/features/admin/AdminChatAccess.tsx');
 const api=read('../src/services/admin-api.ts');
 const backend=read('../../../cloudflare/src/index.ts');
@@ -10,7 +10,7 @@ const backend=read('../../../cloudflare/src/index.ts');
 test('single installable Administrator PWA, separate from Chat',()=>{
  assert.match(read('../admin.html'),/id="admin-root"/);
  assert.match(read('../vite.config.ts'),/admin\.html/);
- assert.doesNotMatch(read('../src/admin-main.tsx'),/from '\.\/App'/);
+ assert.doesNotMatch(read('../src/app/admin-main.tsx'),/from '\.\/App'/);
  const manifest=JSON.parse(read('../public/admin.webmanifest'));
  assert.equal(manifest.start_url,'/admin.html');
  assert.equal(manifest.id,'/havana-nice-v2-administrador');
@@ -18,7 +18,7 @@ test('single installable Administrator PWA, separate from Chat',()=>{
 });
 test('PWA admin network-only HTML and safe automatic refresh',()=>{
  const sw=read('../public/sw.js');
- const main=read('../src/admin-main.tsx');
+ const main=read('../src/app/admin-main.tsx');
  assert.match(sw,/navigation && path === '\/admin\.html'\) return/);
  assert.match(main,/fetch\('\/admin\.html',\{cache:'no-store'\}\)/);
  assert.match(main,/serviceWorker\.register\('\/sw\.js'/);
@@ -67,7 +67,7 @@ test('real-time admin list invalidates on membership changes',()=>{
  assert.match(panel,/document\.addEventListener\('visibilitychange',resume\)/);
 });
 test('musician PWA uses server allowlist instead of device experiments',()=>{
- const pwa=read('../src/App.tsx'),android=read('../../android/App.tsx');
+ const pwa=read('../src/app/App.tsx'),android=read('../../android/App.tsx');
  assert.match(pwa,/startNamedChatSession\(name\.trim\(\)\)/);
  assert.match(pwa,/Introduce el nombre que el Administrador creó y autorizó/);
  assert.match(android,/startNamedChatSession\(name\.trim\(\)\)/);
@@ -76,7 +76,7 @@ test('musician PWA uses server allowlist instead of device experiments',()=>{
  assert.match(backend,/replace\(\/\\s\+\/g, ' '\)/);
 });
 test('original musician offline storage and Chat remain intact',()=>{
- const pwa=read('../src/App.tsx'),android=read('../../android/App.tsx');
+ const pwa=read('../src/app/App.tsx'),android=read('../../android/App.tsx');
  assert.match(pwa,/loadLocalChat\(\)/);
  assert.match(read('../src/services/local.ts'),/offline-outbox-v1/);
  assert.match(read('../../android/chatStorage.ts'),/havana-v2-chat-local-v1/);
@@ -98,8 +98,8 @@ test('Administrator can explicitly close other sessions but cannot clear the cur
  assert.doesNotMatch(api,/adminDeviceRequests\(|adminDeviceAction\(/);
 });
 test('Administrator frontend defers new versions while its session or unsaved form is active',()=>{
- const main=read('../src/admin-main.tsx');
- const admin=read('../src/AdminApp.tsx');
+ const main=read('../src/app/admin-main.tsx');
+ const admin=read('../src/app/AdminApp.tsx');
  const access=read('../src/features/admin/AdminChatAccess.tsx');
  assert.match(main,/adminSessionActive==='true'/);
  assert.match(main,/formHasDraft/);
@@ -137,7 +137,7 @@ test('Access to musicians uses only server-confirmed list changes and fresh hist
 
 test('only Administrator-created active names reach the session-minting endpoint',()=>{
  const index=read('../../../cloudflare/src/index.ts');
- const app=read('../src/App.tsx');
+ const app=read('../src/app/App.tsx');
  assert.match(app,/startNamedChatSession\(name\.trim\(\)\)/);
  const login=index.indexOf("if (url.pathname === '/api/chat/session' && request.method === 'POST')");
  const lookup=index.indexOf("SELECT username,actor_id,display_name FROM chat_members WHERE username=? AND active=1",login);
@@ -267,7 +267,7 @@ test('legacy device approval endpoints and UIs are permanently removed',()=>{
 });
 
 test('Administrator Chat uses the existing authenticated session, not a musician login',()=>{
- const frame=read('../src/AdminApp.tsx');
+ const frame=read('../src/app/AdminApp.tsx');
  const access=read('../src/features/admin/AdminChatAccess.tsx');
  const viewer=read('../src/features/chat/AdminChatGeneral.tsx');
  const api=read('../src/services/admin-api.ts');

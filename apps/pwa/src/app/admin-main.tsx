@@ -1,7 +1,7 @@
 import React from 'react';
 import {createRoot} from 'react-dom/client';
 import AdminApp from './AdminApp';
-import './styles/admin/admin.css';
+import '../styles/admin/admin.css';
 
 // One administrator PWA from the same HAVANA NICE V2 source and deployment.
 // Admin navigation and private API responses MUST remain network-only.

@@ -6,11 +6,11 @@ import {
   validateChatMediaSelection, CHAT_MEDIA_MAX_PER_SEND, HAVANA_V2_DEV_API_BASE_URL, type ChatMediaSelection, type ChatMediaKind, type ChatMediaSource,
   reconcileReactions, reconcileUpdatedMessage, reconcileDeletedMessage, reconcileChatSnapshot, type ChatReaction, type ChatEmoji, type ChatReadReceipt, type MemberScreen,
 } from '@havana/shared';
-import { loadLocalChat, saveLocalChat } from './services/local';
-import SwipeMessage, {type MessageAnchor} from './features/chat/SwipeMessage';
-import ComposerIcon from './features/chat/ChatComposerIcon';
-import ChatMediaView from './features/chat/ChatMediaView';
-import {uploadChatFile} from './services/chat-media-upload';
+import { loadLocalChat, saveLocalChat } from '../services/local';
+import SwipeMessage, {type MessageAnchor} from '../features/chat/SwipeMessage';
+import ComposerIcon from '../features/chat/ChatComposerIcon';
+import ChatMediaView from '../features/chat/ChatMediaView';
+import {uploadChatFile} from '../services/chat-media-upload';
 import VisualApp from './VisualApp';
 
 type PwaQueuedMedia={id:string;file:File;selection:ChatMediaSelection};

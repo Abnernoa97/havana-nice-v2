@@ -3,7 +3,7 @@ import { existsSync, readFileSync } from 'node:fs';
 const required = [
   'apps/android/App.tsx',
   'apps/android/app.json',
-  'apps/pwa/src/App.tsx',
+  'apps/pwa/src/app/App.tsx',
   'apps/pwa/public/manifest.webmanifest',
   'packages/shared/src/index.ts',
   'cloudflare/src/index.ts',

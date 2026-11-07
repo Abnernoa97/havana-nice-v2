@@ -20,7 +20,7 @@ test('Android Calendar has no old 30 second polling and uses the same private Ca
 test('Android HOME has same mobile destinations and visual navigation as PWA, not stale placeholders',()=>{
  const shared=read('packages/shared/src/memberModules.ts');
  const home=read('apps/android/NativeMemberHome.tsx');
- const pwa=read('apps/pwa/src/VisualApp.tsx');
+ const pwa=read('apps/pwa/src/app/VisualApp.tsx');
  assert.match(shared,/id:'repertoire'[^\n]*ready:true,nativeReady:true/);
  assert.match(shared,/id:'family'[^\n]*ready:true,nativeReady:true/);
  assert.match(home,/active==='repertoire'\?<NativeRepertoire token=\{token\}/);

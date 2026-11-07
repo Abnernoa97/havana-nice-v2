@@ -1,6 +1,6 @@
 import {useCallback,useEffect,useState} from 'react';
 import {fetchBackendHealth,type BackendHealth} from '@havana/shared';
-import AdminChatAccess from './features/admin/AdminChatAccess';
+import AdminChatAccess from '../features/admin/AdminChatAccess';
 
 type Tab='access'|'chat'|'repertoire'|'calendar'|'family'|'more';
 const tabs:{id:Tab;name:string;icon:string;description:string}[]=[

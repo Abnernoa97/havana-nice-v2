@@ -5,7 +5,7 @@ import {readFileSync} from 'node:fs';
 const read=(path)=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
 const screens=[
   ['HOME Android','apps/android/NativeMemberHome.tsx'],
-  ['HOME PWA','apps/pwa/src/VisualApp.tsx'],
+  ['HOME PWA','apps/pwa/src/app/VisualApp.tsx'],
   ['Calendario Android','apps/android/NativeCalendar.tsx'],
   ['Calendario PWA','apps/pwa/src/features/calendar/CalendarAccordion.tsx'],
   ['Calendario Administrador','apps/pwa/src/features/calendar/AdminCalendar.tsx'],
@@ -20,9 +20,9 @@ test('A01: HOME lists the same modules from a single shared contract',()=>{
   const ids=[...list.matchAll(/\bid:'(chat|calendar|repertoire|musicians|family|notices|settings)'/g)].map(x=>x[1]);
   assert.deepEqual(ids,['chat','calendar','repertoire','musicians','family','notices','settings']);
   assert.match(read('apps/android/NativeMemberHome.tsx'),/MEMBER_MODULES\.map/);
-  assert.match(read('apps/pwa/src/VisualApp.tsx'),/MEMBER_MODULES/);
+  assert.match(read('apps/pwa/src/app/VisualApp.tsx'),/MEMBER_MODULES/);
   assert.match(read('apps/android/App.tsx'),/session&&activeScreen!=='chat'&&<NativeMemberHome/);
-  assert.match(read('apps/pwa/src/App.tsx'),/session&&activeScreen!=='chat'&&<VisualApp/);
+  assert.match(read('apps/pwa/src/app/App.tsx'),/session&&activeScreen!=='chat'&&<VisualApp/);
 });
 
 test('A01: only existing App shells own musician enrollment and session restoration',()=>{
@@ -31,7 +31,7 @@ test('A01: only existing App shells own musician enrollment and session restorat
     assert.doesNotMatch(source,/startNamedChatSession|restoreNamedChatSession|\/api\/chat\/session|chat_single_device_owners|loginMusician|createChatSession/,name+' may not create a parallel login');
     assert.doesNotMatch(source,/new WebSocket|new DurableObject|new D1Database/,name+' must not create a separate backend');
   }
-  for(const path of ['apps/android/App.tsx','apps/pwa/src/App.tsx']){
+  for(const path of ['apps/android/App.tsx','apps/pwa/src/app/App.tsx']){
     assert.match(read(path),/startNamedChatSession\(name\.trim\(\)\)/);
     assert.match(read(path),/restoreNamedChatSession/);
   }
@@ -125,8 +125,8 @@ test('Admin Repertoire refresh always updates selected event, not just the maste
 test('Familia HAVANA NICE is one isolated HOME module with existing session and no invented media',()=>{
  const share=read('packages/shared/src/memberModules.ts');
  assert.match(share,/id:'family'.*label:'Familia HAVANA NICE'/);
- assert.match(read('apps/pwa/src/AdminApp.tsx'),/name:'Familia HAVANA NICE'/);
- assert.match(read('apps/pwa/src/VisualApp.tsx'),/screen==='family'&&token\?<MemberFamily/);
+ assert.match(read('apps/pwa/src/app/AdminApp.tsx'),/name:'Familia HAVANA NICE'/);
+ assert.match(read('apps/pwa/src/app/VisualApp.tsx'),/screen==='family'&&token\?<MemberFamily/);
  const worker=read('cloudflare/src/family.js');
  assert.match(worker,/verifyAdminSession/);
  assert.match(worker,/verifyMusicianSession/);

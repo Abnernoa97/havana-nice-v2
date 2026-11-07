@@ -1,8 +1,8 @@
 import {useState} from 'react';
 import {MEMBER_MODULES,type MemberScreen} from '@havana/shared';
-import CalendarAccordion from './features/calendar/CalendarAccordion';
-import MemberRepertoire from './features/repertoire/MemberRepertoire';
-import MemberFamily from './features/family/MemberFamily';
+import CalendarAccordion from '../features/calendar/CalendarAccordion';
+import MemberRepertoire from '../features/repertoire/MemberRepertoire';
+import MemberFamily from '../features/family/MemberFamily';
 
 type Props={
   displayName?:string;

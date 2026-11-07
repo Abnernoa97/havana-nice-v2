@@ -11,7 +11,7 @@ assert.deepEqual(readdirSync(new URL('../',import.meta.url)).filter(x=>!allowedR
 const worker = read('cloudflare/src/index.ts');
 assert.doesNotMatch(worker,/\/\/\s*@ts-nocheck\b/,'V2 Worker entrypoint must remain strictly typechecked');
 const android = read('apps/android/App.tsx');
-const pwa = read('apps/pwa/src/App.tsx');
+const pwa = read('apps/pwa/src/app/App.tsx');
 const nativeBubble = read('apps/android/SwipeableBubble.tsx');
 const webBubble = read('apps/pwa/src/features/chat/SwipeMessage.tsx');
 const pwaStyles = read('apps/pwa/src/styles/chat/chat.css');
