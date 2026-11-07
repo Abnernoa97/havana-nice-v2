@@ -19,6 +19,18 @@
 
 ---
 
+## Arquitectura modular vigente · 07/11/2026
+
+La base V2 utiliza la misma separación de responsabilidades que HAVANA CLOUD, pero **no comparte ningún código ni repositorio con CLOUD**. La estructura fue verificada en [GitHub Actions 42355021691](https://github.com/Abnernoa97/havana-nice-v2/actions/runs/42355021691).
+
+- `apps/pwa/src/app`: tres entradas React (músicos, Administración, vista visual) y sus pantallas principales.
+- `apps/pwa/src/features`: Chat, Calendario, Repertorio, Familia y Administración; `services`: API, tiempo real, multimedia y caché; `styles`: CSS por módulo.
+- `apps/android/features`: pantallas nativas por módulo; `services`: comunicación y almacenamiento. `apps/android/App.tsx` permanece como única entrada Expo.
+- `cloudflare/src/index.ts`: **único Worker**; `modules`: dominios de Administración, Chat, Calendario, Familia y Repertorio; `shared`: hash SHA-256 canónico.
+- `packages/shared/src`: contratos y funciones API compartidas entre PWA y Android. Un solo `main`; cero ramas V2 alternativas.
+
+Se reubicaron **52 archivos** con eliminación de sus rutas antiguas (4 CSS, 5 servicios PWA, 12 pantallas PWA, 6 pantallas/entradas React, 10 módulos Android y 15 módulos Worker). `scripts/check-structure.mjs` impide archivos huérfanos por grafo de imports estáticos, referencias locales inexistentes o nuevos módulos sueltos en la raíz. El CI confirma compilación PWA, exportación Android y pruebas de Worker; no sustituye la QA física. No se publicó una APK nueva ni se redeplegó el Worker por esta reorganización.
+
 # HAVANA NICE V2 — ÚNICA LÍNEA DE DESARROLLO
 
 **Fuente de verdad:** [Plan Maestro](docs/PLAN-MAESTRO.md) y [Continuidad Exacta](docs/CONTINUIDAD-EXACTA.md). No reintroducir decisiones, pruebas ni pantallas descartadas. Auditoría cruzada: 29 de octubre de 2026. **La lista de prioridades y los 46 hitos (27 originales + 9 modulares + 6 de Familia HAVANA NICE + 4 de BOOK HAVANA NICE) viven únicamente en el Plan Maestro**.

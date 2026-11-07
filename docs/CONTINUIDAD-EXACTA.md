@@ -2,6 +2,12 @@
 
 La única fuente de desarrollo es `Abnernoa97/havana-nice-v2`, rama `main`. Separación de código y hosting verificada: CI y Pages autónomos, Worker V2 versión 59 con siete bindings y ambos dominios permitidos temporalmente; APK actual y anterior con firmas y SHA preservados. Dos refs V2 antiguas eliminadas del repo original, cuyo `main` quedó idéntico. HAVANA CLOUD intacto. Web de compatibilidad anterior retirada definitivamente tras autorización del propietario. Pendiente: QA física iPhone/Android en la PWA nueva.
 
+## Continuidad de arquitectura · 07/11/2026
+
+**Trabajar solo en:** `Abnernoa97/havana-nice-v2` / `main`. Reorganización completa inicial aprobada por CI 42355021691: `apps/pwa/src/{app,features,services,styles}`, `apps/android/{features,services}` con `App.tsx` Expo fijo y `cloudflare/src/{modules,shared}` con `index.ts` único. Fueron **52 movimientos reales, sin duplicar los archivos viejos**. `scripts/check-structure.mjs` comprueba rutas, importaciones locales y alcance desde entradas; el CI incluye exportación Android y pruebas Worker. No tocar app original, HAVANA CLOUD ni recursos de producción.
+
+**Próxima fase:** dividir el Chat grande PWA/Android y después el enrutador Worker (sin doble lógica); revisar CSS/dependencias y validar físicamente calendario inmediato en iPhone, archivos R2 y APK nativa. Plan Maestro mantiene 12/46 hitos. Worker publicado v59, APK actual sin nueva compilación.
+
 # HAVANA NICE V2 — CONTINUIDAD EXACTA
 
 **Corte de saneamiento y QA de Chat: 29 de octubre de 2026.** Este documento es una **bitácora técnica**, no otro plan. Los hitos, prioridades y casillas se controlan SOLO desde [PLAN-MAESTRO.md](./PLAN-MAESTRO.md).

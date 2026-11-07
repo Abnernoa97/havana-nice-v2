@@ -24,6 +24,32 @@
 
 ---
 
+## Reorganización total V2 según HAVANA CLOUD · 07/11/2026
+
+**Alcance exclusivo:** `Abnernoa97/havana-nice-v2` → `main`. La aplicación original y HAVANA CLOUD no se han modificado. **No mezclar este saneamiento de arquitectura con los 46 hitos funcionales:** la cifra oficial continúa en **12/46** mientras falten pruebas físicas y módulos previstos.
+
+### Estructura aplicada y comprobada
+
+- [x] **S01 · CSS independiente:** cuatro hojas separadas en `apps/pwa/src/styles/{chat,home,admin,family}/`; imports corregidos y archivos originales eliminados. [CI SUCCESS 42353350986](https://github.com/Abnernoa97/havana-nice-v2/actions/runs/42353350986).
+- [x] **S02 · Servicios React:** cinco utilitarios/API en `apps/pwa/src/services/`; sin dobles copias ni accesos alternativos. [CI SUCCESS 42353543909](https://github.com/Abnernoa97/havana-nice-v2/actions/runs/42353543909).
+- [x] **S03 · Pantallas por módulo:** doce archivos en `apps/pwa/src/features/{admin,chat,calendar,family,repertoire}/`. [CI SUCCESS 42353835678](https://github.com/Abnernoa97/havana-nice-v2/actions/runs/42353835678).
+- [x] **S04 · Entrada React limpia:** seis archivos en `apps/pwa/src/app/`; HTML de músicos, Administrador y vista visual conservan sus tres entradas y resultado visual. [CI SUCCESS 42354096099](https://github.com/Abnernoa97/havana-nice-v2/actions/runs/42354096099).
+- [x] **S05 · Android modular:** diez módulos en `apps/android/features/` y `services/`, con `App.tsx` raíz único por requisito Expo. [CI SUCCESS 42354311708](https://github.com/Abnernoa97/havana-nice-v2/actions/runs/42354311708).
+- [x] **S06 · Worker por dominios:** quince archivos en `cloudflare/src/modules/` y `shared/`; `index.ts` es la única entrada. Pruebas actualizadas y verdes: [CI SUCCESS 42354857530](https://github.com/Abnernoa97/havana-nice-v2/actions/runs/42354857530).
+- [x] **S07 · Auditoría permanente:** `scripts/check-structure.mjs` valida raíces, resolución de imports y alcanzabilidad desde los cinco puntos de entrada; ningún módulo huérfano detectado por ese grafo. [CI SUCCESS 42355021691](https://github.com/Abnernoa97/havana-nice-v2/actions/runs/42355021691).
+- [x] **S08 · Sin parches/segundas líneas:** los 52 archivos se trasladaron eliminando las rutas anteriores; GitHub `main` sigue único, no se crearon ramas ni nuevos Workflows.
+ 
+### Próxima depuración de fondo, sin alterar comportamiento
+
+- [ ] **S09 · App Chat PWA (archivo grande):** extraer estado, conexión y componentes gradualmente y conservar una sola máquina de sesiones y mensajes; prueba de equivalencia por bloque.
+- [ ] **S10 · App Chat Android:** separar responsabilidades internas de su `App.tsx` sin desplazar la única entrada Expo.
+- [ ] **S11 · Router Worker:** reducir `cloudflare/src/index.ts` delegando a los módulos existentes; sin segunda entrada, sin duplicación de rutas, sin cambiar D1/DO/R2.
+- [ ] **S12 · Shared contracts:** revisar `packages/shared/src/index.ts` por API o tipos que realmente convenga trasladar a módulos canónicos; sin APIs duplicadas.
+- [ ] **S13 · Limpieza CSS/dependencias:** inspección semántica de media queries y librerías; no borrar reglas útiles, migraciones D1 ni ejecutar upgrades forzados.
+- [ ] **S14 · QA real:** iPhone PWA Calendario al momento, Chat y medios R2, y paridad nativa Android en el paquete aprobado posterior. Sin marcar como cerrado por pasar CI.
+
+**Estado de publicación:** fuente PWA despliega desde el nuevo `main`; **Worker activo permanece en v59** con siete bindings sin alteraciones de datos, y **APK Android firmada sigue siendo la anterior**. Refactorizaciones de fuente no equivalen a desplegar un backend nuevo ni a publicar la APK.
+
 # HAVANA NICE V2 — PLAN MAESTRO ÚNICO
 
 **Auditoría cruzada: 29 de octubre de 2026. QA funcional del Chat confirmado por el propietario el 29 de octubre de 2026 (hora de México).**  
