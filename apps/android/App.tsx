@@ -1,10 +1,10 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Alert, AppState, Keyboard, KeyboardAvoidingView, Modal, Platform, Pressable, SafeAreaView, ScrollView,
   StatusBar, Text, TextInput, View, Image, useWindowDimensions,
 } from 'react-native';
 import {
-  HAVANA_V2_DEV_API_BASE_URL, fetchBackendHealth, getChatMediaAvailability, getChatSnapshot, getOlderChatMessages, searchChatMessages, lastReadByOther, getChatMenuState, getChatMessagePermissions, isWithinChatEditWindow, selectNextQueuedChatMessage, setOutgoingChatStatus, projectOutgoingChatStatus, CHAT_ACK_TIMEOUT_MS, messageDeliveryLabel, newClientMessageId,
+  HAVANA_V2_DEV_API_BASE_URL, fetchBackendHealth, getChatMediaAvailability, getChatSnapshot, getOlderChatMessages, searchChatMessages, buildChatDisplayIndex, getChatMenuState, getChatMessagePermissions, isWithinChatEditWindow, selectNextQueuedChatMessage, setOutgoingChatStatus, projectOutgoingChatStatus, CHAT_ACK_TIMEOUT_MS, messageDeliveryLabel, newClientMessageId,
   reconcileChatMessages, reconcileReactions, reconcileUpdatedMessage, reconcileDeletedMessage, reconcileChatSnapshot, startNamedChatSession, restoreNamedChatSession, chatSessionExpired, chatReconnectDelay, reconcileChatReadReceipt, removeChatReactionsForMessage, captureChatOfflineSnapshot, restoreChatOfflineOutbox,
   type ChatMessage, type ChatServerEvent, type ChatSession, type ChatReaction, type ChatEmoji, type ChatReadReceipt,
   validateChatMediaSelection, CHAT_MEDIA_MAX_PER_SEND, type ChatMediaSelection, type ChatMediaKind, type ChatMediaSource, type MemberScreen,
@@ -743,6 +743,11 @@ export default function App() {
       maxWidth:288,menuHeight:118,
     });
 
+  // Build the O(messages+reactions+receipts) view index once per update,
+  // not for every bubble as the composer causes re-renders.
+  const display=useMemo(()=>buildChatDisplayIndex(messages,reactions,receipts,session?.actorId??''),
+    [messages,reactions,receipts,session?.actorId]);
+
   return (
     <SafeAreaView style={[styles.screen,keyboardOpen && styles.screenKeyboard]}>
       <StatusBar barStyle="dark-content" />
@@ -831,6 +836,7 @@ export default function App() {
               {!messages.length ? <Text style={styles.empty}>¡Hola! Envía el primer mensaje. Aparecerá en los dos dispositivos.</Text> : null}
               {(results??messages).filter(message=>!message.deletedAt).map(message => {
                 const mine = message.senderId === session.actorId;
+                const badges=display.reactionBadges.get(message.seq)??[];
                 return (
                   <SwipeableBubble
                     key={message.senderId + ':' + message.clientMessageId}
@@ -842,19 +848,17 @@ export default function App() {
                     {!mine && <Text style={styles.sender}>{message.senderName}</Text>}
                     {message.replyToSeq ? (
                       <Text style={[styles.replyLabel,mine && styles.mineMeta]}>
-                        ↪ {messages.find(m=>m.seq===message.replyToSeq)?.text.slice(0,70)||'Mensaje anterior'}
+                        ↪ {display.replySnippets.get(message.replyToSeq)||'Mensaje anterior'}
                       </Text>
                     ) : null}
                     {!message.media?<Text style={[styles.bubbleText,mine && styles.mineText]}>
                       {message.text}
                     </Text>:null}
                     {message.media?<NativeChatMediaView media={message.media} session={session}/>:null}
-                    {message.seq>0 && !message.deletedAt && reactions.some(r=>r.messageSeq===message.seq) ? (
+                    {message.seq>0 && !message.deletedAt && badges.length>0 ? (
                       <View style={styles.reactionBadges}>
-                        {(['❤️','😂','👍'] as ChatEmoji[]).filter(emoji=>reactions.some(r=>r.messageSeq===message.seq&&r.emoji===emoji)).map(emoji=>(
-                          <Text key={emoji} style={styles.reactionBadge}>
-                            {emoji}{reactions.filter(r=>r.messageSeq===message.seq&&r.emoji===emoji).length}
-                          </Text>
+                        {badges.map(({emoji,count})=>(
+                          <Text key={emoji} style={styles.reactionBadge}>{emoji}{count}</Text>
                         ))}
                       </View>
                     ):null}
@@ -862,7 +866,7 @@ export default function App() {
                       {new Date(message.sentAt).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}
                       {message.editedAt&&!message.deletedAt?' · editado':''}
                       {mine?' · '+messageDeliveryLabel(message):''}
-                      {mine&&!message.pending&&lastReadByOther(receipts,session.actorId)>=message.seq?' · leído':''}
+                      {mine&&!message.pending&&display.lastReadByOther>=message.seq?' · leído':''}
                     </Text>
                   </SwipeableBubble>
                 );

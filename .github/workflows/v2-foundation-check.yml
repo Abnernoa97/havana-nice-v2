@@ -122,6 +122,9 @@ jobs:
       - name: Verify canonical offline Chat outbox and ACK policy on both platforms
         run: node --experimental-strip-types --test tests/chat-outbox-policy.test.mjs
 
+      - name: Verify linear-time Chat display indexes across iPhone PWA and Android
+        run: node --experimental-strip-types --test tests/chat-display-index.test.mjs
+
       - name: Verify visual media UI remains compatible
         run: node --test tests/chat-media-ui.test.mjs
 

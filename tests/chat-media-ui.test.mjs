@@ -179,7 +179,8 @@ test('PWA Chat Timeline stays presentation-only: one session, one history engine
  assert.match(controller,/onMessageLongPress=\{showMessageMenu\}/);
  assert.match(timeline,/onSwipeRight=\{\(\)=>onReply\(message\)\}/);
  assert.match(timeline,/onLongPress=\{anchor=>onMessageLongPress\(message,anchor\)\}/);
- assert.match(timeline,/lastReadByOther\(receipts,actorId\)/);
+ assert.match(timeline,/display\.lastReadByOther/);
+ assert.match(timeline,/buildChatDisplayIndex\(messages,reactions,receipts,actorId\)/);
  assert.doesNotMatch(timeline,/new WebSocket|startNamedChatSession|restoreNamedChatSession|saveLocalChat|uploadChatFile/);
 });
 test('Native photo uses a fully verified local cache and modal without a browser; video plays inline',()=>{

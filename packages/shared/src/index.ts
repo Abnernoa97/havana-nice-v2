@@ -243,3 +243,7 @@ export {reconcileChatReadReceipt,removeChatReactionsForMessage} from './chat-eve
 // One offline snapshot format: existing IndexedDB/SQLite keys remain unchanged.
 export {captureChatOfflineSnapshot,restoreChatOfflineOutbox} from './chat-offline';
 export type {ChatOfflineSnapshot} from './chat-offline';
+
+// One linear-cost rendering index for replies, reactions and read receipts.
+export {buildChatDisplayIndex} from './chat-display';
+export type {ChatDisplayIndex,ChatReactionBadge} from './chat-display';
