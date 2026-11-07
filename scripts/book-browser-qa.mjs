@@ -88,8 +88,10 @@ const fixture=`<script>
   const stage=document.querySelector('.hn-book-stage');
   if(!stage)return null;
   const key=Object.keys(stage).find(k=>k.startsWith('__reactFiber$'));
-  for(let fiber=key?stage[key]:null;fiber;fiber=fiber.return){
-   for(let h=fiber.memoizedState;h;h=h.next){
+  let depth=0;
+  for(let fiber=key?stage[key]:null;fiber&&depth++<24;fiber=fiber.return){
+   let steps=0;
+   for(let h=fiber.memoizedState;h&&steps++<80;h=h.next){
     const app=h.memoizedState?.current;
     if(app&&typeof app.flipNext==='function'&&typeof app.getPageCollection==='function')return app;
    }
