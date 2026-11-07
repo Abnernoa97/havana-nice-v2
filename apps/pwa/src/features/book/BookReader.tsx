@@ -1,4 +1,5 @@
 import {useCallback,useEffect,useMemo,useRef,useState} from 'react';
+import type {PointerEvent as ReactPointerEvent} from 'react';
 import {PageFlip} from 'page-flip';
 import {bookMediaUrl,type BookPage} from '@havana/shared';
 import './book.css';
@@ -33,6 +34,7 @@ export default function BookReader({pages}:{pages:BookPage[]}){
  const structureRef=useRef('');
  const busyRef=useRef(false);
  const pendingImages=useRef<BookPage[]|null>(null);
+ const touchStart=useRef<{id:number;x:number;y:number;at:number}|null>(null);
  const count=pages.length+1; // The first Admin image is the cover, never repeated.
  const countRef=useRef(count);
  countRef.current=count;
@@ -80,9 +82,10 @@ export default function BookReader({pages}:{pages:BookPage[]}){
     width:410,height:580,size:'stretch',minWidth:220,maxWidth:520,
     minHeight:382,maxHeight:735,
     drawShadow:true,maxShadowOpacity:0.72,
-    flippingTime:1080,usePortrait:true,autoSize:false,
+    flippingTime:780,usePortrait:true,autoSize:false,
     showCover:true,mobileScrollSupport:false,swipeDistance:25,
-    showPageCorners:false,disableFlipByClick:false
+    showPageCorners:window.matchMedia('(hover:hover) and (pointer:fine)').matches,
+    disableFlipByClick:true
    }) as BookEngine;
    flip.loadFromHTML(host.querySelectorAll<HTMLElement>('.hn-book-leaf'));
    instance.current=flip;
@@ -170,6 +173,24 @@ export default function BookReader({pages}:{pages:BookPage[]}){
   if(direction==='next'&&spread<last)engine.flipNext('bottom');
   else if(direction==='prev'&&spread>0)engine.flipPrev('bottom');
  },[count]);
+ // StPageFlip delays normal touch taps by 250 ms, so a quick tap can be
+ // silently ignored. Give every intentional tap one deterministic turn.
+ // Drags and horizontal swipes remain owned by StPageFlip, without duplication.
+ const onPointerDown=(event:ReactPointerEvent<HTMLDivElement>)=>{
+  if(!event.isPrimary||busyRef.current)return;
+  touchStart.current={id:event.pointerId,x:event.clientX,y:event.clientY,at:performance.now()};
+ };
+ const onPointerUp=(event:ReactPointerEvent<HTMLDivElement>)=>{
+  const start=touchStart.current;
+  touchStart.current=null;
+  if(!start||start.id!==event.pointerId||busyRef.current)return;
+  if(Math.abs(event.clientX-start.x)>7||Math.abs(event.clientY-start.y)>7)return;
+  if(performance.now()-start.at>650)return;
+  const bounds=event.currentTarget.getBoundingClientRect();
+  if(bounds.width===0)return;
+  const fraction=(event.clientX-bounds.left)/bounds.width;
+  flip(fraction<0.38?'prev':'next');
+ };
  useEffect(()=>{
   if(mode!=='flip')return;
   const key=(event:KeyboardEvent)=>{
@@ -208,7 +229,9 @@ export default function BookReader({pages}:{pages:BookPage[]}){
    <button type="button" aria-pressed={mode==='flip'} onClick={()=>setMode('flip')}>Revista 3D</button>
    <button type="button" aria-pressed={mode==='scroll'} onClick={()=>setMode('scroll')}>Desplazar</button>
   </div>
-  {mode==='flip'&&!failure?<div className="hn-book-stage">
+  {mode==='flip'&&!failure?<div className="hn-book-stage"
+   onPointerDown={onPointerDown} onPointerUp={onPointerUp}
+   onPointerCancel={()=>{touchStart.current=null;}}>
    <div className={'hn-book-mount'+(turning?' hn-book-turning':'')} ref={mountRef}/>
   </div>:null}
   {mode==='scroll'?<div className="hn-book-scroll">{leaves}</div>:null}
@@ -217,7 +240,7 @@ export default function BookReader({pages}:{pages:BookPage[]}){
    <button type="button" onClick={()=>flip('prev')} disabled={!canPrev||turning} aria-label="Página anterior">‹</button>
    <div className="hn-book-counter"><strong>{String(page+1).padStart(2,'0')} <span>/</span> {String(count).padStart(2,'0')}</strong>
     <div className="hn-book-progress"><span style={{width:((page+1)/count*100)+'%'}}/></div>
-    <small>{orientation==='landscape'?'Libro abierto · dos páginas':'Arrastra la esquina para pasar la página'}</small>
+    <small>{orientation==='landscape'?'Libro abierto · dos páginas':'Toca, desliza o arrastra la esquina'}</small>
    </div>
    <button type="button" onClick={()=>flip('next')} disabled={!canNext||turning} aria-label="Página siguiente">›</button>
   </div>:null}
