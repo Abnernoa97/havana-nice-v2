@@ -77,6 +77,12 @@ jobs:
       - name: Test private Familia R2 uploads and expiring object grants on isolated SQLite
         run: node --test cloudflare/tests/family-media.test.mjs
 
+      - name: Verify Familia live notifications use the existing secured ChatRoom
+        run: node --test cloudflare/tests/family-realtime.test.mjs
+
+      - name: Verify instantaneous Familia refresh wiring across PWA, native and Admin
+        run: node --test tests/family-realtime-parity.test.mjs
+
       - name: Test R2 multipart videos with isolated D1 without moving Chat
         run: node --test cloudflare/tests/family-multipart.test.mjs
 

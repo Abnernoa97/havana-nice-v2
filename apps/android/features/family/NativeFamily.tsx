@@ -1,7 +1,7 @@
 import React,{useCallback,useEffect,useRef,useState} from 'react';
 import {ActivityIndicator,AppState,Image,Modal,Pressable,StyleSheet,Text,View,useWindowDimensions} from 'react-native';
 import {useVideoPlayer,VideoView} from 'expo-video';
-import {getFamilyDirectory,getFamilyAlbumMedia,familyAlbumCount,HAVANA_V2_DEV_API_BASE_URL,
+import {getFamilyDirectory,getFamilyAlbumMedia,familyAlbumCount,HAVANA_V2_DEV_API_BASE_URL,openFamilyRealtime,
  type FamilyAlbum,type FamilyDirectory,type FamilyMediaItem} from '@havana/shared';
 
 // Reuse the same short-lived private Family grants as PWA; no public R2 URL.
@@ -53,16 +53,58 @@ export default function NativeFamily({token}:{token:string}){
   }finally{if(id===mediaGeneration.current)setMediaLoading(false);}
  },[token]);
  useEffect(()=>{
+  // One Familia notification-only WebSocket while this module is mounted.
+  // Chat and Calendar retain their own existing controllers and backend.
+  let active=true,socket:WebSocket|null=null;
+  let timer:ReturnType<typeof setTimeout>|null=null;
+  let retryDelay=1000;
+  const clear=()=>{if(timer!==null){clearTimeout(timer);timer=null;}};
+  const synchronize=()=>{
+   void refresh();
+   if(selectedRef.current)void loadAlbum(selectedRef.current);
+  };
+  const connect=()=>{
+   if(!active||AppState.currentState==='background'||AppState.currentState==='inactive')return;
+   if(socket&&(socket.readyState===WebSocket.OPEN||socket.readyState===WebSocket.CONNECTING))return;
+   clear();
+   try{
+    const opened=openFamilyRealtime(token,false,event=>{
+     if(!active||socket!==opened)return;
+     if(event.type==='family.ready'||event.type==='family.invalidate')synchronize();
+    });
+    socket=opened;
+    opened.onopen=()=>{if(active&&socket===opened)retryDelay=1000;};
+    opened.onclose=event=>{
+     if(!active||socket!==opened)return;
+     socket=null;
+     if(event.code===4003)return;
+     if(AppState.currentState==='active'){
+      clear();timer=setTimeout(connect,retryDelay);
+      retryDelay=Math.min(20000,retryDelay*2);
+     }
+    };
+    opened.onerror=()=>{if(active&&socket===opened)opened.close();};
+   }catch{
+    clear();timer=setTimeout(connect,retryDelay);
+    retryDelay=Math.min(20000,retryDelay*2);
+   }
+  };
   setSelected(null);setBook(false);setDirectory(null);setItems([]);setLoading(true);
-  void refresh();
+  synchronize();
+  connect();
   const sub=AppState.addEventListener('change',state=>{
-   if(state==='active'){
-    void refresh();
-    if(selectedRef.current)void loadAlbum(selectedRef.current);
+   if(state==='active'){synchronize();connect();}
+   else{
+    clear();
+    const old=socket;socket=null;
+    if(old&&old.readyState!==WebSocket.CLOSED)old.close();
    }
   });
-  return()=>{++generation.current;++mediaGeneration.current;sub.remove();};
- },[refresh,loadAlbum]);
+  return()=>{
+   active=false;clear();++generation.current;++mediaGeneration.current;
+   sub.remove();socket?.close();
+  };
+ },[token,refresh,loadAlbum]);
  const open=(album:FamilyAlbum)=>{
   setSelected(album.actorId);setBook(false);setItems([]);setFocused(null);
   if(album.mediaReady)void loadAlbum(album.actorId);

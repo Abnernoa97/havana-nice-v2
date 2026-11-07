@@ -1,6 +1,7 @@
 import {useCallback,useEffect,useRef,useState} from 'react';
 import {familyAlbumCount,getFamilyDirectory,getFamilyAlbumMedia,type FamilyDirectory,type FamilyAlbum,type FamilyMediaItem} from '@havana/shared';
 import FamilyMediaGallery,{familyPrivateMediaUrl} from './FamilyMediaGallery';
+import {useFamilyLive} from '../../services/use-family-live';
 
 function FamilyAlbumCard({album,onOpen}:{album:FamilyAlbum;onOpen:()=>void}){
  const cover=album.mediaReady?familyPrivateMediaUrl(album.coverUrl):null;
@@ -50,6 +51,10 @@ export default function MemberFamily({token}:{token:string}){
   }).finally(()=>{if(!cancelled)setMediaLoading(false);});
   return()=>{cancelled=true;};
  },[selected,token,directory?.mediaReady,mediaTick]);
+ useFamilyLive(token,false,()=>{
+  void refresh();
+  setMediaTick(t=>t+1);
+ });
  const album=directory?.albums.find(x=>x.actorId===selected);
  const cover=album?.mediaReady?familyPrivateMediaUrl(album.coverUrl):null;
  const readyItems=album?.mediaReady?items:undefined;

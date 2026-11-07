@@ -1,6 +1,7 @@
 import {useCallback,useEffect,useRef,useState,type ChangeEvent} from 'react';
 import {familyAlbumCount,getFamilyDirectory,getFamilyAlbumMedia,uploadFamilyAlbumFile,uploadFamilyVideoPoster,updateFamilyAlbumFile,FamilyApiError,type FamilyDirectory,type FamilyAlbum,type FamilyMediaItem} from '@havana/shared';
 import FamilyMediaGallery,{familyPrivateMediaUrl} from './FamilyMediaGallery';
+import {useFamilyLive} from '../../services/use-family-live';
 import {createFamilyVideoPoster} from '../../services/family-video-poster';
 
 function formatStorageGB(bytes:number){return (bytes/1_000_000_000).toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2});}
@@ -173,6 +174,10 @@ export default function AdminFamily({token,onExpired}:{token:string;onExpired:()
   }
  };
  const storage=data?.storage;
+ useFamilyLive(token,true,()=>{
+  void refresh();
+  setMediaTick(t=>t+1);
+ });
  const album=data?.albums.find(item=>item.actorId===selected);
  const cover=album?.mediaReady?familyPrivateMediaUrl(album.coverUrl):null;
  const readyItems=album?.mediaReady?items:undefined;

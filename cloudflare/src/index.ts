@@ -9,6 +9,7 @@ import {CalendarRoom,calendarSocketIdentity,calendarSocketAuthorized} from './mo
 export {CalendarRoom};
 import {handleRepertoireApi} from './modules/repertoire/repertoire.js';
 import {handleFamilyApi} from './modules/family/family.js';
+import {notifyFamilyClients} from './modules/family/family-realtime.js';
 import {handleChatMedia,readChatMedia,decorateChatMessages} from './modules/chat/chat-media.js';
 import {sha256Hex} from './shared/crypto-helpers.js';
 // Compile-time contracts only. These definitions do not change runtime behavior.
@@ -120,6 +121,7 @@ export class ChatRoom {
   declare members: Map<WebSocket, MemberPresence>;
   declare typingSent: Map<WebSocket, number>;
   declare adminSockets: Map<WebSocket, string>;
+  declare familySockets: Map<WebSocket, {token:string;admin:boolean;actorId:string|null}>;
   constructor(state: DurableObjectState, env: V2Env) {
     this.state = state;
     this.env = env;
@@ -127,6 +129,7 @@ export class ChatRoom {
     this.members = new Map<WebSocket, MemberPresence>();
     this.typingSent = new Map<WebSocket,number>();
     this.adminSockets = new Map<WebSocket,string>(); // independent of musician chat sockets
+    this.familySockets = new Map(); // Familia invalidation only; no Chat messages or presence
   }
   async fetch(request: Request) {
     if (new URL(request.url).pathname === '/health') return Response.json({ ok: true, durableObject: 'ChatRoom', environment: this.env.HAVANA_ENV || 'development' });
@@ -141,8 +144,15 @@ export class ChatRoom {
         try{socket.close(4003,'Member removed');}catch{}
         this.sockets.delete(socket);this.members.delete(socket);this.typingSent.delete(socket);
       }
+      for(const [socket,subscriber] of this.familySockets){
+        if(subscriber.actorId!==data.actorId)continue;
+        this.send(socket,{type:'family.revoked'});
+        try{socket.close(4003,'Member removed');}catch{}
+        this.familySockets.delete(socket);
+      }
       this.broadcast({type:'chat.presence',users:this.onlineUsers()});
       await this.invalidateAdmins('members');
+      await this.invalidateFamilyClients();
       return respond({ok:true},200);
     }
     if (new URL(request.url).pathname === '/installation-released' && request.method === 'POST') {
@@ -154,6 +164,12 @@ export class ChatRoom {
         this.send(socket,{type:'chat.revoked',error:'El Administrador liberó este dispositivo'});
         try{socket.close(4003,'Installation released');}catch{}
         this.sockets.delete(socket);this.members.delete(socket);this.typingSent.delete(socket);
+      }
+      for(const [socket,subscriber] of this.familySockets){
+        if(subscriber.actorId!==data.actorId)continue;
+        this.send(socket,{type:'family.revoked'});
+        try{socket.close(4003,'Installation released');}catch{}
+        this.familySockets.delete(socket);
       }
       this.broadcast({type:'chat.presence',users:this.onlineUsers()});
       return respond({ok:true});
@@ -187,6 +203,34 @@ export class ChatRoom {
       if(typeof event?.topic!=='string'||!['requests','members'].includes(event.topic))return respond({error:'Invalid topic'},400);
       await this.invalidateAdmins(event.topic);
       return respond({ok:true},200);
+    }
+    if(new URL(request.url).pathname==='/family-invalidate'&&request.method==='POST'){
+      // Only Worker-to-DO traffic reaches this private endpoint.
+      await this.invalidateFamilyClients();
+      return respond({ok:true},200);
+    }
+    if(new URL(request.url).pathname==='/ws/family'){
+      if((request.headers.get('upgrade')||'').toLowerCase()!=='websocket')
+        return respond({error:'WebSocket required'},426);
+      const adminToken=adminSocketToken(request);
+      const admin=!!adminToken&&await verifyAdminSession(adminTokenRequest(adminToken),this.env);
+      const memberToken=websocketSessionToken(request);
+      const member=!admin&&await verifySession(this.env,memberToken);
+      const offered=(request.headers.get('sec-websocket-protocol')||'').split(',').map(x=>x.trim());
+      if(!admin&&!member)return respond({error:'Unauthorized'},401);
+      if(!admin&&!offered.includes('havana-v2-family'))return respond({error:'Invalid protocol'},400);
+      const pair=new WebSocketPair();
+      const client=pair[0],server=pair[1];server.accept();
+      this.familySockets.set(server,{
+        token:admin?adminToken:memberToken,admin:!!admin,
+        actorId:admin?null:member.actorId,
+      });
+      this.send(server,{type:'family.ready'});
+      const cleanup=()=>this.familySockets.delete(server);
+      server.addEventListener('close',cleanup);
+      server.addEventListener('error',cleanup);
+      return new Response(null,{status:101,webSocket:client,
+        headers:{'Sec-WebSocket-Protocol':admin?'havana-v2-admin':'havana-v2-family'}});
     }
     if (new URL(request.url).pathname === '/ws/admin') {
       if ((request.headers.get('upgrade')||'').toLowerCase()!=='websocket')
@@ -298,6 +342,21 @@ export class ChatRoom {
       this.send(socket,{type:'admin.invalidate',topic});
     }
   }
+  async invalidateFamilyClients(){
+    // Re-check membership and admin sessions for every signal. Revoked devices
+    // never receive more invalidations or private album material.
+    for(const [socket,subscriber] of this.familySockets){
+      const authorized=subscriber.admin
+        ?await verifyAdminSession(adminTokenRequest(subscriber.token),this.env)
+        :await verifySession(this.env,subscriber.token);
+      if(!authorized){
+        try{socket.close(4003,'Access revoked');}catch{}
+        this.familySockets.delete(socket);
+        continue;
+      }
+      this.send(socket,{type:'family.invalidate'});
+    }
+  }
   onlineUsers() {
     const users = new Map<string,string>();
     for (const member of this.members.values()) users.set(member.actorId, member.name);
@@ -404,7 +463,7 @@ export class ChatRoom {
 }
 
 export default {
-  async fetch(request: Request, env: V2Env) {
+  async fetch(request: Request, env: V2Env, ctx: ExecutionContext) {
     const url = new URL(request.url);
     const origin = trustedOrigin(request.headers.get('origin'));
     // One CORS policy for all Chat/Admin endpoints, including moderator DELETE.
@@ -419,6 +478,18 @@ export default {
       let row: {value:string}|null = null, database = 'error';
       try { row = await env.DB.prepare('SELECT value FROM system_meta WHERE key = ?').bind('schema_version').first<{value:string}>(); database = 'ok'; } catch {}
       return respond({ ok: database === 'ok', app: 'havana-nice-v2', environment: env.HAVANA_ENV || 'development', database, schemaVersion: row?.value ?? null, realtime: 'configured', media: 'private-r2-chat-and-family', chat: 'authorized-members-persistent-device-sessions-realtime' }, database === 'ok' ? 200 : 503, origin);
+    }
+    if(url.pathname==='/ws/family'){
+      // One existing ChatRoom Durable Object, separate notification-only stream.
+      if((request.headers.get('upgrade')||'').toLowerCase()!=='websocket')
+        return respond({error:'Upgrade required'},426,origin);
+      const adminToken=adminSocketToken(request);
+      const admin=!!adminToken&&await verifyAdminSession(adminTokenRequest(adminToken),env);
+      const protocols=(request.headers.get('sec-websocket-protocol')||'').split(',').map(x=>x.trim());
+      const memberToken=websocketSessionToken(request);
+      const member=!admin&&protocols.includes('havana-v2-family')&&await verifySession(env,memberToken);
+      if(!admin&&!member)return respond({error:'No autorizado'},401,origin);
+      return env.CHAT_ROOMS.get(env.CHAT_ROOMS.idFromName(ROOM)).fetch(request);
     }
     if(url.pathname==='/ws/calendar'){
       // Isolated realtime calendar, using existing member/Admin credentials.
@@ -440,7 +511,7 @@ export default {
       return handleRepertoireApi(request,env,url,origin,respond,verifySession);
     // Familia HAVANA NICE: a separate authorized album directory, no media yet.
     if(url.pathname.startsWith('/api/family/'))
-      return handleFamilyApi(request,env,url,origin,respond,verifySession);
+      return handleFamilyApi(request,env,url,origin,respond,verifySession,ctx);
     // One R2 API for Chat originals; real access requires existing member/Admin auth.
     if(url.pathname.startsWith('/api/chat/media/')){
       const match=/^\/api\/chat\/media\/([0-9a-f-]{36})\/file$/.exec(url.pathname);
@@ -486,6 +557,7 @@ export default {
         ).bind(username,actorId,displayName).run();
         if(Number(created.meta?.changes)!==1)return respond({error:'Este nombre ya existe en el Administrador.'},409,origin);
         await notifyAdminClients(env,'members');
+      ctx.waitUntil(notifyFamilyClients(env));
         return respond({member:{actor_id:actorId,username,display_name:displayName,active:1,session_count:0,installation_bound:0}},201,origin);
       }
       // No bearer tokens, device secrets or private message history are returned.

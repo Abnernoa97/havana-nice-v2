@@ -226,6 +226,10 @@ export type {RepertoireSong,RepertoireSongInput,RepertoireEventItem} from './rep
 export {getFamilyDirectory,getFamilyAlbumMedia,uploadFamilyAlbumFile,uploadFamilyVideoPoster,updateFamilyAlbumFile,familyAlbumCount,FamilyApiError} from './family';
 export type {FamilyAlbum,FamilyDirectory,FamilyMediaItem} from './family';
 
+// Realtime Familia invalidation only; media remains private via existing REST grants.
+export {openFamilyRealtime} from './family-realtime';
+export type {FamilyRealtimeEvent} from './family-realtime';
+
 // One chat context-menu permissions and geometry policy for PWA and Android.
 export {getChatMenuState,getChatMessagePermissions,isWithinChatEditWindow,isWithinChatDeleteWindow,CHAT_EDIT_WINDOW_MS,CHAT_DELETE_WINDOW_MS} from './chat-menu';
 export type {ChatMenuAnchor,ChatMenuMessage,ChatMenuViewport} from './chat-menu';
