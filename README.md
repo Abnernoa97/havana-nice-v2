@@ -10,6 +10,8 @@
 
 Administración separa el directorio de músicos en `AdminMemberDirectory.tsx`, con un único controlador autenticado y el mismo comportamiento de borrado, historial y gestión de teléfonos. PWA y Android comparten `packages/shared/src/chat-display.ts`, que evita recorrer repetidamente todo el historial y las reacciones por cada burbuja. Se añadieron pruebas de equivalencia: [Administrador](https://github.com/Abnernoa97/havana-nice-v2/actions/runs/42402605011) y [Chat en dos plataformas](https://github.com/Abnernoa97/havana-nice-v2/actions/runs/42403079725), ambos SUCCESS. Ninguna API, D1/R2, Worker desplegado ni APK fue modificada en esta ronda; falta QA física y continuar con los controladores grandes.
 
+**Android V2 (tercer bloque):** el timeline visual se separó en `apps/android/features/chat/NativeChatTimeline.tsx` y el controlador Expo pasó de aproximadamente 1,040 a 991 líneas. Teclado, scroll, sesión y WebSocket conservan la misma lógica. [CI 42403928584: SUCCESS](https://github.com/Abnernoa97/havana-nice-v2/actions/runs/42403928584), incluida exportación Android sin crear una APK nueva.
+
 ## Baja de músicos y limpieza R2 — Worker V2 v60
 
 El Administrador ahora puede eliminar músicos con adjuntos privados: la base D1 registra primero todas las claves que deben retirarse de R2 en la misma transacción, elimina dependencias y después limpia R2. El diálogo informa del efecto en Chat, Familia, subidas y Calendario. Si R2 falla, la limpieza pendiente queda registrada, continúa en la cuota y puede reintentarse desde Administración. [Pruebas integrales aprobadas](https://github.com/Abnernoa97/havana-nice-v2/actions/runs/42387212879). Esta corrección no ha borrado usuarios reales ni ha cambiado la APK.
