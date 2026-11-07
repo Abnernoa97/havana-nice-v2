@@ -8,10 +8,11 @@ const ORIGIN='https://havana-nice-v2.pages.dev';
 const READER=ORIGIN+'/book.html';
 const READY='havana-v2-book-ready';
 function trustedBookUrl(raw:string):boolean{
+ if(raw==='about:blank')return true;
  try{
   const url=new URL(raw);
   return url.origin===ORIGIN&&url.pathname==='/book.html'&&!url.search&&!url.hash;
- }catch{return raw==='about:blank';}
+ }catch{return false;}
 }
 function dispatchBookEvent(eventName:'havana-v2-book-auth'|'havana-v2-book-refresh',detail?:string):string{
  return '(function(){if(location.origin==='+JSON.stringify(ORIGIN)+
