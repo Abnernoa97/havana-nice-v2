@@ -1,3 +1,18 @@
+## ESTADO VIGENTE · FAMILIA HAVANA NICE V2 · 07/11/2026
+
+**Código y publicación:** repositorio independiente `Abnernoa97/havana-nice-v2`, rama única `main`. PWA publicada desde `main`; Worker `havana-nice-v2-dev` **versión 61 al 100 %** con los mismos **7 bindings** (D1, R2, Durable Objects, Admin). APK firmada **0.0.13** sin actualizar. HAVANA NICE original y HAVANA CLOUD no se modificaron.
+
+- [x] **F01 — Depuración real de R2:** 42 objetos de tres cuentas ya eliminadas comprobados contra las tablas de músicos, Chat, Familia y subidas pendientes; se eliminaron sus objetos privados en R2, retirando cada entrada de la cola después de confirmar R2. Quedaron **0 objetos pendientes**; total depurado: **307,453,508 bytes** (~307 MB). No se tocaron archivos de cuentas activas.
+- [x] **F02 — Almacenamiento activo conservado:** Familia mantiene **3 fotografías activas**; no hay subidas pendientes. La base V2 registra **2 integrantes autorizados** en el momento de la comprobación. No se creó ninguna cuenta ni se eliminó ningún músico en esta operación.
+- [x] **F03 — Señalización inmediata sin duplicar backend:** cambios confirmados de carga, finalización multipart, portada, poster, borrado y alta de músico notifican al **ChatRoom Durable Object existente** mediante `cloudflare/src/modules/family/family-realtime.js`. El canal envía únicamente avisos de invalidación; los archivos siguen siendo privados en R2 y se recargan por la API autorizada.
+- [x] **F04 — PWA músico, Administración y nativo conectados en código:** `apps/pwa/src/services/use-family-live.ts`, `packages/shared/src/family-realtime.ts` y `apps/android/features/family/NativeFamily.tsx` se suscriben a la notificación mientras Familia está abierta, con reconexión al volver a primer plano. Es un canal WebSocket ligero separado del Chat **dentro del mismo Durable Object**, no otro motor/Worker/base de datos y no hay sondeo periódico.
+- [x] **F05 — Pruebas y publicación:** integración integral aprobada en [CI 42407092270](https://github.com/Abnernoa97/havana-nice-v2/actions/runs/42407092270), commit `d4632313`; Worker 61 desplegado al 100 %, Pages asociado al nuevo `main`.
+- [ ] **F06 — QA física obligatoria:** comprobar en iPhone PWA y Administración, con dos sesiones autorizadas, cambios de foto, portada, video y borrado en vivo, recuperación offline y reconexión. En Android confirmar cuando se instale el paquete nativo actualizado; **la APK 0.0.13 aún no incorpora esta ronda**.
+- [ ] **F07 — Estética futura:** galería Samsung One UI y revista BOOK HAVANA NICE solo después de cerrar funcionamiento y QA; no trabajar diseño todavía.
+
+**Regla:** sincronización publicada y pruebas automáticas verdes no significan sincronización verificada de extremo a extremo en teléfonos reales. Los hitos funcionales permanecen en **12/46** hasta la aceptación física. La versión 60 es historial/rollback, no la versión operativa actual.
+
+---
 ## Auditoría y optimización interna · 07/11/2026
 
 - [x] **Administración con responsabilidades separadas:** lista, historial, liberación de dispositivos e impacto de borrado trasladados a `apps/pwa/src/features/admin/AdminMemberDirectory.tsx`. El controlador `AdminChatAccess.tsx` pasó de **493 a 417 líneas**; las acciones autenticadas, WebSocket y permisos permanecen exclusivamente allí. El HTML antiguo fue retirado, no conservado en paralelo. [CI 42402605011 · SUCCESS](https://github.com/Abnernoa97/havana-nice-v2/actions/runs/42402605011).
@@ -7,7 +22,7 @@
 - [ ] **Pendiente técnico:** continuar la separación de responsabilidades de los controladores grandes de Chat y auditar el enrutamiento de `cloudflare/src/index.ts` antes de cualquier modificación del Worker publicado. No añadir sockets, cachés ni servicios paralelos.
 - [ ] **Pendiente de aceptación:** QA físico en iPhone/Android, especialmente reconexión, historial, edición/borrado, menú de reacciones y subida/visualización R2. No confundir compilación verde con prueba física completada.
 
-**Protecciones:** solo el repositorio independiente `Abnernoa97/havana-nice-v2` / `main`; HAVANA NICE original y HAVANA CLOUD intocables. Worker remoto **v60** con siete bindings, D1/R2 sin cambios durante esta ronda y APK firmada **0.0.13** sin recompilar. Tablero funcional **12/46**, sin declarar cerrados hitos funcionales por una refactorización.
+**Protecciones:** solo el repositorio independiente `Abnernoa97/havana-nice-v2` / `main`; HAVANA NICE original y HAVANA CLOUD intocables. Worker remoto **v61** con siete bindings, D1/R2 sin cambios durante esta ronda y APK firmada **0.0.13** sin recompilar. Tablero funcional **12/46**, sin declarar cerrados hitos funcionales por una refactorización.
 
 ## Corrección de baja de músicos y archivos R2 · 07/11/2026
 
@@ -23,7 +38,7 @@
 
 # Continuidad del repositorio autónomo · 07/11/2026
 
-La única fuente de desarrollo es `Abnernoa97/havana-nice-v2`, rama `main`. Separación de código y hosting verificada: CI y Pages autónomos, Worker V2 versión 60 con siete bindings y ambos dominios permitidos temporalmente; APK actual y anterior con firmas y SHA preservados. Dos refs V2 antiguas eliminadas del repo original, cuyo `main` quedó idéntico. HAVANA CLOUD intacto. Web de compatibilidad anterior retirada definitivamente tras autorización del propietario. Pendiente: QA física iPhone/Android en la PWA nueva.
+La única fuente de desarrollo es `Abnernoa97/havana-nice-v2`, rama `main`. Separación de código y hosting verificada: CI y Pages autónomos, Worker V2 versión 61 con siete bindings y ambos dominios permitidos temporalmente; APK actual y anterior con firmas y SHA preservados. Dos refs V2 antiguas eliminadas del repo original, cuyo `main` quedó idéntico. HAVANA CLOUD intacto. Web de compatibilidad anterior retirada definitivamente tras autorización del propietario. Pendiente: QA física iPhone/Android en la PWA nueva.
 
 ## Continuidad de arquitectura · 07/11/2026
 
