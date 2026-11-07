@@ -223,7 +223,7 @@ export class ChatRoom {
       const client=pair[0],server=pair[1];server.accept();
       this.familySockets.set(server,{
         token:admin?adminToken:memberToken,admin:!!admin,
-        actorId:admin?null:member.actorId,
+        actorId:member?member.actorId:null,
       });
       this.send(server,{type:'family.ready'});
       const cleanup=()=>this.familySockets.delete(server);
