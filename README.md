@@ -6,6 +6,10 @@
 
 **Infraestructura de ejecución:** Worker, D1, Durable Objects y bucket R2 pertenecen exclusivamente a V2. El sitio y CI nuevos ya se validaron con el repositorio nuevo; el antiguo alojamiento de pruebas fue eliminado tras confirmar que solo el propietario lo utilizaba. Los enlaces del repositorio anterior en la bitácora son históricos, no dependencias activas.
 
+## Organización y velocidad interna (07/11/2026)
+
+Administración separa el directorio de músicos en `AdminMemberDirectory.tsx`, con un único controlador autenticado y el mismo comportamiento de borrado, historial y gestión de teléfonos. PWA y Android comparten `packages/shared/src/chat-display.ts`, que evita recorrer repetidamente todo el historial y las reacciones por cada burbuja. Se añadieron pruebas de equivalencia: [Administrador](https://github.com/Abnernoa97/havana-nice-v2/actions/runs/42402605011) y [Chat en dos plataformas](https://github.com/Abnernoa97/havana-nice-v2/actions/runs/42403079725), ambos SUCCESS. Ninguna API, D1/R2, Worker desplegado ni APK fue modificada en esta ronda; falta QA física y continuar con los controladores grandes.
+
 ## Baja de músicos y limpieza R2 — Worker V2 v60
 
 El Administrador ahora puede eliminar músicos con adjuntos privados: la base D1 registra primero todas las claves que deben retirarse de R2 en la misma transacción, elimina dependencias y después limpia R2. El diálogo informa del efecto en Chat, Familia, subidas y Calendario. Si R2 falla, la limpieza pendiente queda registrada, continúa en la cuota y puede reintentarse desde Administración. [Pruebas integrales aprobadas](https://github.com/Abnernoa97/havana-nice-v2/actions/runs/42387212879). Esta corrección no ha borrado usuarios reales ni ha cambiado la APK.

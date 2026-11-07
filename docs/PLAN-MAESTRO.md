@@ -1,3 +1,13 @@
+## Auditoría y optimización interna · 07/11/2026
+
+- [x] **Administración con responsabilidades separadas:** lista, historial, liberación de dispositivos e impacto de borrado trasladados a `apps/pwa/src/features/admin/AdminMemberDirectory.tsx`. El controlador `AdminChatAccess.tsx` pasó de **493 a 417 líneas**; las acciones autenticadas, WebSocket y permisos permanecen exclusivamente allí. El HTML antiguo fue retirado, no conservado en paralelo. [CI 42402605011 · SUCCESS](https://github.com/Abnernoa97/havana-nice-v2/actions/runs/42402605011).
+- [x] **Chat PWA y Android optimizado sin divergencia:** `packages/shared/src/chat-display.ts` prepara un índice lineal de mensajes originales, conteos de reacciones y confirmaciones de lectura. Los dos clientes reutilizan el resultado memoizado en vez de consultar todos los mensajes y reacciones por burbuja. Se mantienen textos, emojis, orden y comportamiento. [CI 42403079725 · SUCCESS](https://github.com/Abnernoa97/havana-nice-v2/actions/runs/42403079725).
+- [x] **Pruebas automáticas preventivas:** se actualizaron las aserciones del Administrador según los componentes movidos y se añadió `tests/chat-display-index.test.mjs` a la verificación de `main`. El CI comprueba tipos, Worker (solo dry-run), PWA, pruebas de seguridad y exportación Android.
+- [ ] **Pendiente técnico:** separar el render del Chat nativo de su gran `apps/android/App.tsx` sin alterar teclado, scroll ni WebSocket; revisar el enrutamiento de `cloudflare/src/index.ts` antes de cualquier modificación del Worker publicado.
+- [ ] **Pendiente de aceptación:** QA físico en iPhone/Android, especialmente reconexión, historial, edición/borrado, menú de reacciones y subida/visualización R2. No confundir compilación verde con prueba física completada.
+
+**Protecciones:** solo el repositorio independiente `Abnernoa97/havana-nice-v2` / `main`; HAVANA NICE original y HAVANA CLOUD intocables. Worker remoto **v60** con siete bindings, D1/R2 sin cambios durante esta ronda y APK firmada **0.0.13** sin recompilar. Tablero funcional **12/46**, sin declarar cerrados hitos funcionales por una refactorización.
+
 ## Corrección de baja de músicos y archivos R2 · 07/11/2026
 
 - [x] **Fallo localizado:** Fer tenía 6 archivos de Chat asociados a `chat_media_objects.sender_id`, que referencia `chat_members` sin eliminación en cascada. La confirmación de Administración se mostraba, pero la transacción D1 fallaba por clave foránea.
