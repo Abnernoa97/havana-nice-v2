@@ -5,8 +5,8 @@ import {readFileSync} from 'node:fs';
 const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
 
 test('Android Calendar has no old 30 second polling and uses the same private CalendarRoom as PWA',()=>{
- const calendar=read('apps/android/NativeCalendar.tsx');
- const transport=read('apps/android/native-calendar-live.ts');
+ const calendar=read('apps/android/features/calendar/NativeCalendar.tsx');
+ const transport=read('apps/android/services/native-calendar-live.ts');
  const pwa=read('apps/pwa/src/services/calendar-live.ts');
  assert.match(calendar,/watchNativeCalendar\(token/);
  assert.doesNotMatch(calendar,/setInterval|30000|new WebSocket/);
@@ -19,7 +19,7 @@ test('Android Calendar has no old 30 second polling and uses the same private Ca
 
 test('Android HOME has same mobile destinations and visual navigation as PWA, not stale placeholders',()=>{
  const shared=read('packages/shared/src/memberModules.ts');
- const home=read('apps/android/NativeMemberHome.tsx');
+ const home=read('apps/android/features/home/NativeMemberHome.tsx');
  const pwa=read('apps/pwa/src/app/VisualApp.tsx');
  assert.match(shared,/id:'repertoire'[^\n]*ready:true,nativeReady:true/);
  assert.match(shared,/id:'family'[^\n]*ready:true,nativeReady:true/);
@@ -33,7 +33,7 @@ test('Android HOME has same mobile destinations and visual navigation as PWA, no
 });
 
 test('Android Repertorio consumes exactly the PWA member D1 catalog and assigned event contracts',()=>{
- const native=read('apps/android/NativeRepertoire.tsx');
+ const native=read('apps/android/features/repertoire/NativeRepertoire.tsx');
  const pwa=read('apps/pwa/src/features/repertoire/MemberRepertoire.tsx');
  for(const api of ['getRepertoireSongs','getCalendarEvents','getAssignedEventRepertoire','safeRepertoireLink','calendarDate']){
   assert.ok(native.includes(api)&&pwa.includes(api),api);
@@ -44,7 +44,7 @@ test('Android Repertorio consumes exactly the PWA member D1 catalog and assigned
 });
 
 test('Android Familia reads the same albums, authorized grant URLs and real BOOK state as PWA',()=>{
- const native=read('apps/android/NativeFamily.tsx');
+ const native=read('apps/android/features/family/NativeFamily.tsx');
  const pwa=read('apps/pwa/src/features/family/MemberFamily.tsx');
  for(const api of ['getFamilyDirectory','getFamilyAlbumMedia','familyAlbumCount']){
   assert.ok(native.includes(api)&&pwa.includes(api),api);
@@ -58,7 +58,7 @@ test('Android Familia reads the same albums, authorized grant URLs and real BOOK
 
 test('Native Chat uploads the unchanged original quality to the same R2 endpoints with 3 concurrent 5MiB parts',()=>{
  const android=read('apps/android/App.tsx');
- const helper=read('apps/android/native-chat-r2-upload.ts');
+ const helper=read('apps/android/services/native-chat-r2-upload.ts');
  const pwa=read('apps/pwa/src/services/chat-media-upload.ts');
  assert.match(android,/uploadNativeChatFile\(session,item/);
  assert.doesNotMatch(android,/Almacenamiento multimedia no configurado/);

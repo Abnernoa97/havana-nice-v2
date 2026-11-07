@@ -9,14 +9,14 @@ import {
   type ChatMessage, type ChatServerEvent, type ChatSession, type ChatReaction, type ChatEmoji, type ChatReadReceipt,
   validateChatMediaSelection, CHAT_MEDIA_MAX_PER_SEND, type ChatMediaSelection, type ChatMediaKind, type ChatMediaSource, type MemberScreen,
 } from '@havana/shared';
-import { loadNativeLocalChat, saveNativeLocalChat } from './chatStorage';
+import { loadNativeLocalChat, saveNativeLocalChat } from './services/chatStorage';
 import * as ImagePicker from 'expo-image-picker';
 import {File} from 'expo-file-system';
-import SwipeableBubble, {type BubbleAnchor} from './SwipeableBubble';
-import NativeComposerIcon from './ChatComposerIcon';
-import NativeChatMediaView from './NativeChatMediaView';
-import NativeMemberHome from './NativeMemberHome';
-import {uploadNativeChatFile} from './native-chat-r2-upload';
+import SwipeableBubble, {type BubbleAnchor} from './features/chat/SwipeableBubble';
+import NativeComposerIcon from './features/chat/ChatComposerIcon';
+import NativeChatMediaView from './features/chat/NativeChatMediaView';
+import NativeMemberHome from './features/home/NativeMemberHome';
+import {uploadNativeChatFile} from './services/native-chat-r2-upload';
 const newMediaSelectionId=()=>String(Date.now())+'-'+Math.random().toString(36).slice(2);
 
 type NativeQueuedMedia=ChatMediaSelection&{id:string};

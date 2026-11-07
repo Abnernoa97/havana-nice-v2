@@ -17,7 +17,7 @@ test('Existing Android login and Chat engine stay in one mounted App',()=>{
  assert.match(source,/session && activeScreen!=='chat' && styles\.inactiveChat/);
  assert.match(source,/display:'none'/);
  assert.match(source,/accessibilityLabel="Volver a Inicio"/);
- assert.doesNotMatch(read('apps/android/NativeMemberHome.tsx'),/startNamedChatSession|AsyncStorage|WebView|session\.token|fetch\(/);
+ assert.doesNotMatch(read('apps/android/features/home/NativeMemberHome.tsx'),/startNamedChatSession|AsyncStorage|WebView|session\.token|fetch\(/);
 });
 test('Existing PWA login remains canonical and HOME only mounts after authenticated session',()=>{
  const source=read('apps/pwa/src/app/App.tsx');
@@ -43,5 +43,5 @@ test('PWA and Android availability remain truthful without duplicating HOME',()=
  assert.match(data,/id:'repertoire'[^\n]*ready:true,nativeReady:true/);
  assert.match(data,/id:'calendar'[^\n]*ready:true,nativeReady:true/);
  assert.match(read('apps/pwa/src/app/VisualApp.tsx'),/item\.ready\?'DISPONIBLE':'EN PREPARACIÓN'/);
- assert.match(read('apps/android/NativeMemberHome.tsx'),/module\.nativeReady\?'Disponible':'En preparación'/);
+ assert.match(read('apps/android/features/home/NativeMemberHome.tsx'),/module\.nativeReady\?'Disponible':'En preparación'/);
 });

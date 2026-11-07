@@ -1,7 +1,7 @@
 import React,{useCallback,useEffect,useRef,useState} from 'react';
 import {Linking,Pressable,StyleSheet,Text,View} from 'react-native';
 import {getCalendarEvents,calendarDate,safeCalendarMapUrl,HAVANA_V2_DEV_API_BASE_URL,type CalendarEvent} from '@havana/shared';
-import {watchNativeCalendar} from './native-calendar-live';
+import {watchNativeCalendar} from '../../services/native-calendar-live';
 // One authorized V2 session; no new identity, token persistence, WebView or Chat.
 export default function NativeCalendar({token}:{token:string}){
  const [events,setEvents]=useState<CalendarEvent[]>([]);

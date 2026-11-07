@@ -41,14 +41,14 @@ test('Google Maps text is stored/displayed freely but only safe HTTPS URLs are c
 
 test('Admin, PWA and native Calendar all use the same shared date function',()=>{
  const paths=['apps/pwa/src/features/calendar/AdminCalendar.tsx','apps/pwa/src/features/calendar/CalendarAccordion.tsx',
-  'apps/android/NativeCalendar.tsx'];
+  'apps/android/features/calendar/NativeCalendar.tsx'];
  for(const p of paths){
   const source=read(p);
   assert.match(source,/calendarDate\(item\.date\)/,p);
   assert.doesNotMatch(source,/new Date\(item\.date\)|Date\.parse\(item\.date\)|Invalid Date/,p);
  }
  const pwa=read('apps/pwa/src/features/calendar/CalendarAccordion.tsx');
- const native=read('apps/android/NativeCalendar.tsx');
+ const native=read('apps/android/features/calendar/NativeCalendar.tsx');
  assert.match(pwa,/safeCalendarMapUrl\(item\.mapUrl\)/);
  assert.match(native,/safeCalendarMapUrl\(item\.mapUrl\)/);
 });
@@ -56,7 +56,7 @@ test('Admin, PWA and native Calendar all use the same shared date function',()=>
 test('Calendar uses one private push protocol in native Android and PWA, without legacy timers',()=>{
  const member=read('apps/pwa/src/features/calendar/CalendarAccordion.tsx');
  const admin=read('apps/pwa/src/features/calendar/AdminCalendar.tsx');
- const native=read('apps/android/NativeCalendar.tsx');
+ const native=read('apps/android/features/calendar/NativeCalendar.tsx');
  const realtime=read('apps/pwa/src/services/calendar-live.ts');
  assert.match(member,/watchCalendar\(token,false,update\)/);
  assert.match(admin,/watchCalendar\(token,true,update\)/);
@@ -86,7 +86,7 @@ test('Calendar uses one private push protocol in native Android and PWA, without
  assert.match(realtime,/admin\./);
  assert.doesNotMatch(realtime,/localStorage|IndexedDB|CHAT_ROOMS/);
  // Native code is staged for one explicitly approved cumulative APK; installed 0.0.13 is unchanged.
- const nativeTransport=read('apps/android/native-calendar-live.ts');
+ const nativeTransport=read('apps/android/services/native-calendar-live.ts');
  assert.match(native,/watchNativeCalendar\(token/);
  assert.match(nativeTransport,/new WebSocket\(url,\['havana-v2-calendar','session\.'\+token\]\)/);
  assert.match(nativeTransport,/calendar\.invalidate/);

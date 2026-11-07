@@ -15,7 +15,7 @@ test('One shared photo/video original quality policy; runtime Worker controls en
 });
 
 test('installed Chat local storage keys stay compatible across cleanup releases',()=>{
- const android=read('apps/android/chatStorage.ts');
+ const android=read('apps/android/services/chatStorage.ts');
  const pwa=read('apps/pwa/src/services/local.ts');
  assert.match(android,/const KEY = 'havana-v2-chat-local-v1';/);
  assert.match(pwa,/const DB = 'havana-nice-v2-lab';/);
@@ -104,7 +104,7 @@ test('PWA camera icon requests camera capture directly instead of media gallery'
 
 test('Android native: two gallery filters, camera direct, no legacy extra menu',()=>{
  const src=read('apps/android/App.tsx');
- const icons=read('apps/android/ChatComposerIcon.tsx');
+ const icons=read('apps/android/features/chat/ChatComposerIcon.tsx');
  const manifest=JSON.parse(read('apps/android/package.json'));
  const lock=JSON.parse(read('package-lock.json'));
  const config=JSON.parse(read('apps/android/app.json'));
@@ -170,7 +170,7 @@ test('Media-only bubbles remain visual across Chat PWA, native and Administrator
  assert.match(android,/message\.media\?<NativeChatMediaView/);
 });
 test('Native photo uses a fully verified local cache and modal without a browser; video plays inline',()=>{
- const native=read('apps/android/NativeChatMediaView.tsx');
+ const native=read('apps/android/features/chat/NativeChatMediaView.tsx');
  const packageManifest=JSON.parse(read('apps/android/package.json'));
  assert.equal(packageManifest.dependencies['expo-video'],'58.0.12');
  assert.match(native,/useVideoPlayer/);
@@ -187,7 +187,7 @@ test('Native photo uses a fully verified local cache and modal without a browser
  assert.match(native,/setPhoto\(cached\.uri\)/);
 });
 test('Native photo-cache housekeeping touches only stale incomplete V2 transfers',()=>{
- const native=read('apps/android/NativeChatMediaView.tsx');
+ const native=read('apps/android/features/chat/NativeChatMediaView.tsx');
  assert.match(native,/PARTIAL_TRANSFER_TTL=24\*60\*60\*1000/);
  assert.match(native,/function pruneAbandonedPhotoTransfers\(\)/);
  assert.match(native,/Paths\.cache\.list\(\)/);

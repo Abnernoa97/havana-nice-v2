@@ -1,9 +1,9 @@
 import React from 'react';
 import {Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
 import {MEMBER_MODULES,type MemberScreen} from '@havana/shared';
-import NativeCalendar from './NativeCalendar';
-import NativeRepertoire from './NativeRepertoire';
-import NativeFamily from './NativeFamily';
+import NativeCalendar from '../calendar/NativeCalendar';
+import NativeRepertoire from '../repertoire/NativeRepertoire';
+import NativeFamily from '../family/NativeFamily';
 
 type Props={
   displayName:string;

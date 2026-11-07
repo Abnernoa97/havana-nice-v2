@@ -12,7 +12,7 @@ const worker = read('cloudflare/src/index.ts');
 assert.doesNotMatch(worker,/\/\/\s*@ts-nocheck\b/,'V2 Worker entrypoint must remain strictly typechecked');
 const android = read('apps/android/App.tsx');
 const pwa = read('apps/pwa/src/app/App.tsx');
-const nativeBubble = read('apps/android/SwipeableBubble.tsx');
+const nativeBubble = read('apps/android/features/chat/SwipeableBubble.tsx');
 const webBubble = read('apps/pwa/src/features/chat/SwipeMessage.tsx');
 const pwaStyles = read('apps/pwa/src/styles/chat/chat.css');
 const serviceWorker = read('apps/pwa/public/sw.js');
@@ -194,7 +194,7 @@ present(pwa,/aria-modal="true"/,'PWA contextual menu must be a dialog');
 present(pwa,/Responder/,'PWA contextual menu must provide a reply action');
 // C02: retain the target of the edit after app suspension/reopening.
 const pwaLocal=read('apps/pwa/src/services/local.ts');
-const androidLocal=read('apps/android/chatStorage.ts');
+const androidLocal=read('apps/android/services/chatStorage.ts');
 present(pwaLocal,/editing\?: ChatMessage \| null/,'PWA storage preserves edit context');
 present(androidLocal,/editing\?: ChatMessage \| null/,'Android storage preserves edit context');
 present(pwa,/editing: editingSnapshot\.current/,'PWA saves edit target');

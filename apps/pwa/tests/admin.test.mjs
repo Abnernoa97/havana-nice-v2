@@ -79,7 +79,7 @@ test('original musician offline storage and Chat remain intact',()=>{
  const pwa=read('../src/app/App.tsx'),android=read('../../android/App.tsx');
  assert.match(pwa,/loadLocalChat\(\)/);
  assert.match(read('../src/services/local.ts'),/offline-outbox-v1/);
- assert.match(read('../../android/chatStorage.ts'),/havana-v2-chat-local-v1/);
+ assert.match(read('../../android/services/chatStorage.ts'),/havana-v2-chat-local-v1/);
  assert.match(android,/loadNativeLocalChat\(\)/);
  assert.doesNotMatch(pwa,/Enrollment|device_approval_required|checkEnrollment/);
  assert.doesNotMatch(android,/Enrollment|device_approval_required|checkEnrollment/);
