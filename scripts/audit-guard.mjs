@@ -39,6 +39,10 @@ assert.match(foundationWorkflow,/sha256sum "\$BUNDLE"/,
   'The exact compiled Worker candidate must receive an auditable checksum');
 assert.match(foundationWorkflow,/actions\/upload-artifact@v4/,
   'The compiled Worker candidate must remain available for version comparison');
+assert.match(foundationWorkflow,/verify-worker-preview\.mjs "\$BUNDLE"/,
+  'Canonical compiled Worker invariant guard must run before release');
+assert.match(foundationWorkflow,/node --test tests\/worker-hash-parity\.test\.mjs/,
+  'SHA-256 compatibility with existing private grants must remain proven');
 assert.doesNotMatch(foundationWorkflow,/workers\/scripts\/[^\s]+\/versions[^\s]*\s+-X\s+POST/,
   'Do not reintroduce direct compiled Worker version uploads in CI');
 assert.equal(reproducibleWorker.vars?.V2_ADMIN_LOGIN_MODE,'enabled',
