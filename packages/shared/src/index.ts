@@ -233,3 +233,6 @@ export type {ChatMenuAnchor,ChatMenuMessage,ChatMenuViewport} from './chat-menu'
 // Shared ordered offline outbox and ACK policy for both Chat clients.
 export {selectNextQueuedChatMessage,setOutgoingChatStatus,projectOutgoingChatStatus,CHAT_ACK_TIMEOUT_MS} from './chat-outbox';
 export type {ChatOutboxState} from './chat-outbox';
+
+// Preserve one offline-capable Chat session expiry and reconnect backoff policy.
+export {chatSessionExpired,chatReconnectDelay,CHAT_RECONNECT_MAX_DELAY_MS} from './chat-connection';

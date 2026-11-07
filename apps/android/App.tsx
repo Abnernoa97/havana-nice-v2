@@ -5,7 +5,7 @@ import {
 } from 'react-native';
 import {
   HAVANA_V2_DEV_API_BASE_URL, fetchBackendHealth, getChatMediaAvailability, getChatSnapshot, getOlderChatMessages, searchChatMessages, lastReadByOther, getChatMenuState, getChatMessagePermissions, isWithinChatEditWindow, selectNextQueuedChatMessage, setOutgoingChatStatus, projectOutgoingChatStatus, CHAT_ACK_TIMEOUT_MS, messageDeliveryLabel, newClientMessageId,
-  reconcileChatMessages, reconcileReactions, reconcileUpdatedMessage, reconcileDeletedMessage, reconcileChatSnapshot, startNamedChatSession, restoreNamedChatSession,
+  reconcileChatMessages, reconcileReactions, reconcileUpdatedMessage, reconcileDeletedMessage, reconcileChatSnapshot, startNamedChatSession, restoreNamedChatSession, chatSessionExpired, chatReconnectDelay,
   type ChatMessage, type ChatServerEvent, type ChatSession, type ChatReaction, type ChatEmoji, type ChatReadReceipt,
   validateChatMediaSelection, CHAT_MEDIA_MAX_PER_SEND, type ChatMediaSelection, type ChatMediaKind, type ChatMediaSource, type MemberScreen,
 } from '@havana/shared';
@@ -396,7 +396,7 @@ export default function App() {
     if (disposed.current) return;
     activeSession.current = next;
     persistLocal();
-    if (Date.parse(next.expiresAt) <= Date.now()) {
+    if (chatSessionExpired(next)) {
       clearRetryTimer();
       for (const timer of acknowledgementTimers.current.values()) clearTimeout(timer);
       acknowledgementTimers.current.clear();
@@ -429,7 +429,7 @@ export default function App() {
         !activeSession.current || retryTimer.current) return;
       pauseOutgoing();
       retryAttempts.current += 1;
-      const delay = Math.min(20000, 1000 * 2 ** Math.min(retryAttempts.current - 1, 5));
+      const delay = chatReconnectDelay(retryAttempts.current);
       setConnection('reconectando…');
       retryTimer.current = setTimeout(() => {
         retryTimer.current = null;
@@ -546,7 +546,7 @@ export default function App() {
     void loadNativeLocalChat().then(async saved => {
       if (disposed.current) return;
       if (activeSession.current) {restoredStorage.current=true;persistLocal();return;}
-      if (!saved?.session || Date.parse(saved.session.expiresAt) <= Date.now()) return;
+      if (!saved?.session || chatSessionExpired(saved.session)) return;
       let approved:ChatSession | null = saved.session;
       try {approved = await restoreNamedChatSession(saved.session);}
       catch {approved = saved.session;} // Offline: retain local identity and retry once online

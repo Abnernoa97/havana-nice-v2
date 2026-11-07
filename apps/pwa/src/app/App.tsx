@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import {
   fetchBackendHealth, getChatMediaAvailability, getChatSnapshot, getOlderChatMessages, searchChatMessages, getChatMenuState, getChatMessagePermissions, isWithinChatEditWindow, selectNextQueuedChatMessage, setOutgoingChatStatus, projectOutgoingChatStatus, CHAT_ACK_TIMEOUT_MS, newClientMessageId,
-  openChatSocket, reconcileChatMessages, startNamedChatSession, restoreNamedChatSession,
+  openChatSocket, reconcileChatMessages, startNamedChatSession, restoreNamedChatSession, chatSessionExpired, chatReconnectDelay,
   type BackendHealth, type ChatMessage, type ChatServerEvent, type ChatSession,
   validateChatMediaSelection, CHAT_MEDIA_MAX_PER_SEND, HAVANA_V2_DEV_API_BASE_URL, type ChatMediaSelection, type ChatMediaKind, type ChatMediaSource,
   reconcileReactions, reconcileUpdatedMessage, reconcileDeletedMessage, reconcileChatSnapshot, type ChatReaction, type ChatEmoji, type ChatReadReceipt, type MemberScreen,
@@ -339,7 +339,7 @@ export default function App() {
   }
   function reconnect(next: ChatSession) {
     if (disposed.current) return;
-    if (Date.parse(next.expiresAt) <= Date.now()) {
+    if (chatSessionExpired(next)) {
       clearRetry();
       const old = socket.current;
       socket.current = null;
@@ -365,7 +365,7 @@ export default function App() {
           document.visibilityState !== 'visible' || !navigator.onLine) return;
       pausePending();
       retryCount.current++;
-      const delay = Math.min(20000, 1000 * 2 ** Math.min(5, retryCount.current - 1));
+      const delay = chatReconnectDelay(retryCount.current);
       setConnection('reconectando…');
       retryTimer.current = setTimeout(() => {
         retryTimer.current = null;
@@ -462,7 +462,7 @@ export default function App() {
     void loadLocalChat().then(async (saved) => {
       if(disposed.current)return;
       if(activeSession.current){restoredStorage.current=true;persist();return;}
-      if (!saved || !saved.session || Date.parse(saved.session.expiresAt) <= Date.now()) return;
+      if (!saved || !saved.session || chatSessionExpired(saved.session)) return;
       let approved:ChatSession | null = saved.session;
       try {approved = await restoreNamedChatSession(saved.session);}
       catch {approved = saved.session;} // Offline: keep local chat pending reconnection

@@ -107,6 +107,9 @@ jobs:
       - name: Verify one Chat message actions policy across iPhone and Android
         run: node --experimental-strip-types --test tests/chat-menu-policy.test.mjs
 
+      - name: Verify one Chat reconnect and session expiry policy across PWA and Android
+        run: node --experimental-strip-types --test tests/chat-connection-policy.test.mjs
+
       - name: Verify canonical offline Chat outbox and ACK policy on both platforms
         run: node --experimental-strip-types --test tests/chat-outbox-policy.test.mjs
 
