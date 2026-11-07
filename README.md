@@ -4,7 +4,7 @@
 
 **APK Android:** únicamente GitHub Releases de este repositorio, etiqueta `v2-android-current`, con `HAVANA-NICE-V2-LATEST.apk`, `HAVANA-NICE-V2-PREVIOUS.apk` y comprobación SHA-256. Publicación siguiente solo por paquete explícitamente aprobado.
 
-**Infraestructura de ejecución:** Worker, D1, Durable Objects y bucket R2 pertenecen exclusivamente a V2. El sitio y CI nuevos ya se validaron con el repositorio nuevo; el dominio anterior persiste exclusivamente para compatibilidad con PWA instaladas. Los enlaces del repositorio anterior en la bitácora son históricos, no dependencias activas.
+**Infraestructura de ejecución:** Worker, D1, Durable Objects y bucket R2 pertenecen exclusivamente a V2. El sitio y CI nuevos ya se validaron con el repositorio nuevo; el antiguo alojamiento de pruebas fue eliminado tras confirmar que solo el propietario lo utilizaba. Los enlaces del repositorio anterior en la bitácora son históricos, no dependencias activas.
 
 ## Estado verificado de la separación — 07/11/2026
 
@@ -14,7 +14,7 @@
 - **Backend V2:** Worker existente `havana-nice-v2-dev`, versión **59** desplegada al 100 %, acepta origen nuevo y antiguo durante la transición. Se preservaron los **7 bindings**, D1, R2 privado, ambos Durable Objects y secreto Admin; no se copiaron ni borraron datos.
 - **Android:** Releases [v2-android-current](https://github.com/Abnernoa97/havana-nice-v2/releases/tag/v2-android-current), con la APK firmada actual **0.0.13**, la anterior y SHA256SUMS; la actualización nativa futura permanece bajo manifiesto de lote explícitamente aprobado, no por cada commit.
 - **Eliminación comprobada:** el repositorio original `havana-nice-pwa` perdió **solo** sus ramas `havana-nice-v2-foundation` y `havana-nice-v2-apk-downloads` ([acción 42349978136](https://github.com/Abnernoa97/havana-nice-pwa/actions/runs/42349978136), SUCCESS). Original `main` permanece en commit `3f2d2379d0ed855a025d8e7162cd5c00cd2a8be9`; HAVANA CLOUD intocable.
-- **Compatibilidad temporal:** `havana-nice-v2-dev.pages.dev` conserva únicamente su publicación estática anterior, con **todos los nuevos despliegues desactivados**. Se mantiene por las PWA ya instaladas; su fuente Git histórica ya no existe. No es línea de desarrollo ni repositorio funcional. No borrarlo sin confirmar transición de iPhone/iPad, porque el dominio nuevo utiliza almacenamiento local y sesión de origen diferente.
+- **Alojamiento V2 antiguo retirado:** el proyecto Cloudflare Pages `havana-nice-v2-dev` fue eliminado tras depurar 1,185 despliegues históricos; ya solo existe el Pages independiente `havana-nice-v2.pages.dev`. Únicamente el propietario había instalado la PWA de pruebas anterior y aceptó su retirada; la nueva instalación de iPhone debe abrir el dominio nuevo y autorizar sesión de nuevo.
 - **Pendiente de pruebas físicas:** probar en iPhone nueva PWA, autorización de integrante y Admin, notificaciones de Calendario en vivo, Chat y vídeos R2; comprobar Android versión actual y preparar paquete nativo nuevo solo tras aprobación. **Plan funcional de V2 sigue en 12/46, no se cierra QA por migrar GitHub.**
 
 ---
