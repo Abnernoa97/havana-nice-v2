@@ -4,7 +4,7 @@ import {
   StatusBar, StyleSheet, Text, TextInput, View, Image, useWindowDimensions,
 } from 'react-native';
 import {
-  HAVANA_V2_DEV_API_BASE_URL, fetchBackendHealth, getChatMediaAvailability, getChatSnapshot, getOlderChatMessages, searchChatMessages, lastReadByOther, getChatMenuState, getChatMessagePermissions, isWithinChatEditWindow, messageDeliveryLabel, newClientMessageId,
+  HAVANA_V2_DEV_API_BASE_URL, fetchBackendHealth, getChatMediaAvailability, getChatSnapshot, getOlderChatMessages, searchChatMessages, lastReadByOther, getChatMenuState, getChatMessagePermissions, isWithinChatEditWindow, selectNextQueuedChatMessage, setOutgoingChatStatus, projectOutgoingChatStatus, CHAT_ACK_TIMEOUT_MS, messageDeliveryLabel, newClientMessageId,
   reconcileChatMessages, reconcileReactions, reconcileUpdatedMessage, reconcileDeletedMessage, reconcileChatSnapshot, startNamedChatSession, restoreNamedChatSession,
   type ChatMessage, type ChatServerEvent, type ChatSession, type ChatReaction, type ChatEmoji, type ChatReadReceipt,
   validateChatMediaSelection, CHAT_MEDIA_MAX_PER_SEND, type ChatMediaSelection, type ChatMediaKind, type ChatMediaSource, type MemberScreen,
@@ -316,15 +316,10 @@ export default function App() {
   }
 
   function markOutgoing(id: string, state: 'queued' | 'sending' | 'error') {
-    const message = outbox.current.get(id);
-    if (!message) return;
-    outbox.current.set(id, { ...message, deliveryStatus: state, failed: state === 'error' });
+    const original=setOutgoingChatStatus(outbox.current,id,state);
+    if(!original)return;
     persistLocal();
-    setMessages(existing => existing.map(m =>
-      m.clientMessageId === id && m.senderId === message.senderId && m.pending
-        ? { ...m, deliveryStatus: state, failed: state === 'error' }
-        : m
-    ));
+    setMessages(before=>projectOutgoingChatStatus(before,original,state));
   }
 
   function pauseOutgoing() {
@@ -338,11 +333,9 @@ export default function App() {
   function flushOutbox() {
     const ws = socket.current;
     if (!ws || ws.readyState !== WebSocket.OPEN) return;
-    const pending = [...outbox.current.values()].sort((a, b) => a.sentAt.localeCompare(b.sentAt));
-    // Preserve sender order: wait for server ACK before transmitting next item.
-    if (pending.some(item => item.deliveryStatus === 'sending')) return;
-    const item = pending[0];
-    if (!item || item.deliveryStatus !== 'queued') return;
+    // One canonical ordering and ACK backpressure policy across both clients.
+    const item=selectNextQueuedChatMessage(outbox.current.values());
+    if(!item)return;
     {
       try {
         ws.send(JSON.stringify({ type: 'chat.send', clientMessageId: item.clientMessageId, text: item.text, replyToSeq: item.replyToSeq || null }));
@@ -352,7 +345,7 @@ export default function App() {
         acknowledgementTimers.current.set(id, setTimeout(() => {
           acknowledgementTimers.current.delete(id);
           markOutgoing(id, 'error');
-        }, 12000));
+        }, CHAT_ACK_TIMEOUT_MS));
       } catch {
         markOutgoing(item.clientMessageId, 'error');
       }

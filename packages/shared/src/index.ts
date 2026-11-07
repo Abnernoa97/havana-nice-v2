@@ -229,3 +229,7 @@ export type {FamilyAlbum,FamilyDirectory,FamilyMediaItem} from './family';
 // One chat context-menu permissions and geometry policy for PWA and Android.
 export {getChatMenuState,getChatMessagePermissions,isWithinChatEditWindow,isWithinChatDeleteWindow,CHAT_EDIT_WINDOW_MS,CHAT_DELETE_WINDOW_MS} from './chat-menu';
 export type {ChatMenuAnchor,ChatMenuMessage,ChatMenuViewport} from './chat-menu';
+
+// Shared ordered offline outbox and ACK policy for both Chat clients.
+export {selectNextQueuedChatMessage,setOutgoingChatStatus,projectOutgoingChatStatus,CHAT_ACK_TIMEOUT_MS} from './chat-outbox';
+export type {ChatOutboxState} from './chat-outbox';

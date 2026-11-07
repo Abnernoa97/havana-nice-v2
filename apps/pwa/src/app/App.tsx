@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import {
-  fetchBackendHealth, getChatMediaAvailability, getChatSnapshot, getOlderChatMessages, searchChatMessages, lastReadByOther, getChatMenuState, getChatMessagePermissions, isWithinChatEditWindow, messageDeliveryLabel, newClientMessageId,
+  fetchBackendHealth, getChatMediaAvailability, getChatSnapshot, getOlderChatMessages, searchChatMessages, lastReadByOther, getChatMenuState, getChatMessagePermissions, isWithinChatEditWindow, selectNextQueuedChatMessage, setOutgoingChatStatus, projectOutgoingChatStatus, CHAT_ACK_TIMEOUT_MS, messageDeliveryLabel, newClientMessageId,
   openChatSocket, reconcileChatMessages, startNamedChatSession, restoreNamedChatSession,
   type BackendHealth, type ChatMessage, type ChatServerEvent, type ChatSession,
   validateChatMediaSelection, CHAT_MEDIA_MAX_PER_SEND, HAVANA_V2_DEV_API_BASE_URL, type ChatMediaSelection, type ChatMediaKind, type ChatMediaSource,
@@ -280,15 +280,12 @@ export default function App() {
     ackTimers.current.delete(id);
   }
   function markOutgoing(id: string, state: 'queued' | 'sending' | 'error') {
-    const original = outbox.current.get(id);
-    if (!original) return;
-    outbox.current.set(id, { ...original, deliveryStatus: state, failed: state === 'error' });
+    const original=setOutgoingChatStatus(outbox.current,id,state);
+    if(!original)return;
     persist();
-    setMessages(before => before.map(m =>
-      m.clientMessageId === id && m.senderId === original.senderId && m.pending
-        ? { ...m, deliveryStatus: state, failed: state === 'error' } : m
-    ));
+    setMessages(before=>projectOutgoingChatStatus(before,original,state));
   }
+
   function confirm(message: ChatMessage) {
     if (!message.pending && message.senderId === activeSession.current?.actorId) {
       outbox.current.delete(message.clientMessageId);
@@ -308,11 +305,9 @@ export default function App() {
   function flushOutbox() {
     const ws = socket.current;
     if (!ws || ws.readyState !== WebSocket.OPEN) return;
-    const batch = [...outbox.current.values()].sort((a, b) => a.sentAt.localeCompare(b.sentAt));
-    // Send one at a time to preserve creation order even with slow D1 ACKs.
-    if (batch.some(item => item.deliveryStatus === 'sending')) return;
-    const item = batch[0];
-    if (!item || item.deliveryStatus !== 'queued') return;
+    // One canonical ordering and ACK backpressure policy across both clients.
+    const item=selectNextQueuedChatMessage(outbox.current.values());
+    if(!item)return;
     {
       try {
         ws.send(JSON.stringify({ type: 'chat.send', clientMessageId: item.clientMessageId, text: item.text, replyToSeq: item.replyToSeq || null }));
@@ -321,7 +316,7 @@ export default function App() {
         ackTimers.current.set(item.clientMessageId, setTimeout(() => {
           ackTimers.current.delete(item.clientMessageId);
           markOutgoing(item.clientMessageId, 'error');
-        }, 12000));
+        }, CHAT_ACK_TIMEOUT_MS));
       } catch {
         markOutgoing(item.clientMessageId, 'error');
       }
