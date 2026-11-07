@@ -83,7 +83,7 @@ export default function BookReader({pages}:{pages:BookPage[]}){
     minHeight:382,maxHeight:735,
     drawShadow:true,maxShadowOpacity:0.72,
     flippingTime:780,usePortrait:true,autoSize:false,
-    showCover:true,mobileScrollSupport:false,swipeDistance:25,
+    showCover:false,mobileScrollSupport:false,swipeDistance:25,
     showPageCorners:window.matchMedia('(hover:hover) and (pointer:fine)').matches,
     disableFlipByClick:true
    }) as BookEngine;
@@ -212,7 +212,7 @@ export default function BookReader({pages}:{pages:BookPage[]}){
  const leaves=useMemo(()=>{
   const cover=bookMediaUrl(pages[0]?.url);
   return <>
-  <div className={'hn-book-leaf hn-book-front'+(pages[0]?.fit==='contain'?' hn-book-contain':'')} data-density="hard">
+  <div className={'hn-book-leaf hn-book-front'+(pages[0]?.fit==='contain'?' hn-book-contain':'')} data-density="soft">
    {cover?<img src={cover} alt="" data-book-cover="true" loading="eager" decoding="async" fetchPriority="high"/>:null}
    <div className="hn-book-cover-shade"/>
    <div className="hn-book-cover-heading"><small>THE PRIVATE EDITION</small><strong>HAVANA<br/>NICE</strong></div>
@@ -225,7 +225,7 @@ export default function BookReader({pages}:{pages:BookPage[]}){
     <span className="hn-book-folio">{String(i+2).padStart(2,'0')}</span>
    </div>;
   })}
-  <div className="hn-book-leaf hn-book-back" data-density="hard">
+  <div className="hn-book-leaf hn-book-back" data-density="soft">
    <small>HAVANA NICE</small><strong>THE END.</strong><span>LIVE MUSIC · MADE PERSONAL</span>
   </div>
  </>;
