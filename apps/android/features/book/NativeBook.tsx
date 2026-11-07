@@ -23,7 +23,7 @@ function dispatchBookEvent(eventName:'havana-v2-book-auth'|'havana-v2-book-refre
 export default function NativeBook({token,refreshKey,onClose}:{
  token:string;refreshKey:number;onClose:()=>void
 }){
- const view=useRef<WebView>(null);
+ const view=useRef<WebView<object>>(null);
  const [ready,setReady]=useState(false);
  const [failed,setFailed]=useState(false);
  const refreshRef=useRef(refreshKey);
@@ -53,7 +53,7 @@ export default function NativeBook({token,refreshKey,onClose}:{
      onPress={onClose} style={styles.back}><Text style={styles.backText}>‹ Volver</Text></Pressable>
     <Text style={styles.title}>BOOK HAVANA NICE</Text>
    </View>
-   <WebView ref={view} source={{uri:READER}} originWhitelist={[ORIGIN]}
+   <WebView<object> ref={view} source={{uri:READER}} originWhitelist={[ORIGIN]}
     style={styles.web} javaScriptEnabled domStorageEnabled={false}
     thirdPartyCookiesEnabled={false} sharedCookiesEnabled={false}
     mixedContentMode="never" setSupportMultipleWindows={false}
