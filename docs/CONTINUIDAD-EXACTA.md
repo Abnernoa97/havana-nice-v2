@@ -1,5 +1,11 @@
 ## ESTADO VIGENTE · FAMILIA HAVANA NICE V2 · 07/11/2026
 
+### CONTRATO PRIORITARIO · FAMILIA INSTANTÁNEA Y FUENTE ÚNICA
+
+El propietario validó el 07/11/2026 una subida y actualización de portadas/miniaturas prácticamente instantánea en Familia PWA; **proteger esta velocidad ante cualquier refactor**. Sin compresión obligatoria, polling, segundos motores de subida ni cambios de visual hasta cerrar funcionalidad. El Worker activo v61 fue creado vía API de versiones (`create_version_api`); antes hubo intervención directa del bundle v60. Falta demostrar paridad exacta entre Worker publicado y compilación limpia de `main`, y normalizar todo despliegue por Wrangler desde fuente: este pendiente impide declarar "cero parches". Mantener v61 y R2 sin cambios hasta contar con pruebas de paridad y rendimiento. Ver checklist canónico únicamente en `docs/PLAN-MAESTRO.md`. La APK 0.0.13 aún no refleja esta ronda.
+
+
+
 **Código y publicación:** repositorio independiente `Abnernoa97/havana-nice-v2`, rama única `main`. PWA publicada desde `main`; Worker `havana-nice-v2-dev` **versión 61 al 100 %** con los mismos **7 bindings** (D1, R2, Durable Objects, Admin). APK firmada **0.0.13** sin actualizar. HAVANA NICE original y HAVANA CLOUD no se modificaron.
 
 - [x] **F01 — Depuración real de R2:** 42 objetos de tres cuentas ya eliminadas comprobados contra las tablas de músicos, Chat, Familia y subidas pendientes; se eliminaron sus objetos privados en R2, retirando cada entrada de la cola después de confirmar R2. Quedaron **0 objetos pendientes**; total depurado: **307,453,508 bytes** (~307 MB). No se tocaron archivos de cuentas activas.

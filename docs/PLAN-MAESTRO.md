@@ -1,5 +1,22 @@
 ## ESTADO VIGENTE · FAMILIA HAVANA NICE V2 · 07/11/2026
 
+### PRIORIDAD ABSOLUTA · RAPIDEZ DE FAMILIA Y PUBLICACIÓN SIN PARCHES
+
+**Rendimiento aceptado por el propietario (07/11/2026):** Familia en la PWA actualiza imágenes, miniaturas y portadas prácticamente al instante; el propietario reportó una experiencia incluso más rápida que WhatsApp. **CONGELAR COMO COMPORTAMIENTO DE REFERENCIA**, no prometer una cifra universal de latencia. No introducir compresión forzada, esperas extra, polling, resubidas redundantes ni motores paralelos. Conservar el flujo R2 existente, los avisos de invalidación por el Durable Object canónico y el refresco ligero. Comparar siempre antes/después con videos y fotos reales; una mejora de arquitectura que empeore esta rapidez se revierte.
+
+**Deuda técnica comprobada:** la versión activa de Cloudflare Worker es **v61**, publicada con `workers/triggered_by=create_version_api` (API de versiones). Durante la reparación v60 también se ajustó directamente código compilado. Esto es un **parche de despliegue**, aunque la lógica funcional esté reflejada en el repositorio. **No está demostrada todavía la equivalencia exacta entre el bundle vivo y una compilación limpia de `main`.** No afirmar "cero parches" antes de resolverlo.
+
+- [x] Exigir un solo `main`, Worker, D1, R2 y Durable Object canónicos de V2, sin tocar HAVANA NICE original ni HAVANA CLOUD.
+- [x] Pruebas integrales de PWA, Familia y exportación Android aprobadas para el commit funcional `d4632313` (CI 42407092270); el propietario confirmó rapidez y actualización instantánea en la PWA.
+- [ ] **Auditoría de equivalencia fuente/publicación:** compilar `cloudflare/src/index.ts` con Wrangler usando el `wrangler.jsonc` versionado, comparar rutas, políticas, bindings, cambios funcionales y checksum del bundle con el Worker v61, documentar cualquier diferencia. La comparación de checksums puede requerir un build reproducible; no confundir diferencias de formato con diferencias de comportamiento.
+- [ ] **Eliminar la práctica del parche compilado:** consolidar cualquier diferencia válida directamente en los módulos fuente de `main`; evitar editar `index.js` producido por el bundler o crear nuevas versiones por manipulación directa del bundle.
+- [ ] **Única ruta de despliegue:** validaciones → build Wrangler desde commit identificado → revisión de 7 bindings y secretos sin revelar → publicación controlada desde fuente → comparación postdeploy y pruebas de medios, portada y tiempo real → rollback si degrada la velocidad. Un solo proceso, sin versiones de código mantenidas en paralelo.
+- [ ] **QA Android:** la APK firmada 0.0.13 no incluye aún el lote de Familia; no extrapolar el resultado de la PWA al nativo hasta instalar y medir el paquete actualizado.
+
+**Estado de decisión:** no sustituir el Worker v61, ni el motor de subida R2, solo por una reorganización cosmética. Resolver primero la trazabilidad fuente → Worker y preservar el comportamiento validado. El historial de versiones antiguas en las secciones inferiores es **histórico**, no estado vigente.
+
+
+
 **Código y publicación:** repositorio independiente `Abnernoa97/havana-nice-v2`, rama única `main`. PWA publicada desde `main`; Worker `havana-nice-v2-dev` **versión 61 al 100 %** con los mismos **7 bindings** (D1, R2, Durable Objects, Admin). APK firmada **0.0.13** sin actualizar. HAVANA NICE original y HAVANA CLOUD no se modificaron.
 
 - [x] **F01 — Depuración real de R2:** 42 objetos de tres cuentas ya eliminadas comprobados contra las tablas de músicos, Chat, Familia y subidas pendientes; se eliminaron sus objetos privados en R2, retirando cada entrada de la cola después de confirmar R2. Quedaron **0 objetos pendientes**; total depurado: **307,453,508 bytes** (~307 MB). No se tocaron archivos de cuentas activas.
