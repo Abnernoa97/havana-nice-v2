@@ -1,3 +1,7 @@
+# Continuidad del repositorio autónomo · 07/11/2026
+
+La única fuente de desarrollo es `Abnernoa97/havana-nice-v2`, rama `main`. Se trasladó el código V2 sin el historial Git de la aplicación original. Los workflows y APK firmadas se trasladaron a este repositorio; HAVANA NICE original y HAVANA CLOUD quedaron intactos. El antiguo repo mencionado en registros inferiores no es un destino de cambios. Pendientes independientes: conexión Pages y revisión física Android/iPhone, luego retirada de ramas V2 antiguas.
+
 # HAVANA NICE V2 — CONTINUIDAD EXACTA
 
 **Corte de saneamiento y QA de Chat: 29 de octubre de 2026.** Este documento es una **bitácora técnica**, no otro plan. Los hitos, prioridades y casillas se controlan SOLO desde [PLAN-MAESTRO.md](./PLAN-MAESTRO.md).

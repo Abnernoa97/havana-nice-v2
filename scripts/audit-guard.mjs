@@ -2,11 +2,12 @@ import { readFileSync, readdirSync } from 'node:fs';
 import assert from 'node:assert/strict';
 
 const read = path => readFileSync(new URL('../' + path, import.meta.url), 'utf8');
-// This development branch should not grow copies of the original main app.
-// Keep its root limited to the V2 workspace and CI workflow definitions.
-assert.deepEqual(readdirSync(new URL('../../', import.meta.url)).filter(
-  name=>!['.git','.github','v2'].includes(name)
-),[],'V2 development branch must not include unused main-era root files');
+// A separate repository must contain only V2 source, never the original app.
+const allowedRoot=new Set(['.git','.github','.gitignore','.env.example','README.md',
+ 'apps','cloudflare','packages','docs','scripts','tests',
+ 'package.json','package-lock.json','tsconfig.base.json']);
+assert.deepEqual(readdirSync(new URL('../',import.meta.url)).filter(x=>!allowedRoot.has(x)),
+ [],'Standalone V2 repository cannot include original app files');
 const worker = read('cloudflare/src/index.ts');
 assert.doesNotMatch(worker,/\/\/\s*@ts-nocheck\b/,'V2 Worker entrypoint must remain strictly typechecked');
 const android = read('apps/android/App.tsx');
@@ -16,8 +17,8 @@ const webBubble = read('apps/pwa/src/SwipeMessage.tsx');
 const pwaStyles = read('apps/pwa/src/styles.css');
 const serviceWorker = read('apps/pwa/public/sw.js');
 const workerConfig = read('cloudflare/wrangler.jsonc');
-const androidWorkflow = read('../.github/workflows/v2-android-apk.yml');
-const workflows=readdirSync(new URL('../../.github/workflows/',import.meta.url)).sort();
+const androidWorkflow = read('.github/workflows/v2-android-apk.yml');
+const workflows=readdirSync(new URL('../.github/workflows/',import.meta.url)).sort();
 assert.deepEqual(workflows,['v2-android-apk.yml','v2-foundation-check.yml'],
   'V2 must have one release workflow and one verification workflow, no historical automation');
 const reproducibleWorker=JSON.parse(workerConfig);
@@ -125,7 +126,7 @@ assert.deepEqual(reproducibleWorker.r2_buckets,[{binding:'MEDIA_BUCKET',bucket_n
 present(androidWorkflow,/retention-days:\s*1\b/,'Keep Android build artifacts for one day');
 absent(androidWorkflow,/retention-days:\s*30\b/,'No 30-day APK artifacts');
 absent(androidWorkflow,/gh run list|RUN_ID=/,'Single Android release must not poll another workflow');
-present(androidWorkflow,/DEST_BRANCH=havana-nice-v2-apk-downloads/,'Single release flow must publish only to V2 binaries');
+present(androidWorkflow,/gh release upload v2-android-current/,'APK releases must stay in the independent V2 repository');
 present(androidWorkflow,/HAVANA-NICE-V2-LATEST\.apk/,'One stable APK download filename');
 const androidConfig=JSON.parse(read('apps/android/app.json'));
 assert.equal(androidConfig.expo.android.package,'com.havananice.v2',
@@ -134,7 +135,7 @@ assert.ok(Number.isInteger(androidConfig.expo.android.versionCode) && androidCon
   'H01: release APK needs explicit Android versionCode');
 present(androidWorkflow,/EXPECTED_CODE/,'H01: verify actual APK versionCode matches app config');
 const apkSignerGate=read('scripts/apk-signature-gate.py');
-present(androidWorkflow,/python3 v2\/scripts\/apk-signature-gate\.py/,
+present(androidWorkflow,/python3 scripts\/apk-signature-gate\.py/,
   'H01: compare verified v2 signing certificates directly');
 present(apkSignerGate,/previous != current/,
   'H01: block release when public X.509 signing hashes differ');

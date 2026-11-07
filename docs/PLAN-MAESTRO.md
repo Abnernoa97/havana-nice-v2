@@ -1,3 +1,14 @@
+# Estado del repositorio independiente — 07/11/2026
+
+- [x] Fuente V2 copiada a la raíz de `Abnernoa97/havana-nice-v2`, `main`, sin heredar la historia Git de la aplicación original.
+- [x] Conservados los módulos PWA, Android, Worker, D1 migrations, R2, contratos, pruebas, íconos y documentación sin transformar los archivos ejecutables.
+- [x] Copias de las APK firmadas actual y anterior, bajo el Release `v2-android-current`, con SHA-256 verificado contra la rama antigua.
+- [x] Adaptados los dos workflows a `main` y las rutas del nuevo repositorio; la siguiente APK se distribuirá solo por Releases de V2 y requerirá aprobación explícita.
+- [ ] **Conexión de despliegue Cloudflare Pages:** reasignar al repositorio V2 nuevo y comprobar publicación sin afectar el Worker/D1/R2 ni apps originales.
+- [ ] **Retirada de ramas V2 antiguas:** ejecutar solo tras verificar fuente, CI, APK, despliegue y APK instalada. Ninguna rama de la app original se elimina.
+
+**No confundir separación de código con migración de datos:** las bases y el bucket de V2 ya eran recursos propios. Durante esta operación no se han modificado ni movido mensajes, medios, accesos o secretos. Las referencias históricas a `havana-nice-pwa` permanecen únicamente como bitácora de decisiones y ejecuciones previas.
+
 # HAVANA NICE V2 — PLAN MAESTRO ÚNICO
 
 **Auditoría cruzada: 29 de octubre de 2026. QA funcional del Chat confirmado por el propietario el 29 de octubre de 2026 (hora de México).**  

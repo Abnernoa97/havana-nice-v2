@@ -1,0 +1,149 @@
+name: HAVANA NICE V2 Android APK
+
+# Android is a deliberate batch release, NEVER triggered by ordinary development.
+# Every module accumulates in V2 PWA/Admin first. The ONLY release push trigger is
+# a separately approved batch-release manifest; not app.json, module code or CI.
+# workflow_dispatch is an alternative manual entry point and uses the same manifest.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'releases/android-batch.json'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: havana-nice-v2-build-and-publish
+  cancel-in-progress: true
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Require explicit batch-release approval and matching native version
+        shell: bash
+        run: |
+          set -euo pipefail
+          node <<'NODE'
+          const fs=require('node:fs');
+          const manifestPath='releases/android-batch.json';
+          if(!fs.existsSync(manifestPath)){
+            throw Error('No approved Android batch manifest. This is NOT an automatic APK release.');
+          }
+          const m=JSON.parse(fs.readFileSync(manifestPath,'utf8'));
+          const app=JSON.parse(fs.readFileSync('apps/android/app.json','utf8')).expo;
+          if(m.approved!==true || m.releaseMode!=='explicit-batch' ||
+              m.version!==app.version || m.versionCode!==app.android.versionCode ||
+              app.android.package!=='com.havananice.v2' ||
+              typeof m.notes!=='string' || m.notes.trim().length<10){
+            throw Error('Android batch publication rejected: explicit approval, version or release notes invalid.');
+          }
+          console.log('APPROVED explicit batch',m.version,'code',m.versionCode);
+          NODE
+
+      - name: Install exact dependencies
+        working-directory: v2
+        run: npm ci
+
+      - name: Generate native Android project
+        working-directory: apps/android
+        env:
+          CI: '1'
+        run: npx expo prebuild --platform android --clean --no-install
+
+      # The installed APK must be a standalone app: debug builds require Metro.
+      - name: Build standalone release APK with embedded JS bundle
+        working-directory: apps/android/android
+        run: |
+          chmod +x gradlew
+          ./gradlew --no-daemon --stacktrace assembleRelease
+
+      - name: Verify JS bundle is packaged and APK is signed
+        shell: bash
+        run: |
+          set -euo pipefail
+          APK=apps/android/android/app/build/outputs/apk/release/app-release.apk
+          test -s "$APK"
+          unzip -Z1 "$APK" | grep -Fxq 'assets/index.android.bundle'
+          SDK_BUILD_TOOLS="$(find "${ANDROID_HOME:-$ANDROID_SDK_ROOT}/build-tools" -mindepth 1 -maxdepth 1 -type d | sort -V | tail -1)"
+          "$SDK_BUILD_TOOLS/apksigner" verify --verbose "$APK"
+          "$SDK_BUILD_TOOLS/aapt" dump badging "$APK" | grep -F "package: name='com.havananice.v2'"
+          EXPECTED_CODE="$(node -p "require('./apps/android/app.json').expo.android.versionCode")"
+          test -n "$EXPECTED_CODE"
+          "$SDK_BUILD_TOOLS/aapt" dump badging "$APK" | grep -F "versionCode='$EXPECTED_CODE'"
+          echo "H01 Android APK package/versionCode check PASS (code $EXPECTED_CODE)"
+          sha256sum "$APK"
+
+      - name: Rename APK
+        shell: bash
+        run: |
+          cp apps/android/android/app/build/outputs/apk/release/app-release.apk \
+             HAVANA-NICE-V2-FOUNDATION-STANDALONE.apk
+
+      - name: Verify last signed APK in independent V2 Release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          RELEASE_DIR="$RUNNER_TEMP/v2-previous-release"
+          mkdir -p "$RELEASE_DIR"
+          gh release download v2-android-current --repo "$GITHUB_REPOSITORY" --pattern 'HAVANA-NICE-V2-LATEST.apk' --pattern 'SHA256SUMS.txt' --dir "$RELEASE_DIR"
+          (cd "$RELEASE_DIR" && grep '  HAVANA-NICE-V2-LATEST.apk' SHA256SUMS.txt | sha256sum -c -)
+          OLD="$RELEASE_DIR/HAVANA-NICE-V2-LATEST.apk"
+          NEW=HAVANA-NICE-V2-FOUNDATION-STANDALONE.apk
+          test -s "$OLD" && test -s "$NEW"
+          SDK_BUILD_TOOLS="$(find "$ANDROID_HOME/build-tools" -mindepth 1 -maxdepth 1 -type d | sort -V | tail -1)"
+          "$SDK_BUILD_TOOLS/apksigner" verify "$OLD"
+          "$SDK_BUILD_TOOLS/apksigner" verify "$NEW"
+          python3 scripts/apk-signature-gate.py "$OLD" "$NEW"
+          previous_code="$("$SDK_BUILD_TOOLS/aapt" dump badging "$OLD" | sed -nE "s/.*versionCode='([0-9]+)'.*/\1/p" | head -n 1)"
+          current_code="$("$SDK_BUILD_TOOLS/aapt" dump badging "$NEW" | sed -nE "s/.*versionCode='([0-9]+)'.*/\1/p" | head -n 1)"
+          [[ "$previous_code" =~ ^[0-9]+$ ]] && [[ "$current_code" =~ ^[0-9]+$ ]]
+          test "$current_code" -gt "$previous_code"
+          echo "Signed Android update $previous_code -> $current_code"
+
+      - name: Publish latest and rollback APK inside the V2 repository Release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          cp "$RUNNER_TEMP/v2-previous-release/HAVANA-NICE-V2-LATEST.apk" HAVANA-NICE-V2-PREVIOUS.apk
+          cp HAVANA-NICE-V2-FOUNDATION-STANDALONE.apk HAVANA-NICE-V2-LATEST.apk
+          sha256sum HAVANA-NICE-V2-LATEST.apk HAVANA-NICE-V2-PREVIOUS.apk > SHA256SUMS.txt
+          gh release upload v2-android-current --repo "$GITHUB_REPOSITORY" HAVANA-NICE-V2-PREVIOUS.apk HAVANA-NICE-V2-LATEST.apk SHA256SUMS.txt --clobber
+          gh release view v2-android-current --repo "$GITHUB_REPOSITORY" --json assets --jq '.assets[].name' | grep -Fx 'HAVANA-NICE-V2-LATEST.apk'
+
+      - name: Verify stable independent APK link
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/v2-download-verify"
+          gh release download v2-android-current --repo "$GITHUB_REPOSITORY" --pattern 'HAVANA-NICE-V2-LATEST.apk' --dir "$RUNNER_TEMP/v2-download-verify"
+          cmp HAVANA-NICE-V2-LATEST.apk "$RUNNER_TEMP/v2-download-verify/HAVANA-NICE-V2-LATEST.apk"
+
+      - name: Upload signed APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: HAVANA-NICE-V2-FOUNDATION-STANDALONE-APK
+          path: HAVANA-NICE-V2-FOUNDATION-STANDALONE.apk
+          if-no-files-found: error
+          retention-days: 1

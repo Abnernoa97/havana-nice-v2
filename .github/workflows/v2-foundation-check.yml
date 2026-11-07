@@ -1,0 +1,449 @@
+name: HAVANA NICE V2 foundation check
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'apps/**'
+      - 'cloudflare/**'
+      - 'packages/**'
+      - 'scripts/**'
+      - 'tests/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'tsconfig.base.json'
+      - '.github/workflows/v2-foundation-check.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: havana-nice-v2-main-check
+  cancel-in-progress: true
+
+jobs:
+  foundation:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: .
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Validate V2 foundation structure
+        run: node scripts/check-structure.mjs
+
+      - name: Prevent V2 technical debt regressions
+        run: npm run audit:guard
+
+      - name: Install exact dependencies
+        run: npm ci
+
+      - name: Typecheck all workspaces
+        run: npm run typecheck
+
+      - name: Prepare the real V2 Worker bundle without deployment
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd cloudflare
+          npx wrangler deploy --dry-run --outdir /tmp/havana-v2-worker-preview
+          test -d /tmp/havana-v2-worker-preview
+          echo "SUCCESS: V2 Worker bundled, no production changes"
+
+      - name: Verify standalone V2 media status before new storage
+        run: npm run test:media -w @havana/cloudflare
+
+      - name: Test isolated V2 Calendar without changing live D1
+        run: node --test cloudflare/tests/calendar.test.mjs
+
+      - name: Test isolated realtime Calendar routing, authorization and recipient privacy
+        run: node --test cloudflare/tests/calendar-realtime.test.mjs
+
+      - name: Test private master and event Repertoire on isolated SQLite
+        run: node --test cloudflare/tests/repertoire.test.mjs
+
+      - name: Test authorized Familia HAVANA NICE albums on isolated SQLite
+        run: node --test cloudflare/tests/family.test.mjs
+
+      - name: Test private Familia R2 uploads and expiring object grants on isolated SQLite
+        run: node --test cloudflare/tests/family-media.test.mjs
+
+      - name: Test R2 multipart videos with isolated D1 without moving Chat
+        run: node --test cloudflare/tests/family-multipart.test.mjs
+
+      - name: Test R2 Familia global quota, schema migration, and private reservation safety
+        run: node --test cloudflare/tests/family-quota.test.mjs
+
+      - name: Test private R2 Chat originals, 5MiB multipart, grants and canonical deletion
+        run: node --test cloudflare/tests/chat-media-r2.test.mjs
+
+      - name: Regression-test calendar free-form date display across all clients
+        run: node --test tests/calendar-free-text-ui.test.mjs
+
+      - name: Validate independent administrator authentication
+        run: npm run test:admin-auth -w @havana/cloudflare
+
+      - name: Validate private Admin Chat moderation
+        run: npm run test:admin-chat -w @havana/cloudflare
+
+      - name: Validate one-installation access and administrator removal
+        run: npm run test:security -w @havana/cloudflare
+
+      - name: Prevent private API caching in iPhone PWA
+        run: npm run test:sw -w @havana/pwa
+
+      - name: Check isolated Administrator PWA security
+        run: npm run test:admin -w @havana/pwa
+
+      - name: Verify visual media UI remains compatible
+        run: node --test tests/chat-media-ui.test.mjs
+
+      - name: Protect one authorized HOME and native Chat navigation
+        run: node --test tests/member-home-navigation.test.mjs
+
+      - name: Guard Android/PWA functional parity without shipping a new APK
+        run: node --test tests/android-pwa-parity.test.mjs
+
+      - name: Enforce modular isolation and single shared access
+        run: node --test tests/module-boundaries.test.mjs
+
+      - name: Prevent automatic APK builds during PWA-first development
+        run: node --test tests/android-batch-policy.test.mjs
+
+      - name: Build iPhone PWA
+        run: npm run build:pwa
+
+      - name: Export Android bundle
+        run: npm run export -w @havana/android
+
+      - name: Verify new general Chat remains private without an Admin session
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE="https://havana-nice-v2-dev.soloaplicaciones97.workers.dev"
+          READ=$(curl --silent --show-error -o /tmp/hnv2-admin-chat-denied.json -w '%{http_code}' "$BASE/api/chat/admin/messages")
+          test "$READ" = 401
+          grep -q 'No autorizado' /tmp/hnv2-admin-chat-denied.json
+          ERASE=$(curl --silent --show-error -o /tmp/hnv2-admin-chat-delete-denied.json -w '%{http_code}' -X DELETE "$BASE/api/chat/admin/messages/1")
+          test "$ERASE" = 401
+          grep -q 'No autorizado' /tmp/hnv2-admin-chat-delete-denied.json
+
+      - name: Verify browser CORS preflight for moderator DELETE
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE="https://havana-nice-v2-dev.soloaplicaciones97.workers.dev"
+          PATH_TO_DELETE="/api/chat/admin/messages/1"
+          ORIGIN="https://havana-nice-v2-dev.pages.dev"
+          STATUS="$(curl --silent --show-error -D /tmp/hnv2-admin-delete-options.h -o /dev/null -w '%{http_code}' \
+            -X OPTIONS "$BASE$PATH_TO_DELETE" \
+            -H "Origin: $ORIGIN" \
+            -H "Access-Control-Request-Method: DELETE" \
+            -H "Access-Control-Request-Headers: authorization")"
+          test "$STATUS" = 204
+          grep -qi '^access-control-allow-origin: https://havana-nice-v2-dev.pages.dev' /tmp/hnv2-admin-delete-options.h
+          grep -qi '^access-control-allow-methods: .*DELETE' /tmp/hnv2-admin-delete-options.h
+          grep -qi '^access-control-allow-headers: .*Authorization' /tmp/hnv2-admin-delete-options.h
+          BAD="$(curl --silent --show-error -o /dev/null -w '%{http_code}' \
+            -X OPTIONS "$BASE$PATH_TO_DELETE" \
+            -H 'Origin: https://untrusted.example' \
+            -H 'Access-Control-Request-Method: DELETE')"
+          test "$BAD" = 403
+          # No authenticated DELETE is performed; original messages stay intact.
+
+      - name: Verify live Cloudflare API
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --retry 3 \
+            https://havana-nice-v2-dev.soloaplicaciones97.workers.dev/health \
+            | tee /tmp/havana-health.json
+          grep -q '"ok":true' /tmp/havana-health.json
+          grep -q '"database":"ok"' /tmp/havana-health.json
+          grep -q '"schemaVersion":"foundation-v1"' /tmp/havana-health.json
+
+      - name: Verify independent Admin access without discarded device-approval flow
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE="https://havana-nice-v2-dev.soloaplicaciones97.workers.dev"
+          STATUS="$(curl --silent --show-error --fail --output /tmp/v2-admin-status.json --write-out '%{http_code}' "$BASE/api/chat/admin/auth/status")"
+          test "$STATUS" = "200"
+          grep -q '"enabled":true' /tmp/v2-admin-status.json
+          STATUS="$(curl --silent --show-error --output /tmp/v2-admin-session-denied.json --write-out '%{http_code}' "$BASE/api/chat/admin/auth/session")"
+          test "$STATUS" = "401"
+          grep -q 'No autorizado' /tmp/v2-admin-session-denied.json
+          STATUS="$(curl --silent --show-error --output /tmp/v2-admin-members-denied.json --write-out '%{http_code}' "$BASE/api/chat/admin/members")"
+          test "$STATUS" = "401"
+          grep -q 'No autorizado' /tmp/v2-admin-members-denied.json
+          STATUS="$(curl --silent --show-error --output /tmp/v2-admin-create-unauthorized.json --write-out '%{http_code}' \
+            --header 'Content-Type: application/json' --data '{"displayName":"Guest User"}' "$BASE/api/chat/admin/members")"
+          test "$STATUS" = "401"
+          grep -q 'No autorizado' /tmp/v2-admin-create-unauthorized.json
+          STATUS="$(curl --silent --show-error --output /tmp/v2-admin-sessions-denied.json --write-out '%{http_code}' "$BASE/api/chat/admin/auth/sessions")"
+          test "$STATUS" = "401"
+          grep -q 'No autorizado' /tmp/v2-admin-sessions-denied.json
+          STATUS="$(curl --silent --show-error --output /tmp/v2-admin-close-others-denied.json --write-out '%{http_code}' \
+            --request POST "$BASE/api/chat/admin/auth/revoke-others")"
+          test "$STATUS" = "401"
+          grep -q 'No autorizado' /tmp/v2-admin-close-others-denied.json
+          STATUS="$(curl --silent --show-error --output /tmp/v2-admin-history-denied.json --write-out '%{http_code}' "$BASE/api/chat/admin/member-history?actorId=member%3Aorly")"
+          test "$STATUS" = "401"
+          STATUS="$(curl --silent --show-error --output /tmp/v2-admin-preview-denied.json --write-out '%{http_code}' "$BASE/api/chat/admin/member-delete-preview?actorId=member%3Aorly")"
+          test "$STATUS" = "401"
+          grep -q 'No autorizado' /tmp/v2-admin-preview-denied.json
+          STATUS="$(curl --silent --show-error --output /tmp/v2-admin-delete-denied.json --write-out '%{http_code}' \
+            --header 'Content-Type: application/json' --data '{"actorId":"member:orly","confirmName":"Orly"}' "$BASE/api/chat/admin/remove-member")"
+          test "$STATUS" = "401"
+
+      - name: Verify discarded device approval routes are removed, not disabled
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE="https://havana-nice-v2-dev.soloaplicaciones97.workers.dev"
+          for route in /api/chat/device/request /api/chat/device/status /api/chat/pwa/session /api/chat/admin/device-requests; do
+            STATUS="$(curl --silent --show-error --output /tmp/v2-removed-login.json --write-out '%{http_code}' "$BASE$route")"
+            test "$STATUS" = "404"
+          done
+
+      - name: Verify unknown and malformed musician names never receive a session
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE="https://havana-nice-v2-dev.soloaplicaciones97.workers.dev"
+          # Neither test is an account creation: both should fail before createSession().
+          STATUS="$(curl --silent --show-error --output /tmp/v2-unknown-musician.json --write-out '%{http_code}' \
+            --header 'Content-Type: application/json' \
+            --data '{"displayName":"HNV2CIUnknown20261027"}' "$BASE/api/chat/session")"
+          test "$STATUS" = "403"
+          grep -q 'todavía no está autorizado' /tmp/v2-unknown-musician.json
+          ! grep -q '"token"' /tmp/v2-unknown-musician.json
+          STATUS="$(curl --silent --show-error --output /tmp/v2-invalid-musician.json --write-out '%{http_code}' \
+            --header 'Content-Type: application/json' \
+            --data '{"displayName":"<script>admin</script>"}' "$BASE/api/chat/session")"
+          test "$STATUS" = "400"
+          ! grep -q '"token"' /tmp/v2-invalid-musician.json
+          # Never attempt a valid name in CI; doing so would create a real session.
+
+      - name: Verify new Administrator WebSocket rejects unauthorized clients
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE="https://havana-nice-v2-dev.soloaplicaciones97.workers.dev"
+          STATUS="$(curl --silent --show-error --output /tmp/v2-admin-ws-no-origin.json --write-out '%{http_code}' "$BASE/ws/admin")"
+          echo "Admin WS no origin: $STATUS"
+          test "$STATUS" = "403"
+          STATUS="$(curl --silent --show-error --output /tmp/v2-admin-ws-no-upgrade.json --write-out '%{http_code}' \
+            "$BASE/ws/admin" -H "Origin: https://havana-nice-v2-dev.pages.dev")"
+          echo "Admin WS no upgrade: $STATUS"
+          test "$STATUS" = "426"
+          STATUS="$(curl --http1.1 --silent --show-error --output /tmp/v2-admin-ws-denied.json --write-out '%{http_code}' \
+            "$BASE/ws/admin" \
+            -H "Origin: https://havana-nice-v2-dev.pages.dev" \
+            -H "Upgrade: websocket" -H "Connection: Upgrade" \
+            -H "Sec-WebSocket-Version: 13" -H "Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==" \
+            -H "Sec-WebSocket-Protocol: havana-v2-admin, admin.aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")"
+          echo "Admin WS unauthorized upgrade: $STATUS"
+          if [ "$STATUS" != "401" ]; then head -c 500 /tmp/v2-admin-ws-denied.json; echo; fi
+          test "$STATUS" = "401"
+          grep -q "No autorizado" /tmp/v2-admin-ws-denied.json
+
+      - name: Verify live Durable Object
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --retry 3 \
+            https://havana-nice-v2-dev.soloaplicaciones97.workers.dev/realtime/health \
+            | tee /tmp/havana-realtime-health.json
+          grep -q '"ok":true' /tmp/havana-realtime-health.json
+          grep -q '"durableObject":"ChatRoom"' /tmp/havana-realtime-health.json
+
+      - name: Verify CHAT 1 rejects unauthenticated requests
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE="https://havana-nice-v2-dev.soloaplicaciones97.workers.dev"
+          STATUS=$(curl --silent --show-error -o /tmp/v2-chat-unauthorized.json -w '%{http_code}' "$BASE/api/chat/messages")
+          test "$STATUS" = "401"
+          grep -q 'error' /tmp/v2-chat-unauthorized.json
+          STATUS=$(curl --silent --show-error -o /tmp/v2-chat-denied.json -w '%{http_code}' \
+            -X POST "$BASE/api/chat/session" \
+            -H 'Content-Type: application/json' \
+            --data '{"displayName":"ci_unapproved_account"}')
+          test "$STATUS" = "403"
+          grep -q 'administrador' /tmp/v2-chat-denied.json
+          STATUS=$(curl --silent --show-error -o /tmp/v2-chat-session-unauthorized.json -w '%{http_code}' "$BASE/api/chat/session")
+          test "$STATUS" = "401"
+
+      - name: Verify legacy sessions deny invalid credentials without manufacturing musician entries
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE="https://havana-nice-v2-dev.soloaplicaciones97.workers.dev"
+          STATUS="$(curl --silent --show-error --output /tmp/v2-legacy-invalid-token.json --write-out '%{http_code}' \
+            "$BASE/api/chat/session" -H "Authorization: Bearer aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")"
+          test "$STATUS" = "401"
+
+      - name: Verify unused media endpoint denies anonymous users
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE="https://havana-nice-v2-dev.soloaplicaciones97.workers.dev"
+          STATUS="$(curl --silent --show-error -o /tmp/v2-media-private.json -w '%{http_code}' "$BASE/api/chat/media/status")"
+          test "$STATUS" = 401
+          grep -q 'No autorizado' /tmp/v2-media-private.json
+
+      - name: Verify native Android WebSocket origin is permitted
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE="https://havana-nice-v2-dev.soloaplicaciones97.workers.dev"
+          OWN_ORIGIN="$BASE"
+          HTTP="$(curl --silent --show-error --output /tmp/v2-native-ws.json --write-out '%{http_code}' \
+            "$BASE/ws" -H "Origin: $OWN_ORIGIN" -H 'Authorization: Bearer fake-native-session')"
+          test "$HTTP" = 401
+          grep -q Unauthorized /tmp/v2-native-ws.json
+          HTTP="$(curl --silent --show-error --output /tmp/v2-external-ws.json --write-out '%{http_code}' \
+            "$BASE/ws" -H "Origin: https://untrusted.example")"
+          test "$HTTP" = 403
+
+      - name: Verify live iPhone PWA
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --retry 10 --retry-all-errors --retry-delay 3 \
+            https://havana-nice-v2-dev.pages.dev/ \
+            | tee /tmp/havana-pwa.html
+          grep -q 'HAVANA NICE V2' /tmp/havana-pwa.html
+          curl --fail --silent --show-error --retry 10 --retry-all-errors --retry-delay 3 \
+            https://havana-nice-v2-dev.pages.dev/manifest.webmanifest \
+            | tee /tmp/havana-manifest.json
+          grep -q 'HAVANA NICE V2' /tmp/havana-manifest.json
+
+      - name: Verify live V2 Calendar and Chat boundaries after deployment
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE="https://havana-nice-v2-dev.soloaplicaciones97.workers.dev"
+          STATUS="$(curl --silent --show-error -o /tmp/hnv2-cal-health.json -w '%{http_code}' "$BASE/health")"
+          test "$STATUS" = "200"
+          grep -q '"app":"havana-nice-v2"' /tmp/hnv2-cal-health.json
+          for ENDPOINT in /api/calendar/events /api/calendar/admin/events /api/chat/messages; do
+            STATUS="$(curl --silent --show-error -o /tmp/hnv2-cal-private.json -w '%{http_code}' "$BASE$ENDPOINT")"
+            echo "$ENDPOINT -> $STATUS"
+            test "$STATUS" = "401"
+            grep -q '"error"' /tmp/hnv2-cal-private.json
+          done
+
+      - name: Verify new Calendar websocket is isolated and refuses unauthenticated connections
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE="https://havana-nice-v2-dev.soloaplicaciones97.workers.dev"
+          HTTP="$(curl -sS -o /tmp/hnv2-calendar-upgrade.json -w '%{http_code}' \
+            -H 'Origin: https://havana-nice-v2-dev.pages.dev' "$BASE/ws/calendar")"
+          test "$HTTP" = "426"
+          HTTP="$(curl -sS -o /tmp/hnv2-calendar-unauth.json -w '%{http_code}' \
+            --http1.1 -H 'Origin: https://havana-nice-v2-dev.pages.dev' \
+            -H 'Connection: Upgrade' -H 'Upgrade: websocket' \
+            -H 'Sec-WebSocket-Version: 13' \
+            -H 'Sec-WebSocket-Key: SGF2YW5hTmljZUNhbGVuZGFyIQ==' \
+            -H 'Sec-WebSocket-Protocol: havana-v2-calendar, session.unauthorized' \
+            "$BASE/ws/calendar")"
+          test "$HTTP" = "401"
+          grep -q 'No autorizado' /tmp/hnv2-calendar-unauth.json
+
+      - name: Verify live Repertoire, Calendar and Chat all require authorization
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE="https://havana-nice-v2-dev.soloaplicaciones97.workers.dev"
+          for ENDPOINT in /api/repertoire/songs /api/repertoire/admin/songs /api/calendar/events /api/chat/messages; do
+            HTTP="$(curl -sS -o /tmp/hn-v2-module-auth.json -w '%{http_code}' "$BASE$ENDPOINT")"
+            echo "$ENDPOINT => $HTTP"
+            test "$HTTP" = "401"
+            grep -q '"error"' /tmp/hn-v2-module-auth.json
+          done
+
+      - name: Verify live private Repertoire lists and existing Calendar Chat protection
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE="https://havana-nice-v2-dev.soloaplicaciones97.workers.dev"
+          HTTP="$(curl -sS -o /tmp/hnv2-live-health.json -w '%{http_code}' "$BASE/health")"
+          test "$HTTP" = "200"
+          for ENDPOINT in /api/repertoire/events/assigned /api/repertoire/songs /api/repertoire/admin/songs /api/calendar/events /api/chat/messages; do
+            HTTP="$(curl -sS -o /tmp/hnv2-live-private.json -w '%{http_code}' "$BASE$ENDPOINT")"
+            echo "$ENDPOINT => $HTTP"
+            test "$HTTP" = "401"
+            grep -q '"error"' /tmp/hnv2-live-private.json
+          done
+
+      - name: Verify live Familia HAVANA NICE and existing Chat Calendar Repertoire privacy
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE="https://havana-nice-v2-dev.soloaplicaciones97.workers.dev"
+          HTTP="$(curl -sS -o /tmp/hn-family-live-health.json -w '%{http_code}' "$BASE/health")"
+          test "$HTTP" = "200"
+          grep -q '"app":"havana-nice-v2"' /tmp/hn-family-live-health.json
+          for ENDPOINT in /api/family/albums /api/family/admin/albums /api/family/albums/member%3Aorly/media /api/family/admin/albums/member%3Aorly/media /api/calendar/events /api/repertoire/events/assigned /api/chat/messages; do
+            HTTP="$(curl -sS -o /tmp/hn-family-live-private.json -w '%{http_code}' "$BASE$ENDPOINT")"
+            echo "$ENDPOINT => $HTTP"
+            test "$HTTP" = "401"
+            grep -q '"error"' /tmp/hn-family-live-private.json
+          done
+          POST="$(curl -sS -o /tmp/hn-family-live-private-post.json -w '%{http_code}' -X POST \
+            "$BASE/api/family/admin/albums/member%3Aorly/media" \
+            -H 'Content-Type: image/jpeg' --data-binary 'unauthorized')"
+          test "$POST" = "401"
+          grep -q 'No autorizado' /tmp/hn-family-live-private-post.json
+          POSTER="$(curl -sS -o /tmp/hn-v2-poster-private.json -w '%{http_code}' -X POST \
+            "$BASE/api/family/admin/albums/member%3Aorly/media/123e4567-e89b-42d3-a456-426614174001/poster" \
+            -H 'Content-Type: image/webp' --data-binary 'unauthorized')"
+          test "$POSTER" = "401"
+          grep -q 'No autorizado' /tmp/hn-v2-poster-private.json
+          # Only an Admin session can request global private R2 usage, even after the change.
+          ST="$(curl -sS -o /tmp/hn-family-storage-private.json -w '%{http_code}' "$BASE/api/family/admin/albums")"
+          test "$ST" = "401"
+          grep -q 'No autorizado' /tmp/hn-family-storage-private.json
+          # New upload acknowledgements and resume routes are private, even for guessed IDs.
+          for ENDPOINT in \
+            /api/family/admin/albums/member%3Aorly/media/123e4567-e89b-42d3-a456-426614174001 \
+            /api/family/admin/albums/member%3Aorly/multipart/123e4567-e89b-42d3-a456-426614174001; do
+            HTTP="$(curl -sS -o /tmp/hnv2-resume-private.json -w '%{http_code}' "$BASE$ENDPOINT")"
+            test "$HTTP" = "401"
+            grep -q 'No autorizado' /tmp/hnv2-resume-private.json
+          done
+          curl -sS -D /tmp/hnv2-upload-options.txt -o /dev/null -X OPTIONS \
+            "$BASE/api/family/admin/albums/member%3Aorly/media" \
+            -H 'Origin: https://havana-nice-v2-dev.pages.dev' \
+            -H 'Access-Control-Request-Method: POST' \
+            -H 'Access-Control-Request-Headers: Authorization, Content-Type, X-Havana-V2-Upload-ID'
+          grep -qi 'access-control-allow-headers:.*X-Havana-V2-Upload-ID' /tmp/hnv2-upload-options.txt
+          for ENDPOINT in \
+            /api/family/admin/albums/member%3Aorly/multipart \
+            /api/family/admin/albums/member%3Aorly/multipart/123e4567-e89b-42d3-a456-426614174001/parts/1 \
+            /api/family/admin/albums/member%3Aorly/multipart/123e4567-e89b-42d3-a456-426614174001/complete; do
+            HTTP="$(curl -sS -o /tmp/hnv2-multipart-denied.json -w '%{http_code}' \
+              -X POST "$BASE$ENDPOINT" -H 'Content-Type: application/json' --data '{}')"
+            test "$HTTP" = "401"
+            grep -q 'No autorizado' /tmp/hnv2-multipart-denied.json
+          done
+          for ACTION in DELETE POST; do
+            PATH_TO_FILE="/api/family/admin/albums/member%3Aorly/media/123e4567-e89b-42d3-a456-426614174001"
+            if [ "$ACTION" = "POST" ]; then PATH_TO_FILE="$PATH_TO_FILE/cover"; fi
+            HTTP="$(curl -sS -o /tmp/hn-family-live-private-mutate.json -w '%{http_code}' \
+              -X "$ACTION" "$BASE$PATH_TO_FILE")"
+            test "$HTTP" = "401"
+            grep -q 'No autorizado' /tmp/hn-family-live-private-mutate.json
+          done

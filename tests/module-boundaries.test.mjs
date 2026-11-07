@@ -79,7 +79,7 @@ test('A09: independent module tests must not modify legacy or introduce a second
   const workerConfig=read('cloudflare/wrangler.jsonc');
   assert.match(guard,/V2 development branch must not include unused main-era root files/);
   assert.doesNotMatch(workerConfig,/"services"\s*:/);
-  assert.match(read('../.github/workflows/v2-foundation-check.yml'),/Test isolated V2 Calendar without changing live D1/);
+  assert.match(read('.github/workflows/v2-foundation-check.yml'),/Test isolated V2 Calendar without changing live D1/);
 });
 
 test('A04: Repertoire cannot create parallel sessions or mutate Chat/Calendar content',()=>{

@@ -1,3 +1,11 @@
+# HAVANA NICE V2 — REPOSITORIO INDEPENDIENTE
+
+**Fuente única:** `Abnernoa97/havana-nice-v2`, rama `main`. Todo el código V2 está en la raíz de este repositorio: `apps`, `cloudflare`, `packages`, `tests`, `scripts` y `docs`. El proyecto original y HAVANA CLOUD tienen sus propios repositorios y no forman parte de este árbol.
+
+**APK Android:** únicamente GitHub Releases de este repositorio, etiqueta `v2-android-current`, con `HAVANA-NICE-V2-LATEST.apk`, `HAVANA-NICE-V2-PREVIOUS.apk` y comprobación SHA-256. Publicación siguiente solo por paquete explícitamente aprobado.
+
+**Infraestructura de ejecución:** Worker, D1, Durable Objects y bucket R2 ya pertenecen exclusivamente a V2; su conexión de despliegue PWA con el nuevo repositorio debe validarse por separado. Los enlaces antiguos de GitHub en la bitácora representan evidencia histórica, no dependencias activas.
+
 # HAVANA NICE V2 — ÚNICA LÍNEA DE DESARROLLO
 
 **Fuente de verdad:** [Plan Maestro](docs/PLAN-MAESTRO.md) y [Continuidad Exacta](docs/CONTINUIDAD-EXACTA.md). No reintroducir decisiones, pruebas ni pantallas descartadas. Auditoría cruzada: 29 de octubre de 2026. **La lista de prioridades y los 46 hitos (27 originales + 9 modulares + 6 de Familia HAVANA NICE + 4 de BOOK HAVANA NICE) viven únicamente en el Plan Maestro**.
@@ -8,7 +16,7 @@
 
 ## Arquitectura que debe mantenerse
 
-- Una sola rama V2 de desarrollo: `havana-nice-v2-foundation`. `main` y el sitio HAVANA NICE original son otra línea existente y NO se modifican.
+- Una sola rama fuente: `main` en `Abnernoa97/havana-nice-v2`. Nunca usar el repositorio ni la rama de la app original para el desarrollo V2.
 - Un solo backend V2: Worker `havana-nice-v2-dev`, base D1 `havana-nice-v2-dev` y Durable Object `CHAT_ROOMS`.
 - Acceso Administrador: secreto remoto privado `V2_ADMIN_LOGIN_SECRET` en Cloudflare, **mínimo 8 caracteres** para la contraseña humana (12+ recomendable), comparación segura y rate limit de 5 intentos/15 min. El Worker V2 **v48** restauró el acceso con las contraseñas cambiadas desde el panel Cloudflare, sin exponer su valor. Los tokens de sesión siguen siendo aleatorios e independientes.
 - Chat Android 100 % React Native, sin WebView, conservando firma del paquete `com.havananice.v2`, sesiones SQLite, historial y borradores; la actualización se instala sobre la aplicación existente. No reinstalar.
