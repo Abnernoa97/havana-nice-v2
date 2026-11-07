@@ -8,7 +8,7 @@ const tabs:{id:Tab;name:string;icon:string;description:string}[]=[
  {id:'chat',name:'Chat',icon:'◉',description:'Chat general en vivo de todos los músicos, con moderación administrativa'},
  {id:'repertoire',name:'Repertorio',icon:'♫',description:'Gestiona el repertorio general y las listas de cada evento'},
  {id:'calendar',name:'Calendario',icon:'▦',description:'Crea, edita y asigna fechas a los músicos'},
- {id:'family',name:'Multimedia',icon:'▣',description:'Álbumes Familia y revista BOOK HAVANA NICE'},
+ {id:'family',name:'Familia HAVANA NICE',icon:'▣',description:'Álbumes de integrantes y BOOK HAVANA NICE'},
  {id:'more',name:'Más',icon:'◇',description:'Aquí incorporaremos las siguientes funciones de la app'},
 ];
 export default function AdminApp(){
