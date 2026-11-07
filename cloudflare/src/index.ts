@@ -458,7 +458,7 @@ export default {
       return handleChatMedia(request,env,url,origin,identity);
     }
     if (url.pathname === '/realtime/health') return env.CHAT_ROOMS.get(env.CHAT_ROOMS.idFromName('foundation-health')).fetch('https://internal/health');
-    if (url.pathname === '/api/chat/admin/member-history' || url.pathname === '/api/chat/admin/member-delete-preview' || url.pathname === '/api/chat/admin/remove-member') {
+    if (url.pathname === '/api/chat/admin/member-history' || url.pathname === '/api/chat/admin/member-delete-preview' || url.pathname === '/api/chat/admin/remove-member' || url.pathname === '/api/chat/admin/member-media-cleanup') {
       return handleAdminMemberManagement(request,env,url,origin,respond,ROOM);
     }
     if (url.pathname.startsWith('/api/chat/admin/duplicate-logins') ||

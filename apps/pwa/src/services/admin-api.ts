@@ -61,7 +61,7 @@ export function adminMemberHistory(token:string,actorId:string){
 }
 export type AdminDeletionImpact={
  sessions:number;messages:number;reactions:number;receipts:number;
- historyEvents:number;
+ historyEvents:number;chatMedia:number;familyMedia:number;pendingUploads:number;calendarAssignments:number;
 };
 export type AdminDeletionPreview={displayName:string;counts:AdminDeletionImpact;canDelete:boolean};
 export function adminDeletionPreview(token:string,actorId:string){
@@ -70,8 +70,12 @@ export function adminDeletionPreview(token:string,actorId:string){
   authenticated(token));
 }
 export function adminRemoveMember(token:string,actorId:string,confirmName:string){
- return api<{ok:boolean;deleted:boolean}>('/api/chat/admin/remove-member',
+ return api<{ok:boolean;deleted:boolean;cleanupPending:number|null}>('/api/chat/admin/remove-member',
   authenticated(token,{method:'POST',body:JSON.stringify({actorId,confirmName})}));
+}
+export function adminRetryMemberMediaCleanup(token:string,actorId:string){
+ return api<{ok:boolean;cleaned:number;pending:number|null}>('/api/chat/admin/member-media-cleanup',
+  authenticated(token,{method:'POST',body:JSON.stringify({actorId})}));
 }
 
 export type AdminDuplicateLoginAlert={

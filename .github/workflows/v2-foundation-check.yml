@@ -98,6 +98,9 @@ jobs:
       - name: Validate one-installation access and administrator removal
         run: npm run test:security -w @havana/cloudflare
 
+      - name: Verify safe R2 cleanup for deleted musicians and preserve storage quota
+        run: node --test cloudflare/tests/member-media-cleanup.test.mjs
+
       - name: Prevent private API caching in iPhone PWA
         run: npm run test:sw -w @havana/pwa
 

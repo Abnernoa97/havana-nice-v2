@@ -3,7 +3,7 @@ import AdminChatGeneral from '../chat/AdminChatGeneral';
 import AdminCalendar from '../calendar/AdminCalendar';
 import AdminRepertoire from '../repertoire/AdminRepertoire';
 import AdminFamily from '../family/AdminFamily';
-import {adminAvailability,adminLogin,adminLogout,adminVerify,adminOtherSessions,adminRevokeOtherSessions,adminMembers,adminCreateMember,adminMemberHistory,adminDeletionPreview,adminRemoveMember,adminDuplicateLogins,adminReviewDuplicateLogin,adminReleaseInstallation,openAdminRealtime,
+import {adminAvailability,adminLogin,adminLogout,adminVerify,adminOtherSessions,adminRevokeOtherSessions,adminMembers,adminCreateMember,adminMemberHistory,adminDeletionPreview,adminRemoveMember,adminRetryMemberMediaCleanup,adminDuplicateLogins,adminReviewDuplicateLogin,adminReleaseInstallation,openAdminRealtime,
  type AdminSession,type AdminMember,type AdminMemberHistory,type AdminDeletionPreview,type AdminDuplicateLoginAlert,type AdminChatStreamEvent,isAdminUnauthorized} from '../../services/admin-api';
 
 type Section='access'|'chat'|'repertoire'|'calendar'|'family'|'more';
@@ -19,6 +19,10 @@ function MemberImpactSummary({name,preview}:{name:string;preview:AdminDeletionPr
      <div><dt>Reacciones</dt><dd>{counts.reactions}</dd></div>
      <div><dt>Lecturas</dt><dd>{counts.receipts}</dd></div>
      <div><dt>Historial</dt><dd>{counts.historyEvents}</dd></div>
+     <div><dt>Archivos de Chat en R2</dt><dd>{counts.chatMedia}</dd></div>
+     <div><dt>Fotos y vídeos de Familia en R2</dt><dd>{counts.familyMedia}</dd></div>
+     <div><dt>Subidas pendientes de Familia</dt><dd>{counts.pendingUploads}</dd></div>
+     <div><dt>Fechas asignadas en Calendario</dt><dd>{counts.calendarAssignments}</dd></div>
    </dl>
    <small>Las credenciales registradas no equivalen a teléfonos conectados en este momento. Las reacciones incluyen las vinculadas al músico o a sus mensajes.</small>
  </div>;
@@ -42,6 +46,8 @@ export default function AdminChatAccess({section}:{section:Section}){
  const [impactLoading,setImpactLoading]=useState('');
  const [impactErrors,setImpactErrors]=useState<Record<string,string>>({});
  const [removing,setRemoving]=useState('');
+ const [cleanupRetry,setCleanupRetry]=useState<{actorId:string;name:string;pending:number}|null>(null);
+ const [cleanupBusy,setCleanupBusy]=useState(false);
  const [otherSessions,setOtherSessions]=useState<number|null>(null);
  const [sessionsBusy,setSessionsBusy]=useState(false);
  const [duplicateAlerts,setDuplicateAlerts]=useState<AdminDuplicateLoginAlert[]>([]);
@@ -194,7 +200,7 @@ export default function AdminChatAccess({section}:{section:Section}){
    if(!session)return;
    const token=session.token;
    setSession(null);setMembers([]);setLoaded(false);setError('');setNotice('');setName('');setOtherSessions(null);
-   setExpanded('');setHistory({});setHistoryErrors({});setImpact({});setImpactErrors({});setDuplicateAlerts([]);
+   setExpanded('');setHistory({});setHistoryErrors({});setImpact({});setImpactErrors({});setDuplicateAlerts([]);setCleanupRetry(null);
    try{await adminLogout(token);}catch{/* In-memory session is discarded even when offline. */}
  }
  async function toggleMember(person:AdminMember){
@@ -248,20 +254,50 @@ export default function AdminChatAccess({section}:{section:Section}){
        '· Reacciones: '+counts.reactions+'\n'+
        '· Lecturas: '+counts.receipts+'\n'+
        '· Eventos de historial: '+counts.historyEvents+'\n'+
+       '· Archivos de Chat (R2): '+counts.chatMedia+'\n'+
+       '· Archivos de Familia (R2): '+counts.familyMedia+'\n'+
+       '· Subidas pendientes: '+counts.pendingUploads+'\n'+
+       '· Fechas asignadas: '+counts.calendarAssignments+'\n'+
        '\n'+
        'Se cerrarán sus conexiones activas. Esta acción NO se puede deshacer.'
      );
      if(!approved)return;
-     await adminRemoveMember(session.token,person.actor_id,person.display_name);
+     const result=await adminRemoveMember(session.token,person.actor_id,person.display_name);
      // Only after the server confirms deletion, update local roster.
      setMembers(previous=>previous.filter(item=>item.actor_id!==person.actor_id));
      setHistory(previous=>{const next={...previous};delete next[person.actor_id];return next;});
      setImpact(previous=>{const next={...previous};delete next[person.actor_id];return next;});
      if(expanded===person.actor_id)setExpanded('');
      await refreshMembers(session.token);
-     setNotice('Miembro eliminado definitivamente: '+person.display_name);
+     if(result.cleanupPending===null){
+       setNotice('Miembro eliminado: '+person.display_name+'. No se pudo verificar la limpieza de R2.');
+       setCleanupRetry({actorId:person.actor_id,name:person.display_name,pending:1});
+     }else if(result.cleanupPending>0){
+       setNotice('Miembro eliminado: '+person.display_name+'. Limpieza pendiente de '+result.cleanupPending+' archivos en R2.');
+       setCleanupRetry({actorId:person.actor_id,name:person.display_name,pending:result.cleanupPending});
+     }else{
+       setCleanupRetry(null);
+       setNotice('Miembro eliminado definitivamente: '+person.display_name+'. Archivos R2 limpiados.');
+     }
    }catch(e){setError(e instanceof Error?e.message:'No se pudo eliminar el miembro');}
    finally{setRemoving('');}
+ }
+ async function retryMediaCleanup(){
+   if(!session||!cleanupRetry||cleanupBusy)return;
+   setCleanupBusy(true);setError('');
+   try{
+     const result=await adminRetryMemberMediaCleanup(session.token,cleanupRetry.actorId);
+     if(result.pending===0){
+       setNotice('Limpieza R2 finalizada para '+cleanupRetry.name+'.');
+       setCleanupRetry(null);
+     }else if(result.pending!==null){
+       setCleanupRetry({...cleanupRetry,pending:result.pending});
+       setNotice('Quedan '+result.pending+' archivos pendientes de limpiar en R2.');
+     }else{
+       setError('Almacenamiento R2 temporalmente no disponible. La limpieza permanece registrada para reintentar.');
+     }
+   }catch(e){setError(e instanceof Error?e.message:'No se pudo reintentar la limpieza R2');}
+   finally{setCleanupBusy(false);}
  }
  async function closeOtherSessions(){
    if(!session||sessionsBusy||!otherSessions)return;
@@ -381,6 +417,9 @@ export default function AdminChatAccess({section}:{section:Section}){
        <button type="submit" disabled={busy||!name.trim()}>{busy?'Guardando…':'Añadir y autorizar'}</button>
      </form>
      {notice&&<p className="a-member-notice" role="status">{notice}</p>}
+     {cleanupRetry&&<button type="button" disabled={cleanupBusy} onClick={()=>void retryMediaCleanup()}>
+       {cleanupBusy?'Limpiando archivos…':'Reintentar limpieza R2 de '+cleanupRetry.name}
+     </button>}
      {error&&<p className="a-admin-error" role="alert">{error}</p>}
    </section>
    <section className="a-panel a-member-list">

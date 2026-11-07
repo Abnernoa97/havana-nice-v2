@@ -8,7 +8,9 @@ const USAGE_SQL=`(SELECT COALESCE(SUM(size_bytes + CASE
  WHEN poster_size_bytes>0 THEN poster_size_bytes
  ELSE ${UNKNOWN_POSTER_ESTIMATE} END),0) FROM family_media)`;
 const CHAT_SQL=`(SELECT COALESCE(SUM(size_bytes),0) FROM chat_media_objects WHERE status='ready')`;
-const GLOBAL_SQL=USAGE_SQL+'+'+CHAT_SQL;
+// Count private R2 bytes until post-deletion cleanup has really completed.
+const MEMBER_DELETE_PENDING_SQL=`(SELECT COALESCE(SUM(size_bytes),0) FROM r2_member_delete_queue)`;
+const GLOBAL_SQL=USAGE_SQL+'+'+CHAT_SQL+'+'+MEMBER_DELETE_PENDING_SQL;
 const ACTIVE_SQL=`(SELECT COALESCE(SUM(size_bytes),0) FROM family_upload_sessions)`;
 const RESERVED_SQL=`(SELECT COALESCE(SUM(size_bytes),0) FROM family_upload_reservations)`;
 

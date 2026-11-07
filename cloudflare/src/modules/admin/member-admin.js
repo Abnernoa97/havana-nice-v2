@@ -2,6 +2,7 @@
 // irreversible database removal. No raw UA/IP, passwords or tokens in audit.
 import {verifyAdminSession} from './admin-auth.js';
 import {notifyAdminClients} from './admin-realtime.js';
+import {cleanupMemberMedia,pendingMemberMedia} from '../../shared/member-media-cleanup.js';
 
 const ID=/^member:(?:[a-z0-9_-]{1,28}|[0-9a-f-]{36})$/i;
 function deviceDetails(request){
@@ -58,10 +59,14 @@ async function memberDeletionImpact(env,actorId){
   '(SELECT COUNT(*) FROM chat_messages WHERE sender_id=?) AS messages,'+
   '(SELECT COUNT(*) FROM chat_reactions WHERE actor_id=? OR message_seq IN (SELECT seq FROM chat_messages WHERE sender_id=?)) AS reactions,'+
   '(SELECT COUNT(*) FROM chat_read_receipts WHERE actor_id=?) AS receipts,'+
-  '(SELECT COUNT(*) FROM chat_access_events WHERE actor_id=?) AS historyEvents'
- ).bind(actorId,actorId,actorId,actorId,actorId,actorId).first();
+  '(SELECT COUNT(*) FROM chat_access_events WHERE actor_id=?) AS historyEvents,'+
+  '(SELECT COUNT(*) FROM chat_media_objects WHERE sender_id=?) AS chatMedia,'+
+  '(SELECT COUNT(*) FROM family_media WHERE actor_id=?) AS familyMedia,'+
+  '(SELECT COUNT(*) FROM family_upload_sessions WHERE actor_id=?) AS pendingUploads,'+
+  '(SELECT COUNT(*) FROM calendar_event_recipients WHERE actor_id=?) AS calendarAssignments'
+ ).bind(actorId,actorId,actorId,actorId,actorId,actorId,actorId,actorId,actorId,actorId).first();
  const counts={};
- for(const key of ['sessions','messages','reactions','receipts','historyEvents'])
+ for(const key of ['sessions','messages','reactions','receipts','historyEvents','chatMedia','familyMedia','pendingUploads','calendarAssignments'])
    counts[key]=Math.max(0,Number(row?.[key]||0));
  return counts;
 }
@@ -98,6 +103,17 @@ export async function handleAdminMemberManagement(request,env,url,origin,respond
    const counts=await memberDeletionImpact(env,actorId);
    return reply(respond,origin,{displayName:member.display_name,counts,canDelete:true});
  }
+ if(url.pathname==='/api/chat/admin/member-media-cleanup'&&request.method==='POST'){
+   let payload;
+   try{payload=await request.json();}catch{return reply(respond,origin,{error:'Solicitud inválida'},400);}
+   const actorId=payload?.actorId;
+   if(typeof actorId!=='string'||!ID.test(actorId))
+     return reply(respond,origin,{error:'Miembro inválido'},400);
+   const existing=await pendingMemberMedia(env,actorId);
+   if(!existing)return reply(respond,origin,{ok:true,cleaned:0,pending:0});
+   const cleaned=await cleanupMemberMedia(env,actorId);
+   return reply(respond,origin,{ok:true,...cleaned});
+ }
  if(url.pathname!=='/api/chat/admin/remove-member'||request.method!=='POST')
    return reply(respond,origin,{error:'Ruta no válida'},404);
  let payload;
@@ -111,10 +127,34 @@ export async function handleAdminMemberManagement(request,env,url,origin,respond
  if(!member)return reply(respond,origin,{error:'Miembro no encontrado'},404);
  if(member.display_name!==confirmName)return reply(respond,origin,{
    error:'El nombre de confirmación no coincide.'},409);
- // Transaction order preserves message reply FKs and removes all musician-owned
- // D1 data. Never delete other actors' messages; replies to removed messages
- // keep their text with reply_to_seq=NULL.
+ // Durable deletion: the R2 cleanup queue and all dependent D1 removals are
+ // committed together. An R2 outage never strands untracked private objects.
+ // Never delete other actors' messages; existing replies remain with a null target.
+ const queuedAt=Date.now();
  const queries=[
+   env.DB.prepare(
+     'INSERT OR IGNORE INTO r2_member_delete_queue(object_key,actor_id,multipart_upload_id,size_bytes,queued_at) '+
+     "SELECT object_key,sender_id,CASE WHEN status='pending' THEN multipart_upload_id ELSE NULL END,size_bytes,? "+
+     'FROM chat_media_objects WHERE sender_id=?'
+   ).bind(queuedAt,actorId),
+   env.DB.prepare(
+     'INSERT OR IGNORE INTO r2_member_delete_queue(object_key,actor_id,multipart_upload_id,size_bytes,queued_at) '+
+     'SELECT object_key,actor_id,NULL,size_bytes,? FROM family_media WHERE actor_id=?'
+   ).bind(queuedAt,actorId),
+   env.DB.prepare(
+     'INSERT OR IGNORE INTO r2_member_delete_queue(object_key,actor_id,multipart_upload_id,size_bytes,queued_at) '+
+     'SELECT poster_key,actor_id,NULL,poster_size_bytes,? FROM family_media '+
+     'WHERE actor_id=? AND poster_key IS NOT NULL'
+   ).bind(queuedAt,actorId),
+   env.DB.prepare(
+     'INSERT OR IGNORE INTO r2_member_delete_queue(object_key,actor_id,multipart_upload_id,size_bytes,queued_at) '+
+     'SELECT object_key,actor_id,upload_id,size_bytes,? FROM family_upload_sessions WHERE actor_id=?'
+   ).bind(queuedAt,actorId),
+   // Chat media FK (sender_id -> chat_members) is not ON DELETE CASCADE.
+   // Release media grants/parts with their existing ON DELETE CASCADE FKs.
+   env.DB.prepare('DELETE FROM chat_media_objects WHERE sender_id=?').bind(actorId),
+   env.DB.prepare('DELETE FROM family_media WHERE actor_id=?').bind(actorId),
+   env.DB.prepare('DELETE FROM family_upload_sessions WHERE actor_id=?').bind(actorId),
    env.DB.prepare('UPDATE chat_messages SET reply_to_seq=NULL WHERE reply_to_seq IN (SELECT seq FROM chat_messages WHERE sender_id=?)').bind(actorId),
    env.DB.prepare('DELETE FROM chat_reactions WHERE message_seq IN (SELECT seq FROM chat_messages WHERE sender_id=?)').bind(actorId),
    env.DB.prepare('DELETE FROM chat_reactions WHERE actor_id=?').bind(actorId),
@@ -136,6 +176,11 @@ export async function handleAdminMemberManagement(request,env,url,origin,respond
     'https://internal/member-removed',{method:'POST',body:JSON.stringify({actorId})}
    );
  }catch{}
- await notifyAdminClients(env,'members');
- return reply(respond,origin,{ok:true,deleted:true});
+ await notifyAdminClients(env,'members').catch(()=>{});
+ // R2 cleanup is retriable; never give a false deletion failure after D1
+ // committed. All pending keys stay in a durable queue and in 9.5 GB quota.
+ const cleanup=await cleanupMemberMedia(env,actorId).catch(async()=>({
+   cleaned:0,pending:await pendingMemberMedia(env,actorId).catch(()=>null)
+ }));
+ return reply(respond,origin,{ok:true,deleted:true,cleanupPending:cleanup.pending});
 }

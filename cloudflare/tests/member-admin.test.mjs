@@ -15,7 +15,8 @@ class FakeDB{
       if(sql.startsWith('SELECT actor_id,display_name FROM chat_members'))return this.members.get(args[0])||null;
       if(sql.startsWith('SELECT actor_id FROM chat_members'))return this.members.get(args[0])||null;
       if(sql.startsWith('SELECT COUNT(*) AS entries'))return {entries:2};
-      if(sql.includes('AS historyEvents'))return {sessions:2,messages:3,reactions:1,receipts:1,historyEvents:4};
+      if(sql.includes('AS historyEvents'))return {sessions:2,messages:3,reactions:1,receipts:1,historyEvents:4,chatMedia:2,familyMedia:1,pendingUploads:0,calendarAssignments:1};
+      if(sql.startsWith('SELECT COUNT(*) AS remaining FROM r2_member_delete_queue'))return {remaining:0};
 
       throw Error('Unexpected first: '+sql);
     },
@@ -101,7 +102,9 @@ test('atomic permanent deletion clears all musician-owned D1 tables then expels 
  assert.equal(result.status,200);assert.equal(result.body.deleted,true);
  assert.equal(e.DB.members.size,0);
  const queries=e.DB.statements.map(x=>x.sql).join('\n');
- for(const term of ['UPDATE chat_messages SET reply_to_seq=NULL','DELETE FROM chat_reactions WHERE message_seq',
+ for(const term of ['INSERT OR IGNORE INTO r2_member_delete_queue','DELETE FROM chat_media_objects WHERE sender_id',
+  'DELETE FROM family_media WHERE actor_id','DELETE FROM family_upload_sessions WHERE actor_id',
+  'UPDATE chat_messages SET reply_to_seq=NULL','DELETE FROM chat_reactions WHERE message_seq',
   'DELETE FROM chat_reactions WHERE actor_id','DELETE FROM chat_messages WHERE sender_id',
   'DELETE FROM chat_read_receipts','DELETE FROM chat_sessions',
   'DELETE FROM chat_access_events','DELETE FROM chat_members']){
@@ -109,6 +112,20 @@ test('atomic permanent deletion clears all musician-owned D1 tables then expels 
  }
  assert.deepEqual(e.events.map(x=>new URL(x.path).pathname),['/member-removed','/admin-invalidate']);
  assert.equal(JSON.parse(e.events[0].body).actorId,actor);
+});
+
+test('member data removal queues Chat and Familia originals/posters before the FK-bound musician row',async()=>{
+ const e=await env();
+ const result=await handler(e,'POST','/api/chat/admin/remove-member',{actorId:actor,confirmName:'Orly'});
+ assert.equal(result.status,200);
+ const sql=e.DB.statements.map(x=>x.sql);
+ const firstMemberDelete=sql.findIndex(x=>x.startsWith('DELETE FROM chat_members'));
+ const chatMediaDelete=sql.findIndex(x=>x.startsWith('DELETE FROM chat_media_objects'));
+ const enqueue=sql.filter(x=>x.startsWith('INSERT OR IGNORE INTO r2_member_delete_queue'));
+ assert.equal(enqueue.length,4,'Chat media, Familia originals, posters, pending uploads each queued atomically');
+ assert.ok(chatMediaDelete>0 && chatMediaDelete<firstMemberDelete,'resolve Chat media FK before deleting a musician');
+ assert.ok(sql.findIndex(x=>x.startsWith('DELETE FROM family_media'))<firstMemberDelete);
+ assert.equal(e.DB.members.size,0);
 });
 
 test('confirmed member removal stays successful when Durable Object notifications fail',async()=>{
@@ -174,7 +191,8 @@ test('member delete preview requires Admin auth and never mutates data',async()=
  assert.equal(result.body.displayName,'Orly');
  assert.equal(result.body.canDelete,true);
  assert.deepEqual(result.body.counts,{
-  sessions:2,messages:3,reactions:1,receipts:1,historyEvents:4
+  sessions:2,messages:3,reactions:1,receipts:1,historyEvents:4,
+  chatMedia:2,familyMedia:1,pendingUploads:0,calendarAssignments:1
  });
  assert.equal(e.DB.statements.length,0);
  assert.equal(e.DB.members.size,1);

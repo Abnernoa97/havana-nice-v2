@@ -226,6 +226,25 @@ test('read-only account audit does not carry data into logout',()=>{
  assert.match(app,/delete next\[person\.actor_id\]/);
 });
 
+test('Admin deletion covers Chat R2 attachments, Familia albums and safe retry',()=>{
+ const panel=read('../src/features/admin/AdminChatAccess.tsx');
+ const api=read('../src/services/admin-api.ts');
+ const backend=read('../../../cloudflare/src/modules/admin/member-admin.js');
+ const route=read('../../../cloudflare/src/index.ts');
+ assert.match(panel,/counts\.chatMedia/);
+ assert.match(panel,/counts\.familyMedia/);
+ assert.match(panel,/counts\.pendingUploads/);
+ assert.match(panel,/adminRetryMemberMediaCleanup\(session\.token,cleanupRetry\.actorId\)/);
+ assert.match(panel,/Reintentar limpieza R2 de/);
+ assert.match(api,/member-media-cleanup/);
+ assert.match(api,/cleanupPending:number\|null/);
+ assert.match(route,/api\/chat\/admin\/member-media-cleanup/);
+ assert.match(backend,/r2_member_delete_queue/);
+ assert.match(backend,/DELETE FROM chat_media_objects WHERE sender_id/);
+ assert.match(backend,/DELETE FROM family_media WHERE actor_id/);
+ assert.match(backend,/cleanupMemberMedia\(env,actorId\)/);
+});
+
 test('member counters do not mistake D1 session rows for live connected phones',()=>{
  const panel=read('../src/features/admin/AdminChatAccess.tsx');
  assert.match(panel,/Credenciales de acceso/);
