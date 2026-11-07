@@ -24,7 +24,7 @@ function fixture(){
  raw.prepare('INSERT INTO chat_members VALUES(?,1)').run(another);
  for(const name of ['0021_family_media.sql','0022_family_upload_sessions.sql',
   '0023_family_video_posters.sql','0024_family_storage_budget.sql','0025_chat_media_r2.sql',
-  '0026_member_delete_media_cleanup.sql'])
+  '0026_member_delete_media_cleanup.sql','0027_book_havana_nice.sql'])
   raw.exec(migration(name));
  const DB={prepare(sql){return {
   bind(...args){return {
