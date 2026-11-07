@@ -7,6 +7,7 @@ type FlipEvent={data:number|string};
 type BookEngine={
  flipNext:(corner:'top'|'bottom')=>void;
  flipPrev:(corner:'top'|'bottom')=>void;
+ turnToPage:(page:number)=>void;
  destroy:()=>void;
  updateFromHtml:(pages:NodeListOf<HTMLElement>|HTMLElement[])=>void;
  loadFromHTML:(pages:NodeListOf<HTMLElement>|HTMLElement[])=>void;
@@ -26,7 +27,6 @@ export default function BookReader({pages}:{pages:BookPage[]}){
  const [turning,setTurning]=useState(false);
  const [failure,setFailure]=useState(false);
  const [orientation,setOrientation]=useState<'portrait'|'landscape'>('portrait');
- const stageRef=useRef<HTMLDivElement|null>(null);
  const mountRef=useRef<HTMLDivElement|null>(null);
  const sourceRef=useRef<HTMLDivElement|null>(null);
  const instance=useRef<BookEngine|null>(null);
@@ -34,6 +34,8 @@ export default function BookReader({pages}:{pages:BookPage[]}){
  const busyRef=useRef(false);
  const pendingImages=useRef<BookPage[]|null>(null);
  const count=pages.length+1; // The first Admin image is the cover, never repeated.
+ const countRef=useRef(count);
+ countRef.current=count;
  const present=pages.length>0;
  const structure=useMemo(()=>pages.map(p=>p.id+':'+p.fit).join('|'),[pages]);
  const [canPrev,setCanPrev]=useState(false);
@@ -46,8 +48,8 @@ export default function BookReader({pages}:{pages:BookPage[]}){
   const spread=collection.getCurrentSpreadIndex();
   setPage(current);
   setCanPrev(spread>0);
-  setCanNext(spread<collection.getSpreadIndexByPage(flip===instance.current?count-1:0));
- },[count]);
+  setCanNext(spread<collection.getSpreadIndexByPage(Math.max(0,countRef.current-1)));
+ },[]);
 
  const syncMedia=useCallback((data:BookPage[])=>{
   const mount=mountRef.current;
@@ -75,7 +77,7 @@ export default function BookReader({pages}:{pages:BookPage[]}){
   let flip:BookEngine|null=null;
   try{
    flip=new PageFlip(host,{
-    width:410,height:580,size:'stretch',minWidth:270,maxWidth:520,
+    width:410,height:580,size:'stretch',minWidth:220,maxWidth:520,
     minHeight:382,maxHeight:735,
     drawShadow:true,maxShadowOpacity:0.72,
     flippingTime:1080,usePortrait:true,autoSize:false,
@@ -89,15 +91,9 @@ export default function BookReader({pages}:{pages:BookPage[]}){
    setTurning(false);
    setFailure(false);
    flip.on('flip',event=>{
+    if(!instance.current)return;
     setPage(Number(event.data)||0);
-    const engine=instance.current;
-    if(engine){
-     const collection=engine.getPageCollection();
-     const spread=collection.getCurrentSpreadIndex();
-     setCanPrev(spread>0);
-     setCanNext(spread<collection.getSpreadIndexByPage(engine.getPageCollection()
-      ?engine.getPageCollection().getSpreadIndexByPage(count-1)>=0?count-1:0:0));
-    }
+    syncControls(instance.current);
    });
    flip.on('changeOrientation',event=>{
     setOrientation(event.data==='landscape'?'landscape':'portrait');
@@ -137,7 +133,7 @@ export default function BookReader({pages}:{pages:BookPage[]}){
   const next=Array.from(sourceRef.current.children).map(n=>n.cloneNode(true) as HTMLElement);
   try{
    busyRef.current=false;
-   flip.turnToPage?.(0);
+   flip.turnToPage(0);
    flip.updateFromHtml(next);
    structureRef.current=structure;
    syncControls(flip);
@@ -212,7 +208,7 @@ export default function BookReader({pages}:{pages:BookPage[]}){
    <button type="button" aria-pressed={mode==='flip'} onClick={()=>setMode('flip')}>Revista 3D</button>
    <button type="button" aria-pressed={mode==='scroll'} onClick={()=>setMode('scroll')}>Desplazar</button>
   </div>
-  {mode==='flip'&&!failure?<div className="hn-book-stage" ref={stageRef}>
+  {mode==='flip'&&!failure?<div className="hn-book-stage">
    <div className={'hn-book-mount'+(turning?' hn-book-turning':'')} ref={mountRef}/>
   </div>:null}
   {mode==='scroll'?<div className="hn-book-scroll">{leaves}</div>:null}
