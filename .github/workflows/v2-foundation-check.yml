@@ -89,6 +89,9 @@ jobs:
       - name: Test private master and event Repertoire on isolated SQLite
         run: node --test cloudflare/tests/repertoire.test.mjs
 
+      - name: Verify private BOOK publishing and genuine R2 page grants on isolated SQLite
+        run: node --test cloudflare/tests/book.test.mjs
+
       - name: Test authorized Familia HAVANA NICE albums on isolated SQLite
         run: node --test cloudflare/tests/family.test.mjs
 
