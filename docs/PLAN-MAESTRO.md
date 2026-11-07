@@ -1,4 +1,20 @@
-## ESTADO VIGENTE · FAMILIA HAVANA NICE V2 · 07/11/2026
+## ESTADO VIGENTE · BOOK HAVANA NICE V2 · 07/11/2026
+
+**Etapa editorial implementada en V2, sujeta a QA visual físico.** La misma biblioteca StPageFlip `page-flip@2.0.7` identificada en HAVANA NICE Quotes Studio está integrada en `apps/pwa/src/features/book/BookReader.tsx`, con giro real de hoja y curva de papel, sombra máxima `0.72`, duración `1080 ms`, gesto en esquinas, flechas, lectura portrait/landscape y modo alternativo Scroll. La primera foto subida desde Admin forma la portada (sin duplicarse). Las páginas reales se mantienen en DOM durante el giro, y el refresco de grants R2 no destruye la instancia del libro.
+
+- [x] **Administración real:** `AdminBook.tsx` permite añadir imágenes privadas (5 por selección, máximo 15 MB por foto), ordenar, publicar/ocultar, elegir entre encuadre o imagen completa, borrar y abrir vista previa. Sin imágenes de muestra en producción.
+- [x] **Datos y permisos:** migración D1 `0027_book_havana_nice.sql` aplicada, con `book_pages`, `book_media_grants` y cola R2 de eliminación segura. Todas las imágenes utilizan el bucket R2 privado V2, cuotas globales existentes y tokens temporales; solo el Admin modifica, y el músico solo consulta lo publicado. Señales de cambio por el ChatRoom ya existente, sin segundo Worker, base, cuenta ni polling. **Conteo real al cierre: 0 páginas BOOK, 0 objetos pendientes de borrar; 13 archivos de Familia preservados.**
+- [x] **Publicación backend desde fuente limpia:** Worker **v63** `bc1ef5a0-8ed8-440f-af6f-3df85eda0403` desplegado **100 %** desde bundle íntegro compilado por Wrangler de commit `2108f8bf` en CI; checksum verificado y siete bindings preservados, incluido el secreto Admin heredado sin exposición. Prueba de versión sin tráfico + verificación de rutas privadas aprobadas. El parche compilado de v60/v61 ya no es el Worker operativo. Rollback histórico disponible.
+- [x] **PWA Administrador/músicos:** mismas páginas publicadas, sesión existente, acceso a BOOK dentro del menú **Familia HAVANA NICE** (su nombre definitivo, no «Multimedia»). Build y Pages desde `main`; sin tocar la rapidez de los álbumes Familia.
+- [x] **Android en fuente:** `apps/android/features/book/NativeBook.tsx` muestra el mismo lector PWA real en WebView nativa (Expo 58, WebView `14.0.1`), a pantalla completa, con token enviado solo a `/book.html` mediante bridge al iniciar, nunca por URL ni almacenamiento persistente. Reacciona a los avisos Familia del único WebSocket. Fuente exportada en CI, **sin publicar una APK nueva**.
+- [x] **Control de calidad automatizado:** [CI 42417316695 SUCCESS](https://github.com/Abnernoa97/havana-nice-v2/actions/runs/42417316695): estructura única, tipos Android/PWA/Worker, R2/D1, privacidad de BOOK, regresiones Chat/Calendario/Repertorio/Familia, compilación Wrangler y exportación Android. No se borraron ni sobrescribieron archivos de usuarios.
+- [ ] **QA visual y aceptación física:** subir fotografías reales desde Admin y observar el rizado, sombras, gesto táctil, carga sin destellos y orden en iPhone/PWA; verificar sincronización de otro músico. Probar lo mismo en Android cuando se genere e instale el **próximo paquete firmado**. El APK vigente `0.0.13` aún **no contiene** el nuevo lector y no debe anunciarse como actualizado. El avance oficial `12/46` no aumenta automáticamente por pruebas de código.
+
+**Regla de continuidad:** con BOOK desarrollado, volver al resto de secciones funcionales. Posponer retoques cosméticos extensos hasta validar imágenes reales; nunca degradar R2/Familia ni intervenir HAVANA CLOUD o HAVANA NICE original. Las menciones a Worker v61, BOOK vacío o «Multimedia» en la bitácora inferior son hitos históricos, **no el estado vigente**.
+
+---
+
+## BITÁCORA PREVIA · FAMILIA HAVANA NICE V2 · 07/11/2026
 
 ### PRIORIDAD ABSOLUTA · RAPIDEZ DE FAMILIA Y PUBLICACIÓN SIN PARCHES
 
