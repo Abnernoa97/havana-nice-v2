@@ -1,5 +1,5 @@
 // HAVANA NICE V2 · single R2 cross-module storage budget; 10 GB-month free is not a billing kill switch.
-// Decimal GB: cap Family originals/posters, Chat ready originals and all reservations at 9.5 GB.
+// Decimal GB: cap Family, BOOK, Chat ready originals and all reservations at 9.5 GB.
 export const FAMILY_STORAGE_STOP_BYTES=9_500_000_000;
 export const FAMILY_STORAGE_WARNING_BYTES=9_000_000_000;
 const UNKNOWN_POSTER_ESTIMATE=384*1024;
@@ -10,7 +10,10 @@ const USAGE_SQL=`(SELECT COALESCE(SUM(size_bytes + CASE
 const CHAT_SQL=`(SELECT COALESCE(SUM(size_bytes),0) FROM chat_media_objects WHERE status='ready')`;
 // Count private R2 bytes until post-deletion cleanup has really completed.
 const MEMBER_DELETE_PENDING_SQL=`(SELECT COALESCE(SUM(size_bytes),0) FROM r2_member_delete_queue)`;
-const GLOBAL_SQL=USAGE_SQL+'+'+CHAT_SQL+'+'+MEMBER_DELETE_PENDING_SQL;
+const BOOK_SQL=`(SELECT COALESCE(SUM(size_bytes),0) FROM book_pages)`;
+const BOOK_DELETE_PENDING_SQL=`(SELECT COALESCE(SUM(size_bytes),0) FROM book_delete_queue)`;
+const GLOBAL_SQL=USAGE_SQL+'+'+CHAT_SQL+'+'+MEMBER_DELETE_PENDING_SQL+
+ '+'+BOOK_SQL+'+'+BOOK_DELETE_PENDING_SQL;
 const ACTIVE_SQL=`(SELECT COALESCE(SUM(size_bytes),0) FROM family_upload_sessions)`;
 const RESERVED_SQL=`(SELECT COALESCE(SUM(size_bytes),0) FROM family_upload_reservations)`;
 
