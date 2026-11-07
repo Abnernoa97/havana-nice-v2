@@ -1,6 +1,6 @@
 # HAVANA NICE V2 — REPOSITORIO INDEPENDIENTE
 
-**Estado operativo actual (07/11):** Familia en tiempo real publicada: Worker V2 **v61 al 100 %**, un solo ChatRoom Durable Object y R2 privado; [CI completo aprobado](https://github.com/Abnernoa97/havana-nice-v2/actions/runs/42407092270). Limpieza R2 realizada: **42 objetos / 307,453,508 bytes**; última revisión D1: **8 fotos y 5 videos Familia**, **2 integrantes activos**, **0 elementos pendientes de borrar en R2** y **0 violaciones de claves foráneas**. Cotejo funcional de 30 rutas críticas contra el Worker v61: sin diferencias de comportamiento identificadas, aunque los bundles no son idénticos. Pendiente QA física en iPhone/Android; APK 0.0.13 intacta.
+**Estado operativo actual (07/11):** Worker V2 **v63 al 100 %**, compilado desde `main` por Wrangler, con los **7 bindings canónicos**, único ChatRoom y R2 privado. Ya incorpora **BOOK HAVANA NICE**: Admin gestiona imágenes reales y publicación, músicos PWA las leen con el mismo efecto StPageFlip (`page-flip@2.0.7`) de Havana Quotes; Android utiliza el mismo motor mediante WebView dentro del módulo Familia, integrado en fuente pero **APK 0.0.13 aún no actualizada**. [CI integral 42417316695 SUCCESS](https://github.com/Abnernoa97/havana-nice-v2/actions/runs/42417316695). D1: migración BOOK 0027 aplicada, 0 páginas BOOK actuales, 0 borrados BOOK pendientes; 8 fotos y 5 videos Familia conservados. No se han subido imágenes de ejemplo. Falta QA física táctil y sincronización de dos teléfonos. Las menciones a Worker v60/v61 y BOOK vacío en las secciones inferiores son historial.
 
 **Fuente única:** `Abnernoa97/havana-nice-v2`, rama `main`. Todo el código V2 está en la raíz de este repositorio: `apps`, `cloudflare`, `packages`, `tests`, `scripts` y `docs`. El proyecto original y HAVANA CLOUD tienen sus propios repositorios y no forman parte de este árbol.
 
@@ -13,8 +13,8 @@
 - Repositorio independiente V2 con solo `main`; Familia R2 PWA y sus portadas/miniaturas rápidas protegidas.
 - Se revisaron 30 funciones críticas contra el Worker v61. Veintiuna coinciden tras normalizar espacios; nueve restantes se explican por alias SHA-256, formatos de esbuild y diferencias de presentación, sin desviaciones funcionales encontradas.
 - Compilación de `main` con Wrangler, siete bindings, pruebas de R2, Chat, Calendario, Administración y exportación nativa cubiertos por CI. El workflow futuro Android ya instala dependencias desde la raíz del repositorio, no desde el antiguo `v2/`.
-- **Publicación:** v61 sigue operativa al 100 %. No se ha sustituido su bundle compilado ni se ha instalado la APK siguiente. Un despliegue nuevo debe realizarse desde `main` con Wrangler y pruebas físicas; no aplicar parches de código compilado.
-- **Listos para la siguiente etapa en código:** `BOOK HAVANA NICE` con Page Flip 3D + Page Curl, aislado de los álbumes Familia. La aprobación física y actualización Android continúan como puertas de salida antes de declarar toda la aplicación terminada.
+- **Publicación actual:** el Worker v63 reemplazó limpiamente v61 desde el bundle CI Wrangler verificado de `main`; su sesión Admin, CHAT_ROOMS, CALENDAR_ROOMS y R2 conservan sus siete bindings. No hubo instalación APK nueva. Futuras publicaciones deben seguir esa misma trazabilidad y su QA.
+- **BOOK desarrollado y publicado:** Page Flip 3D + Page Curl, mismo motor de Quotes, fotos privadas administrables, frontend PWA y Android fuente; falta QA visual con fotos reales y el próximo APK firmado.
 
 ## Organización y velocidad interna (07/11/2026)
 
