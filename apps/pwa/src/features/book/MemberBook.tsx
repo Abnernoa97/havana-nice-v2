@@ -1,5 +1,5 @@
 import {useCallback,useEffect,useRef,useState} from 'react';
-import {getBookPages,type BookPage} from '@havana/shared';
+import {BOOK_GRANT_RENEW_MS,getBookPages,type BookPage} from '@havana/shared';
 import BookReader from './BookReader';
 
 export default function MemberBook({token,tick=0}:{token:string;tick?:number}){
@@ -24,6 +24,15 @@ export default function MemberBook({token,tick=0}:{token:string;tick?:number}){
   return()=>{version.current++;window.removeEventListener('online',resume);
    document.removeEventListener('visibilitychange',resume);};
  },[refresh,tick]);
+ // One renewal ahead of the Worker's expiring R2 grants. The magazine stays
+ // mounted, so a long reading session never flashes blank after ten minutes.
+ useEffect(()=>{
+  if(!pages.length)return;
+  const timer=window.setTimeout(()=>{
+   if(!document.hidden&&navigator.onLine)void refresh();
+  },BOOK_GRANT_RENEW_MS);
+  return()=>window.clearTimeout(timer);
+ },[pages,refresh]);
  return <section aria-label="BOOK HAVANA NICE">
   {error?<p className="hn-book-admin-error" role="alert">{error}</p>:null}
   {loading?<p className="hn-family-empty">Preparando la revista…</p>:<BookReader pages={pages}/>}
