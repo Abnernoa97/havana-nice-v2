@@ -9,6 +9,7 @@ import {CalendarRoom,calendarSocketIdentity,calendarSocketAuthorized} from './mo
 export {CalendarRoom};
 import {handleRepertoireApi} from './modules/repertoire/repertoire.js';
 import {handleFamilyApi} from './modules/family/family.js';
+import {handleBookApi} from './modules/book/book.js';
 import {notifyFamilyClients} from './modules/family/family-realtime.js';
 import {handleChatMedia,readChatMedia,decorateChatMessages} from './modules/chat/chat-media.js';
 import {sha256Hex} from './shared/crypto-helpers.js';
@@ -509,7 +510,10 @@ export default {
     // Repertoire is separately routed with the existing session and D1 grants.
     if(url.pathname.startsWith('/api/repertoire/'))
       return handleRepertoireApi(request,env,url,origin,respond,verifySession);
-    // Familia HAVANA NICE: a separate authorized album directory, no media yet.
+    // BOOK: independent editorial pages; shares the canonical Worker, D1, R2 and ChatRoom signal.
+    if(url.pathname.startsWith('/api/book/'))
+      return handleBookApi(request,env,url,origin,verifySession,ctx);
+    // Familia HAVANA NICE: private team albums and original R2 media.
     if(url.pathname.startsWith('/api/family/'))
       return handleFamilyApi(request,env,url,origin,respond,verifySession,ctx);
     // One R2 API for Chat originals; real access requires existing member/Admin auth.
