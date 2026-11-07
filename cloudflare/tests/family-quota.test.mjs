@@ -29,6 +29,7 @@ function setup(){
  db.exec('CREATE TABLE chat_messages(seq INTEGER PRIMARY KEY)');
  db.exec(migration('0025_chat_media_r2.sql'));
  db.exec(migration('0026_member_delete_media_cleanup.sql'));
+ db.exec(migration('0027_book_havana_nice.sql'));
  const DB={prepare(sql){return {bind(...args){return {
    async first(){return db.prepare(sql).get(...args)||null;},
    async all(){return {results:db.prepare(sql).all(...args)};},
