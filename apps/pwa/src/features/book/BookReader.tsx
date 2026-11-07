@@ -20,7 +20,7 @@ export default function BookReader({pages}:{pages:BookPage[]}){
  const instance=useRef<FlipHandle|null>(null);
  // Only source-page changes recreate the engine. A flip/swipe reuses one book.
  const signature=useMemo(()=>pages.map(x=>x.id+':'+x.fit).join('|'),[pages]);
- const count=pages.length+2;
+ const count=pages.length+1; // First Admin image is the cover, never repeated as an interior page.
  // Refresh expiring R2 grants in-place. Same pages never tear down an active flip.
  useEffect(()=>{
   const mount=mountRef.current;
@@ -47,7 +47,7 @@ export default function BookReader({pages}:{pages:BookPage[]}){
    flip=new PageFlip(host,{
     width:410,height:580,size:'stretch',minWidth:270,maxWidth:560,
     minHeight:382,maxHeight:792,drawShadow:true,maxShadowOpacity:0.72,
-    flippingTime:950,usePortrait:true,autoSize:true,showCover:true,
+    flippingTime:1080,usePortrait:true,autoSize:true,showCover:true,
     mobileScrollSupport:false,swipeDistance:25,showPageCorners:true,
     disableFlipByClick:false
    }) as FlipHandle;
@@ -60,6 +60,18 @@ export default function BookReader({pages}:{pages:BookPage[]}){
   }
   return()=>{instance.current=null;try{flip?.destroy();}catch{}mount.replaceChildren();};
  },[mode,signature,pages.length]);
+ // Decode only nearby *already mounted* page elements; no redundant R2
+ // prefetch engine, no compression, and no re-creating the magazine on a turn.
+ useEffect(()=>{
+  if(mode!=='flip'||!mountRef.current)return;
+  const mounted=mountRef.current;
+  const images=mounted.querySelectorAll<HTMLImageElement>('img[data-book-id]');
+  const current=Math.max(0,page-1);
+  for(let i=Math.max(0,current-1);i<=Math.min(images.length-1,current+2);i++){
+   const img=images.item(i);
+   if(img&&typeof img.decode==='function')void img.decode().catch(()=>{});
+  }
+ },[page,mode,signature]);
  const flip=(dir:'next'|'prev')=>{
   if(!instance.current)return;
   if(dir==='next'&&page<count-1)instance.current.flipNext('bottom');
@@ -84,11 +96,11 @@ export default function BookReader({pages}:{pages:BookPage[]}){
    <div className="hn-book-cover-heading"><small>THE PRIVATE EDITION</small><strong>HAVANA<br/>NICE</strong></div>
    <div className="hn-book-cover-footer">BOOK HAVANA NICE <span>01 / EDITION</span></div>
   </div>
-  {pages.map((item,i)=>{
+  {pages.slice(1).map((item,i)=>{
    const image=bookMediaUrl(item.url);
    return <div key={item.id} className={'hn-book-leaf hn-book-photo '+(item.fit==='contain'?'hn-book-contain':'hn-book-cover-fit')} data-density="soft">
-    {image?<img src={image} data-book-id={item.id} alt={'Página '+(i+1)+' de BOOK HAVANA NICE'} loading={i<2?'eager':'lazy'} decoding="async"/>:null}
-    <span className="hn-book-folio">{String(i+1).padStart(2,'0')}</span>
+    {image?<img src={image} data-book-id={item.id} alt={'Página '+(i+2)+' de BOOK HAVANA NICE'} loading={i<2?'eager':'lazy'} decoding="async"/>:null}
+    <span className="hn-book-folio">{String(i+2).padStart(2,'0')}</span>
    </div>;
   })}
   <div className="hn-book-leaf hn-book-back" data-density="hard">
