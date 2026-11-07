@@ -39,10 +39,21 @@
 - [x] **S07 · Auditoría permanente:** `scripts/check-structure.mjs` valida raíces, resolución de imports y alcanzabilidad desde los cinco puntos de entrada; ningún módulo huérfano detectado por ese grafo. [CI SUCCESS 42355021691](https://github.com/Abnernoa97/havana-nice-v2/actions/runs/42355021691).
 - [x] **S08 · Sin parches/segundas líneas:** los 52 archivos se trasladaron eliminando las rutas anteriores; GitHub `main` sigue único, no se crearon ramas ni nuevos Workflows.
  
+### Avance S09/S10 — Chat PWA y Android, depuración de lógica real (07/11/2026)
+
+- [x] **S09a/S10a · Permisos y menú únicos:** `packages/shared/src/chat-menu.ts` define editar (15 min), borrar (48 h), titularidad y ubicación segura según viewport PWA/Android; las dos aplicaciones invocan la misma política también al confirmar la edición. Pruebas con bordes de plazos, offline y mensajes pendientes: [CI SUCCESS 42381952214](https://github.com/Abnernoa97/havana-nice-v2/actions/runs/42381952214).
+- [x] **S09b/S10b · Cola offline y ACK unificados:** `packages/shared/src/chat-outbox.ts` centraliza siguiente mensaje en orden, bloqueo por ACK, estado queued/sending/error y tiempo de 12 s; los dos clientes siguen conservando sus almacenamientos y sockets nativos. [CI SUCCESS 42382368718](https://github.com/Abnernoa97/havana-nice-v2/actions/runs/42382368718).
+- [x] **S09c · Timeline React PWA independiente:** `apps/pwa/src/features/chat/ChatTimeline.tsx` renderiza mensajes, fotos/video, reacciones, entregas, respuestas y carga de historial sin crear un segundo WebSocket, login ni servicio R2. `App.tsx` sigue siendo el único controlador de sesión. [CI SUCCESS 42382786988](https://github.com/Abnernoa97/havana-nice-v2/actions/runs/42382786988).
+- [x] **S10c · Android StyleSheet extraído:** `apps/android/features/chat/chat-styles.ts` conserva propiedades originales, incluido el espacio Android 16 y comportamiento al abrir el teclado; `apps/android/App.tsx` sigue siendo la entrada Expo. [CI SUCCESS 42382918524](https://github.com/Abnernoa97/havana-nice-v2/actions/runs/42382918524).
+- [ ] **S09d/S10d · Próxima fase técnica:** dividir la coordinación interna de sesiones/socket/reconexión con estado único y pruebas antes de tocar el controlador Worker. No introducir motores duplicados, polling antiguo ni cachés alternativos.
+- [ ] **QA físico de aceptación:** confirmar en iPhone y Android, una vez instalados los paquetes correspondientes, textos, multimedia R2, carga de historial, reacciones, menú de edición/borrado, cola offline y regreso instantáneo a tiempo real.
+
+**Alcance confirmado:** repositorio nuevo `Abnernoa97/havana-nice-v2`, solo `main`. La PWA es publicada automáticamente desde fuente; el Worker remoto **permanece v59** con sus siete bindings y la última **APK firmada 0.0.13 no fue recompilada**. Las pruebas automáticas no se presentan como QA física. Estos subpasos no modifican el tablero funcional **12/46**.
+
 ### Próxima depuración de fondo, sin alterar comportamiento
 
-- [ ] **S09 · App Chat PWA (archivo grande):** extraer estado, conexión y componentes gradualmente y conservar una sola máquina de sesiones y mensajes; prueba de equivalencia por bloque.
-- [ ] **S10 · App Chat Android:** separar responsabilidades internas de su `App.tsx` sin desplazar la única entrada Expo.
+- [ ] **S09 · App Chat PWA (EN CURSO):** el listado y las reglas de menú/cola ya están fuera del componente monolítico. **Pendiente:** extraer coordinación de sesión, socket y reconexión sin alterar el único acceso vigente; QA visual real en iPhone.
+- [ ] **S10 · App Chat Android (EN CURSO):** menús y cola usan reglas compartidas; el StyleSheet se extrajo a un único archivo sin mover `App.tsx` de Expo. **Pendiente:** extraer componentes internos de historial/compositor, conservar la sesión nativa y probar el siguiente lote APK.
 - [ ] **S11 · Router Worker:** reducir `cloudflare/src/index.ts` delegando a los módulos existentes; sin segunda entrada, sin duplicación de rutas, sin cambiar D1/DO/R2.
 - [ ] **S12 · Shared contracts:** revisar `packages/shared/src/index.ts` por API o tipos que realmente convenga trasladar a módulos canónicos; sin APIs duplicadas.
 - [ ] **S13 · Limpieza CSS/dependencias:** inspección semántica de media queries y librerías; no borrar reglas útiles, migraciones D1 ni ejecutar upgrades forzados.
