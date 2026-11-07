@@ -2,6 +2,7 @@ import {useCallback,useEffect,useRef,useState} from 'react';
 import {familyAlbumCount,getFamilyDirectory,getFamilyAlbumMedia,type FamilyDirectory,type FamilyAlbum,type FamilyMediaItem} from '@havana/shared';
 import FamilyMediaGallery,{familyPrivateMediaUrl} from './FamilyMediaGallery';
 import {useFamilyLive} from '../../services/use-family-live';
+import MemberBook from '../book/MemberBook';
 
 function FamilyAlbumCard({album,onOpen}:{album:FamilyAlbum;onOpen:()=>void}){
  const cover=album.mediaReady?familyPrivateMediaUrl(album.coverUrl):null;
@@ -67,13 +68,7 @@ export default function MemberFamily({token}:{token:string}){
   </div>
   {error&&<p role="alert" className="hn-cal-error">{error}</p>}
   {loading?<p>Cargando integrantes autorizados…</p>:bookOpen?<>
-   <div className="hn-family-book-reader" aria-label="BOOK HAVANA NICE">
-    <span className="hn-family-book-eyebrow">HAVANA NICE · EDICIONES</span>
-    <h2>BOOK<br/>HAVANA NICE</h2>
-    <div className="hn-family-book-rule" aria-hidden="true"/>
-    <p>No hay ediciones publicadas todavía.</p>
-   </div>
-   <p className="hn-family-empty">La revista 3D y su modo de lectura Scroll aparecerán aquí cuando Administración publique una edición con fotografías reales. No se muestran páginas de ejemplo.</p>
+   <MemberBook token={token} tick={mediaTick}/>
   </>:album?<>
    <div className="hn-family-cover">
     {cover?<img className="hn-family-cover-photo" src={cover} alt="" decoding="async"/>:
