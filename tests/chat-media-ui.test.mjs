@@ -162,7 +162,7 @@ test('V2 does not contain an external storage service binding',()=>{
 test('Media-only bubbles remain visual across Chat PWA, native and Administrator',()=>{
  const pwa=read('apps/pwa/src/app/App.tsx');
  const timeline=read('apps/pwa/src/features/chat/ChatTimeline.tsx');
- const android=read('apps/android/App.tsx');
+ const android=read('apps/android/features/chat/NativeChatTimeline.tsx');
  const admin=read('apps/pwa/src/features/chat/AdminChatGeneral.tsx');
  assert.match(timeline,/!message\.media&&<div>\{message\.text\}<\/div>/);
  assert.match(android,/!message\.media\?<Text/);
@@ -182,6 +182,22 @@ test('PWA Chat Timeline stays presentation-only: one session, one history engine
  assert.match(timeline,/display\.lastReadByOther/);
  assert.match(timeline,/buildChatDisplayIndex\(messages,reactions,receipts,actorId\)/);
  assert.doesNotMatch(timeline,/new WebSocket|startNamedChatSession|restoreNamedChatSession|saveLocalChat|uploadChatFile/);
+});
+test('Native Chat timeline is presentation-only; original scroll ownership stays in Expo App',()=>{
+ const controller=read('apps/android/App.tsx');
+ const timeline=read('apps/android/features/chat/NativeChatTimeline.tsx');
+ assert.match(controller,/import NativeChatTimeline from '\.\/features\/chat\/NativeChatTimeline'/);
+ assert.match(controller,/<NativeChatTimeline[\s\S]*onContentSizeChange=\{/);
+ assert.match(controller,/onScrollBeginDrag=\{\(\)=>\{/);
+ assert.match(controller,/onScrollEndDrag=\{trackUserScroll\}/);
+ assert.match(timeline,/onScrollBeginDrag=\{onScrollBeginDrag\}/);
+ assert.match(timeline,/onScrollEndDrag=\{onScrollEndDrag\}/);
+ assert.match(timeline,/onMomentumScrollEnd=\{onScrollEndDrag\}/);
+ assert.match(timeline,/onLongPress=\{\(anchor\) => onMessageLongPress\(message,anchor\)\}/);
+ assert.match(timeline,/onReply=\{\(\) => onReply\(message\)\}/);
+ assert.match(timeline,/<NativeChatMediaView media=\{message\.media\} session=\{session\}/);
+ assert.doesNotMatch(timeline,/new WebSocket|openChatSocket\(|startNamedChatSession\(|saveNativeLocalChat\(|uploadNativeChatFile\(/);
+ assert.doesNotMatch(controller,/<SwipeableBubble|<NativeChatMediaView/);
 });
 test('Native photo uses a fully verified local cache and modal without a browser; video plays inline',()=>{
  const native=read('apps/android/features/chat/NativeChatMediaView.tsx');

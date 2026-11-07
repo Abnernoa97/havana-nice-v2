@@ -1,10 +1,10 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   Alert, AppState, Keyboard, KeyboardAvoidingView, Modal, Platform, Pressable, SafeAreaView, ScrollView,
   StatusBar, Text, TextInput, View, Image, useWindowDimensions,
 } from 'react-native';
 import {
-  HAVANA_V2_DEV_API_BASE_URL, fetchBackendHealth, getChatMediaAvailability, getChatSnapshot, getOlderChatMessages, searchChatMessages, buildChatDisplayIndex, getChatMenuState, getChatMessagePermissions, isWithinChatEditWindow, selectNextQueuedChatMessage, setOutgoingChatStatus, projectOutgoingChatStatus, CHAT_ACK_TIMEOUT_MS, messageDeliveryLabel, newClientMessageId,
+  HAVANA_V2_DEV_API_BASE_URL, fetchBackendHealth, getChatMediaAvailability, getChatSnapshot, getOlderChatMessages, searchChatMessages, getChatMenuState, getChatMessagePermissions, isWithinChatEditWindow, selectNextQueuedChatMessage, setOutgoingChatStatus, projectOutgoingChatStatus, CHAT_ACK_TIMEOUT_MS, newClientMessageId,
   reconcileChatMessages, reconcileReactions, reconcileUpdatedMessage, reconcileDeletedMessage, reconcileChatSnapshot, startNamedChatSession, restoreNamedChatSession, chatSessionExpired, chatReconnectDelay, reconcileChatReadReceipt, removeChatReactionsForMessage, captureChatOfflineSnapshot, restoreChatOfflineOutbox,
   type ChatMessage, type ChatServerEvent, type ChatSession, type ChatReaction, type ChatEmoji, type ChatReadReceipt,
   validateChatMediaSelection, CHAT_MEDIA_MAX_PER_SEND, type ChatMediaSelection, type ChatMediaKind, type ChatMediaSource, type MemberScreen,
@@ -12,9 +12,9 @@ import {
 import { loadNativeLocalChat, saveNativeLocalChat } from './services/chatStorage';
 import * as ImagePicker from 'expo-image-picker';
 import {File} from 'expo-file-system';
-import SwipeableBubble, {type BubbleAnchor} from './features/chat/SwipeableBubble';
+import type {BubbleAnchor} from './features/chat/SwipeableBubble';
+import NativeChatTimeline from './features/chat/NativeChatTimeline';
 import NativeComposerIcon from './features/chat/ChatComposerIcon';
-import NativeChatMediaView from './features/chat/NativeChatMediaView';
 import NativeMemberHome from './features/home/NativeMemberHome';
 import {uploadNativeChatFile} from './services/native-chat-r2-upload';
 import {styles} from './features/chat/chat-styles';
@@ -743,11 +743,6 @@ export default function App() {
       maxWidth:288,menuHeight:118,
     });
 
-  // Build the O(messages+reactions+receipts) view index once per update,
-  // not for every bubble as the composer causes re-renders.
-  const display=useMemo(()=>buildChatDisplayIndex(messages,reactions,receipts,session?.actorId??''),
-    [messages,reactions,receipts,session?.actorId]);
-
   return (
     <SafeAreaView style={[styles.screen,keyboardOpen && styles.screenKeyboard]}>
       <StatusBar barStyle="dark-content" />
@@ -808,18 +803,16 @@ export default function App() {
                 <Text style={styles.searchAction}>Cerrar</Text>
               </Pressable> : null}
             </View> : null}
-            <ScrollView
-              ref={scroll} style={styles.messageList} contentContainerStyle={styles.messages}
-              keyboardShouldPersistTaps="handled"
-              onContentSizeChange={() => {
-                if(initialHistoryPending.current) {
-                  scheduleInitialBottom();
-                } else if(autoScroll.current) {
-                  scroll.current?.scrollToEnd({animated:false});
-                }
+            <NativeChatTimeline
+              messages={messages} results={results} session={session}
+              reactions={reactions} receipts={receipts}
+              hasMore={hasMore} loadingOlder={loadingOlder} scrollRef={scroll}
+              onContentSizeChange={()=>{
+                if(initialHistoryPending.current)scheduleInitialBottom();
+                else if(autoScroll.current)scroll.current?.scrollToEnd({animated:false});
               }}
-              onLayout={() => {if(initialHistoryPending.current)scheduleInitialBottom();}}
-              onScrollBeginDrag={() => {
+              onLayout={()=>{if(initialHistoryPending.current)scheduleInitialBottom();}}
+              onScrollBeginDrag={()=>{
                 userHasScrolled.current=true;
                 initialHistoryPending.current=false;
                 if(initialBottomTimer.current)clearTimeout(initialBottomTimer.current);
@@ -827,51 +820,9 @@ export default function App() {
               }}
               onScroll={event=>{if(userHasScrolled.current)trackUserScroll(event);}}
               onScrollEndDrag={trackUserScroll}
-              onMomentumScrollEnd={trackUserScroll}
-              scrollEventThrottle={16}
-            >
-              {results===null&&hasMore ? <Pressable style={styles.loadMore} disabled={loadingOlder}
-                onPress={()=>void loadOlder()}><Text style={styles.loadMoreText}>{loadingOlder?'Cargando…':'Cargar mensajes anteriores'}</Text></Pressable>:null}
-              {results!==null?<Text style={styles.searchCount}>{results.length} resultado(s)</Text>:null}
-              {!messages.length ? <Text style={styles.empty}>¡Hola! Envía el primer mensaje. Aparecerá en los dos dispositivos.</Text> : null}
-              {(results??messages).filter(message=>!message.deletedAt).map(message => {
-                const mine = message.senderId === session.actorId;
-                const badges=display.reactionBadges.get(message.seq)??[];
-                return (
-                  <SwipeableBubble
-                    key={message.senderId + ':' + message.clientMessageId}
-                    style={[styles.bubble, mine ? styles.mine : styles.theirs]}
-                    onReply={() => replyToMessage(message)}
-                    onLongPress={(anchor) => showMessageMenu(message,anchor)}
-                    onPress={() => {if(mine && message.pending && message.deliveryStatus==='error')retryOutgoing(message.clientMessageId);}}
-                  >
-                    {!mine && <Text style={styles.sender}>{message.senderName}</Text>}
-                    {message.replyToSeq ? (
-                      <Text style={[styles.replyLabel,mine && styles.mineMeta]}>
-                        ↪ {display.replySnippets.get(message.replyToSeq)||'Mensaje anterior'}
-                      </Text>
-                    ) : null}
-                    {!message.media?<Text style={[styles.bubbleText,mine && styles.mineText]}>
-                      {message.text}
-                    </Text>:null}
-                    {message.media?<NativeChatMediaView media={message.media} session={session}/>:null}
-                    {message.seq>0 && !message.deletedAt && badges.length>0 ? (
-                      <View style={styles.reactionBadges}>
-                        {badges.map(({emoji,count})=>(
-                          <Text key={emoji} style={styles.reactionBadge}>{emoji}{count}</Text>
-                        ))}
-                      </View>
-                    ):null}
-                    <Text style={[styles.messageTime,mine && styles.mineMeta]}>
-                      {new Date(message.sentAt).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}
-                      {message.editedAt&&!message.deletedAt?' · editado':''}
-                      {mine?' · '+messageDeliveryLabel(message):''}
-                      {mine&&!message.pending&&display.lastReadByOther>=message.seq?' · leído':''}
-                    </Text>
-                  </SwipeableBubble>
-                );
-              })}
-            </ScrollView>
+              onLoadOlder={()=>void loadOlder()} onReply={replyToMessage}
+              onMessageLongPress={showMessageMenu} onRetry={retryOutgoing}
+            />
             <Modal animationType="fade" transparent statusBarTranslucent visible={!!menuMessage}
               onRequestClose={()=>setMenuMessage(null)}>
               <Pressable style={styles.whatsappBackdrop} onPress={()=>setMenuMessage(null)}>

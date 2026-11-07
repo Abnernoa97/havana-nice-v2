@@ -51,7 +51,7 @@ test('other-member read receipts are monotonic; own receipts do not falsely mark
 
 test('both platforms memoize the index instead of quadratic per-bubble scans',()=>{
  const pwa=readFileSync(new URL('../apps/pwa/src/features/chat/ChatTimeline.tsx',import.meta.url),'utf8');
- const android=readFileSync(new URL('../apps/android/App.tsx',import.meta.url),'utf8');
+ const android=readFileSync(new URL('../apps/android/features/chat/NativeChatTimeline.tsx',import.meta.url),'utf8');
  for(const code of [pwa,android]){
   assert.match(code,/useMemo\(\(\)=>buildChatDisplayIndex\(messages,reactions,receipts,/);
   assert.match(code,/display\.replySnippets\.get\(message\.replyToSeq\)/);
@@ -61,6 +61,10 @@ test('both platforms memoize the index instead of quadratic per-bubble scans',()
   assert.doesNotMatch(code,/messages\.find\(m=>m\.seq===message\.replyToSeq\)/);
   assert.doesNotMatch(code,/reactions\.filter\(r=>r\.messageSeq===message\.seq/);
  }
+ const controller=readFileSync(new URL('../apps/android/App.tsx',import.meta.url),'utf8');
+ assert.match(controller,/import NativeChatTimeline from '\.\/features\/chat\/NativeChatTimeline'/);
+ assert.match(controller,/<NativeChatTimeline[\s\S]*onScrollBeginDrag=\{/);
+ assert.doesNotMatch(controller,/<SwipeableBubble|<NativeChatMediaView|buildChatDisplayIndex\(/);
  const index=readFileSync(new URL('../packages/shared/src/index.ts',import.meta.url),'utf8');
  assert.match(index,/export \{buildChatDisplayIndex\} from '\.\/chat-display'/);
 });
