@@ -7,6 +7,10 @@ const read=(path)=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
 test('APK creation occurs only through an explicitly approved batch marker',()=>{
  const yaml=read('.github/workflows/v2-android-apk.yml');
  assert.match(yaml,/workflow_dispatch:/);
+ assert.doesNotMatch(yaml,/working-directory:\\s*v2(?:\\n|$)/,
+  'APK build must not use the deleted v2/ directory from the original repository');
+ assert.match(yaml,/working-directory:\\s*\\.\\n\\s*run: npm ci/,
+  'APK release installs at the standalone repository root');
  assert.match(yaml,/push:\n\s+branches:\s*\[main\]\n\s+paths:\n\s+- 'releases\/android-batch\.json'/);
  assert.doesNotMatch(yaml,/^\s+- 'apps\/android\/app\.json'/m);
  assert.doesNotMatch(yaml,/^\s+- '\.github\/workflows\/v2-android-apk\.yml'/m);
