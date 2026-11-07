@@ -53,7 +53,7 @@ function trustedOrigin(origin: string | null) {
   if (!origin) return '';
   try {
     const url = new URL(origin);
-    if (url.protocol === 'https:' && (url.hostname === 'havana-nice-v2-dev.pages.dev' || url.hostname.endsWith('.havana-nice-v2-dev.pages.dev'))) return origin;
+    if (url.protocol === 'https:' && (url.hostname === 'havana-nice-v2.pages.dev' || url.hostname.endsWith('.havana-nice-v2.pages.dev') || url.hostname === 'havana-nice-v2-dev.pages.dev' || url.hostname.endsWith('.havana-nice-v2-dev.pages.dev'))) return origin;
     // React Native/OkHttp uses the WSS endpoint's own HTTPS origin by default.
     if (url.protocol === 'https:' && url.hostname === 'havana-nice-v2-dev.soloaplicaciones97.workers.dev') return origin;
     if (url.hostname === 'localhost' || url.hostname === '127.0.0.1') return origin;
