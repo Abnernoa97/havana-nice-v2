@@ -1,6 +1,6 @@
 // HAVANA NICE V2 — one private D1 calendar; legacy original never accessed.
 // Admin writes event + selected recipients atomically. Member reads only assigned dates.
-import {verifyAdminSession} from './admin-auth.js';
+import {verifyAdminSession} from '../admin/admin-auth.js';
 import {notifyCalendarClients} from './calendar-realtime.js';
 const ID=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 // The canonical musician actor IDs are member:<opaque-id>, NOT event UUIDs.

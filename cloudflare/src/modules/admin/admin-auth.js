@@ -2,7 +2,7 @@
 // No password, bearer or hash is embedded in the PWA. All switches default off.
 // Call this endpoint only after 0010_chat_admin_sessions.sql was applied.
 import {notifyAdminClients} from './admin-realtime.js';
-import {sha256Hex} from './crypto-helpers.js';
+import {sha256Hex} from '../../shared/crypto-helpers.js';
 const encoder=new TextEncoder();
 const HOUR=60*60*1000;
 const ATTEMPT_WINDOW=15*60*1000;

@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {DatabaseSync} from 'node:sqlite';
-import {handleCalendarApi} from '../src/calendar.js';
+import {handleCalendarApi} from '../src/modules/calendar/calendar.js';
 
 const BASE='https://havana-nice-v2-dev.soloaplicaciones97.workers.dev';
 const TOKEN='A'.repeat(43);

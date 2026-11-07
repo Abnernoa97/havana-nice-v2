@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {claimFirstInstallation,auditDuplicateInstallation,handleSingleInstallationAdmin} from '../src/single-installation.js';
+import {claimFirstInstallation,auditDuplicateInstallation,handleSingleInstallationAdmin} from '../src/modules/admin/single-installation.js';
 
 const actor='member:test-one';
 const user={actor_id:actor,display_name:'Prueba Uno'};

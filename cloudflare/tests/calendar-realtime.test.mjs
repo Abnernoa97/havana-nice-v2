@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {DatabaseSync} from 'node:sqlite';
-import {calendarSocketIdentity,calendarSocketAuthorized,CalendarRoom,notifyCalendarClients} from '../src/calendar-realtime.js';
-import {sha256Hex} from '../src/crypto-helpers.js';
+import {calendarSocketIdentity,calendarSocketAuthorized,CalendarRoom,notifyCalendarClients} from '../src/modules/calendar/calendar-realtime.js';
+import {sha256Hex} from '../src/shared/crypto-helpers.js';
 
 const M1='member:123e4567-e89b-42d3-a456-426614174001';
 const M2='member:123e4567-e89b-42d3-a456-426614174002';

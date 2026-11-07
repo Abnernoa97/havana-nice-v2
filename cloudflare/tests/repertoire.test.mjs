@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {DatabaseSync} from 'node:sqlite';
-import {handleRepertoireApi} from '../src/repertoire.js';
+import {handleRepertoireApi} from '../src/modules/repertoire/repertoire.js';
 
 const BASE='https://havana-nice-v2-dev.soloaplicaciones97.workers.dev';
 const TOKEN='A'.repeat(43);

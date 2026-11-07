@@ -54,7 +54,7 @@ assert.equal((worker.match(/'access-control-allow-methods':/g)||[]).length,1,
  'Single Worker must own one CORS allow-methods declaration');
 // One name, one installation: the discarded approvals implementation must not
 // survive in source, migrations, UI, or routes.
-const adminAuth=read('cloudflare/src/admin-auth.js');
+const adminAuth=read('cloudflare/src/modules/admin/admin-auth.js');
 const adminMigration=read('cloudflare/migrations/0010_chat_admin_sessions.sql');
 const musicianMigration=read('cloudflare/migrations/0007_named_musician_access.sql');
 absent(musicianMigration,/INSERT\s+(?:OR\s+IGNORE\s+)?INTO\s+chat_members\b/i,
@@ -66,7 +66,7 @@ present(adminMigration,/CREATE TABLE IF NOT EXISTS chat_admin_sessions/,'Admin s
 present(adminAuth,/MIN_SECRET_LENGTH=8/,'Administrator password must have a documented minimum without disabling user-chosen passwords');
 present(adminAuth,/ATTEMPT_WINDOW=15\*60\*1000/,'Admin login must preserve the rate-limit window');
 present(adminAuth,/Number\(existing\.failures\)>=5/,'Admin login must keep failed-attempt lockout');
-const installation=read('cloudflare/src/single-installation.js');
+const installation=read('cloudflare/src/modules/admin/single-installation.js');
 present(worker,/claimFirstInstallation/,'One name must bind only to one installation');
 present(worker,/name_already_bound/,'Duplicate logins must be denied');
 present(installation,/chat_duplicate_login_alerts/,'Attempt alerts must be persisted');
@@ -96,7 +96,7 @@ absent(worker,/single_device_mode|closeUnboundChatSession/,
   'No legacy multi-device bypasses permitted');
 present(worker,/INSERT OR IGNORE INTO chat_members\(username,actor_id,display_name,active\) VALUES\(\?,\?,\?,1\)/,
   'New musician records must use one Administrator-only enrollment path; every login claims its sole owner');
-absent(read('cloudflare/src/single-installation.js'),/single_device_mode/,
+absent(read('cloudflare/src/modules/admin/single-installation.js'),/single_device_mode/,
   'The owner record must be the only musician installation policy');
 absent(read('apps/pwa/src/features/admin/AdminChatAccess.tsx'),/single_device_mode|Acceso anterior protegido/,
   'Administrator cannot show or enforce historical alternative access');
@@ -210,7 +210,7 @@ present(pwa,/editPending\.current=\{seq:editing\.seq,text\}/,'PWA must await edi
 present(android,/Conexión interrumpida\. El texto editado sigue disponible/,'Android must retain edit on disconnect');
 present(pwa,/Conexión interrumpida\. El texto editado sigue disponible/,'PWA must retain edit on disconnect');
 present(worker,/own\.sender_id !== senderId/,'Server must restrict edit/delete to sender');
-const remove=read('cloudflare/src/message-removal.js');
+const remove=read('cloudflare/src/modules/chat/message-removal.js');
 present(worker,/deleteChatMessageRecord\(this.env,input.seq\)/,'Musicians must use the canonical deletion');
 present(remove,/DELETE FROM chat_messages WHERE seq=\?/,'Deleting a message must remove its D1 record');
 present(remove,/UPDATE chat_messages SET reply_to_seq=NULL/,'Keep replies while detaching removed originals');
@@ -227,15 +227,15 @@ assert.equal((pwaStyles.match(/\{/g)||[]).length,(pwaStyles.match(/\}/g)||[]).le
 
 // One authenticated V2 token-hashing primitive: no copies scattered across modules.
 const hashUsers=[
- 'cloudflare/src/index.ts','cloudflare/src/admin-auth.js',
- 'cloudflare/src/chat-media.js','cloudflare/src/family-media.js',
- 'cloudflare/src/calendar-realtime.js'
+ 'cloudflare/src/index.ts','cloudflare/src/modules/admin/admin-auth.js',
+ 'cloudflare/src/modules/chat/chat-media.js','cloudflare/src/modules/family/family-media.js',
+ 'cloudflare/src/modules/calendar/calendar-realtime.js'
 ];
-present(read('cloudflare/src/crypto-helpers.js'),/export async function sha256Hex\(/,
+present(read('cloudflare/src/shared/crypto-helpers.js'),/export async function sha256Hex\(/,
  'One canonical server-side credential hash helper');
 for(const path of hashUsers){
  const src=read(path);
- present(src,/import \{sha256Hex\} from '\.\/crypto-helpers\.js'/,
+ present(src,/import \{sha256Hex\} from '(?:\.\/shared\/|\.\.\/\.\.\/shared\/)crypto-helpers\.js'/,
   path+' must use the same SHA-256 helper');
  absent(src,/\b(?:async )?function (?:hash|digest|sha256)\(/,
   path+' must not recreate a second token-hashing implementation');

@@ -3,9 +3,9 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {DatabaseSync} from 'node:sqlite';
 import {startChatMedia,uploadChatDirect,uploadChatPart,completeChatMedia,chatMediaStatus,
- sendChatMedia,grantChatMedia,readChatMedia,decorateChatMessages,CHAT_PART_BYTES} from '../src/chat-media.js';
-import {deleteChatMessageRecord} from '../src/message-removal.js';
-import {familyStorageUsage} from '../src/family-quota.js';
+ sendChatMedia,grantChatMedia,readChatMedia,decorateChatMessages,CHAT_PART_BYTES} from '../src/modules/chat/chat-media.js';
+import {deleteChatMessageRecord} from '../src/modules/chat/message-removal.js';
+import {familyStorageUsage} from '../src/modules/family/family-quota.js';
 
 const actor='member:123e4567-e89b-42d3-a456-426614174001';
 const another='member:123e4567-e89b-42d3-a456-426614174002';

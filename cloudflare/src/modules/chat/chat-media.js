@@ -1,7 +1,7 @@
 // HAVANA NICE V2 · ONE private R2 bucket, same original-quality fast path as Familia.
 // Media belongs to Chat messages, never to Family albums or a separate conversation.
-import {reserveFamilyStorage,releaseFamilyStorage,familyStorageUsage} from './family-quota.js';
-import {sha256Hex} from './crypto-helpers.js';
+import {reserveFamilyStorage,releaseFamilyStorage,familyStorageUsage} from '../family/family-quota.js';
+import {sha256Hex} from '../../shared/crypto-helpers.js';
 
 const MIME=new Map([['image/jpeg','photo'],['image/png','photo'],['image/webp','photo'],
  ['image/heic','photo'],['image/heif','photo'],['video/mp4','video'],['video/quicktime','video']]);

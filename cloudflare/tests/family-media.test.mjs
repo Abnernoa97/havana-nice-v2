@@ -5,8 +5,8 @@ import {readFileSync} from 'node:fs';
 import {
  familyAlbumSummaries,familyAlbumRoute,issueFamilyGrants,
  listFamilyMedia,readFamilyGrant,uploadFamilyMedia,checkFamilyOriginalUpload,uploadFamilyPoster,pruneExpiredFamilyGrants,deleteFamilyMedia,selectFamilyCover,familyMediaItemRoute
-} from '../src/family-media.js';
-import {FAMILY_STORAGE_STOP_BYTES} from '../src/family-quota.js';
+} from '../src/modules/family/family-media.js';
+import {FAMILY_STORAGE_STOP_BYTES} from '../src/modules/family/family-quota.js';
 
 const ACTOR='member:123e4567-e89b-42d3-a456-426614174001';
 const BASE='https://havana-nice-v2-dev.soloaplicaciones97.workers.dev';

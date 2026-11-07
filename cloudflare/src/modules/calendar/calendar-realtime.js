@@ -1,8 +1,8 @@
 // HAVANA NICE V2 · One isolated Calendar signal room, never a parallel calendar database.
 // Only invalidation hints travel over sockets; D1 authorization remains authoritative.
 // New SQLite-backed Durable Object named "calendar-v2". Separate from ChatRoom.
-import {verifyAdminSession} from './admin-auth.js';
-import {sha256Hex} from './crypto-helpers.js';
+import {verifyAdminSession} from '../admin/admin-auth.js';
+import {sha256Hex} from '../../shared/crypto-helpers.js';
 const MEMBER=/^member:[a-z0-9_-]{1,64}$/i;
 const SESSION=/^[A-Za-z0-9_-]{40,100}$/;
 const ADMIN=/^[A-Za-z0-9_-]{40,128}$/;

@@ -43,13 +43,13 @@ test('A02/A03: Calendar never owns Chat engine, messages or device binding',()=>
     'apps/pwa/src/features/calendar/CalendarAccordion.tsx',
     'apps/pwa/src/features/calendar/AdminCalendar.tsx',
     'packages/shared/src/calendar.ts',
-    'cloudflare/src/calendar.js'
+    'cloudflare/src/modules/calendar/calendar.js'
   ];
   for(const path of calendarFiles){
     const source=read(path);
     assert.doesNotMatch(source,/chat_messages|chat_reactions|chat_single_device_owners|CHAT_ROOMS|localStorage|AsyncStorage|SQLite|WebSocket|startNamedChatSession|restoreNamedChatSession/,path+' illegally owns Chat internals');
   }
-  const handler=read('cloudflare/src/calendar.js');
+  const handler=read('cloudflare/src/modules/calendar/calendar.js');
   assert.match(handler,/verifyAdminSession/);
   assert.match(handler,/verifyMusicianSession/);
   assert.match(handler,/calendar_event_recipients/);
@@ -84,11 +84,11 @@ test('A09: independent module tests must not modify legacy or introduce a second
 
 test('A04: Repertoire cannot create parallel sessions or mutate Chat/Calendar content',()=>{
  for(const file of ['apps/pwa/src/features/repertoire/MemberRepertoire.tsx','apps/pwa/src/features/repertoire/AdminRepertoire.tsx',
-  'packages/shared/src/repertoire.ts','cloudflare/src/repertoire.js']){
+  'packages/shared/src/repertoire.ts','cloudflare/src/modules/repertoire/repertoire.js']){
   const source=read(file);
   assert.doesNotMatch(source,/startNamedChatSession|restoreNamedChatSession|chat_messages|CHAT_ROOMS|chat_single_device_owners|localStorage|AsyncStorage|WebSocket/);
  }
- const api=read('cloudflare/src/repertoire.js');
+ const api=read('cloudflare/src/modules/repertoire/repertoire.js');
  assert.match(api,/verifyAdminSession/);
  assert.match(api,/verifyMusicianSession/);
  assert.match(api,/calendar_event_recipients/);
@@ -106,7 +106,7 @@ test('Repertoire bulk reads use the shared auth and do not create circular share
  assert.doesNotMatch(read('packages/shared/src/repertoire.ts'),/from ['"]\.\/index['"]/);
  assert.match(read('packages/shared/src/repertoire.ts'),/from '\.\/api-base'/);
  assert.match(read('packages/shared/src/index.ts'),/from '\.\/api-base'/);
- const worker=read('cloudflare/src/repertoire.js');
+ const worker=read('cloudflare/src/modules/repertoire/repertoire.js');
  assert.match(worker,/WHERE r\.actor_id=\?/);
  assert.match(worker,/member\.actorId,PAGE\+1,offset/);
  assert.doesNotMatch(worker,/url\.searchParams\.get\('actorId'\)/);
@@ -127,7 +127,7 @@ test('Familia HAVANA NICE is one isolated HOME module with existing session and 
  assert.match(share,/id:'family'.*label:'Familia HAVANA NICE'/);
  assert.match(read('apps/pwa/src/app/AdminApp.tsx'),/name:'Familia HAVANA NICE'/);
  assert.match(read('apps/pwa/src/app/VisualApp.tsx'),/screen==='family'&&token\?<MemberFamily/);
- const worker=read('cloudflare/src/family.js');
+ const worker=read('cloudflare/src/modules/family/family.js');
  assert.match(worker,/verifyAdminSession/);
  assert.match(worker,/verifyMusicianSession/);
  assert.match(worker,/WHERE active=1/);
@@ -184,11 +184,11 @@ test('M09: four-column Familia viewer accepts only authorized Worker file grants
  assert.match(ui,/onKeyDown=\{handleKeys\}/);
  assert.doesNotMatch(ui,/durationLabel|durationSeconds/);
  assert.doesNotMatch(read('packages/shared/src/family.ts'),/durationSeconds/);
- const familyWorker=read('cloudflare/src/family-media.js');
+ const familyWorker=read('cloudflare/src/modules/family/family-media.js');
  assert.doesNotMatch(familyWorker,/export async function issueFamilyGrant\(/);
  assert.doesNotMatch(familyWorker,/typeof item==='string'/);
  assert.match(familyWorker,/export async function issueFamilyGrants/);
- assert.doesNotMatch(read('cloudflare/src/family.js'),/book:\{title:/);
+ assert.doesNotMatch(read('cloudflare/src/modules/family/family.js'),/book:\{title:/);
  assert.doesNotMatch(read('packages/shared/src/family.ts'),/book:\{title:/);
  assert.match(css,/hn-family-media-play-marker/);
  assert.doesNotMatch(css,/hn-family-media-duration/);
@@ -243,13 +243,13 @@ test('M10 R2: only one named private V2 media bucket binding, no Chat/Havana Clo
  assert.deepEqual(cfg.durable_objects.bindings.map(x=>x.name),['CHAT_ROOMS','CALENDAR_ROOMS']);
  assert.deepEqual(cfg.durable_objects.missing||[],[]);
  assert.ok(cfg.migrations.some(x=>x.new_sqlite_classes?.includes('CalendarRoom')));
- const calendarTransport=read('cloudflare/src/calendar-realtime.js');
+ const calendarTransport=read('cloudflare/src/modules/calendar/calendar-realtime.js');
  assert.doesNotMatch(calendarTransport,/chat_messages|chat_reactions|\.r2\.dev|localStorage/);
  assert.match(calendarTransport,/calendar\.invalidate/);
  const worker=read('cloudflare/src/index.ts');
  assert.match(worker,/MEDIA_BUCKET\?: R2Bucket/);
  assert.doesNotMatch(worker,/havana-nice-cloud|\.r2\.dev|publicBucketUrl|S3_ACCESS_KEY/);
  // R2 was enabled, but media upload routes are intentionally a separate authorization milestone.
- const family=read('cloudflare/src/family.js');
+ const family=read('cloudflare/src/modules/family/family.js');
  assert.doesNotMatch(family,/\.put\(|\.delete\(|multipart\/form-data|uploadOriginal/);
 });

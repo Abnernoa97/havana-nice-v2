@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {handleAdminMemberManagement,readMemberDevice,recordMemberEvent} from '../src/member-admin.js';
+import {handleAdminMemberManagement,readMemberDevice,recordMemberEvent} from '../src/modules/admin/member-admin.js';
 
 const BASE='https://havana-nice-v2-dev.soloaplicaciones97.workers.dev';
 const token='Q'.repeat(43),actor='member:orly';

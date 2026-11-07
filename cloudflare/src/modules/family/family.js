@@ -1,6 +1,6 @@
 // HAVANA NICE V2 — Familia; one existing member/Admin authorization boundary.
 // R2 content is exclusively served through short-lived opaque media grants.
-import {verifyAdminSession} from './admin-auth.js';
+import {verifyAdminSession} from '../admin/admin-auth.js';
 import {familyStorageUsage} from './family-quota.js';
 import {familyMultipartRoute,handleFamilyMultipart} from './family-multipart.js';
 import {familyAlbumRoute,familyAlbumSummaries,familyMediaItemRoute,listFamilyMedia,readFamilyGrant,uploadFamilyMedia,checkFamilyOriginalUpload,uploadFamilyPoster,deleteFamilyMedia,selectFamilyCover} from './family-media.js';

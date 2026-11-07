@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {DatabaseSync} from 'node:sqlite';
-import {FAMILY_PART_BYTES,familyMultipartRoute,handleFamilyMultipart} from '../src/family-multipart.js';
+import {FAMILY_PART_BYTES,familyMultipartRoute,handleFamilyMultipart} from '../src/modules/family/family-multipart.js';
 
 const ACTOR='member:123e4567-e89b-42d3-a456-426614174001';
 const ROOT='https://havana-nice-v2-dev.soloaplicaciones97.workers.dev';

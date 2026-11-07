@@ -184,7 +184,7 @@ test('Admin never labels Chrome reduced historical K as a real phone model',()=>
 test('musician removal requires authenticated D1 preview and confirmation',()=>{
  const ui=read('../src/features/admin/AdminChatAccess.tsx');
  const api=read('../src/services/admin-api.ts');
- const server=read('../../../cloudflare/src/member-admin.js');
+ const server=read('../../../cloudflare/src/modules/admin/member-admin.js');
  const route=read('../../../cloudflare/src/index.ts');
  const preview=ui.indexOf('await adminDeletionPreview(session.token,person.actor_id)');
  const approve=ui.indexOf('const approved=window.confirm(',preview);
@@ -284,7 +284,7 @@ test('Administrator Chat uses the existing authenticated session, not a musician
 });
 
 test('Admin login form accepts normal 8+ character passwords and agrees with Worker',()=>{
- const source=read('../../../cloudflare/src/admin-auth.js');
+ const source=read('../../../cloudflare/src/modules/admin/admin-auth.js');
  assert.match(source,/const MIN_SECRET_LENGTH=8;/);
  assert.ok(panel.includes('required minLength={8} maxLength={256}/>'));
  assert.ok(!panel.includes('minLength={40}'));

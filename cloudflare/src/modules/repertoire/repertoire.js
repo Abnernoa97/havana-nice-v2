@@ -1,6 +1,6 @@
 // HAVANA NICE V2 — Repertoire is a self-contained module sharing the EXISTING
 // admin/musician auth, Calendar event recipient visibility and D1 binding.
-import {verifyAdminSession} from './admin-auth.js';
+import {verifyAdminSession} from '../admin/admin-auth.js';
 const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const PAGE=250;
 const SONG_COLS='id,title,artist,category,position,active,reference_url,version,updated_at';

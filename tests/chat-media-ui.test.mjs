@@ -213,7 +213,7 @@ test('Web/Admin originals are fully downloaded once before opening, without forc
 test('one real original-quality R2 uploader for Chat PWA with Familia fast multipart',()=>{
  const uploader=read('apps/pwa/src/services/chat-media-upload.ts');
  const member=read('apps/pwa/src/app/App.tsx');
- const backend=read('cloudflare/src/chat-media.js');
+ const backend=read('cloudflare/src/modules/chat/chat-media.js');
  assert.match(uploader,/!begin\.multipart/);
  assert.match(uploader,/5\*1024\*1024/);
  assert.match(uploader,/Math\.min\(3,begin\.partCount\)/);

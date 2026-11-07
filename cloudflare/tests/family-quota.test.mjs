@@ -5,7 +5,7 @@ import {readFileSync} from 'node:fs';
 import {
  FAMILY_STORAGE_STOP_BYTES,FAMILY_STORAGE_WARNING_BYTES,familyStorageUsage,
  reserveFamilyStorage,releaseFamilyStorage
-} from '../src/family-quota.js';
+} from '../src/modules/family/family-quota.js';
 
 const ACTOR='member:123e4567-e89b-42d3-a456-426614174001';
 function setup(){

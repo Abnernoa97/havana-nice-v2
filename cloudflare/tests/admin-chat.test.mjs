@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {handleAdminChat} from '../src/admin-chat.js';
+import {handleAdminChat} from '../src/modules/admin/admin-chat.js';
 const TOKEN='Q'.repeat(43),BASE='https://v2.example';
 const sha=async s=>Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(s)))).map(b=>b.toString(16).padStart(2,'0')).join('');
 async function fixture(){
@@ -75,7 +75,7 @@ test('moderation physically removes message, reactions and reply reference',asyn
 });
 test('one deletion implementation, broadcast event and CORS preflight',()=>{
  const source=readFileSync(new URL('../src/index.ts',import.meta.url),'utf8');
- const helper=readFileSync(new URL('../src/message-removal.js',import.meta.url),'utf8');
+ const helper=readFileSync(new URL('../src/modules/chat/message-removal.js',import.meta.url),'utf8');
  assert.match(source,/deleteChatMessageRecord\(this.env,input.seq\)/);
  assert.match(source,/this.broadcast\(\{type:'chat.deleted',seq:input.seq\}\)/);
  assert.match(source,/'chat.deleted':'admin.chat.deleted'/);

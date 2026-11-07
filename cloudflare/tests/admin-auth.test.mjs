@@ -1,7 +1,7 @@
 import test from 'node:test';
 import {readFileSync} from 'node:fs';
 import assert from 'node:assert/strict';
-import {adminLoginConfigured,handleAdminSessionApi,verifyAdminSession} from '../src/admin-auth.js';
+import {adminLoginConfigured,handleAdminSessionApi,verifyAdminSession} from '../src/modules/admin/admin-auth.js';
 
 const adminPassword='secure-admin-test-'+ 'Z'.repeat(48);
 const endpoint='https://havana-nice-v2-dev.soloaplicaciones97.workers.dev';
@@ -170,7 +170,7 @@ test('five incorrect logins limit a single device but do not block another IP',a
 });
 
 // S01/P04: member Chat sessions cannot subscribe to privileged admin changes.
-import {adminSocketToken,adminTokenRequest,notifyAdminClients} from '../src/admin-realtime.js';
+import {adminSocketToken,adminTokenRequest,notifyAdminClients} from '../src/modules/admin/admin-realtime.js';
 test('admin realtime subprotocol requires the independent administrator token and never URL parameters',()=>{
  const req=(protocol)=>new Request(endpoint+'/ws/admin',{headers:{'sec-websocket-protocol':protocol}});
  assert.equal(adminSocketToken(req('havana-v2-admin, admin.'+'a'.repeat(43))),'a'.repeat(43));

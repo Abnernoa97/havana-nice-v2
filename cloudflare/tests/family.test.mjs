@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {DatabaseSync} from 'node:sqlite';
-import {handleFamilyApi} from '../src/family.js';
+import {handleFamilyApi} from '../src/modules/family/family.js';
 
 const BASE='https://havana-nice-v2-dev.soloaplicaciones97.workers.dev';
 const MEMBER='member:123e4567-e89b-42d3-a456-426614174001';

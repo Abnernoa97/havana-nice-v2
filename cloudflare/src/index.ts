@@ -1,16 +1,16 @@
-import { handleAdminSessionApi, verifyAdminSession } from './admin-auth.js';
-import { adminSocketToken, adminTokenRequest, notifyAdminClients } from './admin-realtime.js';
-import {handleAdminMemberManagement,recordMemberEvent,readMemberDevice} from './member-admin.js';
-import {handleAdminChat} from './admin-chat.js';
-import {deleteChatMessageRecord} from './message-removal.js';
-import {claimFirstInstallation,auditDuplicateInstallation,handleSingleInstallationAdmin} from './single-installation.js';
-import {handleCalendarApi} from './calendar.js';
-import {CalendarRoom,calendarSocketIdentity,calendarSocketAuthorized} from './calendar-realtime.js';
+import { handleAdminSessionApi, verifyAdminSession } from './modules/admin/admin-auth.js';
+import { adminSocketToken, adminTokenRequest, notifyAdminClients } from './modules/admin/admin-realtime.js';
+import {handleAdminMemberManagement,recordMemberEvent,readMemberDevice} from './modules/admin/member-admin.js';
+import {handleAdminChat} from './modules/admin/admin-chat.js';
+import {deleteChatMessageRecord} from './modules/chat/message-removal.js';
+import {claimFirstInstallation,auditDuplicateInstallation,handleSingleInstallationAdmin} from './modules/admin/single-installation.js';
+import {handleCalendarApi} from './modules/calendar/calendar.js';
+import {CalendarRoom,calendarSocketIdentity,calendarSocketAuthorized} from './modules/calendar/calendar-realtime.js';
 export {CalendarRoom};
-import {handleRepertoireApi} from './repertoire.js';
-import {handleFamilyApi} from './family.js';
-import {handleChatMedia,readChatMedia,decorateChatMessages} from './chat-media.js';
-import {sha256Hex} from './crypto-helpers.js';
+import {handleRepertoireApi} from './modules/repertoire/repertoire.js';
+import {handleFamilyApi} from './modules/family/family.js';
+import {handleChatMedia,readChatMedia,decorateChatMessages} from './modules/chat/chat-media.js';
+import {sha256Hex} from './shared/crypto-helpers.js';
 // Compile-time contracts only. These definitions do not change runtime behavior.
 interface V2Env {
   DB: D1Database;
