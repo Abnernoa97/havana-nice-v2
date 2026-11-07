@@ -1,6 +1,7 @@
 import React,{useCallback,useEffect,useRef,useState} from 'react';
 import {ActivityIndicator,AppState,Image,Modal,Pressable,StyleSheet,Text,View,useWindowDimensions} from 'react-native';
 import {useVideoPlayer,VideoView} from 'expo-video';
+import NativeBook from '../book/NativeBook';
 import {getFamilyDirectory,getFamilyAlbumMedia,familyAlbumCount,HAVANA_V2_DEV_API_BASE_URL,openFamilyRealtime,
  type FamilyAlbum,type FamilyDirectory,type FamilyMediaItem} from '@havana/shared';
 
@@ -24,6 +25,7 @@ export default function NativeFamily({token}:{token:string}){
  const [directory,setDirectory]=useState<FamilyDirectory|null>(null);
  const [selected,setSelected]=useState<string|null>(null);
  const [book,setBook]=useState(false);
+ const [bookTick,setBookTick]=useState(0);
  const [items,setItems]=useState<FamilyMediaItem[]>([]);
  const [focused,setFocused]=useState<number|null>(null);
  const [loading,setLoading]=useState(true);
@@ -60,6 +62,7 @@ export default function NativeFamily({token}:{token:string}){
   let retryDelay=1000;
   const clear=()=>{if(timer!==null){clearTimeout(timer);timer=null;}};
   const synchronize=()=>{
+   setBookTick(value=>value+1);
    void refresh();
    if(selectedRef.current)void loadAlbum(selectedRef.current);
   };
@@ -130,10 +133,7 @@ export default function NativeFamily({token}:{token:string}){
   {!!error&&<Text accessibilityRole="alert" style={styles.error}>{error}</Text>}
   {loading?<ActivityIndicator color="#917252"/>:book?<>
    <Pressable onPress={back}><Text style={styles.action}>‹ Todos los álbumes</Text></Pressable>
-   <View style={styles.book}><Text style={styles.eyebrow}>HAVANA NICE · EDICIONES</Text>
-    <Text style={styles.bookTitle}>BOOK\nHAVANA NICE</Text>
-    <Text style={styles.empty}>No hay ediciones publicadas todavía.</Text></View>
-   <Text style={styles.empty}>La revista 3D aparecerá cuando Administración publique una edición con fotografías reales.</Text>
+   <NativeBook token={token} refreshKey={bookTick} onClose={back}/>
   </>:active?<>
    <Pressable onPress={back}><Text style={styles.action}>‹ Todos los álbumes</Text></Pressable>
    <View style={styles.hero}>
