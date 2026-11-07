@@ -8,6 +8,16 @@ La única fuente de desarrollo es `Abnernoa97/havana-nice-v2`, rama `main`. Sepa
 
 **Avance de Chat (07/11):** menú y permisos, plazos de edición/borrado y cola offline/ACK se unificaron entre PWA y Android en `packages/shared/src/chat-menu.ts` y `chat-outbox.ts` con CI verde [42381952214](https://github.com/Abnernoa97/havana-nice-v2/actions/runs/42381952214) y [42382368718](https://github.com/Abnernoa97/havana-nice-v2/actions/runs/42382368718). El Chat PWA separó el componente visual en `features/chat/ChatTimeline.tsx` ([42382786988](https://github.com/Abnernoa97/havana-nice-v2/actions/runs/42382786988), PASS) y Android separó el StyleSheet en `features/chat/chat-styles.ts` ([42382918524](https://github.com/Abnernoa97/havana-nice-v2/actions/runs/42382918524), PASS). Ningún login, WebSocket, almacenamiento o backend extra. **Pendiente:** dividir la coordinación interna de sesión/sockets de Chat conservando un único controlador por plataforma, luego Router Worker y depuración de dependencias; QA físico de iPhone, R2 y APK Android. Plan Maestro se mantiene **12/46**; Worker publicado **v59**, **sin APK nueva**.
 
+## Avance verificado — políticas de Chat y almacenamiento offline, 07/11/2026
+
+Se centralizaron las siguientes reglas **en el mismo `main`, sin tocar HAVANA NICE original ni HAVANA CLOUD**:
+
+- `packages/shared/src/chat-connection.ts`: caducidad de sesión y reintentos exactos hasta 20 segundos, usados por PWA/Android. [CI PASS 42384099588](https://github.com/Abnernoa97/havana-nice-v2/actions/runs/42384099588).
+- `packages/shared/src/chat-events.ts`: progresión monotónica de confirmaciones de lectura y limpieza de reacciones de mensajes eliminados. [CI PASS 42384369213](https://github.com/Abnernoa97/havana-nice-v2/actions/runs/42384369213).
+- `packages/shared/src/chat-offline.ts`: snapshot único de sesión, borrador, mensaje en edición y outbox; recuperación con los mismos `clientMessageId`. Se mantienen **sin cambio** las claves de IndexedDB PWA y SQLite Android; no se migraron ni borraron datos. [CI PASS 42384747376](https://github.com/Abnernoa97/havana-nice-v2/actions/runs/42384747376).
+
+La sesión y WebSocket continúan teniendo **un controlador por plataforma**. Pendiente: división por componentes del controlador activo sin introducir segundas sesiones/sockets, y después refactor del router Worker. El Worker publicado se mantiene en **v59** y la APK firmada publicada en **0.0.13**; la QA física de iPhone/Android sigue pendiente. Tablero funcional: **12/46**.
+
 # HAVANA NICE V2 — CONTINUIDAD EXACTA
 
 **Corte de saneamiento y QA de Chat: 29 de octubre de 2026.** Este documento es una **bitácora técnica**, no otro plan. Los hitos, prioridades y casillas se controlan SOLO desde [PLAN-MAESTRO.md](./PLAN-MAESTRO.md).
