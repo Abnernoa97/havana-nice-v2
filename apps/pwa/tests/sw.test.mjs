@@ -132,6 +132,20 @@ test('separate visual WebView shell never falls back to Chat HTML while offline'
   assert.equal(sw.writes.length,0);
 });
 
+test('BOOK 3D has a separate offline shell and cannot overwrite the Chat HOME',async()=>{
+ assert.match(script,/APP_SHELL = \[[^\]]*'\/book\.html'/);
+ const sw=serviceWorkerHarness(async()=>{throw Error('offline');});
+ const cache=await sw.caches.open('havana-nice-v2-static-v4');
+ await cache.put('/',{ok:true,tag:'chat'});
+ await cache.put('/book.html',{ok:true,tag:'book'});
+ const result=await sw.dispatch({url:ORIGIN+'/book.html',mode:'navigate'});
+ assert.equal(result.handled,true);
+ assert.equal(result.result.tag,'book');
+ const chat=await sw.dispatch({url:ORIGIN+'/chat',mode:'navigate'});
+ assert.equal(chat.result.tag,'chat');
+ assert.equal(sw.writes.length,2);
+});
+
 test('installed Administrator HTML is never cached or intercepted, including offline',async()=>{
  const sw=serviceWorkerHarness(async()=>{throw Error('offline');});
  const res=await sw.dispatch({url:ORIGIN+'/admin.html',mode:'navigate'});
