@@ -70,7 +70,7 @@ jobs:
       # repository code, no env vars, session credentials, R2 files or secrets.
       # Remove this temporary handoff after installing the canonical version.
       - name: One-time transfer of canonical BOOK Worker bundle to authorized Cloudflare session
-        if: ${{ github.event.head_commit.message == 'ci(v2): export canonical BOOK Worker bundle from main' }}
+        if: "${{ github.event.head_commit.message == 'ci(v2): export canonical BOOK Worker bundle from main' }}"
         shell: bash
         run: |
           set -euo pipefail
