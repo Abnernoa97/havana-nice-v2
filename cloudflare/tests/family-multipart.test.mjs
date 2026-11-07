@@ -15,6 +15,7 @@ function setup(){
  raw.exec('CREATE TABLE chat_messages(seq INTEGER PRIMARY KEY)');
  raw.exec(readFileSync(new URL('../migrations/0025_chat_media_r2.sql',import.meta.url),'utf8'));
  raw.exec(readFileSync(new URL('../migrations/0026_member_delete_media_cleanup.sql',import.meta.url),'utf8'));
+ raw.exec(readFileSync(new URL('../migrations/0027_book_havana_nice.sql',import.meta.url),'utf8'));
  const DB={prepare(sql){return {bind(...args){return {
   async first(){return raw.prepare(sql).get(...args)||null;},
   async all(){return {results:raw.prepare(sql).all(...args)};},
