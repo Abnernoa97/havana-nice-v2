@@ -1,0 +1,20 @@
+{
+  "name": "@havana/cloudflare",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "typecheck": "tsc --noEmit",
+    "test:media": "node --test tests/media-removed.test.mjs",
+    "test:security": "node --test tests/member-admin.test.mjs tests/single-installation.test.mjs",
+    "test:admin-auth": "node --test tests/admin-auth.test.mjs",
+    "test:admin-chat": "node --test tests/admin-chat.test.mjs"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "5.20261023.1",
+    "typescript": "6.0.3",
+    "wrangler": "4.152.0"
+  }
+}

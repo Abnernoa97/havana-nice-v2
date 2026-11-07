@@ -1,0 +1,27 @@
+{
+  "expo": {
+    "name": "HAVANA NICE V2",
+    "slug": "havana-nice-v2",
+    "version": "0.0.13",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "android": {
+      "package": "com.havananice.v2",
+      "softwareKeyboardLayoutMode": "resize",
+      "versionCode": 13
+    },
+    "extra": {
+      "environment": "development"
+    },
+    "plugins": [
+      [
+        "expo-image-picker",
+        {
+          "cameraPermission": "Permitir a HAVANA NICE tomar fotos y videos para el Chat.",
+          "microphonePermission": "Permitir grabar audio al capturar videos en el Chat.",
+          "photosPermission": "Permitir elegir fotos y videos para el Chat."
+        }
+      ]
+    ]
+  }
+}

@@ -1,0 +1,56 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "havana-nice-v2-dev",
+  "main": "./src/index.ts",
+  "compatibility_date": "2026-10-23",
+  "vars": {
+    "HAVANA_ENV": "development",
+    "V2_ADMIN_LOGIN_MODE": "enabled"
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "havana-nice-v2-dev",
+      "database_id": "6a4abd3a-c01b-4d4f-b0ed-49f7eaca0cc5"
+    }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "MEDIA_BUCKET",
+      "bucket_name": "havana-nice-v2-media"
+    }
+  ],
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "CHAT_ROOMS",
+        "class_name": "ChatRoom"
+      },
+      {
+        "name": "CALENDAR_ROOMS",
+        "class_name": "CalendarRoom"
+      }
+    ]
+  },
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_sqlite_classes": [
+        "ChatRoom"
+      ]
+    },
+    {
+      "tag": "v2-calendar-realtime",
+      "new_sqlite_classes": [
+        "CalendarRoom"
+      ]
+    }
+  ],
+  "observability": {
+    "enabled": true,
+    "logs": {
+      "enabled": true,
+      "invocation_logs": true
+    }
+  }
+}

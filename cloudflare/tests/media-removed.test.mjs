@@ -1,0 +1,31 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+const src=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
+test('one private R2 binding serves Chat plus Familia; no legacy bridge or second storage provider',()=>{
+ const cfg=JSON.parse(src('wrangler.jsonc'));
+ assert.equal(cfg.name,'havana-nice-v2-dev');
+ assert.equal(cfg.services,undefined);
+ assert.equal(cfg.r2_buckets.length,1);
+ assert.equal(cfg.r2_buckets[0].binding,'MEDIA_BUCKET');
+ assert.deepEqual(cfg.vars,{HAVANA_ENV:'development',V2_ADMIN_LOGIN_MODE:'enabled'});
+ const worker=src('src/index.ts');
+ assert.doesNotMatch(worker,/attachChatMedia|handleCloudLinkAdmin|HAVANA_CLOUD/);
+ assert.match(worker,/handleChatMedia\(request,env,url,origin,identity\)/);
+ assert.match(worker,/readChatMedia\(request,env,match\[1\],url,origin\)/);
+ assert.match(worker,/media: 'private-r2-chat-and-family'/);
+ const media=src('src/chat-media.js');
+ assert.match(media,/reserveFamilyStorage\(env,size,id\)/);
+ assert.match(media,/\.uploadPart\(number,request\.body\)/);
+ assert.match(media,/decorateChatMessages/);
+ assert.match(media,/chat-media-message-ready/);
+ assert.match(media,/chat_media_grants/);
+});
+test('canonical message deletion revokes private R2 media and keeps old text deletion semantics',()=>{
+ const source=src('src/message-removal.js');
+ assert.match(source,/DELETE FROM chat_messages WHERE seq=\?/);
+ assert.match(source,/UPDATE chat_messages SET reply_to_seq=NULL/);
+ assert.match(source,/DELETE FROM chat_media_objects WHERE id=\?/);
+ assert.match(source,/env\.MEDIA_BUCKET\.delete\(item\.object_key\)/);
+ assert.doesNotMatch(source,/chat_media_assets|HAVANA_CLOUD/);
+});

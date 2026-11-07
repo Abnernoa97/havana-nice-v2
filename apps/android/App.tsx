@@ -1,0 +1,1163 @@
+import React, { useEffect, useRef, useState } from 'react';
+import {
+  Alert, AppState, Keyboard, KeyboardAvoidingView, Modal, Platform, Pressable, SafeAreaView, ScrollView,
+  StatusBar, StyleSheet, Text, TextInput, View, Image, useWindowDimensions,
+} from 'react-native';
+import {
+  HAVANA_V2_DEV_API_BASE_URL, fetchBackendHealth, getChatMediaAvailability, getChatSnapshot, getOlderChatMessages, searchChatMessages, lastReadByOther, messageDeliveryLabel, newClientMessageId,
+  reconcileChatMessages, reconcileReactions, reconcileUpdatedMessage, reconcileDeletedMessage, reconcileChatSnapshot, startNamedChatSession, restoreNamedChatSession,
+  type ChatMessage, type ChatServerEvent, type ChatSession, type ChatReaction, type ChatEmoji, type ChatReadReceipt,
+  validateChatMediaSelection, CHAT_MEDIA_MAX_PER_SEND, type ChatMediaSelection, type ChatMediaKind, type ChatMediaSource, type MemberScreen,
+} from '@havana/shared';
+import { loadNativeLocalChat, saveNativeLocalChat } from './chatStorage';
+import * as ImagePicker from 'expo-image-picker';
+import {File} from 'expo-file-system';
+import SwipeableBubble, {type BubbleAnchor} from './SwipeableBubble';
+import NativeComposerIcon from './ChatComposerIcon';
+import NativeChatMediaView from './NativeChatMediaView';
+import NativeMemberHome from './NativeMemberHome';
+import {uploadNativeChatFile} from './native-chat-r2-upload';
+const newMediaSelectionId=()=>String(Date.now())+'-'+Math.random().toString(36).slice(2);
+
+type NativeQueuedMedia=ChatMediaSelection&{id:string};
+
+export default function App() {
+  const {width: viewportWidth, height: viewportHeight} = useWindowDimensions();
+  const [apiState, setApiState] = useState('conectando…');
+  const [name, setName] = useState('');
+  const [session, setSession] = useState<ChatSession | null>(null);
+  // Access remains the same ChatSession; only the destination changes to HOME.
+  const [activeScreen,setActiveScreen]=useState<MemberScreen>('home');
+  const [restoringAccess,setRestoringAccess] = useState(true);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [draft, setDraft] = useState('');
+  const [composerPanel,setComposerPanel]=useState<'attachments'|'emojis'|null>(null);
+  const [selectedMedia,setSelectedMedia]=useState<NativeQueuedMedia[]>([]);
+  const [mediaError,setMediaError]=useState('');
+  const [mediaPicking,setMediaPicking]=useState(false);
+  const [mediaReady,setMediaReady]=useState(false);
+  const [mediaUploading,setMediaUploading]=useState(false);
+  const [mediaProgress,setMediaProgress]=useState(0);
+  const mediaUploadBusy=useRef(false);
+  const [error, setError] = useState('');
+  const [connection, setConnection] = useState('desconectado');
+  const [joining, setJoining] = useState(false);
+  const [replyTo, setReplyTo] = useState<ChatMessage | null>(null);
+  const [reactions, setReactions] = useState<ChatReaction[]>([]);
+  const [onlineCount, setOnlineCount] = useState(0);
+  const [typing, setTyping] = useState('');
+  const [receipts,setReceipts] = useState<ChatReadReceipt[]>([]);
+  const [hasMore,setHasMore] = useState(false);
+  const [loadingOlder,setLoadingOlder] = useState(false);
+  const [searchText,setSearchText] = useState('');
+  const [searchOpen,setSearchOpen] = useState(false);
+  const [keyboardOpen,setKeyboardOpen] = useState(false);
+  const [results,setResults] = useState<ChatMessage[] | null>(null);
+  const [searching,setSearching] = useState(false);
+  const [editing,setEditing] = useState<ChatMessage | null>(null);
+  const [menuMessage,setMenuMessage] = useState<ChatMessage | null>(null);
+  const [menuAnchor,setMenuAnchor] = useState<BubbleAnchor | null>(null);
+  const socket = useRef<WebSocket | null>(null);
+  const scroll = useRef<React.ElementRef<typeof ScrollView> | null>(null);
+  const chooseNativeMedia=async(source:ChatMediaSource,kind?:ChatMediaKind)=>{
+    setComposerPanel(null);setMediaError('');Keyboard.dismiss();
+    if(mediaPicking||mediaUploadBusy.current)return;
+    const free=CHAT_MEDIA_MAX_PER_SEND-selectedMedia.length;
+    if(free<1){setMediaError('Máximo 5 archivos entre Fotos y Video por envío.');return;}
+    setMediaPicking(true);
+    try{
+      if(source==='camera'){
+        const permission=await ImagePicker.requestCameraPermissionsAsync();
+        if(!permission.granted){
+          Alert.alert('Permiso de cámara','Permite el acceso a la cámara para tomar fotos o videos.');
+          return;
+        }
+      }
+      const options:ImagePicker.ImagePickerOptions={
+        mediaTypes:source==='camera'?['images','videos']:kind==='photo'?['images']:['videos'],
+        allowsEditing:false,quality:1,allowsMultipleSelection:source==='gallery',
+        selectionLimit:source==='gallery'?free:1
+      };
+      const result=source==='camera'
+        ?await ImagePicker.launchCameraAsync(options)
+        :await ImagePicker.launchImageLibraryAsync(options);
+      if(result.canceled||!result.assets?.length)return;
+      if(result.assets.length>free){
+        setMediaError('Máximo 5 archivos entre Fotos y Video por envío.');return;
+      }
+      const additions:NativeQueuedMedia[]=[];
+      for(const asset of result.assets){
+        const pickedKind:ChatMediaKind=asset.type==='video'||asset.mimeType?.startsWith('video/')?'video':'photo';
+        const name=asset.fileName||('havana-'+Date.now()+(pickedKind==='photo'?'.jpg':'.mp4'));
+        // Some Android image providers omit metadata even when the file exists.
+        // Derive size from the native file and preserve the original MIME/extension.
+        const mimeType=(asset.mimeType||
+          (pickedKind==='video'?(/\.mov$/i.test(name)?'video/quicktime':'video/mp4'):
+           /\.heic$/i.test(name)?'image/heic':
+           /\.heif$/i.test(name)?'image/heif':
+           /\.png$/i.test(name)?'image/png':
+           /\.webp$/i.test(name)?'image/webp':'image/jpeg')).toLowerCase();
+        const sizeBytes=asset.fileSize??new File(asset.uri).size;
+        const issue=validateChatMediaSelection({kind:pickedKind,name,mimeType,sizeBytes});
+        if(issue){setMediaError(name+': '+issue);return;}
+        additions.push({id:newMediaSelectionId(),kind:pickedKind,source,uri:asset.uri,name,mimeType,sizeBytes});
+      }
+      setSelectedMedia(previous=>[...previous,...additions]);
+    }catch{
+      setMediaError('No se pudo abrir la cámara o la galería. Inténtalo de nuevo.');
+    }finally{setMediaPicking(false);}
+  };
+  useEffect(()=>{
+    if(!session){setMediaReady(false);return;}
+    let active=true;
+    void getChatMediaAvailability(session).then(enabled=>{
+      if(active)setMediaReady(enabled);
+    }).catch(()=>{if(active)setMediaReady(false);});
+    return()=>{active=false;};
+  },[session?.token]);
+  const autoScroll = useRef(true);
+  // Initial load and reopening land at the most recent message, without a long animated scroll.
+  const initialHistoryPending = useRef(true);
+  const initialHistoryLoaded = useRef(false);
+  const initialBottomTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const userHasScrolled = useRef(false);
+  const activeSession = useRef<ChatSession | null>(null);
+  const appLifecycle = useRef(AppState.currentState);
+  const retryTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const retryAttempts = useRef(0);
+  const disposed = useRef(false);
+  const connectLatest = useRef<(next: ChatSession) => void>(() => {});
+  const syncLatest = useRef<() => void>(() => {});
+  const outbox = useRef<Map<string, ChatMessage>>(new Map());
+  const acknowledgementTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
+  const typingLast = useRef(0);
+  const typingTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const storageQueue = useRef<Promise<void>>(Promise.resolve());
+  const latestDraft = useRef('');
+  const restoredStorage = useRef(false);
+  const draftTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // C02: preserve the previous composer draft and wait for the server update.
+  const beforeEdit = useRef<{draft:string;replyTo:ChatMessage|null}|null>(null);
+  const editingSnapshot = useRef<ChatMessage|null>(null);
+  const editPending = useRef<{seq:number;text:string}|null>(null);
+  const editTimeout = useRef<ReturnType<typeof setTimeout>|null>(null);
+  const [savingEdit,setSavingEdit] = useState(false);
+
+  // Android 16: keep the legacy navigation padding only when the IME is hidden.
+  // The keyboard avoidance wrapper is responsible for lifting the composer.
+  useEffect(() => {
+    const show=Keyboard.addListener('keyboardDidShow',()=>setKeyboardOpen(true));
+    const hide=Keyboard.addListener('keyboardDidHide',()=>setKeyboardOpen(false));
+    return ()=>{show.remove();hide.remove();};
+  },[]);
+
+  function scheduleInitialBottom() {
+    if (!initialHistoryPending.current || !initialHistoryLoaded.current || userHasScrolled.current) return;
+    scroll.current?.scrollToEnd({animated:false});
+    if (initialBottomTimer.current) clearTimeout(initialBottomTimer.current);
+    initialBottomTimer.current = setTimeout(() => {
+      initialBottomTimer.current = null;
+      if (initialHistoryPending.current && !userHasScrolled.current) {
+        scroll.current?.scrollToEnd({animated:false});
+        initialHistoryPending.current = false;
+      }
+    }, 220);
+  }
+  function beginFreshChatViewport() {
+    if (initialBottomTimer.current) clearTimeout(initialBottomTimer.current);
+    initialBottomTimer.current=null;
+    initialHistoryPending.current=true;
+    initialHistoryLoaded.current=false;
+    userHasScrolled.current=false;
+    autoScroll.current=true;
+  }
+  function trackUserScroll(event:{nativeEvent:{contentOffset:{y:number};contentSize:{height:number};layoutMeasurement:{height:number}}}) {
+    const {contentOffset,contentSize,layoutMeasurement}=event.nativeEvent;
+    const gap=contentSize.height-contentOffset.y-layoutMeasurement.height;
+    autoScroll.current=gap<90;
+  }
+
+  function toggleSearch() {
+    setSearchOpen(open=>!open);
+    setSearchText('');
+    setResults(null);
+  }
+
+  function revokeCurrentAccess() {
+    setActiveScreen('home');
+    const previous = socket.current;
+    socket.current = null;
+    previous?.close();
+    clearRetryTimer();
+    activeSession.current = null;
+    outbox.current.clear();
+    editingSnapshot.current=null;
+    beforeEdit.current=null;
+    setEditing(null);
+    setMessages([]);
+    setSession(null);
+    setName('');
+    setConnection('desconectado');
+    setError('Acceso revocado. Consulta al administrador.');
+    void saveNativeLocalChat(null);
+  }
+
+  function persistLocal() {
+    if (!restoredStorage.current) return;
+    const value = activeSession.current ? {
+      session: activeSession.current,
+      outbox: [...outbox.current.values()].map(m => ({...m,pending:true,deliveryStatus:'queued' as const})),
+      draft: latestDraft.current,
+      editing: editingSnapshot.current,
+      beforeEdit: beforeEdit.current,
+    } : null;
+    storageQueue.current = storageQueue.current.catch(() => {}).then(() => saveNativeLocalChat(value)).catch(() => {});
+  }
+
+  function sendReadReceipt(seq:number) {
+    if(seq>0 && appLifecycle.current==='active' && socket.current?.readyState===WebSocket.OPEN) {
+      socket.current.send(JSON.stringify({type:'chat.read',seq}));
+    }
+  }
+  async function loadOlder() {
+    if(!session || loadingOlder || !hasMore) return;
+    const seqs=messages.filter(m=>m.seq>0).map(m=>m.seq);
+    if(!seqs.length)return;
+    setLoadingOlder(true);
+    autoScroll.current=false;
+    try {
+      const data=await getOlderChatMessages(session,Math.min(...seqs));
+      setHasMore(data.hasMore);
+      setMessages(before=>reconcileChatMessages(data.messages,before));
+      setReactions(before=>[...data.reactions.filter(x=>!before.some(y=>y.messageSeq===x.messageSeq&&y.actorId===x.actorId&&y.emoji===x.emoji)),...before]);
+    } catch(e){setError(e instanceof Error?e.message:'No se pudo cargar el historial');}
+    finally {setLoadingOlder(false);}
+  }
+  async function searchHistory(){
+    if(!session||searchText.trim().length<2){setResults(null);return;}
+    setSearching(true);
+    try{setResults(await searchChatMessages(session,searchText.trim()));}
+    catch(e){setError(e instanceof Error?e.message:'No se pudo buscar');}
+    finally{setSearching(false);}
+  }
+
+  function resetEditTimeout(){
+    if(editTimeout.current){clearTimeout(editTimeout.current);editTimeout.current=null;}
+  }
+  function finishEditing(){
+    resetEditTimeout();
+    editPending.current=null;
+    setSavingEdit(false);
+    setEditing(null);
+    const previous=beforeEdit.current;
+    beforeEdit.current=null;
+    editingSnapshot.current=null;
+    latestDraft.current=previous?.draft??'';
+    setDraft(latestDraft.current);
+    setReplyTo(previous?.replyTo??null);
+    setError('');
+    persistLocal();
+  }
+  function abandonPendingEdit(reason:string){
+    if(!editPending.current)return;
+    editPending.current=null;
+    resetEditTimeout();
+    setSavingEdit(false);
+    setError(reason);
+    // Editing text stays in the composer for an explicit retry or cancel.
+  }
+  function replyToMessage(message:ChatMessage) {
+    if(message.seq<1 || message.deletedAt)return;
+    setMenuMessage(null);
+    setEditing(null);
+    setReplyTo(message);
+  }
+  function showMessageMenu(message:ChatMessage,anchor:BubbleAnchor) {
+    if(message.seq<=0 || message.deletedAt)return;
+    setMenuAnchor(anchor);
+    setMenuMessage(message);
+  }
+  function manageOwn(message:ChatMessage,deleting=false){
+    if(!session||message.senderId!==session.actorId||message.seq<1||
+      message.deletedAt||connection!=='en vivo')return;
+    if(Date.now()-Date.parse(message.sentAt)>(deleting?48*60*60*1000:900000)){
+      setError(deleting?'El plazo para eliminar terminó':'El plazo de edición de 15 minutos terminó');return;
+    }
+    if(!deleting){
+      if(!beforeEdit.current)beforeEdit.current={draft,replyTo};
+      editingSnapshot.current=message;
+      latestDraft.current=message.text;
+      setReplyTo(null);setEditing(message);setDraft(message.text);setError('');
+      persistLocal();
+      return;
+    }
+    setError('');
+    const ws=socket.current;
+    if(ws?.readyState!==WebSocket.OPEN){
+      setError('No se pudo borrar: sin conexión. Reintenta cuando vuelva Internet.');
+      return;
+    }
+    try{ws.send(JSON.stringify({type:'chat.delete',seq:message.seq}));}
+    catch{setError('No se pudo borrar. Reintenta cuando vuelva Internet.');}
+  }
+  function clearAck(id: string) {
+    const timer = acknowledgementTimers.current.get(id);
+    if (timer) clearTimeout(timer);
+    acknowledgementTimers.current.delete(id);
+  }
+
+  function confirmMessage(message: ChatMessage) {
+    if (!message.pending && message.senderId === activeSession.current?.actorId) {
+      outbox.current.delete(message.clientMessageId);
+      clearAck(message.clientMessageId);
+      persistLocal();
+    }
+  }
+
+  function markOutgoing(id: string, state: 'queued' | 'sending' | 'error') {
+    const message = outbox.current.get(id);
+    if (!message) return;
+    outbox.current.set(id, { ...message, deliveryStatus: state, failed: state === 'error' });
+    persistLocal();
+    setMessages(existing => existing.map(m =>
+      m.clientMessageId === id && m.senderId === message.senderId && m.pending
+        ? { ...m, deliveryStatus: state, failed: state === 'error' }
+        : m
+    ));
+  }
+
+  function pauseOutgoing() {
+    for (const timer of acknowledgementTimers.current.values()) clearTimeout(timer);
+    acknowledgementTimers.current.clear();
+    for (const id of outbox.current.keys()) markOutgoing(id, 'queued');
+  }
+
+  // Each retry retains the original clientMessageId. D1 UNIQUE(sender_id, id)
+  // prevents duplicates if the server stored a message before connection loss.
+  function flushOutbox() {
+    const ws = socket.current;
+    if (!ws || ws.readyState !== WebSocket.OPEN) return;
+    const pending = [...outbox.current.values()].sort((a, b) => a.sentAt.localeCompare(b.sentAt));
+    // Preserve sender order: wait for server ACK before transmitting next item.
+    if (pending.some(item => item.deliveryStatus === 'sending')) return;
+    const item = pending[0];
+    if (!item || item.deliveryStatus !== 'queued') return;
+    {
+      try {
+        ws.send(JSON.stringify({ type: 'chat.send', clientMessageId: item.clientMessageId, text: item.text, replyToSeq: item.replyToSeq || null }));
+        markOutgoing(item.clientMessageId, 'sending');
+        clearAck(item.clientMessageId);
+        const id = item.clientMessageId;
+        acknowledgementTimers.current.set(id, setTimeout(() => {
+          acknowledgementTimers.current.delete(id);
+          markOutgoing(id, 'error');
+        }, 12000));
+      } catch {
+        markOutgoing(item.clientMessageId, 'error');
+      }
+    }
+  }
+
+  function retryOutgoing(id: string) {
+    if (!outbox.current.has(id)) return;
+    clearAck(id);
+    markOutgoing(id, 'queued');
+    flushOutbox();
+  }
+
+
+  function clearRetryTimer() {
+    if (retryTimer.current) clearTimeout(retryTimer.current);
+    retryTimer.current = null;
+  }
+
+  function syncMessages(next: ChatSession) {
+    void getChatSnapshot(next)
+      .then(({ messages:history, reactions:historyReactions, receipts:readHistory,hasMore:more }) => {
+        if (!disposed.current && activeSession.current?.actorId === next.actorId) {
+          if(initialHistoryPending.current)initialHistoryLoaded.current=true;
+          history.forEach(confirmMessage);
+          setReactions(historyReactions);
+          setReceipts(readHistory);
+          setHasMore(more);
+          setMessages(before => reconcileChatSnapshot(before,history));
+          if(initialHistoryPending.current)requestAnimationFrame(scheduleInitialBottom);
+          sendReadReceipt(Math.max(0,...history.map(m=>m.seq)));
+          flushOutbox();
+        }
+      })
+      .catch(reason => {
+        if (!disposed.current && activeSession.current?.actorId === next.actorId) {
+          setError(reason instanceof Error ? reason.message : 'No se pudo actualizar el historial');
+          // A temporary history failure must not block queued outgoing messages.
+          flushOutbox();
+        }
+      });
+  }
+
+  // React Native's Android WebSocket supports Authorization at handshake time.
+  // Do not put secrets in the URL or Sec-WebSocket-Protocol.
+  function connect(next: ChatSession) {
+    if (disposed.current) return;
+    activeSession.current = next;
+    persistLocal();
+    if (Date.parse(next.expiresAt) <= Date.now()) {
+      clearRetryTimer();
+      for (const timer of acknowledgementTimers.current.values()) clearTimeout(timer);
+      acknowledgementTimers.current.clear();
+      socket.current?.close();
+      socket.current = null;
+      activeSession.current = null;
+      persistLocal();
+      setSession(null);
+      setConnection('desconectado');
+      setError('Tu acceso no está disponible. Escribe tu nombre para solicitar la entrada.');
+      return;
+    }
+    clearRetryTimer();
+    const previous = socket.current;
+    if (previous) pauseOutgoing();
+    socket.current = null; // previous close events cannot race with a new connection
+    previous?.close();
+    setConnection('conectando…');
+    setError('');
+
+    type NativeWebSocketConstructor = new (
+      url: string,
+      protocols: string[],
+      options: { headers: Record<string, string> },
+    ) => WebSocket;
+    const NativeWebSocket = WebSocket as unknown as NativeWebSocketConstructor;
+
+    function retry() {
+      if (disposed.current || appLifecycle.current !== 'active' || socket.current !== ws ||
+        !activeSession.current || retryTimer.current) return;
+      pauseOutgoing();
+      retryAttempts.current += 1;
+      const delay = Math.min(20000, 1000 * 2 ** Math.min(retryAttempts.current - 1, 5));
+      setConnection('reconectando…');
+      retryTimer.current = setTimeout(() => {
+        retryTimer.current = null;
+        const sessionToRetry = activeSession.current;
+        if (sessionToRetry && appLifecycle.current === 'active') {
+          connectLatest.current(sessionToRetry);
+        }
+      }, delay);
+    }
+
+    let ws: WebSocket;
+    try {
+      ws = new NativeWebSocket(
+        `${HAVANA_V2_DEV_API_BASE_URL.replace(/^http/, 'ws')}/ws`,
+        ['havana-v2'],
+        { headers: { Authorization: `Bearer ${next.token}` } },
+      );
+    } catch {
+      setConnection('sin conexión');
+      // Constructor errors are exceptional; avoid an indefinite retry loop.
+      setError('No se pudo iniciar la conexión. Comprueba la red y pulsa Reconectar.');
+      return;
+    }
+    socket.current = ws;
+    ws.onopen = () => {
+      if (disposed.current || socket.current !== ws) return;
+      retryAttempts.current = 0;
+      clearRetryTimer();
+      setConnection('en vivo');
+      setError('');
+      syncMessages(next); // also recovers messages missed in background
+    };
+    ws.onmessage = event => {
+      if (disposed.current || socket.current !== ws) return;
+      try {
+        const item = JSON.parse(String(event.data)) as ChatServerEvent;
+        if (item.type === 'chat.ready') {
+          setOnlineCount(item.users?.length || 1);
+        } else if (item.type === 'chat.presence') {
+          setOnlineCount(item.users.length);
+        } else if (item.type === 'chat.typing') {
+          if (item.actorId !== next.actorId) {
+            setTyping(item.active ? item.senderName + ' está escribiendo…' : '');
+            if (typingTimer.current) clearTimeout(typingTimer.current);
+            if (item.active) typingTimer.current = setTimeout(() => setTyping(''), 4300);
+          }
+        } else if (item.type === 'chat.updated') {
+          setMessages(before=>reconcileUpdatedMessage(before,item.message));
+          // Only finish the editor after receiving the server's confirmed update.
+          if(editPending.current?.seq===item.message.seq){
+            if(!item.message.deletedAt && item.message.text===editPending.current.text)
+              finishEditing();
+            else abandonPendingEdit('La edición no coincidió con el servidor. Revisa el mensaje antes de reintentar.');
+          }
+          if(item.message.deletedAt){
+            setReactions(before=>before.filter(r=>r.messageSeq!==item.message.seq));
+            setMenuMessage(current=>current?.seq===item.message.seq?null:current);
+          }
+          setError('');
+        } else if (item.type === 'chat.deleted') {
+          setMessages(before=>reconcileDeletedMessage(before,item.seq));
+          setResults(before=>before?.filter(m=>m.seq!==item.seq)??null);
+          setReactions(before=>before.filter(r=>r.messageSeq!==item.seq));
+          setReplyTo(current=>current?.seq===item.seq?null:current);
+          setMenuMessage(current=>current?.seq===item.seq?null:current);
+          setEditing(current=>current?.seq===item.seq?null:current);
+        } else if (item.type === 'chat.read') {
+          setReceipts(before=>[...before.filter(x=>x.actorId!==item.actorId),
+            {actorId:item.actorId,displayName:item.displayName,seq:Math.max(item.seq,
+              before.find(x=>x.actorId===item.actorId)?.seq||0)}]);
+        } else if (item.type === 'chat.reaction') {
+          setReactions(before => reconcileReactions(before, item));
+        } else if (item.type === 'chat.message') {
+          confirmMessage(item.message);
+          setMessages(before => reconcileChatMessages(before, [item.message]));
+          sendReadReceipt(item.message.seq);
+          flushOutbox();
+        } else if (item.type === 'chat.revoked') {
+          revokeCurrentAccess();
+        } else if (item.type === 'chat.error') {
+          abandonPendingEdit(item.error);
+          setError(item.error);
+        }
+      } catch {
+        setError('Evento no válido');
+      }
+    };
+    ws.onerror = () => {
+      if (disposed.current || socket.current !== ws) return;
+      abandonPendingEdit('Conexión interrumpida. El texto editado sigue disponible.');
+      retry();
+    };
+    ws.onclose = event => {
+      if (disposed.current || socket.current !== ws) return;
+      abandonPendingEdit('Conexión interrumpida. El texto editado sigue disponible.');
+      pauseOutgoing();
+      if (appLifecycle.current === 'active') {
+        retry();
+      } else {
+        setConnection('pausado');
+      }
+    };
+  }
+
+  // Stable listeners are mounted once. Reconnect on Android foreground,
+  // with a short exponential backoff after unexpected network drops.
+  connectLatest.current = connect;
+  syncLatest.current = () => {
+    if (activeSession.current) syncMessages(activeSession.current);
+  };
+
+  useEffect(() => {
+    disposed.current = false;
+    void loadNativeLocalChat().then(async saved => {
+      if (disposed.current) return;
+      if (activeSession.current) {restoredStorage.current=true;persistLocal();return;}
+      if (!saved?.session || Date.parse(saved.session.expiresAt) <= Date.now()) return;
+      let approved:ChatSession | null = saved.session;
+      try {approved = await restoreNamedChatSession(saved.session);}
+      catch {approved = saved.session;} // Offline: retain local identity and retry once online
+      if (disposed.current) return;
+      if (!approved) {
+        await saveNativeLocalChat(null);
+        setName('');
+        setError('Acceso no autorizado. Consulta al administrador.');
+        return;
+      }
+      activeSession.current = approved;
+      beginFreshChatViewport();
+      outbox.current = new Map(saved.outbox.map(m => [m.clientMessageId,{...m,pending:true,deliveryStatus:'queued' as const}]));
+      setMessages([...outbox.current.values()]);
+      setSession(approved);
+      latestDraft.current = saved.draft || '';
+      setDraft(latestDraft.current);
+      // An interrupted edit must not be converted silently into a new message.
+      if(saved.editing && saved.editing.seq>0 && saved.editing.senderId===approved.actorId && !saved.editing.deletedAt){
+        editingSnapshot.current=saved.editing;
+        beforeEdit.current=saved.beforeEdit??{draft:'',replyTo:null};
+        setEditing(saved.editing);
+        setError('Edición recuperada. Puedes continuar o cancelar.');
+      } else {
+        editingSnapshot.current=null;
+        beforeEdit.current=null;
+      }
+      setName(approved.displayName);
+      connectLatest.current(approved);
+    }).catch(() => {}).finally(() => {restoredStorage.current=true;setRestoringAccess(false);});
+    void fetchBackendHealth()
+      .then(value => { if (!disposed.current) setApiState(value.ok ? 'conectada' : 'error'); })
+      .catch(() => { if (!disposed.current) setApiState('error'); });
+
+    const subscription = AppState.addEventListener('change', state => {
+      appLifecycle.current = state;
+      const currentSession = activeSession.current;
+      if (state === 'active' && currentSession) {
+        beginFreshChatViewport();
+        void restoreNamedChatSession(currentSession).then(valid => {
+          if (disposed.current || activeSession.current?.token !== currentSession.token) return;
+          if (!valid) {revokeCurrentAccess();return;}
+          const ws = socket.current;
+          if (!ws || ws.readyState !== WebSocket.OPEN) connectLatest.current(valid);
+          else syncLatest.current();
+        }).catch(() => {
+          // Without a network connection, preserve the existing local session.
+          if (activeSession.current?.token === currentSession.token)
+            connectLatest.current(currentSession);
+        });
+      } else if (state === 'background') {
+        persistLocal();
+        clearRetryTimer();
+        pauseOutgoing();
+        const old = socket.current;
+        socket.current = null;
+        old?.close();
+        if (currentSession) setConnection('pausado');
+      }
+    });
+
+    return () => {
+      disposed.current = true;
+      subscription.remove();
+      clearRetryTimer();
+      socket.current?.close();
+      socket.current = null;
+      if (typingTimer.current) clearTimeout(typingTimer.current);
+      if (initialBottomTimer.current) clearTimeout(initialBottomTimer.current);
+      resetEditTimeout();
+    };
+  }, []);
+
+  useEffect(() => {
+    latestDraft.current = draft;
+    if(!restoredStorage.current || !activeSession.current)return;
+    if(draftTimer.current)clearTimeout(draftTimer.current);
+    draftTimer.current=setTimeout(()=>{draftTimer.current=null;persistLocal();},350);
+    return ()=>{if(draftTimer.current)clearTimeout(draftTimer.current);};
+  },[draft]);
+
+
+  function acceptApprovedSession(next: ChatSession) {
+    editingSnapshot.current=null;
+    beforeEdit.current=null;
+    setEditing(null);
+    beginFreshChatViewport();
+    setMessages([]);
+    setReceipts([]);
+    setResults(null);
+    setHasMore(false);
+    setSession(next);
+    activeSession.current=next;
+    persistLocal();
+    retryAttempts.current=0;
+    connect(next);
+  }
+  async function join() {
+    if(!name.trim()||joining)return;
+    setJoining(true);setError('');
+    try{
+      const next=await startNamedChatSession(name.trim());
+      acceptApprovedSession(next);
+    }catch(reason){setError(reason instanceof Error?reason.message:'No se pudo entrar');}
+    finally{setJoining(false);}
+  }
+
+  function react(seq: number, emoji: ChatEmoji) {
+    if (seq > 0 && socket.current?.readyState === WebSocket.OPEN) {
+      socket.current.send(JSON.stringify({type:'chat.react',messageSeq:seq,emoji}));
+    }
+  }
+  function typeText(value: string) {
+    latestDraft.current=value;
+    setDraft(value);
+    const now = Date.now();
+    if (now - typingLast.current > 1700 && socket.current?.readyState === WebSocket.OPEN) {
+      typingLast.current = now;
+      socket.current.send(JSON.stringify({type:'chat.typing',active:!!value.trim()}));
+    }
+  }
+
+  async function sendSelectedMedia(){
+    if(!session||!selectedMedia.length||mediaUploadBusy.current)return;
+    if(!mediaReady){setMediaError('El almacenamiento R2 no está disponible.');return;}
+    mediaUploadBusy.current=true;setMediaUploading(true);setMediaProgress(0);setMediaError('');
+    try{
+      const batch=[...selectedMedia];
+      const total=batch.reduce((bytes,item)=>bytes+item.sizeBytes,0);
+      let saved=0;
+      for(const item of batch){
+        await uploadNativeChatFile(session,item,sent=>{
+          setMediaProgress(Math.round(100*Math.min(total,saved+sent)/Math.max(total,1)));
+        });
+        saved+=item.sizeBytes;
+        // Only remove confirmed originals; failed items stay in the retry queue.
+        setSelectedMedia(before=>before.filter(x=>x.id!==item.id));
+        syncMessages(session);
+      }
+      setMediaProgress(100);
+    }catch(e){
+      setMediaError(e instanceof Error?e.message:'Se interrumpió la carga. Reintenta solo lo pendiente.');
+    }finally{mediaUploadBusy.current=false;setMediaUploading(false);}
+  }
+  function send() {
+    const text = draft.trim();
+    if(editing){
+      if(editPending.current)return;
+      if(!text){setError('El mensaje editado no puede quedar vacío.');return;}
+      if(text===editing.text){finishEditing();return;}
+      if(Date.now()-Date.parse(editing.sentAt)>15*60*1000){
+        setError('El plazo de edición de 15 minutos terminó. El texto sigue aquí para copiarlo.');
+        return;
+      }
+      const ws=socket.current;
+      if(connection!=='en vivo'||ws?.readyState!==WebSocket.OPEN){
+        setError('Sin conexión. No se perdió el texto editado; reintenta cuando vuelva Internet.');
+        return;
+      }
+      editPending.current={seq:editing.seq,text};
+      setSavingEdit(true);
+      try{
+        ws.send(JSON.stringify({type:'chat.edit',seq:editing.seq,text}));
+        resetEditTimeout();
+        editTimeout.current=setTimeout(()=>{
+          abandonPendingEdit('No se confirmó la edición. Comprueba el mensaje y reintenta.');
+        },10000);
+        setError('');
+      }catch{
+        abandonPendingEdit('Error de conexión. El texto editado sigue disponible.');
+      }
+      return;
+    }
+    if (!session || !text) return;
+    if (outbox.current.size >= 100) {
+      setError('La cola de mensajes está llena. Reintenta cuando vuelva Internet.');
+      return;
+    }
+    const clientMessageId = newClientMessageId();
+    const item: ChatMessage = {
+      seq: 0, clientMessageId, senderId: session.actorId, senderName: session.displayName,
+      text, sentAt: new Date().toISOString(), pending: true, deliveryStatus: 'queued', replyToSeq: replyTo?.seq || null,
+    };
+    outbox.current.set(clientMessageId, item);
+    persistLocal();
+    setReplyTo(null);
+    setMessages(before => reconcileChatMessages(before, [item]));
+    setDraft('');
+    autoScroll.current = true;
+    flushOutbox();
+  }
+
+  // The menu is positioned beside the touched bubble, clamped to the visible
+  // Android window. On short screens it moves below the bubble if needed.
+  const menuWidth=Math.min(288,Math.max(180,viewportWidth-24));
+  const menuOwn=!!menuMessage && menuMessage.senderId===session?.actorId && !menuMessage.pending;
+  const menuAge=menuMessage ? Date.now()-Date.parse(menuMessage.sentAt) : Infinity;
+  const allowDelete=menuOwn && connection==='en vivo' && menuAge<48*60*60*1000;
+  const allowEdit=menuOwn && connection==='en vivo' && menuAge<15*60*1000;
+  const menuHeight=118;
+  const preferredTop=menuAnchor && menuAnchor.y>menuHeight+16
+    ? menuAnchor.y-menuHeight-8
+    : (menuAnchor?.y??(viewportHeight-menuHeight)/2)+(menuAnchor?.height??0)+8;
+  const menuTop=Math.max((StatusBar.currentHeight??0)+8,
+    Math.min(preferredTop,viewportHeight-menuHeight-14));
+  const preferredLeft=menuAnchor
+    ? (menuOwn ? menuAnchor.x+menuAnchor.width-menuWidth : menuAnchor.x)
+    : (viewportWidth-menuWidth)/2;
+  const menuLeft=Math.max(12,Math.min(preferredLeft,viewportWidth-menuWidth-12));
+
+  return (
+    <SafeAreaView style={[styles.screen,keyboardOpen && styles.screenKeyboard]}>
+      <StatusBar barStyle="dark-content" />
+      {/* Android 16 edge-to-edge can draw the composer behind the IME even with
+            adjustResize. Height mode keeps the native chat input and Enviar
+            visible above the keyboard without changing the PWA or storage. */}
+      <KeyboardAvoidingView style={[styles.flex,session && activeScreen!=='chat' && styles.inactiveChat]}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={0}>
+        <View style={styles.header}>
+          <View>
+            <Text style={styles.brand}>HAVANA NICE</Text>
+            <Text style={styles.title}>Chat V2</Text>
+          </View>
+          <View style={styles.headerActions}>
+            {session&&<Pressable accessibilityRole="button" accessibilityLabel="Volver a Inicio"
+              onPress={()=>{Keyboard.dismiss();setActiveScreen('home');}} style={styles.headerSearchButton}>
+              <Text style={styles.headerSearchText}>‹ Inicio</Text>
+            </Pressable>}
+            <Text style={styles.connection}>
+              {session ? `${connection}${connection === 'en vivo' ? ` · ${onlineCount} en línea` : ''}` : `API ${apiState}`}
+            </Text>
+            {session ? <Pressable accessibilityRole="button" accessibilityLabel="Buscar mensajes"
+              accessibilityState={{expanded:searchOpen}}
+              onPress={toggleSearch} style={styles.headerSearchButton}>
+              <Text style={styles.headerSearchText}>{searchOpen?'Cerrar':'Buscar'}</Text>
+            </Pressable> : null}
+          </View>
+        </View>
+
+        {restoringAccess ? <View style={styles.login}><Text style={styles.description}>Abriendo HAVANA NICE…</Text></View> : !session ? (
+          <View style={styles.login}>
+            <Text style={styles.overline}>ACCESO HAVANA NICE</Text>
+            <Text style={styles.loginTitle}>Bienvenido.</Text>
+            <Text style={styles.description}>Escribe tu nombre autorizado la primera vez. En este teléfono se recordará tu acceso.</Text>
+            <Text style={styles.label}>Tu nombre</Text>
+            <TextInput
+              accessibilityLabel="Tu nombre" style={styles.input} value={name}
+              onChangeText={setName} maxLength={28} autoCapitalize="none" autoCorrect={false} placeholder="Tu nombre"
+            />
+            <Pressable onPress={() => void join()} disabled={joining || !name.trim()} style={styles.joinButton}>
+              <Text style={styles.joinText}>{joining ? 'Conectando…' : 'Entrar a HAVANA NICE'}</Text>
+            </Pressable>
+            {error ? <Text style={styles.error}>{error}</Text> : null}
+            <Text style={styles.footer}>Si no estás autorizado, consulta al administrador.</Text>
+          </View>
+        ) : (
+          <>
+            {searchOpen ? <View style={styles.searchRow}>
+              <TextInput accessibilityLabel="Buscar mensajes" style={styles.searchInput}
+                value={searchText} onChangeText={value=>{setSearchText(value);if(!value.trim())setResults(null);}}
+                placeholder="Buscar mensajes…" onSubmitEditing={()=>void searchHistory()} returnKeyType="search"
+                placeholderTextColor="#8a8174" />
+              <Pressable onPress={()=>void searchHistory()} disabled={searching||searchText.trim().length<2}>
+                <Text style={styles.searchAction}>{searching?'…':'Buscar'}</Text>
+              </Pressable>
+              {results!==null ? <Pressable onPress={()=>{setResults(null);setSearchText('');}}>
+                <Text style={styles.searchAction}>Cerrar</Text>
+              </Pressable> : null}
+            </View> : null}
+            <ScrollView
+              ref={scroll} style={styles.messageList} contentContainerStyle={styles.messages}
+              keyboardShouldPersistTaps="handled"
+              onContentSizeChange={() => {
+                if(initialHistoryPending.current) {
+                  scheduleInitialBottom();
+                } else if(autoScroll.current) {
+                  scroll.current?.scrollToEnd({animated:false});
+                }
+              }}
+              onLayout={() => {if(initialHistoryPending.current)scheduleInitialBottom();}}
+              onScrollBeginDrag={() => {
+                userHasScrolled.current=true;
+                initialHistoryPending.current=false;
+                if(initialBottomTimer.current)clearTimeout(initialBottomTimer.current);
+                initialBottomTimer.current=null;
+              }}
+              onScroll={event=>{if(userHasScrolled.current)trackUserScroll(event);}}
+              onScrollEndDrag={trackUserScroll}
+              onMomentumScrollEnd={trackUserScroll}
+              scrollEventThrottle={16}
+            >
+              {results===null&&hasMore ? <Pressable style={styles.loadMore} disabled={loadingOlder}
+                onPress={()=>void loadOlder()}><Text style={styles.loadMoreText}>{loadingOlder?'Cargando…':'Cargar mensajes anteriores'}</Text></Pressable>:null}
+              {results!==null?<Text style={styles.searchCount}>{results.length} resultado(s)</Text>:null}
+              {!messages.length ? <Text style={styles.empty}>¡Hola! Envía el primer mensaje. Aparecerá en los dos dispositivos.</Text> : null}
+              {(results??messages).filter(message=>!message.deletedAt).map(message => {
+                const mine = message.senderId === session.actorId;
+                return (
+                  <SwipeableBubble
+                    key={message.senderId + ':' + message.clientMessageId}
+                    style={[styles.bubble, mine ? styles.mine : styles.theirs]}
+                    onReply={() => replyToMessage(message)}
+                    onLongPress={(anchor) => showMessageMenu(message,anchor)}
+                    onPress={() => {if(mine && message.pending && message.deliveryStatus==='error')retryOutgoing(message.clientMessageId);}}
+                  >
+                    {!mine && <Text style={styles.sender}>{message.senderName}</Text>}
+                    {message.replyToSeq ? (
+                      <Text style={[styles.replyLabel,mine && styles.mineMeta]}>
+                        ↪ {messages.find(m=>m.seq===message.replyToSeq)?.text.slice(0,70)||'Mensaje anterior'}
+                      </Text>
+                    ) : null}
+                    {!message.media?<Text style={[styles.bubbleText,mine && styles.mineText]}>
+                      {message.text}
+                    </Text>:null}
+                    {message.media?<NativeChatMediaView media={message.media} session={session}/>:null}
+                    {message.seq>0 && !message.deletedAt && reactions.some(r=>r.messageSeq===message.seq) ? (
+                      <View style={styles.reactionBadges}>
+                        {(['❤️','😂','👍'] as ChatEmoji[]).filter(emoji=>reactions.some(r=>r.messageSeq===message.seq&&r.emoji===emoji)).map(emoji=>(
+                          <Text key={emoji} style={styles.reactionBadge}>
+                            {emoji}{reactions.filter(r=>r.messageSeq===message.seq&&r.emoji===emoji).length}
+                          </Text>
+                        ))}
+                      </View>
+                    ):null}
+                    <Text style={[styles.messageTime,mine && styles.mineMeta]}>
+                      {new Date(message.sentAt).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}
+                      {message.editedAt&&!message.deletedAt?' · editado':''}
+                      {mine?' · '+messageDeliveryLabel(message):''}
+                      {mine&&!message.pending&&lastReadByOther(receipts,session.actorId)>=message.seq?' · leído':''}
+                    </Text>
+                  </SwipeableBubble>
+                );
+              })}
+            </ScrollView>
+            <Modal animationType="fade" transparent statusBarTranslucent visible={!!menuMessage}
+              onRequestClose={()=>setMenuMessage(null)}>
+              <Pressable style={styles.whatsappBackdrop} onPress={()=>setMenuMessage(null)}>
+                {menuMessage ? <Pressable
+                    accessibilityLabel="Opciones del mensaje"
+                    style={[styles.whatsappContext,{
+                      left:menuLeft,top:menuTop,width:menuWidth,
+                    }]} onPress={()=>{}}>
+                  <View style={styles.whatsappEmojiBar}>
+                    {(['👍','❤️','😂'] as ChatEmoji[]).map(emoji=>(
+                      <Pressable key={emoji} accessibilityRole="button" accessibilityLabel={emoji}
+                        disabled={connection!=='en vivo'}
+                        style={[styles.whatsappEmoji,connection!=='en vivo'&&styles.disabledMenuAction,
+                          reactions.some(r=>r.messageSeq===menuMessage.seq&&r.actorId===session.actorId&&r.emoji===emoji)
+                            &&styles.selectedMenuReaction]}
+                        onPress={()=>{react(menuMessage.seq,emoji);setMenuMessage(null);}}>
+                        <Text style={styles.whatsappEmojiText}>{emoji}</Text>
+                      </Pressable>
+                    ))}
+                  </View>
+                  <View style={styles.whatsappActionBar}>
+                    <Pressable accessibilityRole="button" style={styles.whatsappAction}
+                      onPress={()=>replyToMessage(menuMessage)}>
+                      <Text style={styles.whatsappActionText}>Responder</Text>
+                    </Pressable>
+                    {allowEdit ? <Pressable accessibilityRole="button" style={styles.whatsappAction}
+                      onPress={()=>{const m=menuMessage;setMenuMessage(null);manageOwn(m);}}>
+                      <Text style={styles.whatsappActionText}>Editar</Text>
+                    </Pressable> : null}
+                    {allowDelete ? <Pressable accessibilityRole="button" style={styles.whatsappAction}
+                      onPress={()=>{
+                        const m=menuMessage;setMenuMessage(null);
+                        Alert.alert('Borrar mensaje','¿Borrar este mensaje para todos?',[
+                          {text:'Cancelar',style:'cancel'},
+                          {text:'Borrar',style:'destructive',onPress:()=>manageOwn(m,true)},
+                        ]);
+                      }}>
+                      <Text style={styles.whatsappDeleteText}>Borrar</Text>
+                    </Pressable> : null}
+                  </View>
+                </Pressable>:null}
+              </Pressable>
+            </Modal>
+            {error ? <Text style={styles.errorBanner}>{error}</Text> : null}
+            {connection !== 'en vivo' ? (
+              <Pressable onPress={() => { retryAttempts.current = 0; connect(session); }} style={styles.reconnect}>
+                <Text style={styles.reconnectText}>Reintentar conexión</Text>
+              </Pressable>
+            ) : null}
+            {editing ? <View style={styles.replyPreview}>
+              <Text style={styles.replyPreviewText}>Editando mensaje</Text>
+              <Pressable disabled={savingEdit} onPress={finishEditing}>
+                <Text style={styles.replyCancel}>Cancelar</Text>
+              </Pressable>
+            </View>:null}
+            {replyTo && !editing ? (
+              <View style={styles.replyPreview}>
+                <Text style={styles.replyPreviewText}>Respondiendo: {replyTo.text.slice(0,65)}</Text>
+                <Pressable onPress={() => setReplyTo(null)}><Text style={styles.replyCancel}>Cancelar</Text></Pressable>
+              </View>
+            ) : null}
+            {typing ? <View style={styles.typingIndicator} accessibilityLiveRegion="polite">
+               <Text style={styles.typingIndicatorText}>{typing}</Text>
+             </View> : null}
+             {selectedMedia.length>0&&<View accessibilityLabel="Archivos para enviar">
+               <Text style={styles.mediaHint}>{selectedMedia.length} de {CHAT_MEDIA_MAX_PER_SEND} archivos · Fotos y Video</Text>
+               <ScrollView style={{maxHeight:250}} nestedScrollEnabled keyboardShouldPersistTaps="handled">
+                 {selectedMedia.map(item=><View key={item.id} style={styles.mediaPreview}>
+                   {item.kind==='photo'
+                     ?<Image source={{uri:item.uri}} style={styles.mediaThumb}/>
+                     :<View style={[styles.mediaThumb,styles.videoThumb]}><Text style={styles.videoThumbText}>▶</Text></View>}
+                   <View style={styles.mediaInfo}>
+                     <Text style={styles.mediaName} numberOfLines={1}>{item.name}</Text>
+                     <Text style={styles.mediaHint}>{item.kind==='photo'?'Fotografía':'Video'} · {(item.sizeBytes/1048576).toFixed(1)} MB</Text>
+                   </View>
+                   <Pressable accessibilityRole="button"
+                     accessibilityLabel={'Quitar '+item.name}
+                     onPress={()=>{
+                       const remaining=selectedMedia.filter(x=>x.id!==item.id);
+                       
+                       setSelectedMedia(remaining);setMediaError('');
+                     }}>
+                     <Text style={styles.mediaClose}>✕</Text>
+                   </Pressable>
+                 </View>)}
+               </ScrollView>
+               <Text style={styles.mediaHint}>{mediaUploading?
+                 'Subiendo originales a R2 · '+mediaProgress+' %':
+                 mediaReady?'Originales listos para enviar':'Almacenamiento no disponible.'}</Text>
+               {mediaUploading&&<View accessibilityLabel="Progreso de subida"
+                 style={{height:6,borderRadius:3,backgroundColor:'#d8d1c9',overflow:'hidden',marginTop:7}}>
+                 <View style={{height:'100%',width:(mediaProgress+'%') as `${number}%`,backgroundColor:'#6a846e'}}/>
+               </View>}
+             </View>}
+              {!!mediaError&&<Text style={styles.mediaError}>{mediaError}</Text>}
+             <View style={styles.composer}>
+               <View style={styles.inputPill}>
+                 <Pressable accessibilityRole="button" accessibilityLabel="Insertar emoji"
+                   accessibilityState={{expanded:composerPanel==='emojis'}}
+                   style={styles.composerIcon} onPress={()=>{Keyboard.dismiss();setComposerPanel(v=>v==='emojis'?null:'emojis');}}>
+                   <NativeComposerIcon name="emoji"/>
+                 </Pressable>
+                 <TextInput accessibilityLabel="Escribir mensaje" style={styles.draft} value={draft}
+                   onChangeText={value=>{typeText(value);setComposerPanel(null);}}
+                   editable={!savingEdit} maxLength={2000} multiline
+                   placeholder={connection==='en vivo'?'Mensaje':'Sin conexión: se enviará después…'}
+                   placeholderTextColor="#85898a"/>
+                 <Pressable accessibilityRole="button" accessibilityLabel="Adjuntar fotografía o video"
+                   accessibilityState={{expanded:composerPanel==='attachments'}} style={styles.composerIcon}
+                   onPress={()=>{Keyboard.dismiss();setComposerPanel(v=>v==='attachments'?null:'attachments');}}>
+                   <NativeComposerIcon name="clip"/>
+                 </Pressable>
+                 <Pressable accessibilityRole="button" accessibilityLabel="Abrir cámara"
+                   disabled={mediaPicking} style={styles.composerIcon}
+                   onPress={()=>void chooseNativeMedia('camera')}>
+                   <NativeComposerIcon name="camera"/>
+                 </Pressable>
+               </View>
+               {draft.trim()||editing||selectedMedia.length>0
+                 ?<Pressable accessibilityRole="button" accessibilityLabel={editing?'Guardar mensaje':selectedMedia.length?'Enviar archivos originales':'Enviar mensaje'}
+                    onPress={()=>selectedMedia.length&&!editing?void sendSelectedMedia():send()} disabled={savingEdit||mediaUploading||(!selectedMedia.length&&!draft.trim())} style={styles.sendCircle}>
+                    <NativeComposerIcon name="send" color="#fff"/>
+                  </Pressable>
+                 :<Pressable accessibilityRole="button" accessibilityLabel="Grabar audio (próximamente)"
+                    style={styles.sendCircle}
+                    onPress={()=>Alert.alert('Mensajes de voz','Los audios estarán disponibles después de las fotografías y los videos.')}>
+                    <NativeComposerIcon name="mic" color="#fff"/>
+                  </Pressable>}
+             </View>
+          </>
+        )}
+        {session&&composerPanel&&<Pressable style={styles.composerPanelDismiss}
+          onPress={()=>setComposerPanel(null)} accessibilityLabel="Cerrar menú"/>}
+        {session&&composerPanel==='attachments'&&<View style={styles.attachmentsPopover}
+          accessibilityLabel="Adjuntar al chat">
+          <Pressable style={styles.attachmentItem} accessibilityRole="button"
+            accessibilityLabel="Fotos" onPress={()=>void chooseNativeMedia('gallery','photo')}>
+            <View style={[styles.attachmentSymbol,styles.gallerySymbol]}>
+              <NativeComposerIcon name="photo" color="#776c98"/>
+            </View>
+            <Text style={styles.attachmentTitle}>Fotos</Text>
+          </Pressable>
+          <Pressable style={styles.attachmentItem} accessibilityRole="button"
+            accessibilityLabel="Video" onPress={()=>void chooseNativeMedia('gallery','video')}>
+            <View style={[styles.attachmentSymbol,styles.videoSymbol]}>
+              <NativeComposerIcon name="video" color="#5f8b9b"/>
+            </View>
+            <Text style={styles.attachmentTitle}>Video</Text>
+          </Pressable>
+        </View>}
+        {session&&composerPanel==='emojis'&&<View style={styles.emojisPopover}
+          accessibilityLabel="Elegir emoji">
+          {['😀','😂','❤️','👍','🥰','🎉','👏','😍'].map(emoji=>
+            <Pressable key={emoji} accessibilityRole="button" accessibilityLabel={'Insertar '+emoji}
+              style={styles.emojiOption} onPress={()=>{
+                if(!savingEdit&&draft.length+emoji.length<=2000)typeText(draft+emoji);
+                setComposerPanel(null);
+              }}><Text style={styles.emojiOptionText}>{emoji}</Text></Pressable>)}
+        </View>}
+      </KeyboardAvoidingView>
+      {session&&activeScreen!=='chat'&&<NativeMemberHome token={session.token} displayName={session.displayName}
+        active={activeScreen} onNavigate={setActiveScreen}/>}
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  flex: { flex: 1 },
+  inactiveChat:{display:'none'},
+  // RN SafeAreaView does not include Android's bottom navigation safe area.
+  // Reserve room for three-button navigation even with Android 16 edge-to-edge.
+  screen: { flex: 1, backgroundColor: '#F3EDDF', paddingBottom: Platform.OS === 'android' ? 42 : 0 },
+  screenKeyboard: {paddingBottom:0},
+  header: { paddingHorizontal: 22, paddingTop: 24, paddingBottom: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderBottomWidth: 1, borderBottomColor: '#d6cab9' },
+  brand: { fontSize: 11, fontWeight: '800', letterSpacing: 3 },
+  title: { fontSize: 29, fontWeight: '700', marginTop: 7 },
+  connection: { fontSize: 12, color: '#69675e' },
+  headerActions: {alignItems:'flex-end',gap:7,maxWidth:'58%'},
+  headerSearchButton: {paddingHorizontal:9,paddingVertical:5,borderRadius:12,borderWidth:1,borderColor:'#d6cbbc'},
+  headerSearchText: {fontSize:12,color:'#79563f',fontWeight:'700'},
+  login: { flex: 1, justifyContent: 'center', paddingHorizontal: 26 },
+  overline: { fontSize: 11, fontWeight: '700', letterSpacing: 1.1 },
+  loginTitle: { fontSize: 40, fontWeight: '700', marginTop: 12 },
+  description: { color: '#68655e', fontSize: 15, lineHeight: 22, marginTop: 8, marginBottom: 25 },
+  label: { fontSize: 13, fontWeight: '700', marginBottom: 8 },
+  input: { backgroundColor: '#fffaf2', borderWidth: 1, borderColor: '#d4cabc', borderRadius: 14, paddingHorizontal: 14, paddingVertical: 13, fontSize: 16, marginBottom: 16, color: '#171713' },
+  joinButton: { padding: 17, borderRadius: 14, backgroundColor: '#1a1a16', alignItems: 'center' },
+  joinText: { color: '#fff', fontSize: 15, fontWeight: '700' },
+  footer: { color: '#746b60', fontSize: 12, marginTop: 18 },
+  error: { color: '#a8322f', fontSize: 14, marginTop: 12 },
+  room: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 22, paddingVertical: 14 },
+  roomTitle: { fontSize: 13, fontWeight: '700' },
+  roomUser: { fontSize: 13, color: '#69675e' },
+  searchRow: {flexDirection:'row',alignItems:'center',gap:9,paddingHorizontal:18,paddingVertical:6},
+  searchInput: {flex:1,borderWidth:1,borderColor:'#d6cbbc',borderRadius:16,paddingHorizontal:12,
+    paddingVertical:5,color:'#23231d',fontSize:13,backgroundColor:'#fffaf4',height:36},
+  searchAction:{fontSize:12,fontWeight:'700',color:'#79563f'},
+  loadMore:{alignSelf:'center',padding:10,marginBottom:10},
+  loadMoreText:{fontSize:12,fontWeight:'700',color:'#815d48'},
+  searchCount:{fontSize:12,color:'#68655e',textAlign:'center',paddingBottom:9},
+  messageList: { flex: 1 },
+  messages: { paddingHorizontal: 18, paddingTop: 20, paddingBottom: 18, flexGrow: 1 },
+  empty: { color: '#746d60', fontSize: 14, textAlign: 'center', marginTop: 65, lineHeight: 21 },
+  bubble: { maxWidth: '85%', paddingHorizontal: 14, paddingTop: 11, paddingBottom: 8, borderRadius: 18, marginBottom: 11, minWidth: 90 },
+  mine: { alignSelf: 'flex-end', backgroundColor: '#252621', borderBottomRightRadius: 5 },
+  theirs: { alignSelf: 'flex-start', backgroundColor: '#fffaf4', borderBottomLeftRadius: 5 },
+  sender: { color: '#2d2d29', fontWeight: '700', fontSize: 12, marginBottom: 5 },
+  bubbleText: { color: '#1b1b18', fontSize: 15, lineHeight: 22 },
+  mineText: { color: '#fff' },
+  messageTime: { color: '#8a857b', fontSize: 10, textAlign: 'right', marginTop: 5 },
+  mineMeta: { color: '#c1c1bd' },
+  // Single compact messaging row, matching the PWA without an extra icon package.
+  composer:{flexDirection:'row',alignItems:'center',gap:8,paddingHorizontal:9,
+    paddingVertical:8,backgroundColor:'#F3EDDF',borderTopWidth:1,borderTopColor:'#e4dcd1'},
+  inputPill:{flex:1,minWidth:0,height:50,borderRadius:25,backgroundColor:'#fff',
+    borderWidth:1,borderColor:'#e7e1d9',flexDirection:'row',alignItems:'center',paddingHorizontal:3},
+  composerIcon:{height:44,width:38,alignItems:'center',justifyContent:'center'},
+  draft:{flex:1,minWidth:0,minHeight:42,maxHeight:98,color:'#1d2222',
+    paddingHorizontal:4,paddingVertical:7,fontSize:16},
+  sendCircle:{width:51,height:51,borderRadius:26,backgroundColor:'#242522',
+    alignItems:'center',justifyContent:'center'},
+  composerPanelDismiss:{position:'absolute',top:0,right:0,bottom:0,left:0,zIndex:20,backgroundColor:'transparent'},
+  attachmentsPopover:{position:'absolute',bottom:75,left:14,width:285,maxWidth:'90%',zIndex:22,
+    backgroundColor:'#fff',borderRadius:19,borderWidth:1,borderColor:'#e9e3da',padding:9,
+    elevation:9,shadowColor:'#000',shadowOpacity:.14,shadowRadius:13},
+  attachmentItem:{minHeight:58,flexDirection:'row',alignItems:'center',gap:13,
+    borderRadius:12,paddingHorizontal:12,paddingVertical:7},
+  attachmentSymbol:{height:42,width:42,borderRadius:14,alignItems:'center',justifyContent:'center'},
+  gallerySymbol:{backgroundColor:'#f0edfb'},
+  videoSymbol:{backgroundColor:'#eaf3f7'},
+  attachmentTitle:{fontSize:15,fontWeight:'600',color:'#272c29'},
+  emojisPopover:{position:'absolute',bottom:75,left:14,width:285,maxWidth:'90%',zIndex:22,
+    backgroundColor:'#fff',borderRadius:19,borderWidth:1,borderColor:'#e9e3da',padding:10,
+    flexDirection:'row',flexWrap:'wrap',elevation:9},
+  emojiOption:{width:'25%',height:49,alignItems:'center',justifyContent:'center'},
+  emojiOptionText:{fontSize:26},
+  mediaPreview:{flexDirection:'row',alignItems:'center',gap:11,paddingHorizontal:13,paddingVertical:9,
+    borderTopWidth:1,borderColor:'#ded3c4',backgroundColor:'#faf5ed'},
+  mediaThumb:{width:70,height:70,borderRadius:10,backgroundColor:'#e5dfd7'},
+  videoThumb:{alignItems:'center',justifyContent:'center'},
+  videoThumbText:{fontSize:26,color:'#443e38'},
+  mediaInfo:{flex:1,minWidth:0,gap:4},
+  mediaName:{fontSize:12,fontWeight:'700',color:'#282b28'},
+  mediaHint:{fontSize:10,color:'#736b61'},
+  mediaClose:{fontSize:22,color:'#6e5f53',paddingHorizontal:5},
+  mediaError:{fontSize:12,color:'#b23d2e',backgroundColor:'#fff4ee',paddingHorizontal:16,paddingVertical:8},
+  reconnect: { padding: 11, alignItems: 'center', borderTopWidth: 1, borderColor: '#d6cab9' },
+  reconnectText: { fontWeight: '700', color: '#8a5a3c' },
+  errorBanner: { color: '#a8322f', fontSize: 12, paddingHorizontal: 20, paddingVertical: 4 },
+  reactionBadges:{flexDirection:'row',gap:4,alignSelf:'flex-end',marginTop:5},
+  reactionBadge:{fontSize:11,color:'#403c34',backgroundColor:'#e8e5dc',paddingHorizontal:5,paddingVertical:1,borderRadius:9,overflow:'hidden'},
+  whatsappBackdrop:{flex:1,backgroundColor:'rgba(20,19,16,.16)'},
+  whatsappContext:{position:'absolute',alignItems:'stretch',gap:8},
+  whatsappEmojiBar:{flexDirection:'row',alignItems:'center',justifyContent:'space-evenly',
+    backgroundColor:'#fff',borderRadius:32,paddingHorizontal:7,minHeight:54,elevation:8},
+  whatsappEmoji:{width:64,minHeight:46,borderRadius:25,alignItems:'center',justifyContent:'center'},
+  whatsappEmojiText:{fontSize:27},
+  disabledMenuAction:{opacity:.35},
+  selectedMenuReaction:{backgroundColor:'#e3eee5'},
+  whatsappActionBar:{flexDirection:'row',alignItems:'center',justifyContent:'space-evenly',
+    backgroundColor:'#fff',borderRadius:15,minHeight:55,elevation:8},
+  whatsappAction:{paddingHorizontal:7,paddingVertical:14,alignItems:'center',justifyContent:'center'},
+  whatsappActionText:{fontSize:14,fontWeight:'600',color:'#25251f'},
+  whatsappDeleteText:{fontSize:14,fontWeight:'600',color:'#b3261e'},
+  replyLabel: {fontSize:12,color:'#686b66',marginBottom:5},
+  actions: { flexDirection:'row',alignItems:'center',gap:5,marginTop:6 },
+  actionButton: {paddingVertical:5,paddingHorizontal:3},
+  actionText: {fontSize:11,color:'#8d8b81'},
+  replyPreview: {flexDirection:'row',justifyContent:'space-between',paddingHorizontal:18,paddingVertical:8,borderTopWidth:1,borderColor:'#d9cebd'},
+  replyPreviewText: {fontSize:12,color:'#565247',flex:1},
+  typingIndicator: {paddingHorizontal:18,paddingTop:5,paddingBottom:5,backgroundColor:'#F3EDDF'},
+  typingIndicatorText: {color:'#69675e',fontSize:12},
+  replyCancel: {fontSize:12,color:'#8a5a3c',fontWeight:'700'},
+});

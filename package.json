@@ -1,0 +1,23 @@
+{
+  "name": "havana-nice-v2",
+  "version": "0.0.1",
+  "private": true,
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "workspaces": [
+    "apps/*",
+    "packages/*",
+    "cloudflare"
+  ],
+  "scripts": {
+    "check:structure": "node scripts/check-structure.mjs",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "build:pwa": "npm run build -w @havana/pwa",
+    "dev:android": "npm run start -w @havana/android",
+    "dev:pwa": "npm run dev -w @havana/pwa",
+    "dev:cloudflare": "npm run dev -w @havana/cloudflare",
+    "deploy:cloudflare": "npm run deploy -w @havana/cloudflare",
+    "audit:guard": "node scripts/audit-guard.mjs"
+  }
+}
