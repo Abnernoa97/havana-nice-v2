@@ -42,7 +42,7 @@ jobs:
           git -C target config user.name "github-actions[bot]"
           git -C target config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git -C target add -A
-          git -C target diff --cached --check
+          git -C target -c core.whitespace=-trailing-space,-blank-at-eof diff --cached --check
           git -C target commit -m "Initialize standalone V2 main from isolated source snapshot"
           git -C target push origin HEAD:main
       - name: Preserve original signed APK and previous APK as independent Release assets
