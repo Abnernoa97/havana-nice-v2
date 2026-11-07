@@ -1,7 +1,7 @@
 import {useCallback,useEffect,useRef,useState,type ChangeEvent} from 'react';
 import {familyAlbumCount,getFamilyDirectory,getFamilyAlbumMedia,uploadFamilyAlbumFile,uploadFamilyVideoPoster,updateFamilyAlbumFile,FamilyApiError,type FamilyDirectory,type FamilyAlbum,type FamilyMediaItem} from '@havana/shared';
 import FamilyMediaGallery,{familyPrivateMediaUrl} from './FamilyMediaGallery';
-import {createFamilyVideoPoster} from './services/family-video-poster';
+import {createFamilyVideoPoster} from '../../services/family-video-poster';
 
 function formatStorageGB(bytes:number){return (bytes/1_000_000_000).toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2});}
 function formatFileMB(bytes:number){return (bytes/1_000_000).toFixed(0)+' MB';}

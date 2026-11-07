@@ -40,22 +40,22 @@ test('Google Maps text is stored/displayed freely but only safe HTTPS URLs are c
 });
 
 test('Admin, PWA and native Calendar all use the same shared date function',()=>{
- const paths=['apps/pwa/src/AdminCalendar.tsx','apps/pwa/src/CalendarAccordion.tsx',
+ const paths=['apps/pwa/src/features/calendar/AdminCalendar.tsx','apps/pwa/src/features/calendar/CalendarAccordion.tsx',
   'apps/android/NativeCalendar.tsx'];
  for(const p of paths){
   const source=read(p);
   assert.match(source,/calendarDate\(item\.date\)/,p);
   assert.doesNotMatch(source,/new Date\(item\.date\)|Date\.parse\(item\.date\)|Invalid Date/,p);
  }
- const pwa=read('apps/pwa/src/CalendarAccordion.tsx');
+ const pwa=read('apps/pwa/src/features/calendar/CalendarAccordion.tsx');
  const native=read('apps/android/NativeCalendar.tsx');
  assert.match(pwa,/safeCalendarMapUrl\(item\.mapUrl\)/);
  assert.match(native,/safeCalendarMapUrl\(item\.mapUrl\)/);
 });
 
 test('Calendar uses one private push protocol in native Android and PWA, without legacy timers',()=>{
- const member=read('apps/pwa/src/CalendarAccordion.tsx');
- const admin=read('apps/pwa/src/AdminCalendar.tsx');
+ const member=read('apps/pwa/src/features/calendar/CalendarAccordion.tsx');
+ const admin=read('apps/pwa/src/features/calendar/AdminCalendar.tsx');
  const native=read('apps/android/NativeCalendar.tsx');
  const realtime=read('apps/pwa/src/services/calendar-live.ts');
  assert.match(member,/watchCalendar\(token,false,update\)/);

@@ -1,7 +1,7 @@
 import {useCallback,useEffect,useLayoutEffect,useRef,useState} from 'react';
 import ChatMediaView from './ChatMediaView';
 import {adminChatMessages,adminDeleteChatMessage,isAdminUnauthorized,
- type AdminChatMessage,type AdminChatReaction,type AdminChatStreamEvent} from './services/admin-api';
+ type AdminChatMessage,type AdminChatReaction,type AdminChatStreamEvent} from '../../services/admin-api';
 
 type Props={token:string;connected:boolean;liveEvent:AdminChatStreamEvent|null;onExpired:()=>void};
 const bySequence=(previous:AdminChatMessage[],next:AdminChatMessage[])=>{

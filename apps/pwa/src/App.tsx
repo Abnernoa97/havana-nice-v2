@@ -7,9 +7,9 @@ import {
   reconcileReactions, reconcileUpdatedMessage, reconcileDeletedMessage, reconcileChatSnapshot, type ChatReaction, type ChatEmoji, type ChatReadReceipt, type MemberScreen,
 } from '@havana/shared';
 import { loadLocalChat, saveLocalChat } from './services/local';
-import SwipeMessage, {type MessageAnchor} from './SwipeMessage';
-import ComposerIcon from './ChatComposerIcon';
-import ChatMediaView from './ChatMediaView';
+import SwipeMessage, {type MessageAnchor} from './features/chat/SwipeMessage';
+import ComposerIcon from './features/chat/ChatComposerIcon';
+import ChatMediaView from './features/chat/ChatMediaView';
 import {uploadChatFile} from './services/chat-media-upload';
 import VisualApp from './VisualApp';
 

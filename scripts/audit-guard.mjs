@@ -13,7 +13,7 @@ assert.doesNotMatch(worker,/\/\/\s*@ts-nocheck\b/,'V2 Worker entrypoint must rem
 const android = read('apps/android/App.tsx');
 const pwa = read('apps/pwa/src/App.tsx');
 const nativeBubble = read('apps/android/SwipeableBubble.tsx');
-const webBubble = read('apps/pwa/src/SwipeMessage.tsx');
+const webBubble = read('apps/pwa/src/features/chat/SwipeMessage.tsx');
 const pwaStyles = read('apps/pwa/src/styles/chat/chat.css');
 const serviceWorker = read('apps/pwa/public/sw.js');
 const workerConfig = read('cloudflare/wrangler.jsonc');
@@ -98,7 +98,7 @@ present(worker,/INSERT OR IGNORE INTO chat_members\(username,actor_id,display_na
   'New musician records must use one Administrator-only enrollment path; every login claims its sole owner');
 absent(read('cloudflare/src/single-installation.js'),/single_device_mode/,
   'The owner record must be the only musician installation policy');
-absent(read('apps/pwa/src/AdminChatAccess.tsx'),/single_device_mode|Acceso anterior protegido/,
+absent(read('apps/pwa/src/features/admin/AdminChatAccess.tsx'),/single_device_mode|Acceso anterior protegido/,
   'Administrator cannot show or enforce historical alternative access');
 absent(read('apps/pwa/src/services/admin-api.ts'),/single_device_mode/,
   'Administrator API must not expose a discarded mode flag');

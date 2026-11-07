@@ -4,7 +4,7 @@ import {getCalendarEvents,calendarDate,HAVANA_V2_DEV_API_BASE_URL,getRepertoireS
  type RepertoireEventItem,type CalendarEvent} from '@havana/shared';
 import {adminCreateSong,adminEditSong,adminDeleteSong,adminAddEventSongs,
  adminAddEventSpecial,adminRemoveEventItem,adminCompleteEventItem,adminReorderEventItems,
- isAdminUnauthorized} from './services/admin-api';
+ isAdminUnauthorized} from '../../services/admin-api';
 
 const empty=():RepertoireSongInput=>({
  title:'',artist:'',category:'ENGLISH',referenceUrl:'',position:0,active:true

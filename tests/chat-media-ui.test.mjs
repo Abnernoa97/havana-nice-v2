@@ -60,7 +60,7 @@ test('Android and PWA share one authenticated media-availability fetch without o
 test('PWA attachment menu only offers Fotos and Video, with distinct media filters',()=>{
  const src=read('apps/pwa/src/App.tsx');
  const css=read('apps/pwa/src/styles/chat/chat.css');
- const icon=read('apps/pwa/src/ChatComposerIcon.tsx');
+ const icon=read('apps/pwa/src/features/chat/ChatComposerIcon.tsx');
  const start=src.indexOf("composerPanel==='attachments'&&<div");
  const end=src.indexOf("composerPanel==='emojis'&&<div",start);
  assert.ok(start>=0&&end>start);
@@ -161,7 +161,7 @@ test('V2 does not contain an external storage service binding',()=>{
 test('Media-only bubbles remain visual across Chat PWA, native and Administrator',()=>{
  const pwa=read('apps/pwa/src/App.tsx');
  const android=read('apps/android/App.tsx');
- const admin=read('apps/pwa/src/AdminChatGeneral.tsx');
+ const admin=read('apps/pwa/src/features/chat/AdminChatGeneral.tsx');
  assert.match(pwa,/!message\.media&&<div>\{message\.text\}<\/div>/);
  assert.match(android,/!message\.media\?<Text/);
  assert.match(admin,/!m\.media&&<p>\{m\.text\}<\/p>/);
@@ -201,7 +201,7 @@ test('Native photo-cache housekeeping touches only stale incomplete V2 transfers
 });
 
 test('Web/Admin originals are fully downloaded once before opening, without forced gray letterboxes',()=>{
- const web=read('apps/pwa/src/ChatMediaView.tsx');
+ const web=read('apps/pwa/src/features/chat/ChatMediaView.tsx');
  const css=read('apps/pwa/src/styles/chat/chat.css');
  assert.match(web,/await image\.blob\(\)/);
  assert.match(web,/URL\.createObjectURL\(blob\)/);

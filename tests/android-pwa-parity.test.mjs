@@ -34,7 +34,7 @@ test('Android HOME has same mobile destinations and visual navigation as PWA, no
 
 test('Android Repertorio consumes exactly the PWA member D1 catalog and assigned event contracts',()=>{
  const native=read('apps/android/NativeRepertoire.tsx');
- const pwa=read('apps/pwa/src/MemberRepertoire.tsx');
+ const pwa=read('apps/pwa/src/features/repertoire/MemberRepertoire.tsx');
  for(const api of ['getRepertoireSongs','getCalendarEvents','getAssignedEventRepertoire','safeRepertoireLink','calendarDate']){
   assert.ok(native.includes(api)&&pwa.includes(api),api);
  }
@@ -45,7 +45,7 @@ test('Android Repertorio consumes exactly the PWA member D1 catalog and assigned
 
 test('Android Familia reads the same albums, authorized grant URLs and real BOOK state as PWA',()=>{
  const native=read('apps/android/NativeFamily.tsx');
- const pwa=read('apps/pwa/src/MemberFamily.tsx');
+ const pwa=read('apps/pwa/src/features/family/MemberFamily.tsx');
  for(const api of ['getFamilyDirectory','getFamilyAlbumMedia','familyAlbumCount']){
   assert.ok(native.includes(api)&&pwa.includes(api),api);
  }

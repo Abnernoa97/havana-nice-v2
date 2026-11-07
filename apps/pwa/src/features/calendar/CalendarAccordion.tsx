@@ -1,6 +1,6 @@
 import {useCallback,useEffect,useRef,useState} from 'react';
 import {calendarDate,getCalendarEvents,HAVANA_V2_DEV_API_BASE_URL,safeCalendarMapUrl,type CalendarEvent} from '@havana/shared';
-import {watchCalendar} from './services/calendar-live';
+import {watchCalendar} from '../../services/calendar-live';
 // Member token is provided by the existing V2 session. Never create another login.
 export default function CalendarAccordion({token}:{token:string}){
  const [events,setEvents]=useState<CalendarEvent[]>([]);

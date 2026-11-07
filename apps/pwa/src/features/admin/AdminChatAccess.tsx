@@ -1,10 +1,10 @@
 import {useCallback,useEffect,useState,type FormEvent} from 'react';
-import AdminChatGeneral from './AdminChatGeneral';
-import AdminCalendar from './AdminCalendar';
-import AdminRepertoire from './AdminRepertoire';
-import AdminFamily from './AdminFamily';
+import AdminChatGeneral from '../chat/AdminChatGeneral';
+import AdminCalendar from '../calendar/AdminCalendar';
+import AdminRepertoire from '../repertoire/AdminRepertoire';
+import AdminFamily from '../family/AdminFamily';
 import {adminAvailability,adminLogin,adminLogout,adminVerify,adminOtherSessions,adminRevokeOtherSessions,adminMembers,adminCreateMember,adminMemberHistory,adminDeletionPreview,adminRemoveMember,adminDuplicateLogins,adminReviewDuplicateLogin,adminReleaseInstallation,openAdminRealtime,
- type AdminSession,type AdminMember,type AdminMemberHistory,type AdminDeletionPreview,type AdminDuplicateLoginAlert,type AdminChatStreamEvent,isAdminUnauthorized} from './services/admin-api';
+ type AdminSession,type AdminMember,type AdminMemberHistory,type AdminDeletionPreview,type AdminDuplicateLoginAlert,type AdminChatStreamEvent,isAdminUnauthorized} from '../../services/admin-api';
 
 type Section='access'|'chat'|'repertoire'|'calendar'|'family'|'more';
 type Readiness='loading'|'disabled'|'enabled'|'error';

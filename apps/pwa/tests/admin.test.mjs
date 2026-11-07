@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 const read=p=>readFileSync(new URL(p,import.meta.url),'utf8');
 const ui=read('../src/AdminApp.tsx');
-const panel=read('../src/AdminChatAccess.tsx');
+const panel=read('../src/features/admin/AdminChatAccess.tsx');
 const api=read('../src/services/admin-api.ts');
 const backend=read('../../../cloudflare/src/index.ts');
 
@@ -86,7 +86,7 @@ test('original musician offline storage and Chat remain intact',()=>{
 });
 
 test('Administrator can explicitly close other sessions but cannot clear the current one',()=>{
- const ui=read('../src/AdminChatAccess.tsx');
+ const ui=read('../src/features/admin/AdminChatAccess.tsx');
  const api=read('../src/services/admin-api.ts');
  assert.match(ui,/adminOtherSessions\(token\)/);
  assert.match(ui,/refreshOtherSessions\(session\.token\)/);
@@ -100,7 +100,7 @@ test('Administrator can explicitly close other sessions but cannot clear the cur
 test('Administrator frontend defers new versions while its session or unsaved form is active',()=>{
  const main=read('../src/admin-main.tsx');
  const admin=read('../src/AdminApp.tsx');
- const access=read('../src/AdminChatAccess.tsx');
+ const access=read('../src/features/admin/AdminChatAccess.tsx');
  assert.match(main,/adminSessionActive==='true'/);
  assert.match(main,/formHasDraft/);
  assert.match(main,/adminUpdatePending='true'/);
@@ -110,7 +110,7 @@ test('Administrator frontend defers new versions while its session or unsaved fo
 });
 
 test('Admin retains an authorized session during network outages and retries on resume',()=>{
- const access=read('../src/AdminChatAccess.tsx');
+ const access=read('../src/features/admin/AdminChatAccess.tsx');
  const api=read('../src/services/admin-api.ts');
  assert.match(api,/export class AdminApiError extends Error/);
  assert.match(api,/export function isAdminUnauthorized/);
@@ -122,7 +122,7 @@ test('Admin retains an authorized session during network outages and retries on 
 });
 
 test('Access to musicians uses only server-confirmed list changes and fresh history',()=>{
- const access=read('../src/AdminChatAccess.tsx');
+ const access=read('../src/features/admin/AdminChatAccess.tsx');
  const deletion=access.indexOf('await adminRemoveMember(session.token,person.actor_id,person.display_name)');
  const confirmedDelete=access.indexOf('setMembers(previous=>previous.filter(item=>item.actor_id!==person.actor_id))');
  assert.ok(deletion>0&&confirmedDelete>deletion,'Do not remove a musician from UI before server confirmation');
@@ -149,7 +149,7 @@ test('only Administrator-created active names reach the session-minting endpoint
 });
 
 test('Admin session count stays accurate on manual refresh, foreground, and WebSocket reconnection',()=>{
- const panel=read('../src/AdminChatAccess.tsx');
+ const panel=read('../src/features/admin/AdminChatAccess.tsx');
  assert.match(panel,/const refreshOtherSessions=useCallback\(async\(token:string\)=>/);
  assert.match(panel,/void refreshMembers\(session\.token\);void refreshOtherSessions\(session\.token\);/);
  assert.match(panel,/adminVerify\(session\.token\)\.then\(\(\)=>\{void refreshMembers\(session\.token\);void refreshOtherSessions\(session\.token\);void refreshDuplicateAlerts\(session\.token\);\}\)/);
@@ -160,7 +160,7 @@ test('Admin session count stays accurate on manual refresh, foreground, and WebS
 });
 
 test('Administrator reconnects safely after offline and background without duplicate sockets',()=>{
- const panel=read('../src/AdminChatAccess.tsx');
+ const panel=read('../src/features/admin/AdminChatAccess.tsx');
  assert.match(panel,/const previous=socket;\s*socket=null; \/\/ The next foreground\/online event may connect immediately\./);
  assert.match(panel,/if\(previous&&previous\.readyState!==WebSocket\.CLOSED\)previous\.close\(\)/);
  assert.match(panel,/if\(!active\|\|socket!==opened\)return/);
@@ -174,7 +174,7 @@ test('Administrator reconnects safely after offline and background without dupli
 });
 
 test('Admin never labels Chrome reduced historical K as a real phone model',()=>{
- const app=read('../src/AdminChatAccess.tsx');
+ const app=read('../src/features/admin/AdminChatAccess.tsx');
  assert.match(app,/event\.device_model==='K'&&event\.operating_system==='Android 10'/);
  assert.match(app,/Android \(versión no disponible\)/);
  assert.match(app,/event\.device_model&&event\.device_model!=='K'/);
@@ -182,7 +182,7 @@ test('Admin never labels Chrome reduced historical K as a real phone model',()=>
 });
 
 test('musician removal requires authenticated D1 preview and confirmation',()=>{
- const ui=read('../src/AdminChatAccess.tsx');
+ const ui=read('../src/features/admin/AdminChatAccess.tsx');
  const api=read('../src/services/admin-api.ts');
  const server=read('../../../cloudflare/src/member-admin.js');
  const route=read('../../../cloudflare/src/index.ts');
@@ -201,7 +201,7 @@ test('musician removal requires authenticated D1 preview and confirmation',()=>{
 });
 
 test('member data inspection can be verified without pressing irreversible trash',()=>{
- const app=read('../src/AdminChatAccess.tsx');
+ const app=read('../src/features/admin/AdminChatAccess.tsx');
  const api=read('../src/services/admin-api.ts');
  const inspect=app.indexOf('async function inspectMemberData(person:AdminMember)');
  const trash=app.indexOf('async function removeMember(person:AdminMember)');
@@ -221,13 +221,13 @@ test('member data inspection can be verified without pressing irreversible trash
 });
 
 test('read-only account audit does not carry data into logout',()=>{
- const app=read('../src/AdminChatAccess.tsx');
+ const app=read('../src/features/admin/AdminChatAccess.tsx');
  assert.match(app,/setExpanded\(''\);setHistory\(\{\}\);setHistoryErrors\(\{\}\);setImpact\(\{\}\);setImpactErrors\(\{\}\)/);
  assert.match(app,/delete next\[person\.actor_id\]/);
 });
 
 test('member counters do not mistake D1 session rows for live connected phones',()=>{
- const panel=read('../src/AdminChatAccess.tsx');
+ const panel=read('../src/features/admin/AdminChatAccess.tsx');
  assert.match(panel,/Credenciales de acceso/);
  assert.match(panel,/Las credenciales registradas no equivalen a teléfonos conectados/);
  assert.match(panel,/Las reacciones incluyen las vinculadas al músico o a sus mensajes/);
@@ -235,7 +235,7 @@ test('member counters do not mistake D1 session rows for live connected phones',
 });
 
 test('one-musician one-installation alerts never display bearer tokens and release is separate from trash',()=>{
- const panel=read('../src/AdminChatAccess.tsx');
+ const panel=read('../src/features/admin/AdminChatAccess.tsx');
  const api=read('../src/services/admin-api.ts');
  const worker=read('../../../cloudflare/src/index.ts');
  assert.match(panel,/Intentos de acceso duplicado/);
@@ -256,7 +256,7 @@ test('one-musician one-installation alerts never display bearer tokens and relea
 test('legacy device approval endpoints and UIs are permanently removed',()=>{
  const worker=read('../../../cloudflare/src/index.ts');
  const api=read('../../../packages/shared/src/index.ts');
- const access=read('../src/AdminChatAccess.tsx');
+ const access=read('../src/features/admin/AdminChatAccess.tsx');
  for(const code of [worker,api,access]){
   assert.doesNotMatch(code,/device_approval_required|PendingChatDeviceEnrollment|device\/request|device\/status|admin\/device-requests|chat\/pwa\/session/);
  }
@@ -268,8 +268,8 @@ test('legacy device approval endpoints and UIs are permanently removed',()=>{
 
 test('Administrator Chat uses the existing authenticated session, not a musician login',()=>{
  const frame=read('../src/AdminApp.tsx');
- const access=read('../src/AdminChatAccess.tsx');
- const viewer=read('../src/AdminChatGeneral.tsx');
+ const access=read('../src/features/admin/AdminChatAccess.tsx');
+ const viewer=read('../src/features/chat/AdminChatGeneral.tsx');
  const api=read('../src/services/admin-api.ts');
  const worker=read('../../../cloudflare/src/index.ts');
  assert.match(access,/section==='chat'[\s\S]*<AdminChatGeneral/);

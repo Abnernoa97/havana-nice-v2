@@ -7,12 +7,12 @@ const screens=[
   ['HOME Android','apps/android/NativeMemberHome.tsx'],
   ['HOME PWA','apps/pwa/src/VisualApp.tsx'],
   ['Calendario Android','apps/android/NativeCalendar.tsx'],
-  ['Calendario PWA','apps/pwa/src/CalendarAccordion.tsx'],
-  ['Calendario Administrador','apps/pwa/src/AdminCalendar.tsx'],
-  ['Repertorio del músico','apps/pwa/src/MemberRepertoire.tsx'],
-  ['Repertorio de Administración','apps/pwa/src/AdminRepertoire.tsx'],
-  ['Familia del músico','apps/pwa/src/MemberFamily.tsx'],
-  ['Familia de Administración','apps/pwa/src/AdminFamily.tsx']
+  ['Calendario PWA','apps/pwa/src/features/calendar/CalendarAccordion.tsx'],
+  ['Calendario Administrador','apps/pwa/src/features/calendar/AdminCalendar.tsx'],
+  ['Repertorio del músico','apps/pwa/src/features/repertoire/MemberRepertoire.tsx'],
+  ['Repertorio de Administración','apps/pwa/src/features/repertoire/AdminRepertoire.tsx'],
+  ['Familia del músico','apps/pwa/src/features/family/MemberFamily.tsx'],
+  ['Familia de Administración','apps/pwa/src/features/family/AdminFamily.tsx']
 ];
 
 test('A01: HOME lists the same modules from a single shared contract',()=>{
@@ -40,8 +40,8 @@ test('A01: only existing App shells own musician enrollment and session restorat
 test('A02/A03: Calendar never owns Chat engine, messages or device binding',()=>{
   const calendarFiles=[
     'apps/android/NativeCalendar.tsx',
-    'apps/pwa/src/CalendarAccordion.tsx',
-    'apps/pwa/src/AdminCalendar.tsx',
+    'apps/pwa/src/features/calendar/CalendarAccordion.tsx',
+    'apps/pwa/src/features/calendar/AdminCalendar.tsx',
     'packages/shared/src/calendar.ts',
     'cloudflare/src/calendar.js'
   ];
@@ -60,13 +60,13 @@ test('A02/A03: Calendar never owns Chat engine, messages or device binding',()=>
 });
 
 test('A03: Calendar UIs use shared read contract; Admin alone has writes',()=>{
-  for(const path of ['apps/android/NativeCalendar.tsx','apps/pwa/src/CalendarAccordion.tsx']){
+  for(const path of ['apps/android/NativeCalendar.tsx','apps/pwa/src/features/calendar/CalendarAccordion.tsx']){
     const ui=read(path);
     assert.match(ui,/getCalendarEvents/);
     assert.doesNotMatch(ui,/adminCreateCalendarEvent|adminUpdateCalendarEvent|adminDeleteCalendarEvent/);
     assert.match(ui,/catch\(e\)/,'a failed calendar fetch must remain local');
   }
-  const admin=read('apps/pwa/src/AdminCalendar.tsx');
+  const admin=read('apps/pwa/src/features/calendar/AdminCalendar.tsx');
   assert.match(admin,/adminCreateCalendarEvent/);
   assert.match(admin,/adminUpdateCalendarEvent/);
   assert.match(admin,/adminDeleteCalendarEvent/);
@@ -83,7 +83,7 @@ test('A09: independent module tests must not modify legacy or introduce a second
 });
 
 test('A04: Repertoire cannot create parallel sessions or mutate Chat/Calendar content',()=>{
- for(const file of ['apps/pwa/src/MemberRepertoire.tsx','apps/pwa/src/AdminRepertoire.tsx',
+ for(const file of ['apps/pwa/src/features/repertoire/MemberRepertoire.tsx','apps/pwa/src/features/repertoire/AdminRepertoire.tsx',
   'packages/shared/src/repertoire.ts','cloudflare/src/repertoire.js']){
   const source=read(file);
   assert.doesNotMatch(source,/startNamedChatSession|restoreNamedChatSession|chat_messages|CHAT_ROOMS|chat_single_device_owners|localStorage|AsyncStorage|WebSocket/);
@@ -96,7 +96,7 @@ test('A04: Repertoire cannot create parallel sessions or mutate Chat/Calendar co
  assert.doesNotMatch(api,/\b(?:INSERT\s+INTO|UPDATE|DELETE\s+FROM)\s+calendar_/i);
  const handler=read('cloudflare/src/index.ts');
  assert.match(handler,/handleRepertoireApi\(request,env,url,origin,respond,verifySession\)/);
- const ui=read('apps/pwa/src/MemberRepertoire.tsx');
+ const ui=read('apps/pwa/src/features/repertoire/MemberRepertoire.tsx');
  assert.match(ui,/getAssignedEventRepertoire/);
  assert.doesNotMatch(ui,/adminCreateSong|adminDeleteSong|adminAddEventSongs/);
  assert.match(read('cloudflare/migrations/0020_repertoire.sql'),/REFERENCES calendar_events/);
@@ -113,7 +113,7 @@ test('Repertoire bulk reads use the shared auth and do not create circular share
 });
 
 test('Admin Repertoire refresh always updates selected event, not just the master catalog',()=>{
- const src=read('apps/pwa/src/AdminRepertoire.tsx');
+ const src=read('apps/pwa/src/features/repertoire/AdminRepertoire.tsx');
  assert.match(src,/const refreshAll=useCallback\(async\(\)=>\{/);
  assert.match(src,/await refresh\(\);\s*if\(eventIdRef\.current\)await refreshItems\(eventIdRef\.current\)/);
  assert.match(src,/onClick=\{\(\)=>void refreshAll\(\)\} disabled=\{busy\}>Actualizar/);
@@ -132,13 +132,13 @@ test('Familia HAVANA NICE is one isolated HOME module with existing session and 
  assert.match(worker,/verifyMusicianSession/);
  assert.match(worker,/WHERE active=1/);
  assert.doesNotMatch(worker,/INSERT INTO|UPDATE chat_|DELETE FROM|env\.R2|mockAlbum|defaultCover/);
- for(const path of ['apps/pwa/src/MemberFamily.tsx','apps/pwa/src/AdminFamily.tsx']){
+ for(const path of ['apps/pwa/src/features/family/MemberFamily.tsx','apps/pwa/src/features/family/AdminFamily.tsx']){
   assert.doesNotMatch(read(path),/startNamedChatSession|restoreNamedChatSession|localStorage|AsyncStorage|WebSocket|\/api\/chat\/session/);
  }
 });
 
 test('Family gallery follows the One UI-inspired real-data layout and BOOK has safe navigation',()=>{
- const ui=read('apps/pwa/src/MemberFamily.tsx');
+ const ui=read('apps/pwa/src/features/family/MemberFamily.tsx');
  const css=read('apps/pwa/src/styles/home/home.css');
  assert.match(ui,/className="hn-family-cover"/);
  assert.match(ui,/className="hn-family-cover-text"/);
@@ -148,7 +148,7 @@ test('Family gallery follows the One UI-inspired real-data layout and BOOK has s
  assert.match(sharedCounts,/export function familyAlbumCount/);
  assert.match(sharedCounts,/album\.photoCount/);
  assert.match(sharedCounts,/album\.videoCount/);
- const adminFamily=read('apps/pwa/src/AdminFamily.tsx');
+ const adminFamily=read('apps/pwa/src/features/family/AdminFamily.tsx');
  assert.match(adminFamily,/familyAlbumCount\(album\)/);
  assert.doesNotMatch(adminFamily,/function albumCount\(/);
  assert.match(ui,/setBookOpen\(true\)/);
@@ -160,7 +160,7 @@ test('Family gallery follows the One UI-inspired real-data layout and BOOK has s
  assert.match(css,/\.hn-family-album-caption\{/);
  assert.doesNotMatch(ui,/mock|demoPhoto|samplePhoto|https:\/\/images\./i);
  assert.doesNotMatch(ui,/new PageFlip|<iframe|data:image\/|localStorage/);
- const admin=read('apps/pwa/src/AdminFamily.tsx');
+ const admin=read('apps/pwa/src/features/family/AdminFamily.tsx');
  assert.match(admin,/className="a-family-cover"/);
  assert.match(admin,/className="a-family-book-view"/);
  assert.match(admin,/setBookOpen\(true\)/);
@@ -169,10 +169,10 @@ test('Family gallery follows the One UI-inspired real-data layout and BOOK has s
 });
 
 test('M09: four-column Familia viewer accepts only authorized Worker file grants',()=>{
- const ui=read('apps/pwa/src/FamilyMediaGallery.tsx');
+ const ui=read('apps/pwa/src/features/family/FamilyMediaGallery.tsx');
  const css=read('apps/pwa/src/styles/family/gallery.css');
- const member=read('apps/pwa/src/MemberFamily.tsx');
- const admin=read('apps/pwa/src/AdminFamily.tsx');
+ const member=read('apps/pwa/src/features/family/MemberFamily.tsx');
+ const admin=read('apps/pwa/src/features/family/AdminFamily.tsx');
  const shared=read('packages/shared/src/family.ts');
  assert.match(ui,/familyPrivateMediaUrl/);
  assert.match(ui,/url\.protocol!=='https:'/);
@@ -230,7 +230,7 @@ test('M09: four-column Familia viewer accepts only authorized Worker file grants
  assert.match(shared,/directFamilyIds=new WeakMap/);
  assert.match(shared,/completedParts/);
  assert.match(shared,/X-Havana-V2-Upload-ID/);
- for(const path of ['apps/pwa/src/FamilyMediaGallery.tsx','apps/pwa/src/MemberFamily.tsx','apps/pwa/src/AdminFamily.tsx']){
+ for(const path of ['apps/pwa/src/features/family/FamilyMediaGallery.tsx','apps/pwa/src/features/family/MemberFamily.tsx','apps/pwa/src/features/family/AdminFamily.tsx']){
   const s=read(path);
   assert.doesNotMatch(s,/localStorage|AsyncStorage|new WebSocket|mockAlbum|samplePhoto|data:image\//);
  }
