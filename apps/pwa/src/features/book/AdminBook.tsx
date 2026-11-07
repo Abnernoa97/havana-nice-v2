@@ -33,6 +33,7 @@ export default function AdminBook({token,onExpired,tick=0}:{token:string;onExpir
   const errors:string[]=[];
   for(let i=0;i<files.length;i++){
    const f=files[i];
+   if(!f)continue;
    try{
     setNote('Guardando página '+(i+1)+' de '+files.length+'…');
     await uploadBookPage(token,f,(loaded,total)=>{
