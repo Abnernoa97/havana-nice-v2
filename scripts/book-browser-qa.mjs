@@ -24,6 +24,11 @@ const pages=Array.from({length:6},(_,i)=>({
  published:true
 }));
 const bootstrap=`<script>
+// Chrome virtual-time moves timers without rendering normal display frames.
+// This QA-only window uses deterministic 60fps callbacks so we can assert
+// real StPageFlip state changes without changing any production source.
+window.requestAnimationFrame=(callback)=>setTimeout(()=>callback(performance.now()),16);
+window.cancelAnimationFrame=(id)=>clearTimeout(id);
 window.ReactNativeWebView={
  postMessage(message){
   if(message==='havana-v2-book-ready')
