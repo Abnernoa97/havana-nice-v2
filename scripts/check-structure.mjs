@@ -36,4 +36,80 @@ JSON.parse(
     .replace(/^\s*\/\/.*$/gm, ''),
 );
 
+// Enforce the layered architecture of the standalone V2 repository.
+import assert from 'node:assert/strict';
+import { readdirSync, statSync } from 'node:fs';
+import { dirname, join, resolve, relative, extname } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const rootDir=fileURLToPath(new URL('../',import.meta.url));
+const children=folder=>readdirSync(join(rootDir,folder)).sort();
+assert.deepEqual(children('apps/pwa/src'),
+ ['app','features','services','styles','vite-env.d.ts'],
+ 'PWA source root cannot grow parallel or legacy implementations');
+assert.deepEqual(children('apps/android'),
+ ['App.tsx','app.json','features','package.json','services','tsconfig.json'],
+ 'Android must keep one Expo entry and grouped modules');
+assert.deepEqual(children('cloudflare/src'),
+ ['index.ts','modules','shared'],
+ 'The Worker must keep a single typed entry point');
+
+for(const name of ['calendar','chat','family','repertoire'])
+ assert.ok(existsSync(join(rootDir,'apps/pwa/src/features',name)),
+  'Missing PWA feature: '+name);
+for(const name of ['calendar','chat','family','home','repertoire'])
+ assert.ok(existsSync(join(rootDir,'apps/android/features',name)),
+  'Missing native feature: '+name);
+for(const name of ['admin','calendar','chat','family','repertoire'])
+ assert.ok(existsSync(join(rootDir,'cloudflare/src/modules',name)),
+  'Missing Worker domain: '+name);
+
+// Verify all relative imports resolve and reject source modules with no active
+// path from a PWA, Android or Worker entry point.
+const sourceRoots=['apps/pwa/src','apps/android','cloudflare/src'];
+const extensions=new Set(['.ts','.tsx','.js','.css']);
+function collect(folder){
+ const result=[];
+ for(const name of readdirSync(join(rootDir,folder))){
+  const path=folder+'/'+name;
+  if(statSync(join(rootDir,path)).isDirectory())result.push(...collect(path));
+  else if(extensions.has(extname(path))&&!path.endsWith('.d.ts'))result.push(path);
+ }
+ return result;
+}
+const sources=sourceRoots.flatMap(collect).sort();
+const sourceSet=new Set(sources);
+const imports=new Map(sources.map(s=>[s,[]]));
+for(const path of sources){
+ if(path.endsWith('.css'))continue;
+ const code=readFileSync(join(rootDir,path),'utf8');
+ const pattern=/\bfrom\s+['"](\.[^'"]+)['"]|\bimport\s+['"](\.[^'"]+)['"]/g;
+ for(const match of code.matchAll(pattern)){
+  const local=match[1]||match[2];
+  const absolute=resolve(rootDir,dirname(path),local);
+  const candidates=[absolute,absolute+'.ts',absolute+'.tsx',absolute+'.js',
+   absolute+'.css',join(absolute,'index.ts'),join(absolute,'index.tsx')];
+  const target=candidates.find(p=>existsSync(p)&&statSync(p).isFile());
+  assert.ok(target,'Broken local import '+path+' -> '+local);
+  const rel=relative(rootDir,target).replaceAll('\\','/');
+  assert.ok(!rel.startsWith('../'),'Unapproved cross-repository import: '+path);
+  if(sourceSet.has(rel))imports.get(path).push(rel);
+ }
+}
+const entrypoints=[
+ 'apps/pwa/src/app/main.tsx','apps/pwa/src/app/admin-main.tsx',
+ 'apps/pwa/src/app/visual-main.tsx','apps/android/App.tsx','cloudflare/src/index.ts'
+];
+const seen=new Set(),queue=[...entrypoints];
+while(queue.length){
+ const current=queue.shift();
+ if(seen.has(current))continue;
+ assert.ok(sourceSet.has(current),'Missing V2 entry '+current);
+ seen.add(current);
+ queue.push(...(imports.get(current)||[]));
+}
+const dormant=sources.filter(path=>!seen.has(path));
+assert.deepEqual(dormant,[],'Unused source files remain outside the live import graph');
+console.log('HAVANA NICE V2 architecture and reachable import graph: OK');
+
 console.log('HAVANA NICE V2 foundation structure: OK');
