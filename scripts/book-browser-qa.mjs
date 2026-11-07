@@ -184,23 +184,6 @@ try{
     'Touch up/down over BOOK should scroll document (before '+start.y+', after '+vertical.y+')');
    assert.equal(vertical.count,start.count,'Vertical scroll must not turn a page');
    assert.equal(vertical.hosts,1,'Vertical scroll cannot recreate book');
-   // QA-only event trace pinpoints whether Chrome dispatched pointer/touch
-   // events to the book after the earlier native vertical pan.
-   await js(`(()=>{window.__bookGestureTrace=[];
-    for(const name of ['pointerdown','pointermove','pointerup','pointercancel','touchstart','touchmove','touchend']){
-     document.addEventListener(name,e=>{
-      if(window.__bookGestureTrace.length<28)window.__bookGestureTrace.push({name,
-       tag:e.target?.tagName,cls:typeof e.target?.className==='string'?e.target.className.slice(0,45):'',
-       x:e.clientX??e.touches?.[0]?.clientX,y:e.clientY??e.touches?.[0]?.clientY,
-       type:e.pointerType,scrollY});
-     },true);
-    }
-    const stage=document.querySelector('.hn-book-stage');
-    for(const name of ['pointerdown','pointermove','pointerup','pointercancel']){
-     stage.addEventListener(name,e=>window.__bookGestureTrace.push({name:'stage-'+name,
-      type:e.pointerType,scrollY}),false);
-    }
-    return true;})()`);
    const h=await js(`(()=>{const stage=document.querySelector('.hn-book-stage');
     const r=stage.getBoundingClientRect();
     return {x:r.left+r.width*.82,y:r.top+r.height*.55,
@@ -213,8 +196,7 @@ try{
    await sleep(600);
    const sideways=await js(`({count:document.querySelector('.hn-book-counter strong').textContent,
     hosts:document.querySelectorAll('.hn-book-flip-host').length})`);
-   const gestureTrace=await js('window.__bookGestureTrace');
-   assert.notEqual(sideways.count,vertical.count,'Horizontal swipe should turn a paper page: '+JSON.stringify({start,vertical,h,sideways,gestureTrace}));
+   assert.notEqual(sideways.count,vertical.count,'Horizontal swipe should turn a paper page: '+JSON.stringify({start,vertical,h,sideways}));
    assert.equal(sideways.hosts,1);
    console.log('BOOK real touch: vertical scroll '+start.y+' -> '+vertical.y+
     ', page unchanged '+vertical.count+'; horizontal swipe turns to '+sideways.count);
