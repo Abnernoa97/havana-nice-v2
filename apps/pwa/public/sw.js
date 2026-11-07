@@ -2,7 +2,7 @@
 // credentials, cross-origin Worker requests, media, or dynamic endpoints.
 const CACHE = 'havana-nice-v2-static-v4';
 const PREFIX = 'havana-nice-v2-';
-const APP_SHELL = ['/', '/visual.html', '/manifest.webmanifest'];
+const APP_SHELL = ['/', '/visual.html', '/book.html', '/manifest.webmanifest'];
 const MAX_VERSIONED_ASSETS = 40;
 
 // One bounded static cache, not a new cache for every build.
@@ -48,8 +48,10 @@ self.addEventListener('fetch', event => {
     path === '/manifest.webmanifest' || path === '/admin.webmanifest';
   if (!navigation && !staticAsset) return;
 
-  // Keep the visual WebView route isolated: never fall back to the Chat page.
-  const shellKey = navigation && path === '/visual.html' ? '/visual.html' : '/';
+  // Visual and BOOK are independent entries. Never let BOOK overwrite Chat
+  // offline HTML, or show Chat while an authorized musician opens BOOK.
+  const shellKey = navigation && path === '/visual.html' ? '/visual.html' :
+    navigation && path === '/book.html' ? '/book.html' : '/';
   event.respondWith(
     fetch(req).then(response => {
       if (response.ok && response.type === 'basic') {
