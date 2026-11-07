@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {getChatMenuState,CHAT_EDIT_WINDOW_MS,CHAT_DELETE_WINDOW_MS} from '../packages/shared/src/chat-menu.ts';
+import {getChatMenuState,getChatMessagePermissions,isWithinChatEditWindow,isWithinChatDeleteWindow,CHAT_EDIT_WINDOW_MS,CHAT_DELETE_WINDOW_MS} from '../packages/shared/src/chat-menu.ts';
 
 const now=Date.parse('2026-11-07T12:00:00.000Z');
 const own=(age)=>({senderId:'member:fer',sentAt:new Date(now-age).toISOString()});
@@ -20,6 +20,16 @@ test('a single chat policy keeps the original 15-minute edit and 48-hour deletio
  assert.deepEqual([menu(own(CHAT_EDIT_WINDOW_MS)).canEdit,menu(own(CHAT_EDIT_WINDOW_MS)).canDelete],[false,true]);
  assert.deepEqual([menu(own(CHAT_DELETE_WINDOW_MS-1)).canEdit,menu(own(CHAT_DELETE_WINDOW_MS-1)).canDelete],[false,true]);
  assert.deepEqual([menu(own(CHAT_DELETE_WINDOW_MS)).canEdit,menu(own(CHAT_DELETE_WINDOW_MS)).canDelete],[false,false]);
+});
+
+test('direct edit and delete actions use identical shared window checks',()=>{
+ assert.equal(isWithinChatEditWindow(own(CHAT_EDIT_WINDOW_MS-1).sentAt,now),true);
+ assert.equal(isWithinChatEditWindow(own(CHAT_EDIT_WINDOW_MS).sentAt,now),false);
+ assert.equal(isWithinChatDeleteWindow(own(CHAT_DELETE_WINDOW_MS-1).sentAt,now),true);
+ assert.equal(isWithinChatDeleteWindow(own(CHAT_DELETE_WINDOW_MS).sentAt,now),false);
+ const permissions=getChatMessagePermissions(own(1),'member:fer','en vivo',now);
+ assert.deepEqual(permissions,{owned:true,canEdit:true,canDelete:true});
+ assert.equal(getChatMessagePermissions(own(1),'member:fer','desconectado',now).canEdit,false);
 });
 
 test('offline, pending, missing and other-member messages can never be modified',()=>{
@@ -73,10 +83,12 @@ test('both frontends call the same helper, never duplicate message edit policy',
  for(const path of paths){
   const source=readFileSync(new URL('../'+path,import.meta.url),'utf8');
   assert.match(source,/getChatMenuState\(/,path);
+  assert.match(source,/getChatMessagePermissions\(message,session\?\.actorId,connection\)/,path);
+  assert.match(source,/isWithinChatEditWindow\(editing\.sentAt\)/,path);
   assert.doesNotMatch(source,/const menuAge=|const menuOwn=|15\*60\*1000|48\*60\*60\*1000/,path+' must not keep private policy');
   assert.match(source,/canDelete|allowDelete/,path);
   assert.match(source,/canEdit|allowEdit/,path);
  }
  const shared=readFileSync(new URL('../packages/shared/src/index.ts',import.meta.url),'utf8');
- assert.match(shared,/export \{getChatMenuState,CHAT_EDIT_WINDOW_MS,CHAT_DELETE_WINDOW_MS\} from '\.\/chat-menu'/);
+ assert.match(shared,/export \{getChatMenuState,getChatMessagePermissions,isWithinChatEditWindow,isWithinChatDeleteWindow,CHAT_EDIT_WINDOW_MS,CHAT_DELETE_WINDOW_MS\} from '\.\/chat-menu'/);
 });

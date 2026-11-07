@@ -4,7 +4,7 @@ import {
   StatusBar, StyleSheet, Text, TextInput, View, Image, useWindowDimensions,
 } from 'react-native';
 import {
-  HAVANA_V2_DEV_API_BASE_URL, fetchBackendHealth, getChatMediaAvailability, getChatSnapshot, getOlderChatMessages, searchChatMessages, lastReadByOther, getChatMenuState, messageDeliveryLabel, newClientMessageId,
+  HAVANA_V2_DEV_API_BASE_URL, fetchBackendHealth, getChatMediaAvailability, getChatSnapshot, getOlderChatMessages, searchChatMessages, lastReadByOther, getChatMenuState, getChatMessagePermissions, isWithinChatEditWindow, messageDeliveryLabel, newClientMessageId,
   reconcileChatMessages, reconcileReactions, reconcileUpdatedMessage, reconcileDeletedMessage, reconcileChatSnapshot, startNamedChatSession, restoreNamedChatSession,
   type ChatMessage, type ChatServerEvent, type ChatSession, type ChatReaction, type ChatEmoji, type ChatReadReceipt,
   validateChatMediaSelection, CHAT_MEDIA_MAX_PER_SEND, type ChatMediaSelection, type ChatMediaKind, type ChatMediaSource, type MemberScreen,
@@ -280,7 +280,8 @@ export default function App() {
   function manageOwn(message:ChatMessage,deleting=false){
     if(!session||message.senderId!==session.actorId||message.seq<1||
       message.deletedAt||connection!=='en vivo')return;
-    if(Date.now()-Date.parse(message.sentAt)>(deleting?48*60*60*1000:900000)){
+    const permission=getChatMessagePermissions(message,session?.actorId,connection);
+    if(!(deleting?permission.canDelete:permission.canEdit)){
       setError(deleting?'El plazo para eliminar terminó':'El plazo de edición de 15 minutos terminó');return;
     }
     if(!deleting){
@@ -702,7 +703,7 @@ export default function App() {
       if(editPending.current)return;
       if(!text){setError('El mensaje editado no puede quedar vacío.');return;}
       if(text===editing.text){finishEditing();return;}
-      if(Date.now()-Date.parse(editing.sentAt)>15*60*1000){
+      if(!isWithinChatEditWindow(editing.sentAt)){
         setError('El plazo de edición de 15 minutos terminó. El texto sigue aquí para copiarlo.');
         return;
       }

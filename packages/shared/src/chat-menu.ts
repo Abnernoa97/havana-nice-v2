@@ -10,6 +10,26 @@ export type ChatMenuViewport={
  maxWidth:number;menuHeight:number;
 };
 
+export function isWithinChatEditWindow(sentAt:string,now=Date.now()){
+ return now-Date.parse(sentAt)<CHAT_EDIT_WINDOW_MS;
+}
+export function isWithinChatDeleteWindow(sentAt:string,now=Date.now()){
+ return now-Date.parse(sentAt)<CHAT_DELETE_WINDOW_MS;
+}
+
+export function getChatMessagePermissions(
+ message:ChatMenuMessage|null,
+ actorId:string|undefined,
+ connection:string,
+ now=Date.now(),
+){
+ const owned=!!message&&message.senderId===actorId&&!message.pending;
+ const connected=connection==='en vivo';
+ return {owned,
+  canEdit:owned&&connected&&!!message&&isWithinChatEditWindow(message.sentAt,now),
+  canDelete:owned&&connected&&!!message&&isWithinChatDeleteWindow(message.sentAt,now)};
+}
+
 export function getChatMenuState(
  message:ChatMenuMessage|null,
  actorId:string|undefined,
@@ -18,11 +38,7 @@ export function getChatMenuState(
  viewport:ChatMenuViewport,
  now=Date.now(),
 ){
- const owned=!!message&&message.senderId===actorId&&!message.pending;
- const age=message?now-Date.parse(message.sentAt):Infinity;
- const connected=connection==='en vivo';
- const canEdit=owned&&connected&&age<CHAT_EDIT_WINDOW_MS;
- const canDelete=owned&&connected&&age<CHAT_DELETE_WINDOW_MS;
+ const {owned,canEdit,canDelete}=getChatMessagePermissions(message,actorId,connection,now);
  const width=Math.min(viewport.maxWidth,Math.max(180,viewport.width-24));
  const {offsetTop,height,menuHeight}=viewport;
  const preferredTop=anchor&&anchor.y>offsetTop+menuHeight+16

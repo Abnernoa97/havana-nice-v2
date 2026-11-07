@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import {
-  fetchBackendHealth, getChatMediaAvailability, getChatSnapshot, getOlderChatMessages, searchChatMessages, lastReadByOther, getChatMenuState, messageDeliveryLabel, newClientMessageId,
+  fetchBackendHealth, getChatMediaAvailability, getChatSnapshot, getOlderChatMessages, searchChatMessages, lastReadByOther, getChatMenuState, getChatMessagePermissions, isWithinChatEditWindow, messageDeliveryLabel, newClientMessageId,
   openChatSocket, reconcileChatMessages, startNamedChatSession, restoreNamedChatSession,
   type BackendHealth, type ChatMessage, type ChatServerEvent, type ChatSession,
   validateChatMediaSelection, CHAT_MEDIA_MAX_PER_SEND, HAVANA_V2_DEV_API_BASE_URL, type ChatMediaSelection, type ChatMediaKind, type ChatMediaSource,
@@ -253,7 +253,8 @@ export default function App() {
   }
   function updateOwn(message: ChatMessage, deleting = false) {
     if(message.senderId!==session?.actorId || message.seq<1 || message.deletedAt || connection!=='en vivo') return;
-    if (Date.now()-Date.parse(message.sentAt)>(deleting?48*60*60*1000:15*60*1000)) {
+    const permission=getChatMessagePermissions(message,session?.actorId,connection);
+    if (!(deleting ? permission.canDelete : permission.canEdit)) {
       setError(deleting?'El plazo para eliminar terminó':'Solo puedes editar durante 15 minutos');return;
     }
     if(!deleting){
@@ -586,7 +587,7 @@ export default function App() {
       if(editPending.current)return;
       if(!text){setError('El mensaje editado no puede quedar vacío.');return;}
       if(text===editing.text){finishEditing();return;}
-      if(Date.now()-Date.parse(editing.sentAt)>15*60*1000){
+      if(!isWithinChatEditWindow(editing.sentAt)){
         setError('El plazo de edición de 15 minutos terminó. El texto sigue aquí para copiarlo.');
         return;
       }

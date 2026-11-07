@@ -227,5 +227,5 @@ export {getFamilyDirectory,getFamilyAlbumMedia,uploadFamilyAlbumFile,uploadFamil
 export type {FamilyAlbum,FamilyDirectory,FamilyMediaItem} from './family';
 
 // One chat context-menu permissions and geometry policy for PWA and Android.
-export {getChatMenuState,CHAT_EDIT_WINDOW_MS,CHAT_DELETE_WINDOW_MS} from './chat-menu';
+export {getChatMenuState,getChatMessagePermissions,isWithinChatEditWindow,isWithinChatDeleteWindow,CHAT_EDIT_WINDOW_MS,CHAT_DELETE_WINDOW_MS} from './chat-menu';
 export type {ChatMenuAnchor,ChatMenuMessage,ChatMenuViewport} from './chat-menu';
