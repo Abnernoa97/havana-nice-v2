@@ -1,5 +1,5 @@
 import {useCallback,useEffect,useRef,useState} from 'react';
-import {BookApiError,bookMediaUrl,getBookPages,removeBookPage,updateBookPage,uploadBookPage,type BookPage} from '@havana/shared';
+import {BOOK_GRANT_RENEW_MS,BookApiError,bookMediaUrl,getBookPages,removeBookPage,updateBookPage,uploadBookPage,type BookPage} from '@havana/shared';
 import BookReader from './BookReader';
 
 export default function AdminBook({token,onExpired,tick=0}:{token:string;onExpired:()=>void;tick?:number}){
@@ -26,6 +26,22 @@ export default function AdminBook({token,onExpired,tick=0}:{token:string;onExpir
   setLoading(true);void refresh();
   return()=>{sequence.current++;};
  },[refresh,tick]);
+ // Do not reissue grants continuously: renew once before expiration, or
+ // immediately after the Admin returns to this screen from the background.
+ useEffect(()=>{
+  const resume=()=>{if(!document.hidden&&navigator.onLine)void refresh();};
+  document.addEventListener('visibilitychange',resume);
+  window.addEventListener('online',resume);
+  return()=>{document.removeEventListener('visibilitychange',resume);
+   window.removeEventListener('online',resume);};
+ },[refresh]);
+ useEffect(()=>{
+  if(!pages.length)return;
+  const timer=window.setTimeout(()=>{
+   if(!document.hidden&&navigator.onLine)void refresh();
+  },BOOK_GRANT_RENEW_MS);
+  return()=>window.clearTimeout(timer);
+ },[pages,refresh]);
  const upload=async(files:File[])=>{
   if(busy||!files.length)return;
   if(files.length>5){setError('Puedes elegir hasta cinco imágenes por selección.');return;}
@@ -44,8 +60,9 @@ export default function AdminBook({token,onExpired,tick=0}:{token:string;onExpir
     if(e instanceof BookApiError&&e.status===401){onExpired();break;}
    }
   }
-  setError(errors.join(' · '));setNote(errors.length?'Algunas imágenes no se guardaron.':'Imágenes publicadas.');
   setProgress(100);setBusy(false);await refresh();
+  setNote(errors.length?'Algunas imágenes no se guardaron.':'Imágenes publicadas.');
+  if(errors.length)setError(errors.join(' · '));
  };
  const change=async(id:string,payload:Partial<Pick<BookPage,'position'|'fit'|'published'>>)=>{
   if(busy)return;
