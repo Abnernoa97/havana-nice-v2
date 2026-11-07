@@ -143,14 +143,14 @@ jobs:
           set -euo pipefail
           BASE="https://havana-nice-v2-dev.soloaplicaciones97.workers.dev"
           PATH_TO_DELETE="/api/chat/admin/messages/1"
-          ORIGIN="https://havana-nice-v2-dev.pages.dev"
+          ORIGIN="https://havana-nice-v2.pages.dev"
           STATUS="$(curl --silent --show-error -D /tmp/hnv2-admin-delete-options.h -o /dev/null -w '%{http_code}' \
             -X OPTIONS "$BASE$PATH_TO_DELETE" \
             -H "Origin: $ORIGIN" \
             -H "Access-Control-Request-Method: DELETE" \
             -H "Access-Control-Request-Headers: authorization")"
           test "$STATUS" = 204
-          grep -qi '^access-control-allow-origin: https://havana-nice-v2-dev.pages.dev' /tmp/hnv2-admin-delete-options.h
+          grep -qi '^access-control-allow-origin: https://havana-nice-v2.pages.dev' /tmp/hnv2-admin-delete-options.h
           grep -qi '^access-control-allow-methods: .*DELETE' /tmp/hnv2-admin-delete-options.h
           grep -qi '^access-control-allow-headers: .*Authorization' /tmp/hnv2-admin-delete-options.h
           BAD="$(curl --silent --show-error -o /dev/null -w '%{http_code}' \
@@ -243,12 +243,12 @@ jobs:
           echo "Admin WS no origin: $STATUS"
           test "$STATUS" = "403"
           STATUS="$(curl --silent --show-error --output /tmp/v2-admin-ws-no-upgrade.json --write-out '%{http_code}' \
-            "$BASE/ws/admin" -H "Origin: https://havana-nice-v2-dev.pages.dev")"
+            "$BASE/ws/admin" -H "Origin: https://havana-nice-v2.pages.dev")"
           echo "Admin WS no upgrade: $STATUS"
           test "$STATUS" = "426"
           STATUS="$(curl --http1.1 --silent --show-error --output /tmp/v2-admin-ws-denied.json --write-out '%{http_code}' \
             "$BASE/ws/admin" \
-            -H "Origin: https://havana-nice-v2-dev.pages.dev" \
+            -H "Origin: https://havana-nice-v2.pages.dev" \
             -H "Upgrade: websocket" -H "Connection: Upgrade" \
             -H "Sec-WebSocket-Version: 13" -H "Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==" \
             -H "Sec-WebSocket-Protocol: havana-v2-admin, admin.aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")"
@@ -321,11 +321,11 @@ jobs:
         run: |
           set -euo pipefail
           curl --fail --silent --show-error --retry 10 --retry-all-errors --retry-delay 3 \
-            https://havana-nice-v2-dev.pages.dev/ \
+            https://havana-nice-v2.pages.dev/ \
             | tee /tmp/havana-pwa.html
           grep -q 'HAVANA NICE V2' /tmp/havana-pwa.html
           curl --fail --silent --show-error --retry 10 --retry-all-errors --retry-delay 3 \
-            https://havana-nice-v2-dev.pages.dev/manifest.webmanifest \
+            https://havana-nice-v2.pages.dev/manifest.webmanifest \
             | tee /tmp/havana-manifest.json
           grep -q 'HAVANA NICE V2' /tmp/havana-manifest.json
 
@@ -350,10 +350,10 @@ jobs:
           set -euo pipefail
           BASE="https://havana-nice-v2-dev.soloaplicaciones97.workers.dev"
           HTTP="$(curl -sS -o /tmp/hnv2-calendar-upgrade.json -w '%{http_code}' \
-            -H 'Origin: https://havana-nice-v2-dev.pages.dev' "$BASE/ws/calendar")"
+            -H 'Origin: https://havana-nice-v2.pages.dev' "$BASE/ws/calendar")"
           test "$HTTP" = "426"
           HTTP="$(curl -sS -o /tmp/hnv2-calendar-unauth.json -w '%{http_code}' \
-            --http1.1 -H 'Origin: https://havana-nice-v2-dev.pages.dev' \
+            --http1.1 -H 'Origin: https://havana-nice-v2.pages.dev' \
             -H 'Connection: Upgrade' -H 'Upgrade: websocket' \
             -H 'Sec-WebSocket-Version: 13' \
             -H 'Sec-WebSocket-Key: SGF2YW5hTmljZUNhbGVuZGFyIQ==' \
@@ -426,7 +426,7 @@ jobs:
           done
           curl -sS -D /tmp/hnv2-upload-options.txt -o /dev/null -X OPTIONS \
             "$BASE/api/family/admin/albums/member%3Aorly/media" \
-            -H 'Origin: https://havana-nice-v2-dev.pages.dev' \
+            -H 'Origin: https://havana-nice-v2.pages.dev' \
             -H 'Access-Control-Request-Method: POST' \
             -H 'Access-Control-Request-Headers: Authorization, Content-Type, X-Havana-V2-Upload-ID'
           grep -qi 'access-control-allow-headers:.*X-Havana-V2-Upload-ID' /tmp/hnv2-upload-options.txt
@@ -447,3 +447,22 @@ jobs:
             test "$HTTP" = "401"
             grep -q 'No autorizado' /tmp/hn-family-live-private-mutate.json
           done
+
+      - name: Verify dedicated V2 Pages domain and authorized backend CORS
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE="https://havana-nice-v2-dev.soloaplicaciones97.workers.dev"
+          ORIGIN="https://havana-nice-v2.pages.dev"
+          curl --fail --silent --show-error --retry 5 --retry-delay 2 "$ORIGIN/" | grep -q 'HAVANA NICE V2'
+          STATUS="$(curl --silent --show-error --retry 3 -D /tmp/hnv2-new-pages-cors.h -o /tmp/hnv2-new-pages-cors.json \
+            -w '%{http_code}' -X OPTIONS "$BASE/api/calendar/events" \
+            -H "Origin: $ORIGIN" -H 'Access-Control-Request-Method: GET')"
+          test "$STATUS" = 204
+          grep -qi '^access-control-allow-origin: https://havana-nice-v2.pages.dev' /tmp/hnv2-new-pages-cors.h
+          STATUS="$(curl --silent --show-error -o /tmp/hnv2-bad-origin.json -w '%{http_code}' \
+            -X OPTIONS "$BASE/api/calendar/events" -H 'Origin: https://untrusted.example' \
+            -H 'Access-Control-Request-Method: GET')"
+          test "$STATUS" = 403
+          curl --fail --silent --show-error --retry 3 "$BASE/health" \
+            | grep -q '"database":"ok"'
