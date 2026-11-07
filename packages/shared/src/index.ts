@@ -251,3 +251,6 @@ export type {ChatOfflineSnapshot} from './chat-offline';
 // One linear-cost rendering index for replies, reactions and read receipts.
 export {buildChatDisplayIndex} from './chat-display';
 export type {ChatDisplayIndex,ChatReactionBadge} from './chat-display';
+
+export {getBookPages,uploadBookPage,updateBookPage,removeBookPage,bookMediaUrl,BookApiError} from './book';
+export type {BookPage,BookDirectory} from './book';
