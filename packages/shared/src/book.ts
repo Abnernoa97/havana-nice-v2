@@ -1,6 +1,9 @@
 // BOOK HAVANA NICE · one private API shared with the authorized musician and Administrator.
 // The original images always live in private R2; expiring grants are not bucket URLs.
 import {HAVANA_V2_DEV_API_BASE_URL as API} from './api-base';
+// Private image grants live for ten minutes on the Worker. Renew once before
+// expiry only while a reader/editor is mounted; this is not sync polling.
+export const BOOK_GRANT_RENEW_MS=8*60*1000;
 export interface BookPage {
  id:string;
  url:string;
