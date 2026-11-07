@@ -90,7 +90,7 @@ export default function BookReader({pages}:{pages:BookPage[]}){
  if(!pages.length)return <div className="hn-book-empty">Todavía no hay páginas publicadas. Las imágenes aparecerán cuando Administración las añada.</div>;
  const first=bookMediaUrl(pages[0]?.url);
  const leaves=<>
-  <div className="hn-book-leaf hn-book-front" data-density="hard">
+  <div className={"hn-book-leaf hn-book-front"+(pages[0]?.fit==='contain'?" hn-book-contain":"")} data-density="hard">
    {first?<img src={first} alt="" data-book-cover="true" decoding="async" fetchPriority="high"/>:null}
    <div className="hn-book-cover-shade"/>
    <div className="hn-book-cover-heading"><small>THE PRIVATE EDITION</small><strong>HAVANA<br/>NICE</strong></div>
