@@ -3,6 +3,7 @@ import {spawn,spawnSync} from 'node:child_process';
 import {createServer} from 'node:http';
 import {readFileSync,existsSync} from 'node:fs';
 import {join,resolve,sep,extname} from 'node:path';
+import {Script} from 'node:vm';
 
 // Browser-only regression test for the BUILT BOOK, not a second renderer.
 // It runs a fake six-photo edition in memory: no D1/R2 writes, no accounts,
@@ -151,6 +152,10 @@ const fixture=`<script>
 })();
 </script>`;
 
+// Check inline QA JavaScript before invoking Chrome; do not silently accept
+// an unexecuted fixture as a successful visual test.
+const qaCode=fixture.slice('<script>'.length,-'</script>'.length);
+new Script(qaCode,{filename:'book-browser-fixture.js'});
 let page=readFileSync(join(dist,'book.html'),'utf8');
 assert.ok(page.includes('</head>')&&page.includes('</body>'));
 page=page.replace('</head>',bootstrap+'</head>')
