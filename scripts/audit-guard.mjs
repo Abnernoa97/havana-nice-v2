@@ -188,8 +188,11 @@ absent(android,/onContentSizeChange=\{\(\) => \{if\(autoScroll\.current\)scroll\
 present(android,/Responder/,'Native contextual menu must provide a reply action');
 absent(android,/whatsappPlus|whatsappPlusText/,'Remove inert extra-reaction button on Android');
 present(webBubble,/getBoundingClientRect\(\)/,'PWA Chat must measure held message');
-present(pwa,/onLongPress=\{anchor=>showMessageMenu\(message,anchor\)\}/,
-  'PWA Chat must show its contextual menu for the held message');
+const chatTimeline=read('apps/pwa/src/features/chat/ChatTimeline.tsx');
+present(pwa,/onMessageLongPress=\{showMessageMenu\}/,
+  'PWA Chat must bind the existing secure contextual menu from App');
+present(chatTimeline,/onLongPress=\{anchor=>onMessageLongPress\(message,anchor\)\}/,
+  'PWA Timeline must forward long-press anchors to the one Chat controller');
 present(pwa,/aria-modal="true"/,'PWA contextual menu must be a dialog');
 present(pwa,/Responder/,'PWA contextual menu must provide a reply action');
 // C02: retain the target of the edit after app suspension/reopening.

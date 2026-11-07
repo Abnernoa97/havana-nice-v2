@@ -1,15 +1,15 @@
 import { useEffect, useRef, useState } from 'react';
 import {
-  fetchBackendHealth, getChatMediaAvailability, getChatSnapshot, getOlderChatMessages, searchChatMessages, lastReadByOther, getChatMenuState, getChatMessagePermissions, isWithinChatEditWindow, selectNextQueuedChatMessage, setOutgoingChatStatus, projectOutgoingChatStatus, CHAT_ACK_TIMEOUT_MS, messageDeliveryLabel, newClientMessageId,
+  fetchBackendHealth, getChatMediaAvailability, getChatSnapshot, getOlderChatMessages, searchChatMessages, getChatMenuState, getChatMessagePermissions, isWithinChatEditWindow, selectNextQueuedChatMessage, setOutgoingChatStatus, projectOutgoingChatStatus, CHAT_ACK_TIMEOUT_MS, newClientMessageId,
   openChatSocket, reconcileChatMessages, startNamedChatSession, restoreNamedChatSession,
   type BackendHealth, type ChatMessage, type ChatServerEvent, type ChatSession,
   validateChatMediaSelection, CHAT_MEDIA_MAX_PER_SEND, HAVANA_V2_DEV_API_BASE_URL, type ChatMediaSelection, type ChatMediaKind, type ChatMediaSource,
   reconcileReactions, reconcileUpdatedMessage, reconcileDeletedMessage, reconcileChatSnapshot, type ChatReaction, type ChatEmoji, type ChatReadReceipt, type MemberScreen,
 } from '@havana/shared';
 import { loadLocalChat, saveLocalChat } from '../services/local';
-import SwipeMessage, {type MessageAnchor} from '../features/chat/SwipeMessage';
+import type {MessageAnchor} from '../features/chat/SwipeMessage';
+import ChatTimeline from '../features/chat/ChatTimeline';
 import ComposerIcon from '../features/chat/ChatComposerIcon';
-import ChatMediaView from '../features/chat/ChatMediaView';
 import {uploadChatFile} from '../services/chat-media-upload';
 import VisualApp from './VisualApp';
 
@@ -700,42 +700,13 @@ export default function App() {
             <button type="button" disabled={searching||searchQuery.trim().length<2} onClick={()=>void runSearch()}>{searching?'…':'Buscar'}</button>
             {searchResults&&<button type="button" onClick={()=>{setSearchResults(null);setSearchQuery('');}}>Cerrar</button>}
           </div>}
-          <section className="chat-messages" aria-label="Mensajes">
-            {searchResults===null&&hasMore&&<button type="button" className="load-older" disabled={loadingOlder}
-              onClick={()=>void loadOlder()}>{loadingOlder?'Cargando…':'Cargar mensajes anteriores'}</button>}
-            {searchResults!==null&&<p className="search-count">{searchResults.length} resultado(s) en historial</p>}
-            {messages.length === 0 && <p className="empty-chat">¡Hola! Escribe el primer mensaje.</p>}
-            {(searchResults??messages).filter(message=>!message.deletedAt).map(message => {
-              const mine = message.senderId === session.actorId;
-              return <SwipeMessage className={mine?'bubble mine':'bubble theirs'}
-                key={message.senderId+':'+message.clientMessageId}
-                onSwipeRight={()=>replyToMessage(message)}
-                onLongPress={anchor=>showMessageMenu(message,anchor)}>
-                {!mine&&<span className="sender">{message.senderName}</span>}
-                {message.replyToSeq&&<div className="reply-original">
-                  ↪ {messages.find(m=>m.seq===message.replyToSeq)?.text.slice(0,70)||'Mensaje anterior'}
-                </div>}
-                {!message.media&&<div>{message.text}</div>}
-                 {message.media&&<ChatMediaView media={message.media} token={session.token}/>}
-                {message.seq>0&&!message.deletedAt&&reactions.some(r=>r.messageSeq===message.seq)&&
-                  <div className="reaction-counts">
-                    {(['❤️','😂','👍'] as ChatEmoji[])
-                      .filter(emoji=>reactions.some(r=>r.messageSeq===message.seq&&r.emoji===emoji))
-                      .map(emoji=><span key={emoji}>{emoji}{reactions.filter(r=>r.messageSeq===message.seq&&r.emoji===emoji).length}</span>)}
-                  </div>}
-                <span className="message-meta">
-                  {new Date(message.sentAt).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}
-                  {message.editedAt&&!message.deletedAt?' · editado':''}
-                  {mine?' · '+messageDeliveryLabel(message):''}
-                  {mine&&!message.pending&&lastReadByOther(receipts,session.actorId)>=message.seq?' · leído':''}
-                </span>
-                {mine&&message.pending&&message.deliveryStatus==='error'&&
-                  <button type="button" className="retry-message"
-                    onClick={()=>retryMessage(message.clientMessageId)}>Reintentar envío</button>}
-              </SwipeMessage>;
-            })}
-            <div ref={bottom} />
-          </section>
+          <ChatTimeline messages={messages} searchResults={searchResults}
+            actorId={session.actorId} token={session.token}
+            reactions={reactions} receipts={receipts}
+            hasMore={hasMore} loadingOlder={loadingOlder}
+            onLoadOlder={()=>void loadOlder()} onReply={replyToMessage}
+            onMessageLongPress={showMessageMenu} onRetry={retryMessage}
+            bottomRef={bottom}/>
           {menuMessage&&<div className="message-menu-overlay"
               onClick={()=>setMenuMessage(null)} onKeyDown={event=>{
                 if(event.key==='Escape')setMenuMessage(null);

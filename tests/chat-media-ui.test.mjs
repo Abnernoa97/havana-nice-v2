@@ -160,14 +160,26 @@ test('V2 does not contain an external storage service binding',()=>{
 
 test('Media-only bubbles remain visual across Chat PWA, native and Administrator',()=>{
  const pwa=read('apps/pwa/src/app/App.tsx');
+ const timeline=read('apps/pwa/src/features/chat/ChatTimeline.tsx');
  const android=read('apps/android/App.tsx');
  const admin=read('apps/pwa/src/features/chat/AdminChatGeneral.tsx');
- assert.match(pwa,/!message\.media&&<div>\{message\.text\}<\/div>/);
+ assert.match(timeline,/!message\.media&&<div>\{message\.text\}<\/div>/);
  assert.match(android,/!message\.media\?<Text/);
  assert.match(admin,/!m\.media&&<p>\{m\.text\}<\/p>/);
- assert.match(pwa,/message\.media&&<ChatMediaView/);
+ assert.match(timeline,/message\.media&&<ChatMediaView/);
  assert.match(admin,/m\.media&&<ChatMediaView/);
  assert.match(android,/message\.media\?<NativeChatMediaView/);
+});
+test('PWA Chat Timeline stays presentation-only: one session, one history engine, no extra socket',()=>{
+ const controller=read('apps/pwa/src/app/App.tsx');
+ const timeline=read('apps/pwa/src/features/chat/ChatTimeline.tsx');
+ assert.match(controller,/<ChatTimeline messages=\{messages\} searchResults=\{searchResults\}/);
+ assert.match(controller,/onLoadOlder=\{\(\)=>void loadOlder\(\)\}/);
+ assert.match(controller,/onMessageLongPress=\{showMessageMenu\}/);
+ assert.match(timeline,/onSwipeRight=\{\(\)=>onReply\(message\)\}/);
+ assert.match(timeline,/onLongPress=\{anchor=>onMessageLongPress\(message,anchor\)\}/);
+ assert.match(timeline,/lastReadByOther\(receipts,actorId\)/);
+ assert.doesNotMatch(timeline,/new WebSocket|startNamedChatSession|restoreNamedChatSession|saveLocalChat|uploadChatFile/);
 });
 test('Native photo uses a fully verified local cache and modal without a browser; video plays inline',()=>{
  const native=read('apps/android/features/chat/NativeChatMediaView.tsx');
