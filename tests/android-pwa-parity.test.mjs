@@ -77,7 +77,7 @@ test('Native Chat uploads the unchanged original quality to the same R2 endpoint
 });
 
 test('Android remains an explicit signed batch and the existing install is never reset',()=>{
- const manifest=read('../.github/workflows/v2-android-apk.yml');
+ const manifest=read('.github/workflows/v2-android-apk.yml');
  const android=read('apps/android/app.json');
  assert.match(manifest,/android-batch\.json/);
  assert.match(manifest,/approved!==true/);
