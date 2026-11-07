@@ -131,10 +131,8 @@ export default function NativeFamily({token}:{token:string}){
    </Pressable>
   </View>
   {!!error&&<Text accessibilityRole="alert" style={styles.error}>{error}</Text>}
-  {loading?<ActivityIndicator color="#917252"/>:book?<>
-   <Pressable onPress={back}><Text style={styles.action}>‹ Todos los álbumes</Text></Pressable>
-   <NativeBook token={token} refreshKey={bookTick} onClose={back}/>
-  </>:active?<>
+  {loading?<ActivityIndicator color="#917252"/>:book?
+   <NativeBook token={token} refreshKey={bookTick} onClose={back}/>:active?<>
    <Pressable onPress={back}><Text style={styles.action}>‹ Todos los álbumes</Text></Pressable>
    <View style={styles.hero}>
     {cover?<Image source={{uri:cover}} style={styles.heroImage} resizeMode="cover"/>:
@@ -214,8 +212,6 @@ const styles=StyleSheet.create({
  videoMark:{position:'absolute',bottom:5,right:6,color:'#fff',fontSize:16,fontWeight:'700'},
  bookButton:{padding:24,backgroundColor:'#ede6dc',borderRadius:15,gap:10,marginTop:12},
  bookName:{color:'#3c3833',fontSize:25,fontWeight:'800'},
- book:{marginTop:10,padding:24,minHeight:230,backgroundColor:'#eee5d7',justifyContent:'center'},
- bookTitle:{fontSize:35,fontWeight:'800',color:'#403a32',marginVertical:12},
  modal:{flex:1,backgroundColor:'#101010',justifyContent:'space-between'},
  modalHeader:{paddingTop:48,paddingHorizontal:24,flexDirection:'row',justifyContent:'space-between',alignItems:'center'},
  modalCounter:{color:'#fff',fontSize:14},close:{color:'#fff',fontSize:25},
