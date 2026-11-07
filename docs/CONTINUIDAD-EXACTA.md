@@ -1,14 +1,27 @@
 # Continuidad del repositorio autónomo · 07/11/2026
 
-La única fuente de desarrollo es `Abnernoa97/havana-nice-v2`, rama `main`. Se trasladó el código V2 sin el historial Git de la aplicación original. Los workflows y APK firmadas se trasladaron a este repositorio; HAVANA NICE original y HAVANA CLOUD quedaron intactos. El antiguo repo mencionado en registros inferiores no es un destino de cambios. Pendientes independientes: conexión Pages y revisión física Android/iPhone, luego retirada de ramas V2 antiguas.
+La única fuente de desarrollo es `Abnernoa97/havana-nice-v2`, rama `main`. Separación de código y hosting verificada: CI y Pages autónomos, Worker V2 versión 59 con siete bindings y ambos dominios permitidos temporalmente; APK actual y anterior con firmas y SHA preservados. Dos refs V2 antiguas eliminadas del repo original, cuyo `main` quedó idéntico. HAVANA CLOUD intacto. Pendiente: QA física iPhone/Android y retirar, solo tras confirmación, la web de compatibilidad vieja sin despliegues automáticos.
 
 # HAVANA NICE V2 — CONTINUIDAD EXACTA
 
 **Corte de saneamiento y QA de Chat: 29 de octubre de 2026.** Este documento es una **bitácora técnica**, no otro plan. Los hitos, prioridades y casillas se controlan SOLO desde [PLAN-MAESTRO.md](./PLAN-MAESTRO.md).
 
+## Estado verificado de la separación — 07/11/2026
+
+- **Fuente única:** [Abnernoa97/havana-nice-v2](https://github.com/Abnernoa97/havana-nice-v2), rama `main` (solo una rama), con fuente V2 en la raíz y sin historial de commits del proyecto original.
+- **Verificación integral:** [GitHub Actions 42349800263](https://github.com/Abnernoa97/havana-nice-v2/actions/runs/42349800263), **SUCCESS**, incluida PWA publicada, Android exportado, pruebas de seguridad, módulos, API privada y permiso CORS del nuevo dominio.
+- **Web V2 autónoma:** [havana-nice-v2.pages.dev](https://havana-nice-v2.pages.dev), proyecto Cloudflare Pages `havana-nice-v2` asociado únicamente a `Abnernoa97/havana-nice-v2`/`main`, compilación desde raíz y resultado `apps/pwa/dist`.
+- **Backend V2:** Worker existente `havana-nice-v2-dev`, versión **59** desplegada al 100 %, acepta origen nuevo y antiguo durante la transición. Se preservaron los **7 bindings**, D1, R2 privado, ambos Durable Objects y secreto Admin; no se copiaron ni borraron datos.
+- **Android:** Releases [v2-android-current](https://github.com/Abnernoa97/havana-nice-v2/releases/tag/v2-android-current), con la APK firmada actual **0.0.13**, la anterior y SHA256SUMS; la actualización nativa futura permanece bajo manifiesto de lote explícitamente aprobado, no por cada commit.
+- **Eliminación comprobada:** el repositorio original `havana-nice-pwa` perdió **solo** sus ramas `havana-nice-v2-foundation` y `havana-nice-v2-apk-downloads` ([acción 42349978136](https://github.com/Abnernoa97/havana-nice-pwa/actions/runs/42349978136), SUCCESS). Original `main` permanece en commit `3f2d2379d0ed855a025d8e7162cd5c00cd2a8be9`; HAVANA CLOUD intocable.
+- **Compatibilidad temporal:** `havana-nice-v2-dev.pages.dev` conserva únicamente su publicación estática anterior, con **todos los nuevos despliegues desactivados**. Se mantiene por las PWA ya instaladas; su fuente Git histórica ya no existe. No es línea de desarrollo ni repositorio funcional. No borrarlo sin confirmar transición de iPhone/iPad, porque el dominio nuevo utiliza almacenamiento local y sesión de origen diferente.
+- **Pendiente de pruebas físicas:** probar en iPhone nueva PWA, autorización de integrante y Admin, notificaciones de Calendario en vivo, Chat y vídeos R2; comprobar Android versión actual y preparar paquete nativo nuevo solo tras aprobación. **Plan funcional de V2 sigue en 12/46, no se cierra QA por migrar GitHub.**
+
+---
+
 ## Línea única V2
 
-- Código fuente único: `Abnernoa97/havana-nice-pwa` → `havana-nice-v2-foundation`. No cambiar ni modificar la rama histórica `main`; la rama `havana-nice-v2-apk-downloads` contiene exclusivamente instaladores de distribución y no es una rama de código.
+- Código fuente único vigente: `Abnernoa97/havana-nice-v2` → `main`. No modificar el `main` de `havana-nice-pwa` (original). Las antiguas ramas V2 ya fueron eliminadas; los instaladores firmados y su rollback están en Releases del repositorio nuevo.
 - Superficies previstas: Chat **Android 100 % React Native nativo**, PWA y Administrador web, compartiendo el **mismo Worker**, D1, Durable Object y contratos. `visual.html` es la representación visual no-Chat pendiente de integrar; no una app ni backend alternativo.
 - Nunca volver a vincular otro proyecto como almacenamiento ni duplicar servicios. HAVANA CLOUD y otros productos no se han modificado.
 
