@@ -63,6 +63,7 @@ jobs:
           echo "Canonical Wrangler bundle SHA-256:"
           sha256sum "$BUNDLE"
           node ../scripts/verify-worker-preview.mjs "$BUNDLE"
+          node ../scripts/worker-release-preflight.mjs "$BUNDLE"
           echo "SUCCESS: V2 Worker bundled and guarded from source, no production changes"
 
       - name: Preserve canonical Worker preview for live-version equivalence review
