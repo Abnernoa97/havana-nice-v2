@@ -100,6 +100,7 @@ export default function BookReader({pages}:{pages:BookPage[]}){
    });
    flip.on('changeOrientation',event=>{
     setOrientation(event.data==='landscape'?'landscape':'portrait');
+    if(instance.current)syncControls(instance.current);
    });
    flip.on('changeState',event=>{
     const busy=event.data==='flipping';
@@ -189,7 +190,9 @@ export default function BookReader({pages}:{pages:BookPage[]}){
   const bounds=event.currentTarget.getBoundingClientRect();
   if(bounds.width===0)return;
   const fraction=(event.clientX-bounds.left)/bounds.width;
-  flip(fraction<0.38?'prev':'next');
+  // Two-page layout turns left/right like a real book; on phones the
+  // backward corner is intentionally smaller to favor next-page taps.
+  flip(fraction<(orientation==='landscape'?0.5:0.24)?'prev':'next');
  };
  useEffect(()=>{
   if(mode!=='flip')return;
@@ -204,9 +207,11 @@ export default function BookReader({pages}:{pages:BookPage[]}){
   return()=>window.removeEventListener('keydown',key);
  },[mode,flip]);
 
- if(!present)return <div className="hn-book-empty">Todavía no hay páginas publicadas. Las imágenes aparecerán cuando Administración las añada.</div>;
- const cover=bookMediaUrl(pages[0]?.url);
- const leaves=<>
+ // Flipping changes only counters/controls. Reusing the same React page nodes
+ // avoids reconciling all 80 hidden images during each animation frame.
+ const leaves=useMemo(()=>{
+  const cover=bookMediaUrl(pages[0]?.url);
+  return <>
   <div className={'hn-book-leaf hn-book-front'+(pages[0]?.fit==='contain'?' hn-book-contain':'')} data-density="hard">
    {cover?<img src={cover} alt="" data-book-cover="true" loading="eager" decoding="async" fetchPriority="high"/>:null}
    <div className="hn-book-cover-shade"/>
@@ -224,6 +229,8 @@ export default function BookReader({pages}:{pages:BookPage[]}){
    <small>HAVANA NICE</small><strong>THE END.</strong><span>LIVE MUSIC · MADE PERSONAL</span>
   </div>
  </>;
+ },[pages]);
+ if(!present)return <div className="hn-book-empty">Todavía no hay páginas publicadas. Las imágenes aparecerán cuando Administración las añada.</div>;
  return <section className="hn-book-reader" aria-label="BOOK HAVANA NICE · revista interactiva">
   <div className="hn-book-switch" role="group" aria-label="Modo de lectura">
    <button type="button" aria-pressed={mode==='flip'} onClick={()=>setMode('flip')}>Revista 3D</button>
