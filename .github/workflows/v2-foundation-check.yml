@@ -113,6 +113,9 @@ jobs:
       - name: Verify single shared Chat event receipt and reaction reconciliation
         run: node --experimental-strip-types --test tests/chat-events-policy.test.mjs
 
+      - name: Verify one offline snapshot policy with original PWA and Android storage keys
+        run: node --experimental-strip-types --test tests/chat-offline-policy.test.mjs
+
       - name: Verify canonical offline Chat outbox and ACK policy on both platforms
         run: node --experimental-strip-types --test tests/chat-outbox-policy.test.mjs
 

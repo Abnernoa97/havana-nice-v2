@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import {
   fetchBackendHealth, getChatMediaAvailability, getChatSnapshot, getOlderChatMessages, searchChatMessages, getChatMenuState, getChatMessagePermissions, isWithinChatEditWindow, selectNextQueuedChatMessage, setOutgoingChatStatus, projectOutgoingChatStatus, CHAT_ACK_TIMEOUT_MS, newClientMessageId,
-  openChatSocket, reconcileChatMessages, startNamedChatSession, restoreNamedChatSession, chatSessionExpired, chatReconnectDelay, reconcileChatReadReceipt, removeChatReactionsForMessage,
+  openChatSocket, reconcileChatMessages, startNamedChatSession, restoreNamedChatSession, chatSessionExpired, chatReconnectDelay, reconcileChatReadReceipt, removeChatReactionsForMessage, captureChatOfflineSnapshot, restoreChatOfflineOutbox,
   type BackendHealth, type ChatMessage, type ChatServerEvent, type ChatSession,
   validateChatMediaSelection, CHAT_MEDIA_MAX_PER_SEND, HAVANA_V2_DEV_API_BASE_URL, type ChatMediaSelection, type ChatMediaKind, type ChatMediaSource,
   reconcileReactions, reconcileUpdatedMessage, reconcileDeletedMessage, reconcileChatSnapshot, type ChatReaction, type ChatEmoji, type ChatReadReceipt, type MemberScreen,
@@ -180,13 +180,10 @@ export default function App() {
 
   function persist() {
     if (!restoredStorage.current) return;
-    const value = activeSession.current ? {
-      session: activeSession.current,
-      outbox: [...outbox.current.values()].map(m => ({...m, deliveryStatus:'queued' as const, pending:true})),
-      draft: latestDraft.current,
-      editing: editingSnapshot.current,
-      beforeEdit: beforeEdit.current,
-    } : null;
+    const value = captureChatOfflineSnapshot(
+      activeSession.current,outbox.current.values(),latestDraft.current,
+      editingSnapshot.current,beforeEdit.current,
+    );
     storageQueue.current = storageQueue.current.catch(() => {}).then(() => saveLocalChat(value)).catch(() => {});
   }
   function sendReadReceipt(seq: number) {
@@ -470,7 +467,7 @@ export default function App() {
         return;
       }
       activeSession.current = approved;
-      outbox.current = new Map((saved.outbox || []).map(m => [m.clientMessageId,{...m,pending:true,deliveryStatus:'queued' as const}]));
+      outbox.current = restoreChatOfflineOutbox(saved.outbox || []);
       setMessages([...outbox.current.values()]);
       setSession(approved);
       latestDraft.current = saved.draft || '';

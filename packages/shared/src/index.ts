@@ -239,3 +239,7 @@ export {chatSessionExpired,chatReconnectDelay,CHAT_RECONNECT_MAX_DELAY_MS} from 
 
 // Both Chat WebSocket event handlers use these exact reconciliation projections.
 export {reconcileChatReadReceipt,removeChatReactionsForMessage} from './chat-events';
+
+// One offline snapshot format: existing IndexedDB/SQLite keys remain unchanged.
+export {captureChatOfflineSnapshot,restoreChatOfflineOutbox} from './chat-offline';
+export type {ChatOfflineSnapshot} from './chat-offline';

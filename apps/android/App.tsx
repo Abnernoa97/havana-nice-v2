@@ -5,7 +5,7 @@ import {
 } from 'react-native';
 import {
   HAVANA_V2_DEV_API_BASE_URL, fetchBackendHealth, getChatMediaAvailability, getChatSnapshot, getOlderChatMessages, searchChatMessages, lastReadByOther, getChatMenuState, getChatMessagePermissions, isWithinChatEditWindow, selectNextQueuedChatMessage, setOutgoingChatStatus, projectOutgoingChatStatus, CHAT_ACK_TIMEOUT_MS, messageDeliveryLabel, newClientMessageId,
-  reconcileChatMessages, reconcileReactions, reconcileUpdatedMessage, reconcileDeletedMessage, reconcileChatSnapshot, startNamedChatSession, restoreNamedChatSession, chatSessionExpired, chatReconnectDelay, reconcileChatReadReceipt, removeChatReactionsForMessage,
+  reconcileChatMessages, reconcileReactions, reconcileUpdatedMessage, reconcileDeletedMessage, reconcileChatSnapshot, startNamedChatSession, restoreNamedChatSession, chatSessionExpired, chatReconnectDelay, reconcileChatReadReceipt, removeChatReactionsForMessage, captureChatOfflineSnapshot, restoreChatOfflineOutbox,
   type ChatMessage, type ChatServerEvent, type ChatSession, type ChatReaction, type ChatEmoji, type ChatReadReceipt,
   validateChatMediaSelection, CHAT_MEDIA_MAX_PER_SEND, type ChatMediaSelection, type ChatMediaKind, type ChatMediaSource, type MemberScreen,
 } from '@havana/shared';
@@ -205,13 +205,10 @@ export default function App() {
 
   function persistLocal() {
     if (!restoredStorage.current) return;
-    const value = activeSession.current ? {
-      session: activeSession.current,
-      outbox: [...outbox.current.values()].map(m => ({...m,pending:true,deliveryStatus:'queued' as const})),
-      draft: latestDraft.current,
-      editing: editingSnapshot.current,
-      beforeEdit: beforeEdit.current,
-    } : null;
+    const value = captureChatOfflineSnapshot(
+      activeSession.current,outbox.current.values(),latestDraft.current,
+      editingSnapshot.current,beforeEdit.current,
+    );
     storageQueue.current = storageQueue.current.catch(() => {}).then(() => saveNativeLocalChat(value)).catch(() => {});
   }
 
@@ -557,7 +554,7 @@ export default function App() {
       }
       activeSession.current = approved;
       beginFreshChatViewport();
-      outbox.current = new Map(saved.outbox.map(m => [m.clientMessageId,{...m,pending:true,deliveryStatus:'queued' as const}]));
+      outbox.current = restoreChatOfflineOutbox(saved.outbox);
       setMessages([...outbox.current.values()]);
       setSession(approved);
       latestDraft.current = saved.draft || '';
