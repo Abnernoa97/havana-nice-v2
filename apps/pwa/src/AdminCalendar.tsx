@@ -1,8 +1,8 @@
 import {useCallback,useEffect,useRef,useState,type FormEvent} from 'react';
 import {getCalendarEvents,calendarDate,HAVANA_V2_DEV_API_BASE_URL,type CalendarEvent,type CalendarEventInput} from '@havana/shared';
 import {adminMembers,adminCreateCalendarEvent,adminUpdateCalendarEvent,adminDeleteCalendarEvent,
- type AdminMember,isAdminUnauthorized} from './admin-api';
-import {watchCalendar} from './calendar-live';
+ type AdminMember,isAdminUnauthorized} from './services/admin-api';
+import {watchCalendar} from './services/calendar-live';
 type Props={token:string;members:AdminMember[];onExpired:()=>void};
 const empty=():CalendarEventInput=>({
  date:'',timeZone:'America/Mexico_City',title:'',venue:'',city:'',callTime:'',soundcheckTime:'',

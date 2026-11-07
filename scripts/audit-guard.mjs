@@ -100,7 +100,7 @@ absent(read('cloudflare/src/single-installation.js'),/single_device_mode/,
   'The owner record must be the only musician installation policy');
 absent(read('apps/pwa/src/AdminChatAccess.tsx'),/single_device_mode|Acceso anterior protegido/,
   'Administrator cannot show or enforce historical alternative access');
-absent(read('apps/pwa/src/admin-api.ts'),/single_device_mode/,
+absent(read('apps/pwa/src/services/admin-api.ts'),/single_device_mode/,
   'Administrator API must not expose a discarded mode flag');
 present(read('cloudflare/migrations/0017_remove_legacy_member_mode.sql'),
   /ALTER TABLE chat_members DROP COLUMN single_device_mode;/,
@@ -193,7 +193,7 @@ present(pwa,/onLongPress=\{anchor=>showMessageMenu\(message,anchor\)\}/,
 present(pwa,/aria-modal="true"/,'PWA contextual menu must be a dialog');
 present(pwa,/Responder/,'PWA contextual menu must provide a reply action');
 // C02: retain the target of the edit after app suspension/reopening.
-const pwaLocal=read('apps/pwa/src/local.ts');
+const pwaLocal=read('apps/pwa/src/services/local.ts');
 const androidLocal=read('apps/android/chatStorage.ts');
 present(pwaLocal,/editing\?: ChatMessage \| null/,'PWA storage preserves edit context');
 present(androidLocal,/editing\?: ChatMessage \| null/,'Android storage preserves edit context');

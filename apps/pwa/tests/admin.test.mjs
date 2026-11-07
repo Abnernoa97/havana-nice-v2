@@ -4,7 +4,7 @@ import {readFileSync} from 'node:fs';
 const read=p=>readFileSync(new URL(p,import.meta.url),'utf8');
 const ui=read('../src/AdminApp.tsx');
 const panel=read('../src/AdminChatAccess.tsx');
-const api=read('../src/admin-api.ts');
+const api=read('../src/services/admin-api.ts');
 const backend=read('../../../cloudflare/src/index.ts');
 
 test('single installable Administrator PWA, separate from Chat',()=>{
@@ -78,7 +78,7 @@ test('musician PWA uses server allowlist instead of device experiments',()=>{
 test('original musician offline storage and Chat remain intact',()=>{
  const pwa=read('../src/App.tsx'),android=read('../../android/App.tsx');
  assert.match(pwa,/loadLocalChat\(\)/);
- assert.match(read('../src/local.ts'),/offline-outbox-v1/);
+ assert.match(read('../src/services/local.ts'),/offline-outbox-v1/);
  assert.match(read('../../android/chatStorage.ts'),/havana-v2-chat-local-v1/);
  assert.match(android,/loadNativeLocalChat\(\)/);
  assert.doesNotMatch(pwa,/Enrollment|device_approval_required|checkEnrollment/);
@@ -87,7 +87,7 @@ test('original musician offline storage and Chat remain intact',()=>{
 
 test('Administrator can explicitly close other sessions but cannot clear the current one',()=>{
  const ui=read('../src/AdminChatAccess.tsx');
- const api=read('../src/admin-api.ts');
+ const api=read('../src/services/admin-api.ts');
  assert.match(ui,/adminOtherSessions\(token\)/);
  assert.match(ui,/refreshOtherSessions\(session\.token\)/);
  assert.match(ui,/adminRevokeOtherSessions\(session\.token\)/);
@@ -111,7 +111,7 @@ test('Administrator frontend defers new versions while its session or unsaved fo
 
 test('Admin retains an authorized session during network outages and retries on resume',()=>{
  const access=read('../src/AdminChatAccess.tsx');
- const api=read('../src/admin-api.ts');
+ const api=read('../src/services/admin-api.ts');
  assert.match(api,/export class AdminApiError extends Error/);
  assert.match(api,/export function isAdminUnauthorized/);
  assert.match(api,/reason instanceof AdminApiError && reason\.status===401/);
@@ -183,7 +183,7 @@ test('Admin never labels Chrome reduced historical K as a real phone model',()=>
 
 test('musician removal requires authenticated D1 preview and confirmation',()=>{
  const ui=read('../src/AdminChatAccess.tsx');
- const api=read('../src/admin-api.ts');
+ const api=read('../src/services/admin-api.ts');
  const server=read('../../../cloudflare/src/member-admin.js');
  const route=read('../../../cloudflare/src/index.ts');
  const preview=ui.indexOf('await adminDeletionPreview(session.token,person.actor_id)');
@@ -202,7 +202,7 @@ test('musician removal requires authenticated D1 preview and confirmation',()=>{
 
 test('member data inspection can be verified without pressing irreversible trash',()=>{
  const app=read('../src/AdminChatAccess.tsx');
- const api=read('../src/admin-api.ts');
+ const api=read('../src/services/admin-api.ts');
  const inspect=app.indexOf('async function inspectMemberData(person:AdminMember)');
  const trash=app.indexOf('async function removeMember(person:AdminMember)');
  assert.ok(inspect>0&&trash>inspect,'Read-only inspection must be independent of delete');
@@ -236,7 +236,7 @@ test('member counters do not mistake D1 session rows for live connected phones',
 
 test('one-musician one-installation alerts never display bearer tokens and release is separate from trash',()=>{
  const panel=read('../src/AdminChatAccess.tsx');
- const api=read('../src/admin-api.ts');
+ const api=read('../src/services/admin-api.ts');
  const worker=read('../../../cloudflare/src/index.ts');
  assert.match(panel,/Intentos de acceso duplicado/);
  assert.match(panel,/void refreshDuplicateAlerts\(session\.token\)/);
@@ -270,7 +270,7 @@ test('Administrator Chat uses the existing authenticated session, not a musician
  const frame=read('../src/AdminApp.tsx');
  const access=read('../src/AdminChatAccess.tsx');
  const viewer=read('../src/AdminChatGeneral.tsx');
- const api=read('../src/admin-api.ts');
+ const api=read('../src/services/admin-api.ts');
  const worker=read('../../../cloudflare/src/index.ts');
  assert.match(access,/section==='chat'[\s\S]*<AdminChatGeneral/);
  assert.match(frame,/tab!=='access'&&tab!=='chat'/);

@@ -7,7 +7,7 @@ const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
 test('Android Calendar has no old 30 second polling and uses the same private CalendarRoom as PWA',()=>{
  const calendar=read('apps/android/NativeCalendar.tsx');
  const transport=read('apps/android/native-calendar-live.ts');
- const pwa=read('apps/pwa/src/calendar-live.ts');
+ const pwa=read('apps/pwa/src/services/calendar-live.ts');
  assert.match(calendar,/watchNativeCalendar\(token/);
  assert.doesNotMatch(calendar,/setInterval|30000|new WebSocket/);
  assert.match(transport,/new WebSocket\(url,\['havana-v2-calendar','session\.'\+token\]\)/);
@@ -59,7 +59,7 @@ test('Android Familia reads the same albums, authorized grant URLs and real BOOK
 test('Native Chat uploads the unchanged original quality to the same R2 endpoints with 3 concurrent 5MiB parts',()=>{
  const android=read('apps/android/App.tsx');
  const helper=read('apps/android/native-chat-r2-upload.ts');
- const pwa=read('apps/pwa/src/chat-media-upload.ts');
+ const pwa=read('apps/pwa/src/services/chat-media-upload.ts');
  assert.match(android,/uploadNativeChatFile\(session,item/);
  assert.doesNotMatch(android,/Almacenamiento multimedia no configurado/);
  assert.match(android,/mediaUploading/);

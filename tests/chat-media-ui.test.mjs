@@ -16,7 +16,7 @@ test('One shared photo/video original quality policy; runtime Worker controls en
 
 test('installed Chat local storage keys stay compatible across cleanup releases',()=>{
  const android=read('apps/android/chatStorage.ts');
- const pwa=read('apps/pwa/src/local.ts');
+ const pwa=read('apps/pwa/src/services/local.ts');
  assert.match(android,/const KEY = 'havana-v2-chat-local-v1';/);
  assert.match(pwa,/const DB = 'havana-nice-v2-lab';/);
  assert.match(pwa,/const STORE = 'chat';/);
@@ -211,7 +211,7 @@ test('Web/Admin originals are fully downloaded once before opening, without forc
 });
 
 test('one real original-quality R2 uploader for Chat PWA with Familia fast multipart',()=>{
- const uploader=read('apps/pwa/src/chat-media-upload.ts');
+ const uploader=read('apps/pwa/src/services/chat-media-upload.ts');
  const member=read('apps/pwa/src/App.tsx');
  const backend=read('cloudflare/src/chat-media.js');
  assert.match(uploader,/!begin\.multipart/);

@@ -222,7 +222,7 @@ test('M09: four-column Familia viewer accepts only authorized Worker file grants
  assert.match(admin,/onMakePoster=\{createExistingPoster\}/);
  assert.match(ui,/Crear miniatura/);
  assert.match(shared,/uploadFamilyVideoPoster/);
- const poster=read('apps/pwa/src/family-video-poster.ts');
+ const poster=read('apps/pwa/src/services/family-video-poster.ts');
  assert.match(poster,/canvas\.toBlob/);
  assert.doesNotMatch(poster,/fetch\(|localStorage|mockPoster|sampleImage/);
  assert.match(shared,/Math\.min\(3,partCount\)/);

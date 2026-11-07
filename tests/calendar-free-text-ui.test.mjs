@@ -57,7 +57,7 @@ test('Calendar uses one private push protocol in native Android and PWA, without
  const member=read('apps/pwa/src/CalendarAccordion.tsx');
  const admin=read('apps/pwa/src/AdminCalendar.tsx');
  const native=read('apps/android/NativeCalendar.tsx');
- const realtime=read('apps/pwa/src/calendar-live.ts');
+ const realtime=read('apps/pwa/src/services/calendar-live.ts');
  assert.match(member,/watchCalendar\(token,false,update\)/);
  assert.match(admin,/watchCalendar\(token,true,update\)/);
  assert.doesNotMatch(member,/setInterval\(/);
