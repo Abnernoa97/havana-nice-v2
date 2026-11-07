@@ -13,6 +13,7 @@ assert.doesNotMatch(worker,/\/\/\s*@ts-nocheck\b/,'V2 Worker entrypoint must rem
 const android = read('apps/android/App.tsx');
 const pwa = read('apps/pwa/src/app/App.tsx');
 const nativeBubble = read('apps/android/features/chat/SwipeableBubble.tsx');
+const nativeTimeline = read('apps/android/features/chat/NativeChatTimeline.tsx');
 const webBubble = read('apps/pwa/src/features/chat/SwipeMessage.tsx');
 const pwaStyles = read('apps/pwa/src/styles/chat/chat.css');
 const serviceWorker = read('apps/pwa/public/sw.js');
@@ -148,8 +149,10 @@ present(androidWorkflow,/sha256sum -c -/,'H01: verify hash of preceding released
 // C01: both interfaces anchor the long-press menu to a real bubble; do not
 // allow the old centered overlay or inert '+' to regress on Android/iPhone.
 present(nativeBubble,/measureInWindow\(/,'Native Chat must measure held bubble');
-present(android,/onLongPress=\{\(anchor\) => showMessageMenu\(message,anchor\)\}/,
-  'Native Chat must show the contextual menu for the measured message');
+present(android,/onMessageLongPress=\{showMessageMenu\}/,
+  'Native Chat controller must pass its single contextual-menu action to the timeline');
+present(nativeTimeline,/onLongPress=\{\(anchor\) => onMessageLongPress\(message,anchor\)\}/,
+  'Native Chat timeline must forward the actual measured bubble to the single controller');
 present(android,/menuTop/,'Native contextual menu must calculate a bounded top coordinate');
 // Android 16 / Expo edge-to-edge: the composer must move above the IME.
 // A layout that relies only on adjustResize left the input behind the keyboard.
