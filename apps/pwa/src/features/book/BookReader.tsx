@@ -76,7 +76,7 @@ export default function BookReader({pages}:{pages:BookPage[]}){
   return()=>window.removeEventListener('keydown',key);
  },[mode,page,count]);
  if(!pages.length)return <div className="hn-book-empty">Todavía no hay páginas publicadas. Las imágenes aparecerán cuando Administración las añada.</div>;
- const first=bookMediaUrl(pages[0].url);
+ const first=bookMediaUrl(pages[0]?.url);
  const leaves=<>
   <div className="hn-book-leaf hn-book-front" data-density="hard">
    {first?<img src={first} alt="" data-book-cover="true" decoding="async" fetchPriority="high"/>:null}
