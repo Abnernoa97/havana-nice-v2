@@ -94,6 +94,30 @@ jobs:
       - name: Verify one SHA-256 preserves old sessions and private-media grants
         run: node --test tests/worker-hash-parity.test.mjs
 
+      # One-time read-only staged version QA, no traffic switch and no private data.
+      - name: Smoke test unserved canonical BOOK Worker via version override
+        if: "${{ github.event.head_commit.message == 'ci(v2): smoke-test staged BOOK Worker version' }}"
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE="https://havana-nice-v2-dev.soloaplicaciones97.workers.dev"
+          H='Cloudflare-Workers-Version-Overrides: havana-nice-v2-dev="bc1ef5a0-8ed8-440f-af6f-3df85eda0403"'
+          echo "Overridden health:"
+          curl -fsS -H "$H" "$BASE/health" | tee /tmp/book-override-health.json
+          grep -q '"database":"ok"' /tmp/book-override-health.json
+          for ENDPOINT in /api/book/pages /api/book/admin/pages /api/family/albums /api/calendar/events /api/repertoire/songs /api/chat/messages; do
+            STATUS="$(curl -sS -o /tmp/book-override-private.json -w '%{http_code}' -H "$H" "$BASE$ENDPOINT")"
+            echo "$ENDPOINT -> $STATUS"
+            test "$STATUS" = "401"
+          done
+          STATUS="$(curl -sS -o /tmp/book-override-denied-upload.json -w '%{http_code}' -H "$H" -X POST -H 'Content-Type: image/jpeg' --data-binary 'no-public-upload' "$BASE/api/book/admin/pages")"
+          echo "Unauthorized Book write: $STATUS"
+          test "$STATUS" = "401"
+          STATUS="$(curl -sS -o /tmp/book-override-grant.json -w '%{http_code}' -H "$H" "$BASE/api/book/media/00000000000000000000000000000000")"
+          echo "Invalid private grant: $STATUS"
+          test "$STATUS" = "404"
+          echo 'Staged-only BOOK auth, catalog, existing modules, and R2 privacy: PASS'
+
       - name: Verify standalone V2 media status before new storage
         run: npm run test:media -w @havana/cloudflare
 
