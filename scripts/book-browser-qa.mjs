@@ -57,6 +57,17 @@ let errors='';chrome.stderr.on('data',v=>errors=(errors+v.toString()).slice(-250
 const pending=new Map();
 let ws,sequence=0;
 const sleep=ms=>new Promise(done=>setTimeout(done,ms));
+async function swipe(x1,y1,x2,y2){
+ await rpc('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x:x1,y:y1,id:1}]});
+ for(let step=1;step<=7;step++){
+  await sleep(25);
+  await rpc('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{
+   x:x1+(x2-x1)*step/7,y:y1+(y2-y1)*step/7,id:1}]
+  });
+ }
+ await rpc('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
+ await sleep(440);
+}
 function rpc(method,params={},timeout=12000){
  return new Promise((resolve,reject)=>{
   const id=++sequence;
@@ -139,10 +150,50 @@ try{
  await rpc('Page.addScriptToEvaluateOnNewDocument',{source:boot});
  for(const [width,height,label] of [[390,844,'phone'],[1024,800,'desktop']]){
   await rpc('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile:width<700});
+  await rpc('Emulation.setTouchEmulationEnabled',{enabled:width<700,maxTouchPoints:1});
   await rpc('Page.navigate',{url:'http://127.0.0.1:'+servePort+'/book.html'});
   const result=await js(scenario,17500);
   assert.ok(result,'Browser BOOK test must return result');
   assert.equal(result.original.width,width,'Actual Chrome emulated width mismatch');
+  if(width<700){
+   // Put content above and below BOOK so the app has an actual scroll range.
+   // This is DOM created exclusively in the isolated Chrome test page.
+   const start=await js(`(async()=>{
+    for(const position of ['before','after']){
+     const block=document.createElement('div');block.style.height='720px';
+     block.dataset.testScrollSpacer=position;
+     if(position==='before')document.body.prepend(block);else document.body.append(block);
+    }
+    await new Promise(r=>setTimeout(r,60));
+    const stage=document.querySelector('.hn-book-stage');
+    window.scrollTo(0,window.scrollY+stage.getBoundingClientRect().top-120);
+    await new Promise(r=>setTimeout(r,100));
+    const r=stage.getBoundingClientRect();
+    const action=getComputedStyle(stage).touchAction;
+    return {y:scrollY,count:document.querySelector('.hn-book-counter strong').textContent,
+     x:r.left+r.width*.78,t:r.top+r.height*.64,
+     touchAction:action,bookHeight:r.height,stageY:r.y};
+   })()`);
+   assert.ok(start.y>100,'Need a real scrollable test document');
+   assert.match(start.touchAction,/pan-y/,'BOOK must permit browser vertical panning');
+   await swipe(start.x,start.t,start.x,start.t-115);
+   const vertical=await js(`({y:scrollY,
+    count:document.querySelector('.hn-book-counter strong').textContent,
+    hosts:document.querySelectorAll('.hn-book-flip-host').length})`);
+   assert.ok(vertical.y>start.y+25,
+    'Touch up/down over BOOK should scroll document (before '+start.y+', after '+vertical.y+')');
+   assert.equal(vertical.count,start.count,'Vertical scroll must not turn a page');
+   assert.equal(vertical.hosts,1,'Vertical scroll cannot recreate book');
+   const h=await js(`(()=>{const r=document.querySelector('.hn-book-stage').getBoundingClientRect();
+    return {x:r.left+r.width*.82,y:r.top+r.height*.55}})()`);
+   await swipe(h.x,h.y,h.x-135,h.y);
+   const sideways=await js(`({count:document.querySelector('.hn-book-counter strong').textContent,
+    hosts:document.querySelectorAll('.hn-book-flip-host').length})`);
+   assert.notEqual(sideways.count,vertical.count,'Horizontal swipe should turn a paper page');
+   assert.equal(sideways.hosts,1);
+   console.log('BOOK real touch: vertical scroll '+start.y+' -> '+vertical.y+
+    ', page unchanged '+vertical.count+'; horizontal swipe turns to '+sideways.count);
+  }
   console.log('BOOK 3D '+label+': PASS '+result.original.count+' -> '+
    result.first.count+' -> '+result.tapped.count+
    '; stage y='+result.original.stage.y+' -> '+result.renewed.stage.y+
