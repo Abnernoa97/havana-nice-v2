@@ -79,7 +79,30 @@ const fixture=`<script>
    samplePage:document.querySelector('.stf__item')?.style.transform||'',
    hosts:document.querySelectorAll('.hn-book-flip-host').length,
    rafCount:window.__qaRafCount||0,
-   time:performance.now()};
+   time:performance.now(),engine:engineStatus()};
+ };
+ // Read only the mounted React ref in this fake-photo browser fixture.
+ // Production components expose no debug globals or test-only APIs.
+ const getEngine=()=>{
+  const stage=document.querySelector('.hn-book-stage');
+  if(!stage)return null;
+  const key=Object.keys(stage).find(k=>k.startsWith('__reactFiber$'));
+  for(let fiber=key?stage[key]:null;fiber;fiber=fiber.return){
+   for(let h=fiber.memoizedState;h;h=h.next){
+    const app=h.memoizedState?.current;
+    if(app&&typeof app.flipNext==='function'&&typeof app.getPageCollection==='function')return app;
+   }
+  }
+  return null;
+ };
+ const engineStatus=()=>{
+  const a=getEngine();
+  if(!a)return 'not-found';
+  try{return{page:a.getCurrentPageIndex(),count:a.getPageCount(),
+    orientation:a.getOrientation(),state:a.getState(),bounds:a.getBoundsRect(),
+    spread:a.getPageCollection().getCurrentSpreadIndex(),
+    last:a.getPageCollection().getSpreadIndexByPage(a.getPageCount()-1)};}
+  catch(e){return String(e)}
  };
  const near=(a,b)=>Math.abs(a-b)<1.2;
  const stable=(a,b)=>
@@ -98,8 +121,12 @@ const fixture=`<script>
   if(!next||next.disabled)throw Error('Next button not ready');
   next.click();await sleep(900);
   const second=measure();
-  if(second.count===initial.count||!stable(initial,second))
-   throw Error('First flip moved viewport or missed animation: '+JSON.stringify({initial,second}));
+  if(second.count===initial.count||!stable(initial,second)){
+   const app=getEngine();
+   if(app&&second.count===initial.count){app.flipNext('bottom');await sleep(900);}
+   throw Error('First flip moved viewport or missed animation: '+
+    JSON.stringify({initial,second,direct:measure()}));
+  }
   const stage=document.querySelector('.hn-book-stage');
   const r=stage.getBoundingClientRect(),x=r.left+r.width*.81,y=r.top+r.height*.55;
   for(const name of ['pointerdown','pointerup'])
