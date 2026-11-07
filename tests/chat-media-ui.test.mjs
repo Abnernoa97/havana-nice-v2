@@ -28,7 +28,7 @@ test('installed Chat local storage keys stay compatible across cleanup releases'
 });
 
 test('Android native and iPhone PWA share the same Chat decisions, not alternate backends',()=>{
- const android=read('apps/android/App.tsx');
+ const android=read('apps/android/App.tsx')+'\n'+read('apps/android/features/chat/NativeChatTimeline.tsx');
  // ChatTimeline is presentation-only, but owns the shared delivery-label rendering.
  const pwa=read('apps/pwa/src/app/App.tsx')+'\n'+read('apps/pwa/src/features/chat/ChatTimeline.tsx');
  const common=[
