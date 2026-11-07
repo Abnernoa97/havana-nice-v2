@@ -1,12 +1,20 @@
 # HAVANA NICE V2 — REPOSITORIO INDEPENDIENTE
 
-**Estado operativo actual (07/11):** Familia en tiempo real publicada: Worker V2 **v61 al 100 %**, un solo ChatRoom Durable Object y R2 privado; [CI completo aprobado](https://github.com/Abnernoa97/havana-nice-v2/actions/runs/42407092270). Limpieza R2 realizada: **42 objetos / 307,453,508 bytes**, cola de borrado **0**. Existen **3 fotos activas** sin modificación. Pendiente QA física en iPhone/Android. APK 0.0.13 intacta.
+**Estado operativo actual (07/11):** Familia en tiempo real publicada: Worker V2 **v61 al 100 %**, un solo ChatRoom Durable Object y R2 privado; [CI completo aprobado](https://github.com/Abnernoa97/havana-nice-v2/actions/runs/42407092270). Limpieza R2 realizada: **42 objetos / 307,453,508 bytes**; última revisión D1: **8 fotos y 5 videos Familia**, **2 integrantes activos**, **0 elementos pendientes de borrar en R2** y **0 violaciones de claves foráneas**. Cotejo funcional de 30 rutas críticas contra el Worker v61: sin diferencias de comportamiento identificadas, aunque los bundles no son idénticos. Pendiente QA física en iPhone/Android; APK 0.0.13 intacta.
 
 **Fuente única:** `Abnernoa97/havana-nice-v2`, rama `main`. Todo el código V2 está en la raíz de este repositorio: `apps`, `cloudflare`, `packages`, `tests`, `scripts` y `docs`. El proyecto original y HAVANA CLOUD tienen sus propios repositorios y no forman parte de este árbol.
 
 **APK Android:** únicamente GitHub Releases de este repositorio, etiqueta `v2-android-current`, con `HAVANA-NICE-V2-LATEST.apk`, `HAVANA-NICE-V2-PREVIOUS.apk` y comprobación SHA-256. Publicación siguiente solo por paquete explícitamente aprobado.
 
 **Infraestructura de ejecución:** Worker, D1, Durable Objects y bucket R2 pertenecen exclusivamente a V2. El sitio y CI nuevos ya se validaron con el repositorio nuevo; el antiguo alojamiento de pruebas fue eliminado tras confirmar que solo el propietario lo utilizaba. Los enlaces del repositorio anterior en la bitácora son históricos, no dependencias activas.
+
+## Cierre del saneamiento funcional · 07/11/2026
+
+- Repositorio independiente V2 con solo `main`; Familia R2 PWA y sus portadas/miniaturas rápidas protegidas.
+- Se revisaron 30 funciones críticas contra el Worker v61. Veintiuna coinciden tras normalizar espacios; nueve restantes se explican por alias SHA-256, formatos de esbuild y diferencias de presentación, sin desviaciones funcionales encontradas.
+- Compilación de `main` con Wrangler, siete bindings, pruebas de R2, Chat, Calendario, Administración y exportación nativa cubiertos por CI. El workflow futuro Android ya instala dependencias desde la raíz del repositorio, no desde el antiguo `v2/`.
+- **Publicación:** v61 sigue operativa al 100 %. No se ha sustituido su bundle compilado ni se ha instalado la APK siguiente. Un despliegue nuevo debe realizarse desde `main` con Wrangler y pruebas físicas; no aplicar parches de código compilado.
+- **Listos para la siguiente etapa en código:** `BOOK HAVANA NICE` con Page Flip 3D + Page Curl, aislado de los álbumes Familia. La aprobación física y actualización Android continúan como puertas de salida antes de declarar toda la aplicación terminada.
 
 ## Organización y velocidad interna (07/11/2026)
 
