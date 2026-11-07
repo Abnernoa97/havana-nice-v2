@@ -3,6 +3,7 @@ import {familyAlbumCount,getFamilyDirectory,getFamilyAlbumMedia,uploadFamilyAlbu
 import FamilyMediaGallery,{familyPrivateMediaUrl} from './FamilyMediaGallery';
 import {useFamilyLive} from '../../services/use-family-live';
 import {createFamilyVideoPoster} from '../../services/family-video-poster';
+import AdminBook from '../book/AdminBook';
 
 function formatStorageGB(bytes:number){return (bytes/1_000_000_000).toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2});}
 function formatFileMB(bytes:number){return (bytes/1_000_000).toFixed(0)+' MB';}
@@ -201,12 +202,7 @@ export default function AdminFamily({token,onExpired}:{token:string;onExpired:()
   {error&&<p className="a-admin-error" role="alert">{error}</p>}
   {bookOpen||album?<button type="button" className="a-family-back" onClick={goBack}>‹ Todos los álbumes</button>:null}
   {bookOpen?<>
-   <div className="a-family-book-view" aria-label="BOOK HAVANA NICE">
-    <span>EDICIONES EDITORIALES</span>
-    <h3>BOOK HAVANA NICE</h3>
-    <p>Todavía no hay ediciones publicadas.</p>
-   </div>
-   <p className="a-detail">No hay ediciones de BOOK publicadas. El almacenamiento privado ya funciona; falta implementar las páginas editoriales y el efecto de revista 3D.</p>
+   <AdminBook token={token} onExpired={onExpired} tick={mediaTick}/>
   </>:album?<>
    <div className="a-family-cover">
     {cover?<img className="a-family-cover-photo" src={cover} alt="" decoding="async"/>:
