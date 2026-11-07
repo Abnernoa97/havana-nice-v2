@@ -77,7 +77,7 @@ test('A03: Calendar UIs use shared read contract; Admin alone has writes',()=>{
 test('A09: independent module tests must not modify legacy or introduce a second server',()=>{
   const guard=read('scripts/audit-guard.mjs');
   const workerConfig=read('cloudflare/wrangler.jsonc');
-  assert.match(guard,/V2 development branch must not include unused main-era root files/);
+  assert.match(guard,/Standalone V2 repository cannot include original app files/);
   assert.doesNotMatch(workerConfig,/"services"\s*:/);
   assert.match(read('.github/workflows/v2-foundation-check.yml'),/Test isolated V2 Calendar without changing live D1/);
 });
