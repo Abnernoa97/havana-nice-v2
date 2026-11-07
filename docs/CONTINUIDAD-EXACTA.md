@@ -1,4 +1,16 @@
-## ESTADO VIGENTE · FAMILIA HAVANA NICE V2 · 07/11/2026
+## CONTINUIDAD VIGENTE · BOOK HAVANA NICE V2 · 07/11/2026
+
+**Estado que debe leerse primero:** BOOK HAVANA NICE ya existe en V2, con carga/editorial desde Administración, orden, publicación, portada, borrado, efectos StPageFlip reales `page-flip@2.0.7` (curva de papel, sombra, 1080 ms) y modo Scroll para músicos PWA. El lector Android usa **el mismo código renderizado** en WebView 14.0.1 y recibe el token de sesión por un bridge de confianza sin parámetros URL ni almacenamiento local. Menú aprobado: **Familia HAVANA NICE → BOOK HAVANA NICE**, no renombrar a Multimedia. No se importa contenido de Quotes Studio.
+
+**Worker activo:** v63 al 100 % (`bc1ef5a0-8ed8-440f-af6f-3df85eda0403`), código generado por Wrangler desde `main`, commit `2108f8bf`, publicado con los siete bindings originales intactos. D1 migración `0027_book_havana_nice.sql` aplicada; R2 privado original V2 y cuota global 9.5 GB conservados. Estado real: **0 páginas BOOK**, **0 borrados BOOK pendientes**, **13 archivos activos Familia**. Los estados v60/v61 en el historial inferior ya no están activos y no justifican restaurar parches de bundle.
+
+**Pruebas:** [CI 42417316695 SUCCESS](https://github.com/Abnernoa97/havana-nice-v2/actions/runs/42417316695), incluidos tipos y exportación Android. PWA/Administración desde `main` publicado por Pages. **APK instalada 0.0.13 sin BOOK nuevo**: seguir acumulando funciones y generar después un paquete nativo firmado aprobado, no anunciar nueva instalación. QA táctil y velocidades con fotos reales en iPhone y Android continúan pendientes; no afirmar perfección visual física sin comprobarlo. **Marcador oficial 12/46 pendiente de aceptación física.**
+
+**Continuidad siguiente:** continuar desarrollo funcional de módulos en el único `main`; priorizar el rendimiento de Familia, conservar el único D1/R2/Worker/ChatRoom y no modificar HAVANA NICE original ni HAVANA CLOUD. Referirse al tablero único en `docs/PLAN-MAESTRO.md`.
+
+---
+
+## BITÁCORA PREVIA · FAMILIA HAVANA NICE V2 · 07/11/2026
 
 ### CONTRATO PRIORITARIO · FAMILIA INSTANTÁNEA Y FUENTE ÚNICA
 
