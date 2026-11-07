@@ -34,7 +34,7 @@ export default function BookReader({pages}:{pages:BookPage[]}){
  const structureRef=useRef('');
  const busyRef=useRef(false);
  const pendingImages=useRef<BookPage[]|null>(null);
- const touchStart=useRef<{id:number;x:number;y:number;at:number}|null>(null);
+ const touchStart=useRef<{id:number;x:number;y:number;at:number;vertical:boolean}|null>(null);
  const count=pages.length+1; // The first Admin image is the cover, never repeated.
  const countRef=useRef(count);
  countRef.current=count;
@@ -83,7 +83,9 @@ export default function BookReader({pages}:{pages:BookPage[]}){
     minHeight:382,maxHeight:735,
     drawShadow:true,maxShadowOpacity:0.72,
     flippingTime:780,usePortrait:true,autoSize:false,
-    showCover:false,mobileScrollSupport:false,swipeDistance:25,
+    // Vertical gestures remain normal document scrolling; only deliberate
+    // horizontal drags belong to the StPageFlip engine.
+    showCover:false,mobileScrollSupport:true,swipeDistance:25,
     showPageCorners:window.matchMedia('(hover:hover) and (pointer:fine)').matches,
     disableFlipByClick:true
    }) as BookEngine;
@@ -179,12 +181,19 @@ export default function BookReader({pages}:{pages:BookPage[]}){
  // Drags and horizontal swipes remain owned by StPageFlip, without duplication.
  const onPointerDown=(event:ReactPointerEvent<HTMLDivElement>)=>{
   if(!event.isPrimary||busyRef.current)return;
-  touchStart.current={id:event.pointerId,x:event.clientX,y:event.clientY,at:performance.now()};
+  touchStart.current={id:event.pointerId,x:event.clientX,y:event.clientY,at:performance.now(),vertical:false};
+ };
+ const onPointerMove=(event:ReactPointerEvent<HTMLDivElement>)=>{
+  const start=touchStart.current;
+  if(!start||start.id!==event.pointerId||start.vertical)return;
+  const dx=Math.abs(event.clientX-start.x);
+  const dy=Math.abs(event.clientY-start.y);
+  if(dy>10&&dy>dx*1.15)start.vertical=true;
  };
  const onPointerUp=(event:ReactPointerEvent<HTMLDivElement>)=>{
   const start=touchStart.current;
   touchStart.current=null;
-  if(!start||start.id!==event.pointerId||busyRef.current)return;
+  if(!start||start.id!==event.pointerId||start.vertical||busyRef.current)return;
   if(Math.abs(event.clientX-start.x)>7||Math.abs(event.clientY-start.y)>7)return;
   if(performance.now()-start.at>650)return;
   const bounds=event.currentTarget.getBoundingClientRect();
@@ -236,8 +245,9 @@ export default function BookReader({pages}:{pages:BookPage[]}){
    <button type="button" aria-pressed={mode==='flip'} onClick={()=>setMode('flip')}>Revista 3D</button>
    <button type="button" aria-pressed={mode==='scroll'} onClick={()=>setMode('scroll')}>Desplazar</button>
   </div>
-  {mode==='flip'&&!failure?<div className="hn-book-stage"
-   onPointerDown={onPointerDown} onPointerUp={onPointerUp}
+  {mode==='flip'&&!failure?<div className="hn-book-stage" data-orientation={orientation}
+   onPointerDown={onPointerDown} onPointerMove={onPointerMove}
+   onPointerUp={onPointerUp}
    onPointerCancel={()=>{touchStart.current=null;}}>
    <div className={'hn-book-mount'+(turning?' hn-book-turning':'')} ref={mountRef}/>
   </div>:null}
@@ -247,7 +257,7 @@ export default function BookReader({pages}:{pages:BookPage[]}){
    <button type="button" onClick={()=>flip('prev')} disabled={!canPrev||turning} aria-label="Página anterior">‹</button>
    <div className="hn-book-counter"><strong>{String(page+1).padStart(2,'0')} <span>/</span> {String(count).padStart(2,'0')}</strong>
     <div className="hn-book-progress"><span style={{width:((page+1)/count*100)+'%'}}/></div>
-    <small>{orientation==='landscape'?'Libro abierto · dos páginas':'Toca, desliza o arrastra la esquina'}</small>
+    <small>{orientation==='landscape'?'Libro abierto · dos páginas':'Desliza a los lados para pasar · arriba y abajo para desplazarte'}</small>
    </div>
    <button type="button" onClick={()=>flip('next')} disabled={!canNext||turning} aria-label="Página siguiente">›</button>
   </div>:null}
