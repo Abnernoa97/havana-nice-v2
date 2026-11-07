@@ -124,8 +124,8 @@ test('Admin Repertoire refresh always updates selected event, not just the maste
 
 test('Familia HAVANA NICE is one isolated HOME module with existing session and no invented media',()=>{
  const share=read('packages/shared/src/memberModules.ts');
- assert.match(share,/id:'family'.*label:'Familia HAVANA NICE'/);
- assert.match(read('apps/pwa/src/app/AdminApp.tsx'),/name:'Familia HAVANA NICE'/);
+ assert.match(share,/id:'family'.*label:'Multimedia'/);
+ assert.match(read('apps/pwa/src/app/AdminApp.tsx'),/name:'Multimedia'/);
  assert.match(read('apps/pwa/src/app/VisualApp.tsx'),/screen==='family'&&token\?<MemberFamily/);
  const worker=read('cloudflare/src/modules/family/family.js');
  assert.match(worker,/verifyAdminSession/);
@@ -152,8 +152,8 @@ test('Family gallery follows the One UI-inspired real-data layout and BOOK has s
  assert.match(adminFamily,/familyAlbumCount\(album\)/);
  assert.doesNotMatch(adminFamily,/function albumCount\(/);
  assert.match(ui,/setBookOpen\(true\)/);
- assert.match(ui,/className="hn-family-book-reader"/);
- assert.match(ui,/No hay ediciones publicadas/);
+ assert.match(ui,/<MemberBook token=\{token\} tick=\{mediaTick\}\/>/);
+ assert.match(read('apps/pwa/src/features/book/BookReader.tsx'),/Todavía no hay páginas publicadas/);
  assert.match(ui,/setBookOpen\(false\)/);
  assert.match(css,/\.hn-family-cover:after\{[^}]*linear-gradient/);
  assert.match(css,/\.hn-family-album-art:after\{[^}]*linear-gradient/);
@@ -162,7 +162,7 @@ test('Family gallery follows the One UI-inspired real-data layout and BOOK has s
  assert.doesNotMatch(ui,/new PageFlip|<iframe|data:image\/|localStorage/);
  const admin=read('apps/pwa/src/features/family/AdminFamily.tsx');
  assert.match(admin,/className="a-family-cover"/);
- assert.match(admin,/className="a-family-book-view"/);
+ assert.match(admin,/<AdminBook token=\{token\} onExpired=\{onExpired\} tick=\{mediaTick\}\/>/);
  assert.match(admin,/setBookOpen\(true\)/);
  assert.match(admin,/getFamilyDirectory\(token,true\)/);
  assert.doesNotMatch(admin,/mock|demoPhoto|samplePhoto|adminUploadFamily/);
