@@ -23,6 +23,24 @@ const workflows=readdirSync(new URL('../.github/workflows/',import.meta.url)).so
 assert.deepEqual(workflows,['v2-android-apk.yml','v2-foundation-check.yml'],
   'V2 must have one release workflow and one verification workflow, no historical automation');
 const reproducibleWorker=JSON.parse(workerConfig);
+const cloudflarePackage=JSON.parse(read('cloudflare/package.json'));
+const foundationWorkflow=read('.github/workflows/v2-foundation-check.yml');
+// A normal release must come from the checked-in Wrangler entrypoint, not an
+// edited compiled index.js, a second Worker, or a direct-version API upload.
+assert.equal(reproducibleWorker.main,'./src/index.ts',
+  'Only the canonical TypeScript Worker entrypoint may be compiled');
+assert.equal(reproducibleWorker.name,'havana-nice-v2-dev',
+  'Do not introduce a parallel Worker for V2');
+assert.equal(cloudflarePackage.scripts?.deploy,'wrangler deploy',
+  'Production Worker updates must use Wrangler from committed source');
+assert.match(foundationWorkflow,/wrangler deploy --dry-run --outdir \/tmp\/havana-v2-worker-preview/,
+  'Every V2 release candidate must compile through canonical Wrangler dry run');
+assert.match(foundationWorkflow,/sha256sum "\$BUNDLE"/,
+  'The exact compiled Worker candidate must receive an auditable checksum');
+assert.match(foundationWorkflow,/actions\/upload-artifact@v4/,
+  'The compiled Worker candidate must remain available for version comparison');
+assert.doesNotMatch(foundationWorkflow,/workers\/scripts\/[^\s]+\/versions[^\s]*\s+-X\s+POST/,
+  'Do not reintroduce direct compiled Worker version uploads in CI');
 assert.equal(reproducibleWorker.vars?.V2_ADMIN_LOGIN_MODE,'enabled',
   'Admin login mode must be declared in source, never set only by hand on deployed Worker');
 assert.equal(reproducibleWorker.vars?.V2_ADMIN_LOGIN_SECRET,undefined,
