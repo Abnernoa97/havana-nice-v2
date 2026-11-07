@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import {
   fetchBackendHealth, getChatMediaAvailability, getChatSnapshot, getOlderChatMessages, searchChatMessages, getChatMenuState, getChatMessagePermissions, isWithinChatEditWindow, selectNextQueuedChatMessage, setOutgoingChatStatus, projectOutgoingChatStatus, CHAT_ACK_TIMEOUT_MS, newClientMessageId,
-  openChatSocket, reconcileChatMessages, startNamedChatSession, restoreNamedChatSession, chatSessionExpired, chatReconnectDelay,
+  openChatSocket, reconcileChatMessages, startNamedChatSession, restoreNamedChatSession, chatSessionExpired, chatReconnectDelay, reconcileChatReadReceipt, removeChatReactionsForMessage,
   type BackendHealth, type ChatMessage, type ChatServerEvent, type ChatSession,
   validateChatMediaSelection, CHAT_MEDIA_MAX_PER_SEND, HAVANA_V2_DEV_API_BASE_URL, type ChatMediaSelection, type ChatMediaKind, type ChatMediaSource,
   reconcileReactions, reconcileUpdatedMessage, reconcileDeletedMessage, reconcileChatSnapshot, type ChatReaction, type ChatEmoji, type ChatReadReceipt, type MemberScreen,
@@ -405,7 +405,7 @@ export default function App() {
             else abandonPendingEdit('La edición no coincidió con el servidor. Revisa el mensaje antes de reintentar.');
           }
           if(value.message.deletedAt){
-            setReactions(before=>before.filter(r=>r.messageSeq!==value.message.seq));
+            setReactions(before=>removeChatReactionsForMessage(before,value.message.seq));
             setMenuMessage(current=>current?.seq===value.message.seq?null:current);
           }
           setError('');
@@ -413,16 +413,12 @@ export default function App() {
           removedSeq.current.add(value.seq);
           setMessages(before=>reconcileDeletedMessage(before,value.seq));
           setSearchResults(before=>before?.filter(m=>m.seq!==value.seq)??null);
-          setReactions(before=>before.filter(r=>r.messageSeq!==value.seq));
+          setReactions(before=>removeChatReactionsForMessage(before,value.seq));
           setReplyTo(current=>current?.seq===value.seq?null:current);
           setMenuMessage(current=>current?.seq===value.seq?null:current);
           setEditing(current=>current?.seq===value.seq?null:current);
         } else if (value.type === 'chat.read') {
-          setReceipts(before=>[
-            ...before.filter(r=>r.actorId!==value.actorId),
-            {actorId:value.actorId,displayName:value.displayName,seq:Math.max(
-              value.seq,before.find(r=>r.actorId===value.actorId)?.seq||0)},
-          ]);
+          setReceipts(before=>reconcileChatReadReceipt(before,value));
         } else if (value.type === 'chat.reaction') {
           setReactions(before => reconcileReactions(before, value));
         } else if (value.type === 'chat.message') {

@@ -5,7 +5,7 @@ import {
 } from 'react-native';
 import {
   HAVANA_V2_DEV_API_BASE_URL, fetchBackendHealth, getChatMediaAvailability, getChatSnapshot, getOlderChatMessages, searchChatMessages, lastReadByOther, getChatMenuState, getChatMessagePermissions, isWithinChatEditWindow, selectNextQueuedChatMessage, setOutgoingChatStatus, projectOutgoingChatStatus, CHAT_ACK_TIMEOUT_MS, messageDeliveryLabel, newClientMessageId,
-  reconcileChatMessages, reconcileReactions, reconcileUpdatedMessage, reconcileDeletedMessage, reconcileChatSnapshot, startNamedChatSession, restoreNamedChatSession, chatSessionExpired, chatReconnectDelay,
+  reconcileChatMessages, reconcileReactions, reconcileUpdatedMessage, reconcileDeletedMessage, reconcileChatSnapshot, startNamedChatSession, restoreNamedChatSession, chatSessionExpired, chatReconnectDelay, reconcileChatReadReceipt, removeChatReactionsForMessage,
   type ChatMessage, type ChatServerEvent, type ChatSession, type ChatReaction, type ChatEmoji, type ChatReadReceipt,
   validateChatMediaSelection, CHAT_MEDIA_MAX_PER_SEND, type ChatMediaSelection, type ChatMediaKind, type ChatMediaSource, type MemberScreen,
 } from '@havana/shared';
@@ -485,21 +485,19 @@ export default function App() {
             else abandonPendingEdit('La edición no coincidió con el servidor. Revisa el mensaje antes de reintentar.');
           }
           if(item.message.deletedAt){
-            setReactions(before=>before.filter(r=>r.messageSeq!==item.message.seq));
+            setReactions(before=>removeChatReactionsForMessage(before,item.message.seq));
             setMenuMessage(current=>current?.seq===item.message.seq?null:current);
           }
           setError('');
         } else if (item.type === 'chat.deleted') {
           setMessages(before=>reconcileDeletedMessage(before,item.seq));
           setResults(before=>before?.filter(m=>m.seq!==item.seq)??null);
-          setReactions(before=>before.filter(r=>r.messageSeq!==item.seq));
+          setReactions(before=>removeChatReactionsForMessage(before,item.seq));
           setReplyTo(current=>current?.seq===item.seq?null:current);
           setMenuMessage(current=>current?.seq===item.seq?null:current);
           setEditing(current=>current?.seq===item.seq?null:current);
         } else if (item.type === 'chat.read') {
-          setReceipts(before=>[...before.filter(x=>x.actorId!==item.actorId),
-            {actorId:item.actorId,displayName:item.displayName,seq:Math.max(item.seq,
-              before.find(x=>x.actorId===item.actorId)?.seq||0)}]);
+          setReceipts(before=>reconcileChatReadReceipt(before,item));
         } else if (item.type === 'chat.reaction') {
           setReactions(before => reconcileReactions(before, item));
         } else if (item.type === 'chat.message') {

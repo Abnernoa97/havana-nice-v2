@@ -236,3 +236,6 @@ export type {ChatOutboxState} from './chat-outbox';
 
 // Preserve one offline-capable Chat session expiry and reconnect backoff policy.
 export {chatSessionExpired,chatReconnectDelay,CHAT_RECONNECT_MAX_DELAY_MS} from './chat-connection';
+
+// Both Chat WebSocket event handlers use these exact reconciliation projections.
+export {reconcileChatReadReceipt,removeChatReactionsForMessage} from './chat-events';
