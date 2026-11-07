@@ -14,6 +14,7 @@ CREATE INDEX IF NOT EXISTS idx_book_pages_order ON book_pages(published,position
 CREATE TABLE IF NOT EXISTS book_media_grants (
  token_hash TEXT PRIMARY KEY NOT NULL,
  page_id TEXT NOT NULL REFERENCES book_pages(id) ON DELETE CASCADE,
+ admin_only INTEGER NOT NULL DEFAULT 0 CHECK(admin_only IN (0,1)),
  expires_at INTEGER NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_book_media_grants_expiry ON book_media_grants(expires_at);
