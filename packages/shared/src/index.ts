@@ -225,3 +225,7 @@ export type {RepertoireSong,RepertoireSongInput,RepertoireEventItem} from './rep
 
 export {getFamilyDirectory,getFamilyAlbumMedia,uploadFamilyAlbumFile,uploadFamilyVideoPoster,updateFamilyAlbumFile,familyAlbumCount,FamilyApiError} from './family';
 export type {FamilyAlbum,FamilyDirectory,FamilyMediaItem} from './family';
+
+// One chat context-menu permissions and geometry policy for PWA and Android.
+export {getChatMenuState,CHAT_EDIT_WINDOW_MS,CHAT_DELETE_WINDOW_MS} from './chat-menu';
+export type {ChatMenuAnchor,ChatMenuMessage,ChatMenuViewport} from './chat-menu';

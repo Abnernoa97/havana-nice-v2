@@ -104,6 +104,9 @@ jobs:
       - name: Check isolated Administrator PWA security
         run: npm run test:admin -w @havana/pwa
 
+      - name: Verify one Chat message actions policy across iPhone and Android
+        run: node --experimental-strip-types --test tests/chat-menu-policy.test.mjs
+
       - name: Verify visual media UI remains compatible
         run: node --test tests/chat-media-ui.test.mjs
 

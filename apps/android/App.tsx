@@ -4,7 +4,7 @@ import {
   StatusBar, StyleSheet, Text, TextInput, View, Image, useWindowDimensions,
 } from 'react-native';
 import {
-  HAVANA_V2_DEV_API_BASE_URL, fetchBackendHealth, getChatMediaAvailability, getChatSnapshot, getOlderChatMessages, searchChatMessages, lastReadByOther, messageDeliveryLabel, newClientMessageId,
+  HAVANA_V2_DEV_API_BASE_URL, fetchBackendHealth, getChatMediaAvailability, getChatSnapshot, getOlderChatMessages, searchChatMessages, lastReadByOther, getChatMenuState, messageDeliveryLabel, newClientMessageId,
   reconcileChatMessages, reconcileReactions, reconcileUpdatedMessage, reconcileDeletedMessage, reconcileChatSnapshot, startNamedChatSession, restoreNamedChatSession,
   type ChatMessage, type ChatServerEvent, type ChatSession, type ChatReaction, type ChatEmoji, type ChatReadReceipt,
   validateChatMediaSelection, CHAT_MEDIA_MAX_PER_SEND, type ChatMediaSelection, type ChatMediaKind, type ChatMediaSource, type MemberScreen,
@@ -744,23 +744,14 @@ export default function App() {
     flushOutbox();
   }
 
-  // The menu is positioned beside the touched bubble, clamped to the visible
-  // Android window. On short screens it moves below the bubble if needed.
-  const menuWidth=Math.min(288,Math.max(180,viewportWidth-24));
-  const menuOwn=!!menuMessage && menuMessage.senderId===session?.actorId && !menuMessage.pending;
-  const menuAge=menuMessage ? Date.now()-Date.parse(menuMessage.sentAt) : Infinity;
-  const allowDelete=menuOwn && connection==='en vivo' && menuAge<48*60*60*1000;
-  const allowEdit=menuOwn && connection==='en vivo' && menuAge<15*60*1000;
-  const menuHeight=118;
-  const preferredTop=menuAnchor && menuAnchor.y>menuHeight+16
-    ? menuAnchor.y-menuHeight-8
-    : (menuAnchor?.y??(viewportHeight-menuHeight)/2)+(menuAnchor?.height??0)+8;
-  const menuTop=Math.max((StatusBar.currentHeight??0)+8,
-    Math.min(preferredTop,viewportHeight-menuHeight-14));
-  const preferredLeft=menuAnchor
-    ? (menuOwn ? menuAnchor.x+menuAnchor.width-menuWidth : menuAnchor.x)
-    : (viewportWidth-menuWidth)/2;
-  const menuLeft=Math.max(12,Math.min(preferredLeft,viewportWidth-menuWidth-12));
+  // One message-action policy across native Android and the iPhone PWA.
+  // Keep Android-specific StatusBar and keyboard viewport insets unchanged.
+  const {owned:menuOwn,canEdit:allowEdit,canDelete:allowDelete,width:menuWidth,top:menuTop,left:menuLeft}=getChatMenuState(
+    menuMessage,session?.actorId,connection,menuAnchor,{
+      width:viewportWidth,height:viewportHeight,offsetTop:0,
+      topPadding:(StatusBar.currentHeight??0)+8,bottomPadding:14,
+      maxWidth:288,menuHeight:118,
+    });
 
   return (
     <SafeAreaView style={[styles.screen,keyboardOpen && styles.screenKeyboard]}>

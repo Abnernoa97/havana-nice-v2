@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import {
-  fetchBackendHealth, getChatMediaAvailability, getChatSnapshot, getOlderChatMessages, searchChatMessages, lastReadByOther, messageDeliveryLabel, newClientMessageId,
+  fetchBackendHealth, getChatMediaAvailability, getChatSnapshot, getOlderChatMessages, searchChatMessages, lastReadByOther, getChatMenuState, messageDeliveryLabel, newClientMessageId,
   openChatSocket, reconcileChatMessages, startNamedChatSession, restoreNamedChatSession,
   type BackendHealth, type ChatMessage, type ChatServerEvent, type ChatSession,
   validateChatMediaSelection, CHAT_MEDIA_MAX_PER_SEND, HAVANA_V2_DEV_API_BASE_URL, type ChatMediaSelection, type ChatMediaKind, type ChatMediaSource,
@@ -647,25 +647,15 @@ export default function App() {
     flushOutbox();
   }
 
-  // The context menu follows the held bubble. Keep it inside the visual
-  // viewport so keyboard, notch and small-screen scrolling do not hide actions.
-  const menuWidth=Math.min(290,Math.max(180,window.innerWidth-24));
-  const menuOwn=!!menuMessage && menuMessage.senderId===session?.actorId && !menuMessage.pending;
-  const menuAge=menuMessage?Date.now()-Date.parse(menuMessage.sentAt):Infinity;
-  const canEdit=menuOwn && connection==='en vivo' && menuAge<15*60*1000;
-  const canDelete=menuOwn && connection==='en vivo' && menuAge<48*60*60*1000;
-  const visibleTop=window.visualViewport?.offsetTop??0;
-  const visibleHeight=window.visualViewport?.height??window.innerHeight;
-  const menuHeight=122;
-  const preferredTop=menuAnchor && menuAnchor.y>visibleTop+menuHeight+16
-    ? menuAnchor.y-menuHeight-8
-    : (menuAnchor?.y??(visibleTop+(visibleHeight-menuHeight)/2))+(menuAnchor?.height??0)+8;
-  const menuTop=Math.max(visibleTop+10,
-    Math.min(preferredTop,visibleTop+visibleHeight-menuHeight-10));
-  const preferredLeft=menuAnchor
-    ? (menuOwn ? menuAnchor.x+menuAnchor.width-menuWidth : menuAnchor.x)
-    : (window.innerWidth-menuWidth)/2;
-  const menuLeft=Math.max(12,Math.min(preferredLeft,window.innerWidth-menuWidth-12));
+  // Shared policy keeps edit/delete windows identical on iPhone and Android.
+  // Browser visual viewport offsets still protect the keyboard and notch.
+  const {owned:menuOwn,canEdit,canDelete,width:menuWidth,top:menuTop,left:menuLeft}=getChatMenuState(
+    menuMessage,session?.actorId,connection,menuAnchor,{
+      width:window.innerWidth,
+      height:window.visualViewport?.height??window.innerHeight,
+      offsetTop:window.visualViewport?.offsetTop??0,
+      topPadding:10,bottomPadding:10,maxWidth:290,menuHeight:122,
+    });
 
   return (
     <>
