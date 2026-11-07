@@ -41,6 +41,8 @@ assert.match(foundationWorkflow,/actions\/upload-artifact@v4/,
   'The compiled Worker candidate must remain available for version comparison');
 assert.match(foundationWorkflow,/verify-worker-preview\.mjs "\$BUNDLE"/,
   'Canonical compiled Worker invariant guard must run before release');
+assert.match(foundationWorkflow,/worker-release-preflight\.mjs "\$BUNDLE"/,
+  'Wrangler config, seven binding names and source SHA must be validated before release');
 assert.match(foundationWorkflow,/node --test tests\/worker-hash-parity\.test\.mjs/,
   'SHA-256 compatibility with existing private grants must remain proven');
 assert.doesNotMatch(foundationWorkflow,/workers\/scripts\/[^\s]+\/versions[^\s]*\s+-X\s+POST/,
