@@ -15,9 +15,21 @@ test('Existing Android login and Chat engine stay in one mounted App',()=>{
  assert.match(source,/restoreNamedChatSession/);
  assert.match(source,/session&&activeScreen!=='chat'&&<NativeMemberHome/);
  assert.match(source,/session && activeScreen!=='chat' && styles\.inactiveChat/);
- assert.match(source,/display:'none'/);
+ assert.match(read('apps/android/features/chat/chat-styles.ts'),/inactiveChat:\{display:'none'\}/);
  assert.match(source,/accessibilityLabel="Volver a Inicio"/);
  assert.doesNotMatch(read('apps/android/features/home/NativeMemberHome.tsx'),/startNamedChatSession|AsyncStorage|WebView|session\.token|fetch\(/);
+});
+test('Android styles live outside Chat controller without changing navigation or IME safety',()=>{
+ const app=read('apps/android/App.tsx');
+ const styles=read('apps/android/features/chat/chat-styles.ts');
+ assert.match(app,/import \{styles\} from '\.\/features\/chat\/chat-styles'/);
+ assert.doesNotMatch(app,/StyleSheet\.create\(/);
+ assert.match(styles,/export const styles = StyleSheet\.create\(/);
+ assert.match(styles,/inactiveChat:\{display:'none'\}/);
+ assert.match(styles,/paddingBottom: Platform\.OS === 'android' \? 42 : 0/);
+ assert.match(styles,/screenKeyboard: \{paddingBottom:0\}/);
+ assert.match(styles,/composer:\{flexDirection:'row'/);
+ assert.doesNotMatch(styles,/ChatSession|WebSocket|useState|AsyncStorage|fetch\(/);
 });
 test('Existing PWA login remains canonical and HOME only mounts after authenticated session',()=>{
  const source=read('apps/pwa/src/app/App.tsx');
