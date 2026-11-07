@@ -32,14 +32,14 @@ async function cleanupBookQueue(env){
   }catch{} // Keep a durable queue when R2 is unavailable.
  }
 }
-async function issueBookGrants(env,rows){
+async function issueBookGrants(env,rows,admin){
  if(!rows.length)return [];
  const expiry=Date.now()+GRANT_MS;
  const tokens=rows.map(()=>crypto.randomUUID().replace(/-/g,''));
  const hashes=await Promise.all(tokens.map(sha256Hex));
  await env.DB.batch(rows.map((row,i)=>env.DB.prepare(
-  'INSERT INTO book_media_grants(token_hash,page_id,expires_at) VALUES(?,?,?)'
- ).bind(hashes[i],row.id,expiry)));
+  'INSERT INTO book_media_grants(token_hash,page_id,admin_only,expires_at) VALUES(?,?,?,?)'
+ ).bind(hashes[i],row.id,admin?1:0,expiry)));
  return tokens.map(t=>MEDIA_ROUTE+t);
 }
 async function listBook(env,admin,origin){
@@ -51,7 +51,7 @@ async function listBook(env,admin,origin){
   'ORDER BY position ASC,created_at ASC,id ASC LIMIT ?'
  ).bind(MAX_PAGES).all();
  const rows=result.results||[];
- const grants=await issueBookGrants(env,rows);
+ const grants=await issueBookGrants(env,rows,admin);
  return reply({section:'BOOK HAVANA NICE',pages:rows.map((row,i)=>({
   id:row.id,url:grants[i],fit:row.fit,position:row.position,
   published:!!row.published,...(admin?{sizeBytes:row.size_bytes}:{}),
@@ -64,7 +64,7 @@ async function readBookGrant(request,env,url,origin){
  const row=await env.DB.prepare(
   'SELECT p.object_key,p.mime_type FROM book_media_grants g '+
   'JOIN book_pages p ON p.id=g.page_id '+
-  'WHERE g.token_hash=? AND g.expires_at>?'
+  'WHERE g.token_hash=? AND g.expires_at>? AND (p.published=1 OR g.admin_only=1)'
  ).bind(await sha256Hex(token),Date.now()).first();
  if(!row)return reply({error:'Enlace caducado o imagen no autorizada'},404,origin);
  if(!env.MEDIA_BUCKET)return reply({error:'Almacenamiento no disponible'},503,origin);
