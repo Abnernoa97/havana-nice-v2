@@ -73,6 +73,9 @@ jobs:
           retention-days: 7
           if-no-files-found: error
 
+      - name: Verify one SHA-256 preserves old sessions and private-media grants
+        run: node --test tests/worker-hash-parity.test.mjs
+
       - name: Verify standalone V2 media status before new storage
         run: npm run test:media -w @havana/cloudflare
 
