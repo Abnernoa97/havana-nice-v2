@@ -6,7 +6,8 @@ import './book.css';
 type FlipEvent={data:number|string};
 type FlipHandle={
  flipNext:(corner:'top'|'bottom')=>void;flipPrev:(corner:'top'|'bottom')=>void;
- destroy:()=>void;on:(event:string,listener:(e:FlipEvent)=>void)=>void;
+ destroy:()=>void;loadFromHTML:(pages:NodeListOf<HTMLElement>|HTMLElement[])=>void;
+ on:(event:string,listener:(e:FlipEvent)=>void)=>void;
  getCurrentPageIndex:()=>number;
 };
 export default function BookReader({pages}:{pages:BookPage[]}){
@@ -18,8 +19,21 @@ export default function BookReader({pages}:{pages:BookPage[]}){
  const sourceRef=useRef<HTMLDivElement|null>(null);
  const instance=useRef<FlipHandle|null>(null);
  // Only source-page changes recreate the engine. A flip/swipe reuses one book.
- const signature=useMemo(()=>pages.map(x=>x.id+':'+x.url+':'+x.fit).join('|'),[pages]);
+ const signature=useMemo(()=>pages.map(x=>x.id+':'+x.fit).join('|'),[pages]);
  const count=pages.length+2;
+ // Refresh expiring R2 grants in-place. Same pages never tear down an active flip.
+ useEffect(()=>{
+  const mount=mountRef.current;
+  if(!mount)return;
+  const urls=new Map(pages.map(p=>[p.id,bookMediaUrl(p.url)]));
+  mount.querySelectorAll<HTMLImageElement>('img[data-book-id]').forEach(image=>{
+   const next=urls.get(image.dataset.bookId||'');
+   if(next&&image.src!==next)image.src=next;
+  });
+  const cover=mount.querySelector<HTMLImageElement>('img[data-book-cover]');
+  const top=bookMediaUrl(pages[0]?.url);
+  if(cover&&top&&cover.src!==top)cover.src=top;
+ },[pages]);
  useEffect(()=>{
   setPage(0);
   if(mode!=='flip'||!mountRef.current||!sourceRef.current||!pages.length)return;
@@ -65,7 +79,7 @@ export default function BookReader({pages}:{pages:BookPage[]}){
  const first=bookMediaUrl(pages[0].url);
  const leaves=<>
   <div className="hn-book-leaf hn-book-front" data-density="hard">
-   {first?<img src={first} alt="" decoding="async" fetchPriority="high"/>:null}
+   {first?<img src={first} alt="" data-book-cover="true" decoding="async" fetchPriority="high"/>:null}
    <div className="hn-book-cover-shade"/>
    <div className="hn-book-cover-heading"><small>THE PRIVATE EDITION</small><strong>HAVANA<br/>NICE</strong></div>
    <div className="hn-book-cover-footer">BOOK HAVANA NICE <span>01 / EDITION</span></div>
@@ -73,7 +87,7 @@ export default function BookReader({pages}:{pages:BookPage[]}){
   {pages.map((item,i)=>{
    const image=bookMediaUrl(item.url);
    return <div key={item.id} className={'hn-book-leaf hn-book-photo '+(item.fit==='contain'?'hn-book-contain':'hn-book-cover-fit')} data-density="soft">
-    {image?<img src={image} alt={'Página '+(i+1)+' de BOOK HAVANA NICE'} loading={i<2?'eager':'lazy'} decoding="async"/>:null}
+    {image?<img src={image} data-book-id={item.id} alt={'Página '+(i+1)+' de BOOK HAVANA NICE'} loading={i<2?'eager':'lazy'} decoding="async"/>:null}
     <span className="hn-book-folio">{String(i+1).padStart(2,'0')}</span>
    </div>;
   })}
