@@ -64,7 +64,7 @@ async function readBookGrant(request,env,url,origin){
  const row=await env.DB.prepare(
   'SELECT p.object_key,p.mime_type FROM book_media_grants g '+
   'JOIN book_pages p ON p.id=g.page_id '+
-  'WHERE g.token_hash=? AND g.expires_at>? AND p.published=1'
+  'WHERE g.token_hash=? AND g.expires_at>?'
  ).bind(await sha256Hex(token),Date.now()).first();
  if(!row)return reply({error:'Enlace caducado o imagen no autorizada'},404,origin);
  if(!env.MEDIA_BUCKET)return reply({error:'Almacenamiento no disponible'},503,origin);
