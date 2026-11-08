@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import {
   fetchBackendHealth, getChatMediaAvailability, getChatSnapshot, getOlderChatMessages, searchChatMessages, getChatMenuState, getChatMessagePermissions, isWithinChatEditWindow, selectNextQueuedChatMessage, setOutgoingChatStatus, projectOutgoingChatStatus, CHAT_ACK_TIMEOUT_MS, newClientMessageId,
   openChatSocket, reconcileChatMessages, startNamedChatSession, restoreNamedChatSession, chatSessionExpired, chatReconnectDelay, reconcileChatReadReceipt, removeChatReactionsForMessage, captureChatOfflineSnapshot, restoreChatOfflineOutbox,
@@ -11,7 +11,9 @@ import type {MessageAnchor} from '../features/chat/SwipeMessage';
 import ChatTimeline from '../features/chat/ChatTimeline';
 import ComposerIcon from '../features/chat/ChatComposerIcon';
 import {uploadChatFile} from '../services/chat-media-upload';
-import VisualApp from './VisualApp';
+// The authorized HOME is fetched only when needed; Chat's live socket
+// and the existing single-session access remain in this canonical shell.
+const VisualApp=lazy(()=>import('./VisualApp'));
 
 type PwaQueuedMedia={id:string;file:File;selection:ChatMediaSelection};
 
@@ -648,8 +650,10 @@ export default function App() {
 
   return (
     <>
-      {session&&activeScreen!=='chat'&&<VisualApp displayName={session.displayName}
-        active={activeScreen} token={session.token} onNavigate={setActiveScreen}/>}
+      {session&&activeScreen!=='chat'&&<Suspense fallback={<div className="visual-shell" role="status">Abriendo espacio del equipo…</div>}>
+        <VisualApp displayName={session.displayName}
+          active={activeScreen} token={session.token} onNavigate={setActiveScreen}/>
+      </Suspense>}
       <div className={session&&activeScreen!=='chat'?'member-chat-hidden':'member-chat-visible'}>
     <main className="chat-app">
       <header className="chat-header">
