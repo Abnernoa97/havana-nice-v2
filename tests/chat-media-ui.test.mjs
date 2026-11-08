@@ -28,7 +28,7 @@ test('installed Chat local storage keys stay compatible across cleanup releases'
 });
 
 test('Android native and iPhone PWA share the same Chat decisions, not alternate backends',()=>{
- const android=read('apps/android/App.tsx')+'\n'+read('apps/android/features/chat/NativeChatTimeline.tsx');
+ const android=read('apps/android/App.tsx')+'\n'+read('apps/android/features/chat/NativeChatTimeline.tsx')+'\n'+read('apps/android/features/chat/useNativeMediaSelection.ts');
  // ChatTimeline is presentation-only, but owns the shared delivery-label rendering.
  const pwa=read('apps/pwa/src/app/App.tsx')+'\n'+read('apps/pwa/src/features/chat/ChatTimeline.tsx');
  const common=[
@@ -106,6 +106,7 @@ test('PWA camera icon requests camera capture directly instead of media gallery'
 test('Android native: two gallery filters, camera direct, no legacy extra menu',()=>{
  const src=read('apps/android/App.tsx');
  const icons=read('apps/android/features/chat/ChatComposerIcon.tsx');
+ const picker=read('apps/android/features/chat/useNativeMediaSelection.ts');
  const manifest=JSON.parse(read('apps/android/package.json'));
  const lock=JSON.parse(read('package-lock.json'));
  const config=JSON.parse(read('apps/android/app.json'));
@@ -116,10 +117,11 @@ test('Android native: two gallery filters, camera direct, no legacy extra menu',
  assert.match(src,/chooseNativeMedia\('gallery','photo'\)/);
  assert.match(src,/chooseNativeMedia\('gallery','video'\)/);
  assert.match(src,/chooseNativeMedia\('camera'\)/);
- assert.match(src,/mediaTypes:source==='camera'\?\['images','videos'\]:kind==='photo'\?\['images'\]:\['videos'\]/);
- assert.match(src,/launchImageLibraryAsync\(options\)/);
- assert.match(src,/launchCameraAsync\(options\)/);
- assert.match(src,/requestCameraPermissionsAsync\(\)/);
+ assert.match(src,/useNativeMediaSelection\(/);
+ assert.match(picker,/mediaTypes:source==='camera'\?\['images','videos'\]:kind==='photo'\?\['images'\]:\['videos'\]/);
+ assert.match(picker,/launchImageLibraryAsync\(options\)/);
+ assert.match(picker,/launchCameraAsync\(options\)/);
+ assert.match(picker,/requestCameraPermissionsAsync\(\)/);
  assert.match(icons,/name==='video'/);
  const start=src.indexOf("composerPanel==='attachments'&&<View");
  const end=src.indexOf("composerPanel==='emojis'&&<View",start);
@@ -133,9 +135,9 @@ test('Android native: two gallery filters, camera direct, no legacy extra menu',
   'styles.mediaPlus','styles.sendButton'])
   assert.ok(!src.includes(old),'Obsolete Android UI: '+old);
  assert.match(src,/sendSelectedMedia/);
- assert.match(src,/quality:1/);
- assert.match(src,/allowsMultipleSelection:source==='gallery'/);
- assert.match(src,/selectionLimit:source==='gallery'\?free:1/);
+ assert.match(picker,/quality:1/);
+ assert.match(picker,/allowsMultipleSelection:source==='gallery'/);
+ assert.match(picker,/selectionLimit:source==='gallery'\?free:1/);
  assert.match(src,/selectedMedia\.map\(item=>/);
  assert.equal(manifest.dependencies['expo-file-system'],'~58.0.11');
  assert.equal(existsSync(new URL('../apps/android/media-upload.ts',import.meta.url)),false);
