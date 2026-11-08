@@ -197,11 +197,18 @@ try{
     const {optimizeBookPhoto}=await import('/__book_optimizer_qa.js');
     const canvas=document.createElement('canvas');canvas.width=2600;canvas.height=1400;
     const ctx=canvas.getContext('2d');
-    ctx.fillStyle='#263a34';ctx.fillRect(0,0,canvas.width,canvas.height);
-    for(let i=0;i<2200;i++){
-     ctx.fillStyle='rgb('+((i*29)%200)+','+((i*61)%200)+','+((i*11)%200)+')';
-     ctx.fillRect((i*83)%2600,(i*127)%1400,18+(i%70),8+(i%40));
+    // Photographic grain rather than flat vector shapes: PNG is deliberately
+    // inefficient, WebP compresses it like a real camera photograph.
+    const pixels=ctx.createImageData(canvas.width,canvas.height);
+    let seed=75319;
+    for(let i=0;i<pixels.data.length;i+=4){
+     seed=(Math.imul(seed,1664525)+1013904223)>>>0;
+     pixels.data[i]=(seed>>>16)&255;
+     pixels.data[i+1]=(seed>>>8)&255;
+     pixels.data[i+2]=seed&255;
+     pixels.data[i+3]=255;
     }
+    ctx.putImageData(pixels,0,0);
     const master=await new Promise(ok=>canvas.toBlob(ok,'image/png'));
     const derivative=await optimizeBookPhoto(master);
     if(!derivative)throw Error('BOOK optimizer produced no smaller copy');
