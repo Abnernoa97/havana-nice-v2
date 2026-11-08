@@ -190,7 +190,7 @@ test('PWA Chat Timeline stays presentation-only: one session, one history engine
 test('Native Chat timeline is presentation-only; original scroll ownership stays in Expo App',()=>{
  const controller=read('apps/android/app/NativeApp.tsx');
  const timeline=read('apps/android/features/chat/NativeChatTimeline.tsx');
- assert.match(controller,/import NativeChatTimeline from '\.\/features\/chat\/NativeChatTimeline'/);
+ assert.match(controller,/import NativeChatTimeline from '\.\.\/features\/chat\/NativeChatTimeline'/);
  assert.match(controller,/<NativeChatTimeline[\s\S]*onContentSizeChange=\{/);
  assert.match(controller,/onScrollBeginDrag=\{\(\)=>\{/);
  assert.match(controller,/onScrollEndDrag=\{trackUserScroll\}/);
