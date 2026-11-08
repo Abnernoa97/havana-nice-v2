@@ -80,6 +80,9 @@ jobs:
       - name: Verify standalone V2 media status before new storage
         run: npm run test:media -w @havana/cloudflare
 
+      - name: Test Calendar memories privacy, WebP, completed-date rules and R2 cleanup
+        run: node --test cloudflare/tests/calendar-memories.test.mjs
+
       - name: Test isolated V2 Calendar without changing live D1
         run: node --test cloudflare/tests/calendar.test.mjs
 
