@@ -10,7 +10,11 @@ export interface BookPage {
  fit:'cover'|'contain';
  position:number;
  published:boolean;
- sizeBytes?:number;
+ sizeBytes?:number; // Admin-only R2 master bytes
+ originalUrl?:string; // Admin-only, expiring, private original capability
+ optimizedSizeBytes?:number; // 0 means original fallback
+ optimizedWidth?:number|null;
+ optimizedHeight?:number|null;
 }
 export interface BookDirectory {section:'BOOK HAVANA NICE';pages:BookPage[]}
 export class BookApiError extends Error {
@@ -54,6 +58,25 @@ export async function uploadBookPage(
   };
   xhr.send(file);
  });
+}
+// One endpoint for newly added AND existing pages. Only Admin can create
+// derived R2 objects. The caller never supplies a public URL or storage key.
+export async function uploadBookOptimized(
+ token:string,pageId:string,file:Blob,width:number,height:number
+):Promise<void>{
+ if(file.type!=='image/webp'||file.size<100||file.size>5*1024*1024)
+  throw new Error('BOOK necesita una imagen WebP válida menor a 5 MB.');
+ if(!Number.isInteger(width)||!Number.isInteger(height)||
+    width<1||height<1||Math.max(width,height)>2200)
+  throw new Error('Dimensiones BOOK inválidas.');
+ const res=await fetch(url(true)+'/'+encodeURIComponent(pageId)+'/optimized',{
+  method:'POST',cache:'no-store',
+  headers:{Authorization:'Bearer '+token,'Content-Type':'image/webp',
+   'X-Book-Width':String(width),'X-Book-Height':String(height)},
+  body:file
+ });
+ const data=await res.json() as {error?:string};
+ if(!res.ok)throw new BookApiError(data.error||'No se pudo optimizar la página.',res.status);
 }
 async function mutateBook(token:string,id:string,method:'PUT'|'DELETE',body?:unknown){
  const res=await fetch(url(true)+'/'+encodeURIComponent(id),{
