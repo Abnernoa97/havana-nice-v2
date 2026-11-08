@@ -90,6 +90,39 @@ jobs:
           retention-days: 7
           if-no-files-found: error
 
+      # Temporary QA for a version at 0% traffic. Curl runs from GitHub
+      # where Workers-version overrides are permitted; no real user media.
+      - name: Smoke test staged BOOK WebP Worker with zero live traffic
+        if: "${{ github.event.head_commit.message == 'ci(v2): smoke-test staged BOOK WebP Worker' }}"
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE="https://havana-nice-v2-dev.soloaplicaciones97.workers.dev"
+          H='Cloudflare-Workers-Version-Overrides: havana-nice-v2-dev="aed8f9b4-05f1-4a73-bd29-1d5a517c33b8"'
+          curl -fsS -H "$H" "$BASE/health" | tee /tmp/book-webp-health.json
+          grep -q '"database":"ok"' /tmp/book-webp-health.json
+          for ROUTE in /api/book/pages /api/book/admin/pages /api/family/albums /api/calendar/events /api/repertoire/songs /api/chat/messages; do
+            STATUS="$(curl -sS -o /dev/null -w '%{http_code}' -H "$H" "$BASE$ROUTE")"
+            echo "$ROUTE -> $STATUS"
+            test "$STATUS" = "401"
+          done
+          STATUS="$(curl -sS -o /dev/null -w '%{http_code}' -H "$H" \
+            "$BASE/api/book/media/00000000000000000000000000000000")"
+          test "$STATUS" = "404"
+          STATUS="$(curl -sS -o /dev/null -w '%{http_code}' -H "$H" \
+            -X POST -H 'Content-Type: image/webp' -H 'X-Book-Width: 1200' \
+            -H 'X-Book-Height: 800' --data-binary 'no-access' \
+            "$BASE/api/book/admin/pages/123e4567-e89b-42d3-a456-426614174001/optimized")"
+          test "$STATUS" = "401"
+          curl -sS -D /tmp/book-webp-cors.txt -o /dev/null -H "$H" \
+            -X OPTIONS -H 'Origin: https://havana-nice-v2.pages.dev' \
+            -H 'Access-Control-Request-Method: POST' \
+            -H 'Access-Control-Request-Headers: Authorization, Content-Type, X-Book-Width, X-Book-Height' \
+            "$BASE/api/book/admin/pages"
+          grep -qi 'X-Book-Width' /tmp/book-webp-cors.txt
+          grep -qi 'X-Book-Height' /tmp/book-webp-cors.txt
+          echo 'PASS: staged BOOK WebP auth, seven bindings, health and CORS'
+
       - name: Verify one SHA-256 preserves old sessions and private-media grants
         run: node --test tests/worker-hash-parity.test.mjs
 
