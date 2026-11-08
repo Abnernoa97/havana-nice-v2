@@ -88,7 +88,7 @@ test('Native BOOK bootstraps the bridge before dynamically loading the existing 
  const page=source('apps/pwa/book.html');
  assert.match(sourceText,/const MemberBook=lazy\(\(\)=>import\('\.\.\/features\/book\/MemberBook'\)\)/);
  assert.match(sourceText,/const CalendarMemories=lazy\(\(\)=>import\('\.\.\/features\/calendar\/CalendarMemories'\)\)/);
- assert.match(sourceText,/havana-v2-book-ready/);
+ assert.match(sourceText,/\.ReactNativeWebView\?\.injectedObjectJson\?\.\(\)/);
  assert.match(sourceText,/<ReaderBoundary key=\{/);
  assert.match(sourceText,/<Suspense fallback=\{/);
  assert.doesNotMatch(sourceText,/^import (?:MemberBook|CalendarMemories) from /m);
@@ -99,7 +99,7 @@ test('Native BOOK bootstraps the bridge before dynamically loading the existing 
  const staticGraph=staticClosure(entry);
  const reader=nodeFor('src/features/book/BookReader.tsx');
  assert.equal(staticGraph.has(reader[0]),false,
-  'Do not evaluate 3D PageFlip before Android WebView has shown the bridge and accepted auth');
+  'Do not evaluate 3D PageFlip before the embedded native context is parsed');
  assert.equal(dynamicReachable(entry,reader[0]),true);
 });
 test('No extra session owner, HTML page controller, duplicate Worker or new React root was introduced',()=>{

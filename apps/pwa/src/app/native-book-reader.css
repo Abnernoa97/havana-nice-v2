@@ -1,0 +1,6 @@
+/* BOOK's only animation remains in the existing PageFlip BookReader. */
+@import '../features/book/book.css';
+.hn-native-book-shell{min-height:100svh;max-width:100%;background:#f3eddf}
+.hn-native-book-shell .hn-book-reader{width:100%;padding:0 4px}
+.hn-native-book-shell .hn-book-empty{margin:28px 15px;color:#315843;text-align:center}
+.hn-native-book-shell .hn-book-empty button{display:block;margin:18px auto;padding:11px 24px}

@@ -1,16 +1,14 @@
 import React,{lazy,Suspense,useEffect,useState} from 'react';
 import {createRoot} from 'react-dom/client';
-// Boot the lightweight, authenticated bridge before downloading the 3D engine.
+import {parseNativeBookContext} from './native-book-context';
+import './native-book-reader.css';
+
+// The exact same lazily loaded PageFlip renderer as the authorized PWA.
+// No browser login, second renderer, URL token or asynchronous auth messages.
 const MemberBook=lazy(()=>import('../features/book/MemberBook'));
 const CalendarMemories=lazy(()=>import('../features/calendar/CalendarMemories'));
-import '../features/book/book.css';
 
-type RNWindow=Window&{ReactNativeWebView?:{postMessage:(message:string)=>void}};
-const TOK=/^[A-Za-z0-9_-]{40,100}$/;
-const READY='havana-v2-book-ready';
-const AUTHORIZED='havana-v2-book-authorized';
-const NATIVE_PROBE='havana-v2-book-native-probe';
-const announce=(type:string)=>(window as RNWindow).ReactNativeWebView?.postMessage(type);
+type RNWindow=Window&{ReactNativeWebView?:{injectedObjectJson?:()=>string}};
 class ReaderBoundary extends React.Component<
  {children:React.ReactNode},{failed:boolean}
 >{
@@ -18,59 +16,36 @@ class ReaderBoundary extends React.Component<
  static getDerivedStateFromError(){return {failed:true};}
  render(){
   if(this.state.failed)return <div className="hn-book-empty" role="alert">
-   No se pudo iniciar el lector 3D en este dispositivo.
-   <button type="button" onClick={()=>window.location.reload()}
-    style={{display:'block',margin:'16px auto',padding:'11px 24px'}}>
-    Reintentar BOOK
-   </button>
+   No se pudo iniciar la revista 3D en este dispositivo.
+   <button type="button" onClick={()=>window.location.reload()}>Reintentar</button>
   </div>;
   return this.props.children;
  }
 }
 function PrivateNativeReader(){
- const [token,setToken]=useState('');
+ const [context]=useState(()=>{
+  let json:string|undefined;
+  try{json=(window as RNWindow).ReactNativeWebView?.injectedObjectJson?.();}
+  catch{return null;}
+  return parseNativeBookContext(json);
+ });
  const [tick,setTick]=useState(0);
- const [memory,setMemory]=useState<{eventId:string;title:string}|null>(null);
  useEffect(()=>{
-  const receive=(event:Event)=>{
-   const detail=(event as CustomEvent<unknown>).detail;
-   if(typeof detail==='string'&&TOK.test(detail)){
-    setToken(detail);
-    // An ACK without any credentials verifies that the private event arrived.
-    announce(AUTHORIZED);
-   }
-  };
   const refresh=()=>setTick(t=>t+1);
-  const receiveMemory=(event:Event)=>{
-   const detail=(event as CustomEvent<unknown>).detail;
-   if(!detail||typeof detail!=='object')return;
-   const item=detail as {eventId?:unknown;title?:unknown};
-   if(typeof item.eventId!=='string'||!(/^[0-9a-f-]{36}$/i.test(item.eventId)))return;
-   const title=typeof item.title==='string'?item.title.slice(0,160):'';
-   setMemory({eventId:item.eventId,title});
-  };
-  const probe=()=>announce(READY);
-  window.addEventListener('havana-v2-book-auth',receive);
-  window.addEventListener(NATIVE_PROBE,probe);
-  window.addEventListener('havana-v2-book-calendar',receiveMemory);
   window.addEventListener('havana-v2-book-refresh',refresh);
-  // The RN shell owns the existing musician session; neither the PWA nor
-  // this page creates an alternate account, cookie or storage key.
-  probe();
-  return()=>{
-   window.removeEventListener('havana-v2-book-auth',receive);
-   window.removeEventListener(NATIVE_PROBE,probe);
-   window.removeEventListener('havana-v2-book-refresh',refresh);
-   window.removeEventListener('havana-v2-book-calendar',receiveMemory);
-  };
+  return()=>window.removeEventListener('havana-v2-book-refresh',refresh);
  },[]);
- return <div className="hn-native-book-shell">
-  {token?<ReaderBoundary key={memory?.eventId||'book'}>
-    <Suspense fallback={<div className="hn-book-empty" role="status">Preparando el lector 3D…</div>}>
-     {memory?<CalendarMemories token={token} eventId={memory.eventId} title={memory.title} revision={tick}/>:<MemberBook token={token} tick={tick}/>}
-    </Suspense>
-   </ReaderBoundary>:
-   <div className="hn-book-empty">Abre la revista desde la aplicación autorizada de HAVANA NICE.</div>}
- </div>;
+ return <main className="hn-native-book-shell">
+  {context?<ReaderBoundary key={context.memory?.eventId||'book'}>
+   <Suspense fallback={<div className="hn-book-empty" role="status">Abriendo revista 3D…</div>}>
+    {context.memory?<CalendarMemories token={context.token}
+     eventId={context.memory.eventId} title={context.memory.title} revision={tick}/>:
+     <MemberBook token={context.token} tick={tick}/>}
+   </Suspense>
+  </ReaderBoundary>:
+  <div className="hn-book-empty" role="alert">
+   No se pudo recibir la sesión autorizada de Android.
+  </div>}
+ </main>;
 }
 createRoot(document.getElementById('book-root')!).render(<PrivateNativeReader/>);
