@@ -69,7 +69,7 @@ test('Admin Repertorio does not overwrite newer edits with old Calendar/catalog 
  assert.match(src,/const catalogRequest=useRef\(0\)/);
  assert.match(src,/const request=\+\+catalogRequest\.current/);
  assert.match(src,/if\(request!==catalogRequest\.current\)return/);
- assert.match(src,/catalogRequest\.current\+\+;window\.clearInterval\(timer\)/);
+ assert.match(src,/catalogRequest\.current\+\+;itemsRequest\.current\+\+;stop\(\)/);
  assert.match(src,/e instanceof CalendarHttpError&&e.status===401/);
  assert.match(src,/if\(request===catalogRequest\.current\)setLoading\(false\)/);
 });
@@ -79,7 +79,8 @@ test('Android Repertorio consumes exactly the PWA member D1 catalog and assigned
  for(const api of ['getRepertoireSongs','getCalendarEvents','getAssignedEventRepertoire','safeRepertoireLink','calendarDate']){
   assert.ok(native.includes(api)&&pwa.includes(api),api);
  }
- assert.match(native,/AppState\.addEventListener/);
+ assert.match(native,/watchNativeRepertoire\(token/);
+ assert.match(read('apps/android/services/native-calendar-live.ts'),/AppState\.addEventListener/);
  assert.match(native,/item\.completed/);
  assert.doesNotMatch(native,/fetch\('https?:|chat_messages|startNamedChatSession|localStorage/);
 });

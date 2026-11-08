@@ -106,7 +106,11 @@ export default function AdminChatAccess({section}:{section:Section}){
  useEffect(()=>{
    if(!session){setRealtime('waiting');return;}
    let active=true,socket:WebSocket|null=null,timer:ReturnType<typeof setTimeout>|null=null;
+   let watchdog:ReturnType<typeof setTimeout>|null=null;
    let retry=1000;
+   const clearWatchdog=()=>{
+     if(watchdog!==null){clearTimeout(watchdog);watchdog=null;}
+   };
    const clearRetry=()=>{
      if(timer!==null){clearTimeout(timer);timer=null;}
    };
@@ -125,10 +129,22 @@ export default function AdminChatAccess({section}:{section:Section}){
          if(event.type.startsWith('admin.chat.'))setChatEvent(event as AdminChatStreamEvent);
        });
        socket=opened;
+       // Prevent Admin from remaining in CONNECTING forever after an iPhone network switch.
+       watchdog=setTimeout(()=>{
+         if(!active||socket!==opened||opened.readyState===WebSocket.OPEN)return;
+         watchdog=null;socket=null;
+         try{opened.close();}catch{}
+         setRealtime('reconnecting');
+         if(!document.hidden&&navigator.onLine){
+           clearRetry();timer=setTimeout(()=>{timer=null;reconnect();},retry);
+           retry=Math.min(15000,retry*2);
+         }
+       },9000);
+       opened.onopen=()=>{if(active&&socket===opened)clearWatchdog();};
        opened.onclose=e=>{
          // Ignore a stale socket closed by offline/background transitions.
          if(!active||socket!==opened)return;
-         socket=null;
+         clearWatchdog();socket=null;
          setRealtime('reconnecting');
          if(e.code===4003){setSession(null);setError('Tu sesión administrativa fue revocada.');return;}
          if(!document.hidden&&navigator.onLine){
@@ -151,7 +167,7 @@ export default function AdminChatAccess({section}:{section:Section}){
      if(document.hidden||!navigator.onLine){
        clearRetry();
        const previous=socket;
-       socket=null; // The next foreground/online event may connect immediately.
+       clearWatchdog();socket=null; // The next foreground/online event may connect immediately.
        if(previous&&previous.readyState!==WebSocket.CLOSED)previous.close();
        setRealtime('reconnecting');
        return;
@@ -173,7 +189,7 @@ export default function AdminChatAccess({section}:{section:Section}){
    window.addEventListener('offline',resume);
    reconnect();
    return()=>{
-     active=false;clearTimeout(expiryTimer);if(timer)clearTimeout(timer);
+     active=false;clearTimeout(expiryTimer);clearWatchdog();if(timer)clearTimeout(timer);
      document.removeEventListener('visibilitychange',resume);
      window.removeEventListener('online',resume);
      window.removeEventListener('offline',resume);

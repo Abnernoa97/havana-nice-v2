@@ -82,6 +82,18 @@ test('admin cannot leak credential or store privileged session in browser',()=>{
  assert.match(panel,/adminVerify\(session\.token\)/);
  assert.match(api,/cache:'no-store'/);
 });
+test('Admin recovers a stalled private WebSocket without a duplicate session or socket',()=>{
+ const source=read('../src/features/admin/AdminChatAccess.tsx');
+ assert.match(source,/watchdog=setTimeout\(/);
+ assert.match(source,/opened.readyState===WebSocket.OPEN/);
+ assert.match(source,/\},9000\)/);
+ assert.match(source,/opened.onopen=\(\)=>\{if\(active&&socket===opened\)clearWatchdog\(\)/);
+ assert.match(source,/opened.onclose=e=>\{/);
+ assert.match(source,/clearWatchdog\(\);socket=null/);
+ assert.match(source,/active=false;clearTimeout\(expiryTimer\);clearWatchdog\(\)/);
+ assert.match(source,/adminVerify\(session.token\)/);
+ assert.doesNotMatch(source,/setInterval\(/);
+});
 test('real-time admin list invalidates on membership changes',()=>{
  assert.match(api,/new WebSocket\(url,\['havana-v2-admin','admin\.'\+token\]\)/);
  assert.match(panel,/openAdminRealtime\(session\.token/);
