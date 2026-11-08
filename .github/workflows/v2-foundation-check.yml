@@ -66,22 +66,6 @@ jobs:
           node ../scripts/worker-release-preflight.mjs "$BUNDLE"
           echo "SUCCESS: V2 Worker bundled and guarded from source, no production changes"
 
-      # One release-only handoff: source-verified Wrangler bundle from this
-      # exact main commit, never a patch to the live Worker. No env secrets.
-      - name: Export canonical BOOK WebP Worker code for authenticated release
-        if: "${{ github.event.head_commit.message == 'ci(v2): export BOOK WebP Worker from canonical main' }}"
-        shell: bash
-        run: |
-          set -euo pipefail
-          BUNDLE="$(find /tmp/havana-v2-worker-preview -name 'index.js' -type f -print -quit)"
-          test -s "$BUNDLE"
-          echo "HNV2_WEBP_COMMIT=$GITHUB_SHA"
-          echo "HNV2_WEBP_SHA256=$(sha256sum "$BUNDLE" | awk '{print $1}')"
-          echo HNV2_WEBP_BUNDLE_BEGIN
-          base64 -w 4096 "$BUNDLE"
-          echo
-          echo HNV2_WEBP_BUNDLE_END
-
       - name: Preserve canonical Worker preview for live-version equivalence review
         uses: actions/upload-artifact@v4
         with:
@@ -89,39 +73,6 @@ jobs:
           path: /tmp/havana-v2-worker-preview/
           retention-days: 7
           if-no-files-found: error
-
-      # Temporary QA for a version at 0% traffic. Curl runs from GitHub
-      # where Workers-version overrides are permitted; no real user media.
-      - name: Smoke test staged BOOK WebP Worker with zero live traffic
-        if: "${{ github.event.head_commit.message == 'ci(v2): smoke-test staged BOOK WebP Worker' }}"
-        shell: bash
-        run: |
-          set -euo pipefail
-          BASE="https://havana-nice-v2-dev.soloaplicaciones97.workers.dev"
-          H='Cloudflare-Workers-Version-Overrides: havana-nice-v2-dev="aed8f9b4-05f1-4a73-bd29-1d5a517c33b8"'
-          curl -fsS -H "$H" "$BASE/health" | tee /tmp/book-webp-health.json
-          grep -q '"database":"ok"' /tmp/book-webp-health.json
-          for ROUTE in /api/book/pages /api/book/admin/pages /api/family/albums /api/calendar/events /api/repertoire/songs /api/chat/messages; do
-            STATUS="$(curl -sS -o /dev/null -w '%{http_code}' -H "$H" "$BASE$ROUTE")"
-            echo "$ROUTE -> $STATUS"
-            test "$STATUS" = "401"
-          done
-          STATUS="$(curl -sS -o /dev/null -w '%{http_code}' -H "$H" \
-            "$BASE/api/book/media/00000000000000000000000000000000")"
-          test "$STATUS" = "404"
-          STATUS="$(curl -sS -o /dev/null -w '%{http_code}' -H "$H" \
-            -X POST -H 'Content-Type: image/webp' -H 'X-Book-Width: 1200' \
-            -H 'X-Book-Height: 800' --data-binary 'no-access' \
-            "$BASE/api/book/admin/pages/123e4567-e89b-42d3-a456-426614174001/optimized")"
-          test "$STATUS" = "401"
-          curl -sS -D /tmp/book-webp-cors.txt -o /dev/null -H "$H" \
-            -X OPTIONS -H 'Origin: https://havana-nice-v2.pages.dev' \
-            -H 'Access-Control-Request-Method: POST' \
-            -H 'Access-Control-Request-Headers: Authorization, Content-Type, X-Book-Width, X-Book-Height' \
-            "$BASE/api/book/admin/pages"
-          grep -qi 'X-Book-Width' /tmp/book-webp-cors.txt
-          grep -qi 'X-Book-Height' /tmp/book-webp-cors.txt
-          echo 'PASS: staged BOOK WebP auth, seven bindings, health and CORS'
 
       - name: Verify one SHA-256 preserves old sessions and private-media grants
         run: node --test tests/worker-hash-parity.test.mjs
