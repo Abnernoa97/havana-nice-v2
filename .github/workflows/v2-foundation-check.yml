@@ -66,6 +66,21 @@ jobs:
           node ../scripts/worker-release-preflight.mjs "$BUNDLE"
           echo "SUCCESS: V2 Worker bundled and guarded from source, no production changes"
 
+      # One-time canonical release handoff; remove after v65 is verified.
+      - name: Export canonical Calendar memory Worker v65 from verified source
+        if: "${{ github.event.head_commit.message == 'ci(v2): export Calendar memories Worker v65 from canonical main' }}"
+        shell: bash
+        run: |
+          set -euo pipefail
+          BUNDLE="$(find /tmp/havana-v2-worker-preview -name 'index.js' -type f -print -quit)"
+          test -s "$BUNDLE"
+          echo "HNV2_CALENDAR_COMMIT=$GITHUB_SHA"
+          echo "HNV2_CALENDAR_SHA256=$(sha256sum "$BUNDLE" | awk '{print $1}')"
+          echo HNV2_CALENDAR_BUNDLE_BEGIN
+          base64 -w 4096 "$BUNDLE"
+          echo
+          echo HNV2_CALENDAR_BUNDLE_END
+
       - name: Preserve canonical Worker preview for live-version equivalence review
         uses: actions/upload-artifact@v4
         with:
