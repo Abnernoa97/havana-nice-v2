@@ -1,13 +1,17 @@
-import { readFileSync, readdirSync } from 'node:fs';
+import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import assert from 'node:assert/strict';
 
 const read = path => readFileSync(new URL('../' + path, import.meta.url), 'utf8');
 // A separate repository must contain only V2 source, never the original app.
 const allowedRoot=new Set(['.git','.github','.gitignore','.env.example','README.md',
- 'apps','cloudflare','packages','docs','scripts','tests',
+ 'apps','cloudflare','packages','docs','scripts','tests','releases',
  'package.json','package-lock.json','tsconfig.base.json']);
 assert.deepEqual(readdirSync(new URL('../',import.meta.url)).filter(x=>!allowedRoot.has(x)),
  [],'Standalone V2 repository cannot include original app files');
+if(existsSync(new URL('../releases/',import.meta.url)))
+ assert.deepEqual(readdirSync(new URL('../releases/',import.meta.url)).sort(),['android-batch.json'],
+  'Only the explicit V2 Android batch marker may live in releases/');
+
 const worker = read('cloudflare/src/index.ts');
 const chatRoom = read('cloudflare/src/modules/chat/chat-room.ts');
 const chatSession = read('cloudflare/src/modules/chat/chat-session.ts');
