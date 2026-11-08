@@ -205,6 +205,7 @@ test('Native Chat timeline is presentation-only; original scroll ownership stays
 });
 test('Native photo uses a fully verified local cache and modal without a browser; video plays inline',()=>{
  const native=read('apps/android/features/chat/NativeChatMediaView.tsx');
+ const cache=read('apps/android/storage/chatPhotoCache.ts');
  const packageManifest=JSON.parse(read('apps/android/package.json'));
  assert.equal(packageManifest.dependencies['expo-video'],'58.0.12');
  assert.match(native,/useVideoPlayer/);
@@ -213,25 +214,27 @@ test('Native photo uses a fully verified local cache and modal without a browser
  assert.doesNotMatch(native,/surfaceType="textureView"/);
  assert.match(native,/useEvent\(player,'statusChange'/);
  assert.match(native,/onRetry=\{\(\)=>setVideoAttempt/);
- assert.match(native,/File\.downloadFileAsync/);
- assert.match(native,/finished\.size!==media\.sizeBytes/);
- assert.match(native,/cached\.exists&&cached\.size===media\.sizeBytes/);
+ assert.match(cache,/File\.downloadFileAsync/);
+ assert.match(cache,/finished\.size!==media\.sizeBytes/);
+ assert.match(cache,/cached\.exists&&cached\.size===media\.sizeBytes/);
  assert.match(native,/<Modal visible=\{media\.kind==='photo'&&enlarged&&!!photo\}/);
  assert.doesNotMatch(native,/Linking\.openURL|media\.name\} ·|Reproducir video/);
  assert.match(native,/setPhoto\(cached\.uri\)/);
 });
 test('Native photo-cache housekeeping touches only stale incomplete V2 transfers',()=>{
  const native=read('apps/android/features/chat/NativeChatMediaView.tsx');
- assert.match(native,/PARTIAL_TRANSFER_TTL=24\*60\*60\*1000/);
- assert.match(native,/function pruneAbandonedPhotoTransfers\(\)/);
- assert.match(native,/Paths\.cache\.list\(\)/);
- assert.match(native,/entry instanceof File/);
- assert.match(native,/entry\.modificationTime/);
- assert.match(native,/hn-v2-photo-transfer-/);
- assert.match(native,/\.part\$/);
- assert.match(native,/if\(now-lastPartialTransferSweep<PARTIAL_TRANSFER_TTL\)return/);
- assert.match(native,/cached\.exists&&cached\.size===media\.sizeBytes/);
- assert.doesNotMatch(native,/Paths\.cache\.delete\(\)|hn-v2-chat-photo-.*\.delete\(/);
+ const cache=read('apps/android/storage/chatPhotoCache.ts');
+ assert.match(cache,/PARTIAL_TRANSFER_TTL=24\*60\*60\*1000/);
+ assert.match(cache,/function pruneAbandonedPhotoTransfers\(\)/);
+ assert.match(cache,/Paths\.cache\.list\(\)/);
+ assert.match(cache,/entry instanceof File/);
+ assert.match(cache,/entry\.modificationTime/);
+ assert.match(cache,/hn-v2-photo-transfer-/);
+ assert.match(cache,/\.part\$/);
+ assert.match(cache,/if\(now-lastPartialTransferSweep<PARTIAL_TRANSFER_TTL\)return/);
+ assert.match(cache,/cached\.exists&&cached\.size===media\.sizeBytes/);
+ assert.match(native,/from '\.\.\/\.\.\/storage\/chatPhotoCache'/);
+ assert.doesNotMatch(cache,/Paths\.cache\.delete\(\)|hn-v2-chat-photo-.*\.delete\(/);
 });
 
 test('Web/Admin originals are fully downloaded once before opening, without forced gray letterboxes',()=>{

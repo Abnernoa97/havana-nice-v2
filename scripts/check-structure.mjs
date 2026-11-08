@@ -56,7 +56,7 @@ assert.deepEqual(children('apps/android/app'),['NativeApp.tsx','NativeMemberHome
 assert.deepEqual(children('apps/android/features'),
  ['book','calendar','chat','family','musicians','repertoire']);
 assert.deepEqual(children('apps/android/hooks'),['useNativeKeyboardVisibility.ts']);
-assert.deepEqual(children('apps/android/storage'),['chatStorage.ts']);
+assert.deepEqual(children('apps/android/storage'),['chatPhotoCache.ts','chatStorage.ts']);
 assert.deepEqual(children('apps/android/styles'),['chat-styles.ts']);
 assert.deepEqual(children('apps/android/services'),
  ['native-calendar-live.ts','native-chat-r2-upload.ts']);
