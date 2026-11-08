@@ -13,6 +13,13 @@
   margin:0 auto;position:relative;overflow:hidden;isolation:isolate;
   overscroll-behavior:auto;touch-action:pan-y; background:radial-gradient(ellipse 52% 46% at 50% 53%,#253a2818,transparent 82%)}
 .hn-book-mount{width:100%;height:100%;min-width:0;position:relative}
+/* One static pooled-page shadow gives a recognizable bound-book silhouette.
+   No GPU filters or parallel animations follow the turning leaf. */
+.hn-book-mount::before{content:"";position:absolute;pointer-events:none;
+  left:17%;right:17%;bottom:7%;height:12%;border-radius:50%;
+  background:radial-gradient(ellipse,#2b302e4a 0%,#25332616 56%,transparent 75%)}
+.hn-book-mount.hn-book-closed::before{opacity:.8}
+.hn-book-mount.hn-book-opened::before{opacity:1}
 .hn-book-flip-host{width:100%;height:100%;position:relative;margin:0 auto;touch-action:pan-y}
 .hn-book-flip-host.stf__parent{touch-action:pan-y}
 .hn-book-flip-host .stf__wrapper{position:relative;box-sizing:border-box;
@@ -31,13 +38,20 @@
 .hn-book-photo{background:linear-gradient(90deg,#e5dfd2 0%,#faf7f0 7%,#fffdfa 55%,#f5f0e7 100%)}
 .hn-book-photo>img{position:absolute;left:3.25%;top:2.2%;width:93.5%;height:92%;
   border:1px solid #8e867432;box-shadow:0 2px 4px #2b28141e;background:#f4f1e9}
+/* Landscape images retain their full composition even when Admin chose the
+   default fill setting. Vertical portraits still fill the mounted photograph.
+   The full-image Admin choice always wins, regardless of orientation. */
+.hn-book-photo.hn-book-wide-photo>img{object-fit:contain;background:#ece8de}
+.hn-book-photo.hn-book-contain>img{object-fit:contain}
+.hn-book-photo.hn-book-wide-photo{background:linear-gradient(90deg,#e2dacb 0%,#f8f4ec 6%,#fbf8f0 94%,#e4dccd 100%)}
 .hn-book-photo::before{content:"";position:absolute;inset:0 auto 0 0;
   width:4%;background:linear-gradient(90deg,#493e2e3b,#fff8ee36 55%,transparent);
   z-index:2;pointer-events:none}
 .hn-book-photo::after{content:"";position:absolute;inset:1.2%;
   border:1px solid #8d765326;box-shadow:inset 0 0 0 1px #fff7;
   pointer-events:none;z-index:1}
-.hn-book-front{background:#153428;color:white;isolation:isolate}
+.hn-book-front{background:linear-gradient(90deg,#081c1380 0%,#143d2c 8%,#214635 100%);color:white;isolation:isolate;
+  box-shadow:inset 5px 0 8px #081d15a8,inset -2px 0 5px #fcf2dd32,inset 0 0 0 1px #e9d8a84d}
 .hn-book-front>img{position:absolute;inset:0;z-index:-2}
 
 /* Bookbinding detail: a narrow wrapped-cloth spine and a fine cover inset.
@@ -48,12 +62,18 @@
 .hn-book-front::after,.hn-book-back::after{content:"";position:absolute;inset:2.2%;
   border:1px solid #f3e7c57a;box-shadow:inset 0 0 0 3px #0b20151e;
   pointer-events:none;z-index:2}
+/* Wrapped-cover corner: quiet 3D detail, never a second page-flip animation. */
+.hn-book-cover-corner{position:absolute;right:0;bottom:0;width:34px;height:34px;
+  pointer-events:none;z-index:3;background:linear-gradient(135deg,transparent 48%,#e9dec6aa 50%,#6d715d4a 76%,#172b2066 100%);
+  box-shadow:-2px -2px 3px #09170f16;clip-path:polygon(100% 0,100% 100%,0 100%)}
+
 .hn-book-cover-shade{position:absolute;inset:0;z-index:-1;background:linear-gradient(165deg,#152c237a 0%,#142b2308 38%,#10261fc0 100%)}
 .hn-book-cover-heading{position:absolute;top:9%;left:9%;right:9%;display:flex;flex-direction:column;gap:13px}
 .hn-book-cover-heading small{font-size:9px;font-weight:700;letter-spacing:.22em}
 .hn-book-cover-heading strong{font:500 clamp(32px,4.5vw,59px)/.92 Georgia,serif;letter-spacing:.055em}
 .hn-book-cover-footer{position:absolute;bottom:8%;left:9%;right:9%;display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:8px;letter-spacing:.14em;font-weight:700}
-.hn-book-back{display:flex;flex-direction:column;justify-content:center;align-items:center;gap:24px;background:#183f31;color:#f5f4eb;text-align:center}
+.hn-book-back{display:flex;flex-direction:column;justify-content:center;align-items:center;gap:24px;background:linear-gradient(90deg,#0e3125,#1c4634 12%,#173b2c 92%,#092b1e);color:#f5f4eb;text-align:center;
+  box-shadow:inset 5px 0 10px #071b126b,inset -2px 0 7px #ede3ca23}
 .hn-book-back small,.hn-book-back span{font-size:10px;letter-spacing:.2em}
 .hn-book-back strong{font:400 clamp(34px,5vw,65px) Georgia,serif}
 .hn-book-folio{position:absolute;right:5%;bottom:3%;font:600 9px system-ui;letter-spacing:.1em;color:#7d827a;background:#f3f0e4d9;padding:4px 7px;border-radius:99px}
