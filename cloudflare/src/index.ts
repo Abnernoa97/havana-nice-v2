@@ -510,7 +510,7 @@ export default {
     // own private media capabilities, not a second calendar or BOOK engine.
     if(url.pathname.startsWith('/api/calendar/photo/')||
        /^\/api\/calendar\/(?:admin\/)?events\/[0-9a-f-]{36}\/photos(?:\/|$)/.test(url.pathname))
-      return handleCalendarMemories(request,env,url,verifySession);
+      return handleCalendarMemories(request,env,url,origin,verifySession);
     if(url.pathname.startsWith('/api/calendar/'))
       return handleCalendarApi(request,env,url,origin,respond,verifySession);
     // Repertoire is separately routed with the existing session and D1 grants.
