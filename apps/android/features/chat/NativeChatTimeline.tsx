@@ -65,7 +65,7 @@ export default function NativeChatTimeline({
    </>}
    ListEmptyComponent={!messages.length
     ?<Text style={styles.empty}>¡Hola! Envía el primer mensaje. Aparecerá en los dos dispositivos.</Text>
-    :null}
+    :undefined}
    renderItem={({item:message})=>{
 
                 const mine = message.senderId === session.actorId;
