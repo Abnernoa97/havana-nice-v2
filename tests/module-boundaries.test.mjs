@@ -8,6 +8,7 @@ const screens=[
   ['HOME PWA','apps/pwa/src/app/VisualApp.tsx'],
   ['Calendario Android','apps/android/features/calendar/NativeCalendar.tsx'],
   ['Calendario PWA','apps/pwa/src/features/calendar/CalendarAccordion.tsx'],
+  ['Músicos PWA','apps/pwa/src/features/musicians/MemberMusicians.tsx'],
   ['Calendario Administrador','apps/pwa/src/features/calendar/AdminCalendar.tsx'],
   ['Repertorio del músico','apps/pwa/src/features/repertoire/MemberRepertoire.tsx'],
   ['Repertorio de Administración','apps/pwa/src/features/repertoire/AdminRepertoire.tsx'],

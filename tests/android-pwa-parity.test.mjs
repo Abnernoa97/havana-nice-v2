@@ -17,6 +17,21 @@ test('Android Calendar has no old 30 second polling and uses the same private Ca
  assert.match(pwa,/calendar\.invalidate/);
 });
 
+test('Músicos reads one authorized roster in both apps without a second login',()=>{
+ const shared=read('packages/shared/src/musicians.ts');
+ const web=read('apps/pwa/src/features/musicians/MemberMusicians.tsx');
+ const native=read('apps/android/features/musicians/NativeMusicians.tsx');
+ assert.match(shared,/getFamilyDirectory\(token\)/);
+ assert.doesNotMatch(shared,/new WebSocket|fetch\(|adminLogin|\/api\/chat\/admin/);
+ assert.match(web,/getMusicianDirectory\(token\)/);
+ assert.match(web,/useFamilyLive\(token,false/);
+ assert.match(native,/getMusicianDirectory\(token\)/);
+ assert.match(native,/openFamilyRealtime\(token,false/);
+ assert.match(native,/FAMILY_WS_HANDSHAKE_TIMEOUT_MS/);
+ assert.match(read('apps/pwa/src/app/VisualApp.tsx'),/screen==='musicians'&&token\?<MemberMusicians token=\{token\}/);
+ assert.match(read('apps/android/features/home/NativeMemberHome.tsx'),/active==='musicians'\?<NativeMusicians token=\{token\}/);
+ assert.match(read('packages/shared/src/memberModules.ts'),/id:'musicians'[^\n]*ready:true,nativeReady:true/);
+});
 test('Android HOME has same mobile destinations and visual navigation as PWA, not stale placeholders',()=>{
  const shared=read('packages/shared/src/memberModules.ts');
  const home=read('apps/android/features/home/NativeMemberHome.tsx');

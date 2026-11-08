@@ -46,6 +46,7 @@ const home=nodeFor('src/app/VisualApp.tsx');
 const member=[
  'src/features/calendar/CalendarAccordion.tsx',
  'src/features/repertoire/MemberRepertoire.tsx',
+ 'src/features/musicians/MemberMusicians.tsx',
  'src/features/family/MemberFamily.tsx'
 ];
 const admin=[
@@ -89,7 +90,7 @@ test('No extra session owner, HTML page controller, duplicate Worker or new Reac
  assert.match(memberShell,/restoreNamedChatSession/);
  assert.match(memberShell,/const VisualApp=lazy\(\(\)=>import\('\.\/VisualApp'\)\)/);
  assert.match(memberShell,/session&&activeScreen!=='chat'&&<Suspense/);
- for(const name of ['CalendarAccordion','MemberRepertoire','MemberFamily'])
+ for(const name of ['CalendarAccordion','MemberRepertoire','MemberMusicians','MemberFamily'])
   assert.match(visual,new RegExp('const '+name+'=lazy\\('));
  for(const name of ['AdminCalendar','AdminRepertoire','AdminFamily','AdminChatGeneral'])
   assert.match(adminShell,new RegExp('const '+name+'=lazy\\('));
