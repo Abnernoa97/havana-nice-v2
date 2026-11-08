@@ -14,15 +14,15 @@ function trustedBookUrl(raw:string):boolean{
   return url.origin===ORIGIN&&url.pathname==='/book.html'&&!url.search&&!url.hash;
  }catch{return false;}
 }
-function dispatchBookEvent(eventName:'havana-v2-book-auth'|'havana-v2-book-refresh',detail?:string):string{
+function dispatchBookEvent(eventName:'havana-v2-book-auth'|'havana-v2-book-refresh'|'havana-v2-book-calendar',detail?:unknown):string{
  return '(function(){if(location.origin==='+JSON.stringify(ORIGIN)+
   '&&location.pathname==="/book.html")window.dispatchEvent(new CustomEvent('+
   JSON.stringify(eventName)+
   (detail===undefined?'':',{detail:'+JSON.stringify(detail)+'}')+
   '));})();true;';
 }
-export default function NativeBook({token,refreshKey,onClose}:{
- token:string;refreshKey:number;onClose:()=>void
+export default function NativeBook({token,refreshKey,onClose,calendarEventId,calendarTitle}:{
+ token:string;refreshKey:number;onClose:()=>void;calendarEventId?:string;calendarTitle?:string
 }){
  const view=useRef<WebView<object>>(null);
  const [ready,setReady]=useState(false);
@@ -34,7 +34,8 @@ export default function NativeBook({token,refreshKey,onClose}:{
   // Auth is delivered directly to the trusted already-loaded page;
   // never via URL, cookies, persistent storage, or a second session.
   view.current?.injectJavaScript(dispatchBookEvent('havana-v2-book-auth',token));
- },[token]);
+  if(calendarEventId)view.current?.injectJavaScript(dispatchBookEvent('havana-v2-book-calendar',{eventId:calendarEventId,title:calendarTitle||''}));
+ },[token,calendarEventId,calendarTitle]);
  useEffect(()=>{
   if(!ready||refreshRef.current===refreshKey)return;
   refreshRef.current=refreshKey;
@@ -52,7 +53,7 @@ export default function NativeBook({token,refreshKey,onClose}:{
    <View style={styles.toolbar}>
     <Pressable accessibilityRole="button" accessibilityLabel="Cerrar BOOK HAVANA NICE"
      onPress={onClose} style={styles.back}><Text style={styles.backText}>‹ Volver</Text></Pressable>
-    <Text style={styles.title}>BOOK HAVANA NICE</Text>
+    <Text style={styles.title}>{calendarEventId?'RECUERDOS · HAVANA NICE':'BOOK HAVANA NICE'}</Text>
    </View>
    <WebView<object> ref={view} source={{uri:READER}} originWhitelist={[ORIGIN]}
     style={styles.web} javaScriptEnabled domStorageEnabled={false}
