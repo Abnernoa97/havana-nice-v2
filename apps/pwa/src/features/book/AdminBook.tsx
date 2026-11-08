@@ -1,5 +1,6 @@
 import {useCallback,useEffect,useRef,useState} from 'react';
-import {BOOK_GRANT_RENEW_MS,BookApiError,bookMediaUrl,getBookPages,removeBookPage,updateBookPage,uploadBookPage,type BookPage} from '@havana/shared';
+import {BOOK_GRANT_RENEW_MS,BookApiError,bookMediaUrl,getBookPages,removeBookPage,updateBookPage,uploadBookPage,uploadBookOptimized,type BookPage} from '@havana/shared';
+import {optimizeBookPhoto} from './book-image-optimizer';
 import BookReader from './BookReader';
 
 export default function AdminBook({token,onExpired,tick=0}:{token:string;onExpired:()=>void;tick?:number}){
@@ -11,6 +12,7 @@ export default function AdminBook({token,onExpired,tick=0}:{token:string;onExpir
  const [progress,setProgress]=useState(0);
  const [preview,setPreview]=useState(false);
  const sequence=useRef(0);
+ const autoAttempted=useRef(false);
  const refresh=useCallback(async()=>{
   const id=++sequence.current;
   try{
@@ -42,26 +44,84 @@ export default function AdminBook({token,onExpired,tick=0}:{token:string;onExpir
   },BOOK_GRANT_RENEW_MS);
   return()=>window.clearTimeout(timer);
  },[pages,refresh]);
+ const optimizeOne=async(id:string,source:Blob)=>{
+  const optimized=await optimizeBookPhoto(source);
+  if(!optimized)return false;
+  await uploadBookOptimized(token,id,optimized.blob,optimized.width,optimized.height);
+  return true;
+ };
+ const pendingPages=pages.filter(p=>(p.sizeBytes||0)>=300000 &&
+  !p.optimizedSizeBytes&&!!p.originalUrl);
+ const optimizeExisting=async(current:BookPage[])=>{
+  if(busy||!current.length)return;
+  setBusy(true);setProgress(0);setError('');
+  const errors:string[]=[];
+  let converted=0,unchanged=0;
+  for(let i=0;i<current.length;i++){
+   const p=current[i];
+   if(!p?.originalUrl)continue;
+   setNote('Optimizando fotografía existente '+(i+1)+' de '+current.length+'…');
+   try{
+    const trusted=bookMediaUrl(p.originalUrl);
+    if(!trusted)throw Error('Enlace original privado inválido');
+    const response=await fetch(trusted,{cache:'no-store'});
+    if(!response.ok)throw Error('No fue posible recuperar el original');
+    const source=await response.blob();
+    if(source.size>15*1024*1024)throw Error('Archivo original demasiado grande');
+    if(await optimizeOne(p.id,source))converted++;else unchanged++;
+   }catch(e){
+    errors.push('Página '+(pages.findIndex(x=>x.id===p.id)+1)+': '+
+     (e instanceof Error?e.message:'Error de optimización'));
+    if(e instanceof BookApiError&&e.status===401){onExpired();break;}
+   }
+   setProgress(Math.round((i+1)*100/current.length));
+  }
+  await refresh();
+  setNote(converted+' fotografías optimizadas'+(unchanged?' · '+unchanged+' ya eran ligeras':''));
+  if(errors.length)setError(errors.join(' · '));
+  setBusy(false);
+ };
+ // Upgrade the existing seven BOOK originals once on the first Admin visit.
+ // No musician-side conversion, paid processing or repeated 30-second polling.
+ // A visible button below permits retry if the phone was offline.
+ useEffect(()=>{
+  if(loading||autoAttempted.current||!pages.length||busy)return;
+  autoAttempted.current=true;
+  if(pendingPages.length&&navigator.onLine)void optimizeExisting(pendingPages);
+ // Trigger only on initial Admin directory load. Future retries are explicit.
+ // eslint-disable-next-line react-hooks/exhaustive-deps
+ },[loading]);
  const upload=async(files:File[])=>{
   if(busy||!files.length)return;
   if(files.length>5){setError('Puedes elegir hasta cinco imágenes por selección.');return;}
-  setBusy(true);setError('');setProgress(0);
+  setBusy(true);setError('');setNote('');setProgress(0);
   const errors:string[]=[];
+  let optimizedCount=0,originals=0;
   for(let i=0;i<files.length;i++){
-   const f=files[i];
-   if(!f)continue;
+   const file=files[i];
+   if(!file)continue;
    try{
-    setNote('Guardando página '+(i+1)+' de '+files.length+'…');
-    await uploadBookPage(token,f,(loaded,total)=>{
-     setProgress(Math.round(((i+(total?loaded/total:0))/files.length)*100));
+    setNote('Guardando original '+(i+1)+' de '+files.length+'…');
+    const id=await uploadBookPage(token,file,(loaded,total)=>{
+     setProgress(Math.round(((i+0.75*(total?loaded/total:0))/files.length)*100));
     });
+    originals++;
+    setNote('Preparando versión ligera '+(i+1)+' de '+files.length+'…');
+    try{
+     if(await optimizeOne(id,file))optimizedCount++;
+    }catch(e){
+     errors.push(file.name+': original guardado; la optimización se puede reintentar ('+
+      (e instanceof Error?e.message:'Error')+')');
+    }
+    setProgress(Math.round((i+1)*100/files.length));
    }catch(e){
-    errors.push(f.name+': '+(e instanceof Error?e.message:'Error de subida'));
+    errors.push(file.name+': '+(e instanceof Error?e.message:'Error de subida'));
     if(e instanceof BookApiError&&e.status===401){onExpired();break;}
    }
   }
-  setProgress(100);setBusy(false);await refresh();
-  setNote(errors.length?'Algunas imágenes no se guardaron.':'Imágenes publicadas.');
+  await refresh();
+  setProgress(100);setBusy(false);
+  setNote(originals+' originales guardados · '+optimizedCount+' páginas ligeras listas');
   if(errors.length)setError(errors.join(' · '));
  };
  const change=async(id:string,payload:Partial<Pick<BookPage,'position'|'fit'|'published'>>)=>{
@@ -105,12 +165,22 @@ export default function AdminBook({token,onExpired,tick=0}:{token:string;onExpir
    {note?<small role="status">{note}</small>:null}
   </div>
   {error?<p className="hn-book-admin-error" role="alert">{error}</p>:null}
-  <div className="hn-book-admin-count">{loading?'Consultando páginas…':pages.length+' páginas guardadas · '+pages.filter(p=>p.published).length+' publicadas'}</div>
+  <div className="hn-book-admin-count">{loading?'Consultando páginas…':pages.length+' páginas guardadas · '+pages.filter(p=>p.published).length+' publicadas · '+pages.filter(p=>(p.optimizedSizeBytes||0)>0).length+' optimizadas'}</div>
+  {pendingPages.length&&!loading?<div className="hn-book-admin-upload">
+   <label>Fotografías originales pendientes de optimización: {pendingPages.length}</label>
+   <button type="button" disabled={busy} onClick={()=>void optimizeExisting(pendingPages)}>
+    Optimizar fotografías pendientes
+   </button>
+   <small>Se conservarán los originales y BOOK usará sus copias WebP privadas. No afecta a Familia.</small>
+  </div>:null}
   {pages.length?<div className="hn-book-admin-list">
    {pages.map((item,i)=><div className="hn-book-admin-row" key={item.id}>
     {bookMediaUrl(item.url)?<img src={bookMediaUrl(item.url)!} alt={'Vista previa página '+(i+1)} loading="lazy"/>:null}
     <div className="hn-book-admin-row-main">
      <strong>{String(i+1).padStart(2,'0')} · {item.published?'Visible para músicos':'Oculta'}</strong>
+     <small>{item.optimizedSizeBytes&&item.sizeBytes
+      ?'BOOK ligero: '+(item.optimizedSizeBytes/1024).toFixed(0)+' KB · '+Math.round((1-item.optimizedSizeBytes/item.sizeBytes)*100)+'% menos'
+      :'Original conservado · optimización pendiente'}</small>
      <div className="hn-book-admin-row-actions">
       <button type="button" disabled={busy||i===0} onClick={()=>void reorder(i,-1)} aria-label={'Subir página '+(i+1)}>↑</button>
       <button type="button" disabled={busy||i===pages.length-1} onClick={()=>void reorder(i,1)} aria-label={'Bajar página '+(i+1)}>↓</button>
