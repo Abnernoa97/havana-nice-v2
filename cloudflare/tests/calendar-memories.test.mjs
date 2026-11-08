@@ -84,7 +84,7 @@ async function setup(){
  };
  const created=await call('/api/calendar/admin/events',{method:'POST',admin:true,
   body:JSON.stringify(event),headers:{'content-type':'application/json'}});
- assert.equal(created.status,201,await created.text().catch(()=>''));
+ assert.equal(created.status,201,await created.clone().text().catch(()=>''));
  const eventId=(await created.clone().json()).event.id;
  return {db,env,objects,event,eventId,call,setFailDelete(x){failDelete=x;}};
 }
