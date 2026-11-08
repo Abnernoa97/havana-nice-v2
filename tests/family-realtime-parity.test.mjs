@@ -46,9 +46,10 @@ test('Android Familia uses the same socket, with one AppState-aware connection a
 
 test('Family Worker uses existing D1, R2 and ChatRoom bindings without an extra backend',()=>{
  const src=read('cloudflare/src/index.ts');
+ const room=read('cloudflare/src/modules/chat/chat-room.ts');
  assert.match(src,/env\.CHAT_ROOMS\.get\(env\.CHAT_ROOMS\.idFromName\(ROOM\)\)\.fetch\(request\)/);
  assert.match(src,/handleFamilyApi\(request,env,url,origin,respond,verifySession,ctx\)/);
- assert.match(src,/await verifyAdminSession\(adminTokenRequest\(adminToken\),this\.env\)/);
- assert.match(src,/await verifySession\(this\.env,memberToken\)/);
+ assert.match(room,/await verifyAdminSession\(adminTokenRequest\(adminToken\),this\.env\)/);
+ assert.match(room,/await verifySession\(this\.env,memberToken\)/);
  assert.doesNotMatch(src,/new WebSocket\(/);
 });
