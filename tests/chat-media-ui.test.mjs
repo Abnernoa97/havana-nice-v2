@@ -15,7 +15,7 @@ test('One shared photo/video original quality policy; runtime Worker controls en
 });
 
 test('installed Chat local storage keys stay compatible across cleanup releases',()=>{
- const android=read('apps/android/services/chatStorage.ts');
+ const android=read('apps/android/storage/chatStorage.ts');
  const pwa=read('apps/pwa/src/services/local.ts');
  assert.match(android,/const KEY = 'havana-v2-chat-local-v1';/);
  assert.match(pwa,/const DB = 'havana-nice-v2-lab';/);

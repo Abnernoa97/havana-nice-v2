@@ -38,7 +38,7 @@ test('restored outbox requeues all interrupted messages in creation order',()=>{
 
 test('compatibility: no new IndexedDB or Android SQLite storage keys are introduced',()=>{
  const pwa=readFileSync(new URL('../apps/pwa/src/services/local.ts',import.meta.url),'utf8');
- const android=readFileSync(new URL('../apps/android/services/chatStorage.ts',import.meta.url),'utf8');
+ const android=readFileSync(new URL('../apps/android/storage/chatStorage.ts',import.meta.url),'utf8');
  assert.match(pwa,/const KEY = 'offline-outbox-v1'/);
  assert.match(android,/const KEY = 'havana-v2-chat-local-v1'/);
  assert.match(pwa,/indexedDB\.open\(DB, 1\)/);

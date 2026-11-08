@@ -9,7 +9,7 @@ import {
   type ChatMessage, type ChatServerEvent, type ChatSession, type ChatReaction, type ChatEmoji, type ChatReadReceipt,
   CHAT_MEDIA_MAX_PER_SEND, type MemberScreen,
 } from '@havana/shared';
-import { loadNativeLocalChat, saveNativeLocalChat } from '../services/chatStorage';
+import { loadNativeLocalChat, saveNativeLocalChat } from '../storage/chatStorage';
 import type {BubbleAnchor} from '../features/chat/SwipeableBubble';
 import NativeChatTimeline from '../features/chat/NativeChatTimeline';
 import NativeChatMessageMenu from '../features/chat/NativeChatMessageMenu';

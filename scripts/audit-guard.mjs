@@ -252,7 +252,7 @@ present(pwa,/<PwaChatMessageMenu message=\{menuMessage\}/,'PWA Chat must mount i
 absent(pwaMenu,/startNamedChatSession|restoreNamedChatSession|new WebSocket|localStorage/,'PWA menu must stay presentation-only');
 // C02: retain the target of the edit after app suspension/reopening.
 const pwaLocal=read('apps/pwa/src/services/local.ts');
-const androidLocal=read('apps/android/services/chatStorage.ts');
+const androidLocal=read('apps/android/storage/chatStorage.ts');
 present(pwaLocal,/editing\?: ChatMessage \| null/,'PWA storage preserves edit context');
 present(androidLocal,/editing\?: ChatMessage \| null/,'Android storage preserves edit context');
 const sharedOffline=read('packages/shared/src/chat-offline.ts');
