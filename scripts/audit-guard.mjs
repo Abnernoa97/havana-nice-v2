@@ -10,6 +10,7 @@ assert.deepEqual(readdirSync(new URL('../',import.meta.url)).filter(x=>!allowedR
  [],'Standalone V2 repository cannot include original app files');
 const worker = read('cloudflare/src/index.ts');
 const chatRoom = read('cloudflare/src/modules/chat/chat-room.ts');
+const chatSession = read('cloudflare/src/modules/chat/chat-session.ts');
 assert.doesNotMatch(worker,/\/\/\s*@ts-nocheck\b/,'V2 Worker entrypoint must remain strictly typechecked');
 const android = read('apps/android/App.tsx');
 const pwa = read('apps/pwa/src/app/App.tsx');
@@ -69,9 +70,9 @@ for(const [value,label] of [[worker,'Worker'],[android,'Android'],[pwa,'PWA']]) 
   absent(value,/LAB_CODE_SHA256|startLabChatSession|Clave de laboratorio|accessCode/,
     label+' must not revive the old laboratory password');
 }
-present(worker,/JOIN chat_members/,'Worker must validate the enabled member on session reuse');
-present(worker,/active=1/,'Worker must deny revoked names');
-present(worker,/chat\.revoked/,'Worker must notify active sessions when access is revoked');
+present(chatSession,/JOIN chat_members/,'Worker must validate the enabled member on session reuse');
+present(chatSession,/active=1/,'Worker must deny revoked names');
+present(chatRoom,/chat\.revoked/,'Worker must notify active sessions when access is revoked');
 // Exactly one cross-origin policy for PWA and administrator.
 // A DELETE preflight is required by Chrome/Safari before the moderator can remove a message.
 present(worker,/'access-control-allow-methods': 'GET, POST, PUT, DELETE, OPTIONS'/,
