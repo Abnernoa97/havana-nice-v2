@@ -110,7 +110,7 @@ tests/ + cloudflare/tests/ + scripts/ → reglas de seguridad y CI
 - [ ] **P4 Colas persistentes:** si en el futuro quedan objetos pendientes tras fallo R2, diseñar reintento seguro desde rutas Admin sin introducir tareas de pago ni borrar activos. Ahora las colas están vacías.
 - [x] **P5 Nueva APK acumulativa:** lote explícito **0.0.14 / versionCode 14** compilado, firmado y publicado; controles de APK con JS incorporado, firma anterior y versión mayor **PASS** en [CI Android 42451609250](https://github.com/Abnernoa97/havana-nice-v2/actions/runs/42451609250). 0.0.13 preservada como PREVIOUS. **No afirmar que esté instalada**: actualización sobre el equipo y pruebas nativas quedan en P3.
 - [x] **P6a Familia Android — render de galería:** un `FlatList` vertical con tres columnas, miniaturas virtualizadas en lotes y datos memoizados; HOME elimina el `ScrollView` exterior únicamente en Familia para preservar la virtualización. El visor modal usa el video nativo existente, con fuentes R2 privadas y sin otro motor. Pendiente QA en teléfono.
-- [~] **P5b APK 0.0.15:** lote acumulativo autorizado en `main` (Chat y Familia virtualizados, BOOK diagnóstico/recuperación); publicar únicamente al superar firma, versionCode superior, JS incorporado y enlace de descarga; la 0.0.14 debe mantenerse como respaldo, sin desinstalación ni pérdida de sesión. Prueba física BOOK y fluidez pendiente.
+- [x] **P5b APK 0.0.15:** lote acumulativo firmado, compilado y publicado en V2 Release. Firma anterior compatible, `versionCode 15` > 14, JS incorporado, enlace estable verificado y 0.0.14 preservada como `PREVIOUS` ([CI Android 42516517909](https://github.com/Abnernoa97/havana-nice-v2/actions/runs/42516517909)). **Prueba física BOOK, Chat/Familia y mantenimiento de sesión pendiente; no afirmar instalada.**
 - [ ] **P6 Músicos / Multimedia:** completar y probar funcionalidad y sincronización antes de estética One UI definitiva.
 - [ ] **P7 Métricas reales:** medir tiempos de apertura, descargas por módulo, rendimientos Chat/medios y memoria Android; no inventar números de velocidad.
 
@@ -126,11 +126,11 @@ tests/ + cloudflare/tests/ + scripts/ → reglas de seguridad y CI
 - [ ] **Optimización posterior de Chat:** el controlador sigue siendo grande, pero el timeline YA usa `FlatList`; dividir el controlador restante únicamente tras comprobar desplazamiento, gestos, multimedia y memoria en Android real. No confundir organización con FPS medidos.
 - [x] **BOOK Android, diagnóstico y recuperación:** el puente JS confirma primero su montaje y luego la recepción del token con un ACK sin credenciales. Android valida el documento principal, vuelve a solicitar READY tras cargar, detecta falta de respuesta en 12 s y reconstruye la WebView si Android termina el proceso. El mismo `BookReader`/PageFlip continúa siendo el único motor. La corrección requiere nueva APK y QA físico antes de declarar resuelta la pantalla blanca.
 - [ ] **BOOK en Android:** sigue pendiente la prueba física del fallo anterior y su confirmación en la próxima APK acumulativa.
-- **Publicación:** no se genera una APK nueva por reorganizar archivos; el código está en `main`, pendiente de aprobación del flujo completo y de futuro lote nativo. Sin cambios a PWA, Worker, D1 ni R2 en este bloque.
+- **Publicación:** las reorganizaciones y optimizaciones ya se acumularon y publicaron en la APK 0.0.15 firmada; pendiente validación real de usuario. Sin cambios a PWA, Worker, D1 ni R2 en este bloque.
 
 ## 4.1. Matriz de aceptación física antes de declarar sincronización 100 %
 
-- [ ] **Instalación:** actualizar Android 0.0.13 → 0.0.14 encima, sin desinstalar, comprobar que conserva sesión y chats.
+- [ ] **Instalación:** actualizar la APK Android actualmente instalada (0.0.14, o 0.0.13 si procede) a **0.0.15** encima, sin desinstalar; comprobar sesión, historial Chat y outbox. Firmas compatibles comprobadas por CI.
 - [ ] **Calendario Admin ↔ PWA ↔ Android:** crear/editar fecha real de prueba, cambiar destinatarios y eliminar únicamente esa fecha de prueba; observar notificación instantánea y que un músico desasignado deja de verla.
 - [ ] **Repertorio:** editar catálogo y lista por fecha desde Admin; comprobar actualización en ambos clientes y que quitar fecha invalida su lista.
 - [ ] **Chat:** texto, respuestas, reacciones, borrado definitivo, cinco fotos/videos combinados y reconexión al perder/recuperar red; corroborar que nada reaparece tras borrado.
