@@ -2,7 +2,7 @@ import {lazy,Suspense,useCallback,useEffect,useRef,useState,type FormEvent} from
 import {getCalendarEvents,calendarDate,calendarEventCompleted,HAVANA_V2_DEV_API_BASE_URL,type CalendarEvent,type CalendarEventInput} from '@havana/shared';
 const AdminCalendarMemories=lazy(()=>import('./AdminCalendarMemories'));
 import './calendar-memories.css';
-import {adminMembers,adminCreateCalendarEvent,adminUpdateCalendarEvent,adminDeleteCalendarEvent,
+import {adminCreateCalendarEvent,adminUpdateCalendarEvent,adminDeleteCalendarEvent,
  type AdminMember,isAdminUnauthorized} from '../../services/admin-api';
 import {watchCalendar} from '../../services/calendar-live';
 type Props={token:string;members:AdminMember[];onExpired:()=>void};
@@ -21,7 +21,6 @@ const fields:[keyof CalendarEventInput,string][]=[
 ];
 export default function AdminCalendar({token,members,onExpired}:Props){
  const [events,setEvents]=useState<CalendarEvent[]>([]);
- const [roster,setRoster]=useState(members);
  const [form,setForm]=useState<CalendarEventInput>(empty);
  const [editing,setEditing]=useState<CalendarEvent|null>(null);
  const [draftOpen,setDraftOpen]=useState(false);
@@ -32,15 +31,16 @@ export default function AdminCalendar({token,members,onExpired}:Props){
  const requestId=useRef(0);
  const [error,setError]=useState('');
  const [notice,setNotice]=useState('');
- const active=roster.filter(p=>p.active===1);
+ // AdminChatAccess owns the single realtime member directory. A Calendar
+ // invalidation must not refetch it or create a second roster cache.
+ const active=members.filter(p=>p.active===1);
  const refresh=useCallback(async()=>{
   // Calendar notifications supersede older HTTP responses (also during rapid edits).
   const request=++requestId.current;
   try{
-   const [dates,people]=await Promise.all([
-    getCalendarEvents(token,HAVANA_V2_DEV_API_BASE_URL,true),adminMembers(token)]);
+   const dates=await getCalendarEvents(token,HAVANA_V2_DEV_API_BASE_URL,true);
    if(request!==requestId.current)return;
-   setEvents(dates);setRoster(people.members);setError('');
+   setEvents(dates);setError('');
   }catch(e){
    if(request!==requestId.current)return;
    if(isAdminUnauthorized(e))onExpired();
