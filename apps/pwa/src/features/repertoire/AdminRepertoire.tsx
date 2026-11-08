@@ -1,5 +1,5 @@
 import {useCallback,useEffect,useRef,useState,type FormEvent} from 'react';
-import {getCalendarEvents,calendarDate,HAVANA_V2_DEV_API_BASE_URL,getRepertoireSongs,
+import {getCalendarEvents,calendarDate,CalendarHttpError,HAVANA_V2_DEV_API_BASE_URL,getRepertoireSongs,
  getEventRepertoire,safeRepertoireLink,type RepertoireSong,type RepertoireSongInput,
  type RepertoireEventItem,type CalendarEvent} from '@havana/shared';
 import {adminCreateSong,adminEditSong,adminDeleteSong,adminAddEventSongs,
@@ -16,6 +16,7 @@ export default function AdminRepertoire({token,onExpired}:{token:string;onExpire
  const eventIdRef=useRef(eventId);
  eventIdRef.current=eventId;
  const itemsRequest=useRef(0);
+ const catalogRequest=useRef(0);
  const [items,setItems]=useState<RepertoireEventItem[]>([]);
  const [editing,setEditing]=useState<RepertoireSong|null>(null);
  const [form,setForm]=useState<RepertoireSongInput>(empty);
@@ -27,18 +28,22 @@ export default function AdminRepertoire({token,onExpired}:{token:string;onExpire
  const [error,setError]=useState('');
  const [notice,setNotice]=useState('');
  const [open,setOpen]=useState<'event'|'general'|null>('event');
- const capture=(e:unknown)=>{if(isAdminUnauthorized(e))onExpired();
+ const capture=(e:unknown)=>{if(isAdminUnauthorized(e)||(e instanceof CalendarHttpError&&e.status===401))onExpired();
   setError(e instanceof Error?e.message:'No se pudo guardar Repertorio.');};
  const refresh=useCallback(async()=>{
+  const request=++catalogRequest.current;
   try{
    const [catalog,dates]=await Promise.all([
     getRepertoireSongs(token,true),getCalendarEvents(token,HAVANA_V2_DEV_API_BASE_URL,true)]);
+   if(request!==catalogRequest.current)return;
    setSongs(catalog);setEvents(dates);
    setEventId(prev=>dates.some(e=>e.id===prev)?prev:(dates[0]?.id||''));
    setError('');
-  }catch(e){if(isAdminUnauthorized(e))onExpired();
-   else setError(e instanceof Error?e.message:'No se pudo cargar Repertorio.');}
-  finally{setLoading(false);}
+  }catch(e){
+   if(request!==catalogRequest.current)return;
+   if(isAdminUnauthorized(e)||(e instanceof CalendarHttpError&&e.status===401))onExpired();
+   else setError(e instanceof Error?e.message:'No se pudo cargar Repertorio.');
+  }finally{if(request===catalogRequest.current)setLoading(false);}
  },[token,onExpired]);
  const refreshItems=useCallback(async(id:string)=>{
   // Ignore stale responses when the Admin switches events while a request is in flight.
@@ -68,7 +73,7 @@ export default function AdminRepertoire({token,onExpired}:{token:string;onExpire
   const timer=window.setInterval(onResume,30000);
   window.addEventListener('online',onResume);
   document.addEventListener('visibilitychange',onResume);
-  return()=>{window.clearInterval(timer);window.removeEventListener('online',onResume);
+  return()=>{catalogRequest.current++;window.clearInterval(timer);window.removeEventListener('online',onResume);
    document.removeEventListener('visibilitychange',onResume);};
  },[refreshAll]);
  useEffect(()=>{void refreshItems(eventId);setChecked([]);},[eventId,refreshItems]);

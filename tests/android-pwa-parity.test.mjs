@@ -32,6 +32,15 @@ test('Android HOME has same mobile destinations and visual navigation as PWA, no
  assert.doesNotMatch(home,/WebView|startNamedChatSession|restoreNamedChatSession|new WebSocket/);
 });
 
+test('Admin Repertorio does not overwrite newer edits with old Calendar/catalog responses',()=>{
+ const src=read('apps/pwa/src/features/repertoire/AdminRepertoire.tsx');
+ assert.match(src,/const catalogRequest=useRef\(0\)/);
+ assert.match(src,/const request=\+\+catalogRequest\.current/);
+ assert.match(src,/if\(request!==catalogRequest\.current\)return/);
+ assert.match(src,/catalogRequest\.current\+\+;window\.clearInterval\(timer\)/);
+ assert.match(src,/e instanceof CalendarHttpError&&e.status===401/);
+ assert.match(src,/if\(request===catalogRequest\.current\)setLoading\(false\)/);
+});
 test('Android Repertorio consumes exactly the PWA member D1 catalog and assigned event contracts',()=>{
  const native=read('apps/android/features/repertoire/NativeRepertoire.tsx');
  const pwa=read('apps/pwa/src/features/repertoire/MemberRepertoire.tsx');
