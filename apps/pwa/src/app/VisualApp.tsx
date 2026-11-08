@@ -1,8 +1,10 @@
-import {useState} from 'react';
+import {lazy,Suspense,useState} from 'react';
 import {MEMBER_MODULES,type MemberScreen} from '@havana/shared';
-import CalendarAccordion from '../features/calendar/CalendarAccordion';
-import MemberRepertoire from '../features/repertoire/MemberRepertoire';
-import MemberFamily from '../features/family/MemberFamily';
+// Each module is a separate on-demand production chunk. The HOME shell and
+// existing authorized session stay mounted; no routes, APIs or data flow change.
+const CalendarAccordion=lazy(()=>import('../features/calendar/CalendarAccordion'));
+const MemberRepertoire=lazy(()=>import('../features/repertoire/MemberRepertoire'));
+const MemberFamily=lazy(()=>import('../features/family/MemberFamily'));
 
 type Props={
   displayName?:string;
@@ -79,14 +81,16 @@ export default function VisualApp({displayName,active,onNavigate,preview=false,t
             <h1>{selected?.label}</h1>
             <p className="visual-intro">{selected?.description}</p>
           </div>
-          {screen==='calendar'&&token?<CalendarAccordion token={token}/>:
-           screen==='repertoire'&&token?<MemberRepertoire token={token}/>:
-           screen==='family'&&token?<MemberFamily token={token}/>:
-           <div className="visual-empty">
-            <span className="visual-empty-icon" aria-hidden="true">◇</span>
-            <h3>Módulo en preparación</h3>
-            <p>{screen!=='chat'&&screen!=='calendar'?notes[screen]:'Vista privada: entra desde tu sesión autorizada.'}</p>
-           </div>}
+          <Suspense fallback={<div className="visual-empty" role="status" aria-live="polite">Abriendo módulo…</div>}>
+           {screen==='calendar'&&token?<CalendarAccordion token={token}/>:
+            screen==='repertoire'&&token?<MemberRepertoire token={token}/>:
+            screen==='family'&&token?<MemberFamily token={token}/>:
+            <div className="visual-empty">
+             <span className="visual-empty-icon" aria-hidden="true">◇</span>
+             <h3>Módulo en preparación</h3>
+             <p>{screen!=='chat'&&screen!=='calendar'?notes[screen]:'Vista privada: entra desde tu sesión autorizada.'}</p>
+            </div>}
+          </Suspense>
         </>}
       </main>
     </div>
