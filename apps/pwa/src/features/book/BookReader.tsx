@@ -51,7 +51,7 @@ export default function BookReader({pages,edition='book',coverTitle}:{pages:Book
  const countRef=useRef(count);
  countRef.current=count;
  const present=pages.length>0;
- const structure=useMemo(()=>pages.map(p=>p.id+':'+p.fit).join('|'),[pages]);
+ const structure=useMemo(()=>edition+'|'+(coverTitle||'')+'|'+pages.map(p=>p.id+':'+p.fit).join('|'),[pages,edition,coverTitle]);
  const [canPrev,setCanPrev]=useState(false);
  const [canNext,setCanNext]=useState(count>1);
 
