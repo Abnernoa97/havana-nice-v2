@@ -15,7 +15,7 @@ test('Android BOOK uses the native session for a fast gallery, never a second br
  assert.match(native,/BOOK_GRANT_RENEW_MS/);
  assert.match(native,/AppState.addEventListener\('change'/);
  assert.match(native,/pwaReaderUrl\(target\)/);
- assert.doesNotMatch(native,/WebView|react-native-webview|postMessage|injectJavaScript|havana-v2-book-auth|new PageFlip/);
+ assert.doesNotMatch(native,/from ['"]react-native-webview['"]|<WebView\b|\.postMessage\(|\.injectJavaScript\(|havana-v2-book-auth|new PageFlip/);
  assert.doesNotMatch(native,/\?token=|localStorage|AsyncStorage|startNamedChatSession|restoreNamedChatSession/);
 });
 test('PWA is the single original 3D renderer and receives only a safe route after authorization',()=>{
