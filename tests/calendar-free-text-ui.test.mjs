@@ -13,9 +13,24 @@ const compiled=ts.transpileModule(shared,{
  compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}
 });
 const exported={};
-runInNewContext(compiled.outputText,{exports:exported,URL,Date,Intl,fetch,Error,Number,String,RegExp});
+// Shared Calendar now imports the same canonical API base as other modules.
+// Provide that export to the isolated Node VM (never a second runtime URL).
+runInNewContext(compiled.outputText,{exports:exported,URL,Date,Intl,fetch,Error,Number,String,RegExp,
+ require(id){
+  assert.equal(id,'./api-base');
+  return {HAVANA_V2_DEV_API_BASE_URL:'https://havana-nice-v2-dev.soloaplicaciones97.workers.dev'};
+ }});
 const {calendarDate,safeCalendarMapUrl}=exported;
 
+test('completed-event stamp uses the venue date only after local midnight and never on cancelled dates',()=>{
+ const {calendarEventCompleted}=exported;
+ const input={dateSort:'2026-11-07',timeZone:'America/Mexico_City',status:'confirmed'};
+ assert.equal(calendarEventCompleted(input,new Date('2026-11-08T02:00:00Z')),false,
+  'Nov 7 in Mexico City must not be stamped before local midnight');
+ assert.equal(calendarEventCompleted(input,new Date('2026-11-08T07:00:00Z')),true);
+ assert.equal(calendarEventCompleted({...input,status:'cancelled'},new Date('2026-11-08T07:00:00Z')),false);
+ assert.equal(calendarEventCompleted({...input,dateSort:null},new Date('2026-11-08T07:00:00Z')),false);
+});
 test('free-form event dates are shown exactly as entered by the Administrator',()=>{
  for(const value of ['14dic26','14 de dic. 2026','14/11/2026','Por definir','#A · 21:30','Mayo? 2027','😎 viernes']){
   assert.equal(calendarDate(value),value,'date '+value);
