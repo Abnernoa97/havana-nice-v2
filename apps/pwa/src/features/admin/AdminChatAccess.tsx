@@ -1,4 +1,4 @@
-import {lazy,Suspense,useCallback,useEffect,useState,type FormEvent} from 'react';
+import {lazy,Suspense,useCallback,useEffect,useRef,useState,type FormEvent} from 'react';
 // Keep the authenticated Admin controller alive while feature panes are
 // loaded independently on demand. Access/session state is never restarted.
 const AdminChatGeneral=lazy(()=>import('../chat/AdminChatGeneral'));
@@ -21,6 +21,7 @@ export default function AdminChatAccess({section}:{section:Section}){
  const [error,setError]=useState('');
  const [notice,setNotice]=useState('');
  const [members,setMembers]=useState<AdminMember[]>([]);
+ const rosterRequest=useRef(0); // latest D1 roster fetch wins, not the slowest response
  const [loaded,setLoaded]=useState(false);
  const [expanded,setExpanded]=useState('');
  const [history,setHistory]=useState<Record<string,AdminMemberHistory>>({});
@@ -39,7 +40,7 @@ export default function AdminChatAccess({section}:{section:Section}){
  const [releaseBusy,setReleaseBusy]=useState('');
  const [realtime,setRealtime]=useState<'waiting'|'connected'|'reconnecting'>('waiting');
  const [chatEvent,setChatEvent]=useState<AdminChatStreamEvent|null>(null);
- const onChatExpired=useCallback(()=>{setSession(null);setError('Tu sesión administrativa expiró.');},[]);
+ const onChatExpired=useCallback(()=>{rosterRequest.current++;setSession(null);setError('Tu sesión administrativa expiró.');},[]);
  // Prevent frontend updates from interrupting authorized admin sessions.
  // The marker contains no credential; actual tokens stay in React memory only.
  useEffect(()=>{
@@ -71,9 +72,15 @@ export default function AdminChatAccess({section}:{section:Section}){
    }
  },[]);
  const refreshMembers=useCallback(async(token:string)=>{
-   try{const data=await adminMembers(token);setMembers(data.members);setLoaded(true);}
-   catch(e){
-     if(isAdminUnauthorized(e)){setSession(null);setError('Tu sesión de Administrador expiró.');return;}
+   // WebSocket, foreground and manual refresh can overlap. Discard stale responses.
+   const request=++rosterRequest.current;
+   try{
+     const data=await adminMembers(token);
+     if(request!==rosterRequest.current)return;
+     setMembers(data.members);setLoaded(true);
+   }catch(e){
+     if(request!==rosterRequest.current)return;
+     if(isAdminUnauthorized(e)){rosterRequest.current++;setSession(null);setError('Tu sesión de Administrador expiró.');return;}
      setError('No se pudo actualizar la lista. Comprueba tu conexión; conservamos la sesión y los datos cargados.');
    }
  },[]);
@@ -183,6 +190,7 @@ export default function AdminChatAccess({section}:{section:Section}){
  async function logout(){
    if(!session)return;
    const token=session.token;
+   rosterRequest.current++; // a late GET must not restore a logged-out roster
    setSession(null);setMembers([]);setLoaded(false);setError('');setNotice('');setName('');setOtherSessions(null);
    setExpanded('');setHistory({});setHistoryErrors({});setImpact({});setImpactErrors({});setDuplicateAlerts([]);setCleanupRetry(null);
    try{await adminLogout(token);}catch{/* In-memory session is discarded even when offline. */}
@@ -247,7 +255,8 @@ export default function AdminChatAccess({section}:{section:Section}){
      );
      if(!approved)return;
      const result=await adminRemoveMember(session.token,person.actor_id,person.display_name);
-     // Only after the server confirms deletion, update local roster.
+     // Confirmed D1 deletion outranks any already-running roster GET.
+     rosterRequest.current++;
      setMembers(previous=>previous.filter(item=>item.actor_id!==person.actor_id));
      setHistory(previous=>{const next={...previous};delete next[person.actor_id];return next;});
      setImpact(previous=>{const next={...previous};delete next[person.actor_id];return next;});
@@ -313,6 +322,7 @@ export default function AdminChatAccess({section}:{section:Section}){
    setReleaseBusy(person.actor_id);setError('');setNotice('');
    try{
      const result=await adminReleaseInstallation(session.token,person.actor_id,person.display_name);
+     rosterRequest.current++;
      setMembers(previous=>previous.map(m=>m.actor_id===person.actor_id?{...m,installation_bound:0,session_count:0}:m));
      setNotice('Dispositivo de '+person.display_name+' liberado. Credenciales cerradas: '+result.revokedSessions+'.');
      void refreshMembers(session.token);
@@ -324,6 +334,7 @@ export default function AdminChatAccess({section}:{section:Section}){
    setBusy(true);setError('');setNotice('');
    try{
      const result=await adminCreateMember(session.token,name.trim());
+     rosterRequest.current++;
      // Confirmed by D1: keep the new member visible if a follow-up GET fails.
      setMembers(previous=>previous.some(item=>item.actor_id===result.member.actor_id)
        ?previous:[...previous,result.member].sort((a,b)=>a.display_name.localeCompare(b.display_name,'es')));

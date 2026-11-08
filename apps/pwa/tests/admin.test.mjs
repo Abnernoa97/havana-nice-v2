@@ -8,6 +8,16 @@ const panel=read('../src/features/admin/AdminChatAccess.tsx')+'\n'+directory;
 const api=read('../src/services/admin-api.ts');
 const backend=read('../../../cloudflare/src/index.ts');
 
+test('Admin musician roster ignores stale fetches after deletes, additions, or logout',()=>{
+ const access=read('../src/features/admin/AdminChatAccess.tsx');
+ assert.match(access,/const rosterRequest=useRef\(0\)/);
+ assert.match(access,/const request=\+\+rosterRequest\.current/);
+ assert.match(access,/if\(request!==rosterRequest\.current\)return/);
+ assert.match(access,/const result=await adminRemoveMember\(session\.token,person\.actor_id,person\.display_name\);[\s\S]*?rosterRequest\.current\+\+;[\s\S]*?setMembers\(previous=>previous\.filter/);
+ assert.match(access,/const result=await adminCreateMember\(session\.token,name\.trim\(\)\);\s*rosterRequest\.current\+\+;/);
+ assert.match(access,/const token=session\.token;\s*rosterRequest\.current\+\+;/);
+ assert.doesNotMatch(access,/setInterval\(/);
+});
 test('single installable Administrator PWA, separate from Chat',()=>{
  assert.match(read('../admin.html'),/id="admin-root"/);
  assert.match(read('../vite.config.ts'),/admin\.html/);
