@@ -1,5 +1,7 @@
 import {useCallback,useEffect,useRef,useState,type FormEvent} from 'react';
-import {getCalendarEvents,calendarDate,HAVANA_V2_DEV_API_BASE_URL,type CalendarEvent,type CalendarEventInput} from '@havana/shared';
+import {getCalendarEvents,calendarDate,calendarEventCompleted,HAVANA_V2_DEV_API_BASE_URL,type CalendarEvent,type CalendarEventInput} from '@havana/shared';
+import AdminCalendarMemories from './AdminCalendarMemories';
+import './calendar-memories.css';
 import {adminMembers,adminCreateCalendarEvent,adminUpdateCalendarEvent,adminDeleteCalendarEvent,
  type AdminMember,isAdminUnauthorized} from '../../services/admin-api';
 import {watchCalendar} from '../../services/calendar-live';
@@ -26,6 +28,7 @@ export default function AdminCalendar({token,members,onExpired}:Props){
  const [expanded,setExpanded]=useState<string|null>(null);
  const [busy,setBusy]=useState(false);
  const [loading,setLoading]=useState(true);
+ const [revision,setRevision]=useState(0);
  const requestId=useRef(0);
  const [error,setError]=useState('');
  const [notice,setNotice]=useState('');
@@ -37,7 +40,7 @@ export default function AdminCalendar({token,members,onExpired}:Props){
    const [dates,people]=await Promise.all([
     getCalendarEvents(token,HAVANA_V2_DEV_API_BASE_URL,true),adminMembers(token)]);
    if(request!==requestId.current)return;
-   setEvents(dates);setRoster(people.members);setError('');
+   setEvents(dates);setRoster(people.members);setRevision(v=>v+1);setError('');
   }catch(e){
    if(request!==requestId.current)return;
    if(isAdminUnauthorized(e))onExpired();
@@ -58,7 +61,7 @@ export default function AdminCalendar({token,members,onExpired}:Props){
   setEditing(null);setDraftOpen(true);setError('');setNotice('');
  }
  function edit(event:CalendarEvent){
-  const {id,version,updatedAt,...content}=event;
+  const {id,version,updatedAt,dateSort,memoryCount,...content}=event;
   setForm({...content,recipientIds:event.recipientIds||[]});
   setEditing(event);setDraftOpen(true);setError('');setNotice('');
  }
@@ -126,11 +129,13 @@ export default function AdminCalendar({token,members,onExpired}:Props){
   </form>}
   <div className="a-cal-list" aria-label="Todas las fechas">
    {loading?<p>Cargando fechas…</p>:!events.length?<p>No hay eventos en Calendario V2.</p>:
-    events.map(item=><article key={item.id} className="a-cal-event">
+    events.map(item=>{const past=calendarEventCompleted(item);return <article key={item.id} className={'a-cal-event'+(past?' a-cal-completed':'')}>
      <button type="button" className="a-cal-summary"
       aria-expanded={expanded===item.id} onClick={()=>setExpanded(v=>v===item.id?null:item.id)}>
-      <span><small>{calendarDate(item.date)}</small><strong>{item.title}</strong>
-       <small>{item.venue||item.city||'Lugar por definir'} · {item.recipientIds?.length||0} músico(s)</small></span>
+      <span className="a-cal-summary-main"><small>{calendarDate(item.date)}</small><strong>{item.title}</strong>
+       <small>{item.venue||item.city||'Lugar por definir'} · {item.recipientIds?.length||0} músico(s)</small>
+       {past?<span className="hn-cal-stamp a-cal-stamp">EVENTO REALIZADO</span>:null}
+      </span>
       <b aria-hidden="true">{expanded===item.id?'−':'+'}</b>
      </button>
      {expanded===item.id&&<div className="a-cal-event-body">
@@ -140,8 +145,9 @@ export default function AdminCalendar({token,members,onExpired}:Props){
       {item.statusText&&<p>Estado: {item.statusText}</p>}
       <div className="a-cal-actions"><button type="button" onClick={()=>edit(item)}>Editar</button>
        <button type="button" className="a-cal-danger" onClick={()=>void remove(item)}>Borrar fecha</button></div>
+      <AdminCalendarMemories token={token} eventId={item.id} title={item.title} revision={revision}/>
      </div>}
-    </article>)}
+    </article>})}
   </div>
  </section>;
 }
