@@ -57,7 +57,8 @@ test('A02/A03: Calendar never owns Chat engine, messages or device binding',()=>
   assert.doesNotMatch(handler,/\b(?:INSERT\s+INTO|UPDATE|DELETE\s+FROM)\s+chat_/i);
   const worker=read('cloudflare/src/index.ts');
   assert.match(worker,/handleCalendarApi\(request,env,url,origin,respond,verifySession\)/);
-  assert.match(worker,/export class ChatRoom/);
+  assert.match(worker,/export \\{ChatRoom\\} from '\\.\\/modules\\/chat\\/chat-room\\.js'/);
+  assert.match(read('cloudflare/src/modules/chat/chat-room.ts'),/export class ChatRoom/);
 });
 
 test('A03: Calendar UIs use shared read contract; Admin alone has writes',()=>{
@@ -248,7 +249,7 @@ test('M10 R2: only one named private V2 media bucket binding, no Chat/Havana Clo
  assert.doesNotMatch(calendarTransport,/chat_messages|chat_reactions|\.r2\.dev|localStorage/);
  assert.match(calendarTransport,/calendar\.invalidate/);
  const worker=read('cloudflare/src/index.ts');
- assert.match(worker,/MEDIA_BUCKET\?: R2Bucket/);
+ assert.match(read('cloudflare/src/shared/worker-types.ts'),/MEDIA_BUCKET\\?:R2Bucket/);
  assert.doesNotMatch(worker,/havana-nice-cloud|\.r2\.dev|publicBucketUrl|S3_ACCESS_KEY/);
  // R2 was enabled, but media upload routes are intentionally a separate authorization milestone.
  const family=read('cloudflare/src/modules/family/family.js');
