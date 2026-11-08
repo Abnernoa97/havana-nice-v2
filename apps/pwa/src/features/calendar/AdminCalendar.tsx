@@ -40,7 +40,7 @@ export default function AdminCalendar({token,members,onExpired}:Props){
    const [dates,people]=await Promise.all([
     getCalendarEvents(token,HAVANA_V2_DEV_API_BASE_URL,true),adminMembers(token)]);
    if(request!==requestId.current)return;
-   setEvents(dates);setRoster(people.members);setRevision(v=>v+1);setError('');
+   setEvents(dates);setRoster(people.members);setError('');
   }catch(e){
    if(request!==requestId.current)return;
    if(isAdminUnauthorized(e))onExpired();
@@ -48,7 +48,7 @@ export default function AdminCalendar({token,members,onExpired}:Props){
   }finally{if(request===requestId.current)setLoading(false);}
  },[token,onExpired]);
  useEffect(()=>{
-  const update=()=>{if(!document.hidden&&navigator.onLine)void refresh();};
+  const update=(reason?:'fallback')=>{if(!document.hidden&&navigator.onLine){if(reason!=='fallback')setRevision(n=>n+1);void refresh();}};
   update();
   const stop=watchCalendar(token,true,update);
   return()=>{stop();requestId.current++;};
