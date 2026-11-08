@@ -234,6 +234,10 @@ export type {FamilyRealtimeEvent} from './family-realtime';
 export {getChatMenuState,getChatMessagePermissions,isWithinChatEditWindow,isWithinChatDeleteWindow,CHAT_EDIT_WINDOW_MS,CHAT_DELETE_WINDOW_MS} from './chat-menu';
 export type {ChatMenuAnchor,ChatMenuMessage,ChatMenuViewport} from './chat-menu';
 
+// Shared progress and partial-failure semantics for original-quality PWA/native Chat uploads.
+export {uploadChatMediaBatch} from './chat-media-batch';
+export type {ChatMediaBatchOptions} from './chat-media-batch';
+
 // Shared ordered offline outbox and ACK policy for both Chat clients.
 export {selectNextQueuedChatMessage,setOutgoingChatStatus,projectOutgoingChatStatus,CHAT_ACK_TIMEOUT_MS} from './chat-outbox';
 export type {ChatOutboxState} from './chat-outbox';
