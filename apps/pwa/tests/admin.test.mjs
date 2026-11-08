@@ -101,7 +101,7 @@ test('real-time admin list invalidates on membership changes',()=>{
  assert.match(panel,/document\.addEventListener\('visibilitychange',resume\)/);
 });
 test('musician PWA uses server allowlist instead of device experiments',()=>{
- const pwa=read('../src/app/App.tsx'),android=read('../../android/App.tsx');
+ const pwa=read('../src/app/App.tsx'),android=read('../../android/app/NativeApp.tsx');
  assert.match(pwa,/startNamedChatSession\(name\.trim\(\)\)/);
  assert.match(pwa,/Introduce el nombre que el Administrador creó y autorizó/);
  assert.match(android,/startNamedChatSession\(name\.trim\(\)\)/);
@@ -110,7 +110,7 @@ test('musician PWA uses server allowlist instead of device experiments',()=>{
  assert.match(backend,/replace\(\/\\s\+\/g, ' '\)/);
 });
 test('original musician offline storage and Chat remain intact',()=>{
- const pwa=read('../src/app/App.tsx'),android=read('../../android/App.tsx');
+ const pwa=read('../src/app/App.tsx'),android=read('../../android/app/NativeApp.tsx');
  assert.match(pwa,/loadLocalChat\(\)/);
  assert.match(read('../src/services/local.ts'),/offline-outbox-v1/);
  assert.match(read('../../android/services/chatStorage.ts'),/havana-v2-chat-local-v1/);
