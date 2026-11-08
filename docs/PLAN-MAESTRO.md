@@ -112,6 +112,8 @@ tests/ + cloudflare/tests/ + scripts/ → reglas de seguridad y CI
 - [ ] **P6 Músicos / Multimedia:** completar y probar funcionalidad y sincronización antes de estética One UI definitiva.
 - [ ] **P7 Métricas reales:** medir tiempos de apertura, descargas por módulo, rendimientos Chat/medios y memoria Android; no inventar números de velocidad.
 
+- [x] **BOOK Android: prevención de pantalla blanca (08/11):** `book.html` ahora presenta un estado de carga visible antes del JavaScript; el puente `native-book-main.tsx` inicia sesión privada y render antes de cargar bajo demanda el mismo `BookReader`/PageFlip, y captura errores de carga con reintento visible. **Cambio exclusivo PWA de entrada BOOK**, sin tocar React Native, archivos, Calendar ni D1/R2. Su efecto en el Android del usuario necesita prueba real; no declarado resuelto hasta entonces.
+
 ## 4.1. Matriz de aceptación física antes de declarar sincronización 100 %
 
 - [ ] **Instalación:** actualizar Android 0.0.13 → 0.0.14 encima, sin desinstalar, comprobar que conserva sesión y chats.

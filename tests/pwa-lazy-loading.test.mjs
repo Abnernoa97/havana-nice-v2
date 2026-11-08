@@ -83,6 +83,25 @@ test('Admin access remains mounted while Chat, Calendar, Repertoire and Family d
   assert.equal(dynamicReachable(entry,key),true,path+' no longer reachable from Admin');
  }
 });
+test('Native BOOK bootstraps the bridge before dynamically loading the existing 3D reader',()=>{
+ const sourceText=source('apps/pwa/src/app/native-book-main.tsx');
+ const page=source('apps/pwa/book.html');
+ assert.match(sourceText,/const MemberBook=lazy\(\(\)=>import\('\.\.\/features\/book\/MemberBook'\)\)/);
+ assert.match(sourceText,/const CalendarMemories=lazy\(\(\)=>import\('\.\.\/features\/calendar\/CalendarMemories'\)\)/);
+ assert.match(sourceText,/havana-v2-book-ready/);
+ assert.match(sourceText,/<ReaderBoundary key=\{/);
+ assert.match(sourceText,/<Suspense fallback=\{/);
+ assert.doesNotMatch(sourceText,/^import (?:MemberBook|CalendarMemories) from /m);
+ assert.match(page,/id="book-root"/);
+ assert.match(page,/Abriendo BOOK HAVANA NICE/);
+ assert.doesNotMatch(sourceText,/localStorage|AsyncStorage|startNamedChatSession|restoreNamedChatSession/);
+ const [entry]=nodeFor('book.html');
+ const staticGraph=staticClosure(entry);
+ const reader=nodeFor('src/features/book/BookReader.tsx');
+ assert.equal(staticGraph.has(reader[0]),false,
+  'Do not evaluate 3D PageFlip before Android WebView has shown the bridge and accepted auth');
+ assert.equal(dynamicReachable(entry,reader[0]),true);
+});
 test('No extra session owner, HTML page controller, duplicate Worker or new React root was introduced',()=>{
  const memberShell=source('apps/pwa/src/app/App.tsx');
  const visual=source('apps/pwa/src/app/VisualApp.tsx');

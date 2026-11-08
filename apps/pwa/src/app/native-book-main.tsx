@@ -1,11 +1,28 @@
-import React,{useEffect,useState} from 'react';
+import React,{lazy,Suspense,useEffect,useState} from 'react';
 import {createRoot} from 'react-dom/client';
-import MemberBook from '../features/book/MemberBook';
-import CalendarMemories from '../features/calendar/CalendarMemories';
+// Boot the lightweight, authenticated bridge before downloading the 3D engine.
+const MemberBook=lazy(()=>import('../features/book/MemberBook'));
+const CalendarMemories=lazy(()=>import('../features/calendar/CalendarMemories'));
 import '../features/book/book.css';
 
 type RNWindow=Window&{ReactNativeWebView?:{postMessage:(message:string)=>void}};
 const TOK=/^[A-Za-z0-9_-]{40,100}$/;
+class ReaderBoundary extends React.Component<
+ {children:React.ReactNode},{failed:boolean}
+>{
+ state={failed:false};
+ static getDerivedStateFromError(){return {failed:true};}
+ render(){
+  if(this.state.failed)return <div className="hn-book-empty" role="alert">
+   No se pudo iniciar el lector 3D en este dispositivo.
+   <button type="button" onClick={()=>window.location.reload()}
+    style={{display:'block',margin:'16px auto',padding:'11px 24px'}}>
+    Reintentar BOOK
+   </button>
+  </div>;
+  return this.props.children;
+ }
+}
 function PrivateNativeReader(){
  const [token,setToken]=useState('');
  const [tick,setTick]=useState(0);
@@ -37,7 +54,11 @@ function PrivateNativeReader(){
   };
  },[]);
  return <div className="hn-native-book-shell">
-  {token?(memory?<CalendarMemories token={token} eventId={memory.eventId} title={memory.title} revision={tick}/>:<MemberBook token={token} tick={tick}/>):
+  {token?<ReaderBoundary key={memory?.eventId||'book'}>
+    <Suspense fallback={<div className="hn-book-empty" role="status">Preparando el lector 3D…</div>}>
+     {memory?<CalendarMemories token={token} eventId={memory.eventId} title={memory.title} revision={tick}/>:<MemberBook token={token} tick={tick}/>}
+    </Suspense>
+   </ReaderBoundary>:
    <div className="hn-book-empty">Abre la revista desde la aplicación autorizada de HAVANA NICE.</div>}
  </div>;
 }
