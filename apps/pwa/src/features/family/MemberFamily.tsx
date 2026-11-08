@@ -1,8 +1,8 @@
-import {useCallback,useEffect,useRef,useState} from 'react';
+import {lazy,Suspense,useCallback,useEffect,useRef,useState} from 'react';
 import {familyAlbumCount,getFamilyDirectory,getFamilyAlbumMedia,type FamilyDirectory,type FamilyAlbum,type FamilyMediaItem} from '@havana/shared';
 import FamilyMediaGallery,{familyPrivateMediaUrl} from './FamilyMediaGallery';
 import {useFamilyLive} from '../../services/use-family-live';
-import MemberBook from '../book/MemberBook';
+const MemberBook=lazy(()=>import('../book/MemberBook'));
 
 function FamilyAlbumCard({album,onOpen}:{album:FamilyAlbum;onOpen:()=>void}){
  const cover=album.mediaReady?familyPrivateMediaUrl(album.coverUrl):null;
@@ -68,7 +68,7 @@ export default function MemberFamily({token}:{token:string}){
   </div>
   {error&&<p role="alert" className="hn-cal-error">{error}</p>}
   {loading?<p>Cargando integrantes autorizados…</p>:bookOpen?<>
-   <MemberBook token={token} tick={mediaTick}/>
+   <Suspense fallback={<p className="hn-family-empty" role="status">Abriendo BOOK…</p>}><MemberBook token={token} tick={mediaTick}/></Suspense>
   </>:album?<>
    <div className="hn-family-cover">
     {cover?<img className="hn-family-cover-photo" src={cover} alt="" decoding="async"/>:
