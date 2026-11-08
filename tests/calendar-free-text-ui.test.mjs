@@ -121,7 +121,7 @@ test('Calendar uses one private push protocol in native Android and PWA, without
  assert.match(realtime,/window\.removeEventListener\('pageshow',pageShow\)/);
  assert.match(admin,/const requestId=useRef\(0\)/);
  assert.match(admin,/const request=\+\+requestId\.current/);
- assert.match(admin,/if\(request!==requestId\.current\)return/);
+ assert.match(admin,/if\(request!==requestId\.current\|\|controller\.signal\.aborted\)return/);
  assert.match(admin,/requestId\.current\+\+/);
  assert.match(realtime,/session\./);
  assert.match(realtime,/admin\./);
