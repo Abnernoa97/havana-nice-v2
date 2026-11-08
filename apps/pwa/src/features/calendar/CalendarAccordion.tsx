@@ -18,7 +18,7 @@ export default function CalendarAccordion({token}:{token:string}){
   pending.current=controller;
   try{
    const dates=await getCalendarEvents(token,HAVANA_V2_DEV_API_BASE_URL,false,controller.signal);
-   if(!controller.signal.aborted){setEvents(dates);setRevision(n=>n+1);setError('');}
+   if(!controller.signal.aborted){setEvents(dates);setError('');}
   }catch(e){
    if(!controller.signal.aborted)
     setError(e instanceof Error?e.message:'No se pudo cargar Calendario.');
@@ -30,7 +30,7 @@ export default function CalendarAccordion({token}:{token:string}){
   }
  },[token]);
  useEffect(()=>{
-  const update=()=>{if(!document.hidden&&navigator.onLine)void refresh();};
+  const update=(reason?:'fallback')=>{if(!document.hidden&&navigator.onLine){if(reason!=='fallback')setRevision(n=>n+1);void refresh();}};
   update();
   const stop=watchCalendar(token,false,update);
   return()=>{stop();pending.current?.abort();pending.current=null;};
