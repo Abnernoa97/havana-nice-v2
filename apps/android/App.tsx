@@ -5,7 +5,7 @@ import {
 } from 'react-native';
 import {
   HAVANA_V2_DEV_API_BASE_URL, fetchBackendHealth, getChatMediaAvailability, getChatSnapshot, getOlderChatMessages, searchChatMessages, getChatMenuState, getChatMessagePermissions, isWithinChatEditWindow, selectNextQueuedChatMessage, setOutgoingChatStatus, projectOutgoingChatStatus, CHAT_ACK_TIMEOUT_MS, newClientMessageId, uploadChatMediaBatch,
-  reconcileChatMessages, reconcileReactions, reconcileUpdatedMessage, reconcileDeletedMessage, reconcileChatSnapshot, startNamedChatSession, restoreNamedChatSession, chatSessionExpired, chatReconnectDelay, reconcileChatReadReceipt, removeChatReactionsForMessage, withoutRemovedChatMessages, captureChatOfflineSnapshot, restoreChatOfflineOutbox,
+  reconcileChatMessages, reconcileReactions, reconcileUpdatedMessage, reconcileDeletedMessage, reconcileChatSnapshot, startNamedChatSession, restoreNamedChatSession, chatSessionExpired, chatReconnectDelay, reconcileChatReadReceipt, removeChatReactionsForMessage, withoutRemovedChatMessages, ChatHistoryRequestGate, oldestConfirmedChatSeq, mergeOlderChatReactions, captureChatOfflineSnapshot, restoreChatOfflineOutbox,
   type ChatMessage, type ChatServerEvent, type ChatSession, type ChatReaction, type ChatEmoji, type ChatReadReceipt,
   CHAT_MEDIA_MAX_PER_SEND, type MemberScreen,
 } from '@havana/shared';
@@ -56,6 +56,7 @@ export default function App() {
   const [menuAnchor,setMenuAnchor] = useState<BubbleAnchor | null>(null);
   const socket = useRef<WebSocket | null>(null);
   const removedSeq = useRef<Set<number>>(new Set());
+  const historyRequests=useRef(new ChatHistoryRequestGate());
   const scroll = useRef<React.ElementRef<typeof ScrollView> | null>(null);
   useEffect(()=>{
     if(!session){setMediaReady(false);return;}
@@ -128,12 +129,15 @@ export default function App() {
   }
 
   function toggleSearch() {
+    historyRequests.current.cancelSearch();setSearching(false);
     setSearchOpen(open=>!open);
     setSearchText('');
     setResults(null);
   }
 
   function revokeCurrentAccess() {
+    historyRequests.current.reset();
+    setLoadingOlder(false);setSearching(false);setResults(null);
     setActiveScreen('home');
     const previous = socket.current;
     socket.current = null;
@@ -167,29 +171,43 @@ export default function App() {
     }
   }
   async function loadOlder() {
-    if(!session || loadingOlder || !hasMore) return;
-    const seqs=messages.filter(m=>m.seq>0).map(m=>m.seq);
-    if(!seqs.length)return;
+    if(!session || loadingOlder || !hasMore)return;
+    const oldest=oldestConfirmedChatSeq(messages);
+    if(oldest===null)return;
+    const request=historyRequests.current.beginOlder();
+    if(request===null)return;
     setLoadingOlder(true);
     autoScroll.current=false;
-    try {
-      const data=await getOlderChatMessages(session,Math.min(...seqs));
+    try{
+      const data=await getOlderChatMessages(session,oldest);
+      if(!historyRequests.current.isOlderCurrent(request)||activeSession.current?.token!==session.token)return;
       setHasMore(data.hasMore);
       setMessages(before=>reconcileChatMessages(before,withoutRemovedChatMessages(data.messages,removedSeq.current)));
-      setReactions(before=>[...data.reactions.filter(x=>!before.some(y=>y.messageSeq===x.messageSeq&&y.actorId===x.actorId&&y.emoji===x.emoji)),...before]);
-    } catch(e){setError(e instanceof Error?e.message:'No se pudo cargar el historial');}
-    finally {setLoadingOlder(false);}
+      setReactions(before=>mergeOlderChatReactions(before,data.reactions,removedSeq.current));
+    }catch(e){
+      if(historyRequests.current.isOlderCurrent(request)&&activeSession.current?.token===session.token)
+        setError(e instanceof Error?e.message:'No se pudo cargar el historial');
+    }finally{
+      if(historyRequests.current.finishOlder(request))setLoadingOlder(false);
+    }
   }
   async function searchHistory(){
-    if(!session||searchText.trim().length<2){setResults(null);return;}
+    const query=searchText.trim();
+    if(!session||query.length<2){
+      historyRequests.current.cancelSearch();setResults(null);setSearching(false);return;
+    }
+    const request=historyRequests.current.beginSearch();
     setSearching(true);
     try{
-      const found=await searchChatMessages(session,searchText.trim());
-      if(activeSession.current?.token===session.token)
+      const found=await searchChatMessages(session,query);
+      if(historyRequests.current.isSearchCurrent(request)&&activeSession.current?.token===session.token)
         setResults(withoutRemovedChatMessages(found,removedSeq.current));
+    }catch(e){
+      if(historyRequests.current.isSearchCurrent(request)&&activeSession.current?.token===session.token)
+        setError(e instanceof Error?e.message:'No se pudo buscar');
+    }finally{
+      if(historyRequests.current.isSearchCurrent(request))setSearching(false);
     }
-    catch(e){setError(e instanceof Error?e.message:'No se pudo buscar');}
-    finally{setSearching(false);}
   }
 
   function resetEditTimeout(){
@@ -581,6 +599,7 @@ export default function App() {
 
 
   function acceptApprovedSession(next: ChatSession) {
+    historyRequests.current.reset();setLoadingOlder(false);setSearching(false);
     editingSnapshot.current=null;
     beforeEdit.current=null;
     setEditing(null);
@@ -746,13 +765,13 @@ export default function App() {
           <>
             {searchOpen ? <View style={styles.searchRow}>
               <TextInput accessibilityLabel="Buscar mensajes" style={styles.searchInput}
-                value={searchText} onChangeText={value=>{setSearchText(value);if(!value.trim())setResults(null);}}
+                value={searchText} onChangeText={value=>{historyRequests.current.cancelSearch();setSearchText(value);setResults(null);setSearching(false);}}
                 placeholder="Buscar mensajes…" onSubmitEditing={()=>void searchHistory()} returnKeyType="search"
                 placeholderTextColor="#8a8174" />
               <Pressable onPress={()=>void searchHistory()} disabled={searching||searchText.trim().length<2}>
                 <Text style={styles.searchAction}>{searching?'…':'Buscar'}</Text>
               </Pressable>
-              {results!==null ? <Pressable onPress={()=>{setResults(null);setSearchText('');}}>
+              {results!==null ? <Pressable onPress={()=>{historyRequests.current.cancelSearch();setResults(null);setSearchText('');setSearching(false);}}>
                 <Text style={styles.searchAction}>Cerrar</Text>
               </Pressable> : null}
             </View> : null}

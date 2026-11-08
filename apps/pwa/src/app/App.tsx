@@ -1,7 +1,7 @@
 import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import {
   fetchBackendHealth, getChatMediaAvailability, getChatSnapshot, getOlderChatMessages, searchChatMessages, getChatMenuState, getChatMessagePermissions, isWithinChatEditWindow, selectNextQueuedChatMessage, setOutgoingChatStatus, projectOutgoingChatStatus, CHAT_ACK_TIMEOUT_MS, newClientMessageId, uploadChatMediaBatch,
-  openChatSocket, reconcileChatMessages, startNamedChatSession, restoreNamedChatSession, chatSessionExpired, chatReconnectDelay, reconcileChatReadReceipt, removeChatReactionsForMessage, withoutRemovedChatMessages, captureChatOfflineSnapshot, restoreChatOfflineOutbox,
+  openChatSocket, reconcileChatMessages, startNamedChatSession, restoreNamedChatSession, chatSessionExpired, chatReconnectDelay, reconcileChatReadReceipt, removeChatReactionsForMessage, withoutRemovedChatMessages, ChatHistoryRequestGate, oldestConfirmedChatSeq, mergeOlderChatReactions, captureChatOfflineSnapshot, restoreChatOfflineOutbox,
   type BackendHealth, type ChatMessage, type ChatServerEvent, type ChatSession,
   CHAT_MEDIA_MAX_PER_SEND, HAVANA_V2_DEV_API_BASE_URL,
   reconcileReactions, reconcileUpdatedMessage, reconcileDeletedMessage, reconcileChatSnapshot, type ChatReaction, type ChatEmoji, type ChatReadReceipt, type MemberScreen,
@@ -54,6 +54,7 @@ export default function App() {
   const [menuAnchor,setMenuAnchor] = useState<MessageAnchor|null>(null);
   const socket = useRef<WebSocket | null>(null);
   const removedSeq = useRef<Set<number>>(new Set());
+  const historyRequests=useRef(new ChatHistoryRequestGate());
   const activeSession = useRef<ChatSession | null>(null);
   const outbox = useRef<Map<string, ChatMessage>>(new Map());
   const ackTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
@@ -114,6 +115,8 @@ export default function App() {
   const refreshLatest = useRef<() => void>(() => {});
 
   function revokeCurrentAccess() {
+    historyRequests.current.reset();
+    setLoadingOlder(false);setSearching(false);setSearchResults(null);
     setActiveScreen('home');
     const previous = socket.current;
     socket.current = null;
@@ -146,29 +149,43 @@ export default function App() {
     }
   }
   async function loadOlder() {
-    if (!session || !hasMore || loadingOlder || !messages.length) return;
-    const oldest = Math.min(...messages.filter(m=>m.seq>0).map(m=>m.seq));
-    if (!Number.isFinite(oldest)) return;
+    if(!session || !hasMore || loadingOlder || !messages.length)return;
+    const oldest=oldestConfirmedChatSeq(messages);
+    if(oldest===null)return;
+    const request=historyRequests.current.beginOlder();
+    if(request===null)return;
     setLoadingOlder(true);
     scrollOlderOnce.current=true;
-    try {
+    try{
       const data=await getOlderChatMessages(session,oldest);
+      if(!historyRequests.current.isOlderCurrent(request)||activeSession.current?.token!==session.token)return;
       setMessages(prev=>reconcileChatMessages(prev,withoutRemovedChatMessages(data.messages,removedSeq.current)));
       setHasMore(data.hasMore);
-      setReactions(prev=>[...data.reactions.filter(x=>!prev.some(y=>y.messageSeq===x.messageSeq&&y.actorId===x.actorId&&y.emoji===x.emoji)),...prev]);
-    } catch(e) { setError(e instanceof Error?e.message:'No se pudo cargar más mensajes'); }
-    finally { setLoadingOlder(false); }
+      setReactions(prev=>mergeOlderChatReactions(prev,data.reactions,removedSeq.current));
+    }catch(e){
+      if(historyRequests.current.isOlderCurrent(request)&&activeSession.current?.token===session.token)
+        setError(e instanceof Error?e.message:'No se pudo cargar más mensajes');
+    }finally{
+      if(historyRequests.current.finishOlder(request))setLoadingOlder(false);
+    }
   }
   async function runSearch() {
-    if(!session || searchQuery.trim().length < 2) {setSearchResults(null);return;}
-    setSearching(true);
-    try {
-      const found=await searchChatMessages(session,searchQuery.trim());
-      if(activeSession.current?.token===session.token)
-        setSearchResults(withoutRemovedChatMessages(found,removedSeq.current));
+    const query=searchQuery.trim();
+    if(!session||query.length<2){
+      historyRequests.current.cancelSearch();setSearchResults(null);setSearching(false);return;
     }
-    catch(e){setError(e instanceof Error?e.message:'Error de búsqueda');}
-    finally {setSearching(false);}
+    const request=historyRequests.current.beginSearch();
+    setSearching(true);
+    try{
+      const found=await searchChatMessages(session,query);
+      if(historyRequests.current.isSearchCurrent(request)&&activeSession.current?.token===session.token)
+        setSearchResults(withoutRemovedChatMessages(found,removedSeq.current));
+    }catch(e){
+      if(historyRequests.current.isSearchCurrent(request)&&activeSession.current?.token===session.token)
+        setError(e instanceof Error?e.message:'Error de búsqueda');
+    }finally{
+      if(historyRequests.current.isSearchCurrent(request))setSearching(false);
+    }
   }
 
   function resetEditTimeout(){
@@ -504,6 +521,7 @@ export default function App() {
   }, [messages.length]);
 
   function acceptApprovedSession(next:ChatSession){
+    historyRequests.current.reset();setLoadingOlder(false);setSearching(false);
     editingSnapshot.current=null;
     beforeEdit.current=null;
     setEditing(null);
@@ -628,7 +646,7 @@ export default function App() {
             onClick={()=>setActiveScreen('home')}>‹ Inicio</button>}
           {session&&<button className="search-toggle" type="button" aria-label="Buscar mensajes"
             aria-expanded={searchOpen} onClick={()=>{
-              setSearchOpen(open=>!open);setSearchResults(null);setSearchQuery('');
+              historyRequests.current.cancelSearch();setSearchOpen(open=>!open);setSearchResults(null);setSearchQuery('');setSearching(false);
             }}>{searchOpen?'Cerrar':'Buscar'}</button>}
         </div>
       </header>
@@ -650,10 +668,10 @@ export default function App() {
         <>
           {searchOpen&&<div className="chat-search">
             <input aria-label="Buscar en el chat" placeholder="Buscar mensajes…" value={searchQuery}
-              onChange={e=>{setSearchQuery(e.target.value);if(!e.target.value.trim())setSearchResults(null);}}
+              onChange={e=>{historyRequests.current.cancelSearch();setSearchQuery(e.target.value);setSearchResults(null);setSearching(false);}}
               onKeyDown={e=>{if(e.key==='Enter')void runSearch();}}/>
             <button type="button" disabled={searching||searchQuery.trim().length<2} onClick={()=>void runSearch()}>{searching?'…':'Buscar'}</button>
-            {searchResults&&<button type="button" onClick={()=>{setSearchResults(null);setSearchQuery('');}}>Cerrar</button>}
+            {searchResults&&<button type="button" onClick={()=>{historyRequests.current.cancelSearch();setSearchResults(null);setSearchQuery('');setSearching(false);}}>Cerrar</button>}
           </div>}
           <ChatTimeline messages={messages} searchResults={searchResults}
             actorId={session.actorId} token={session.token}
