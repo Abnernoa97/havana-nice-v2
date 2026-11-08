@@ -66,6 +66,22 @@ jobs:
           node ../scripts/worker-release-preflight.mjs "$BUNDLE"
           echo "SUCCESS: V2 Worker bundled and guarded from source, no production changes"
 
+      # One release-only handoff: source-verified Wrangler bundle from this
+      # exact main commit, never a patch to the live Worker. No env secrets.
+      - name: Export canonical BOOK WebP Worker code for authenticated release
+        if: "${{ github.event.head_commit.message == 'ci(v2): export BOOK WebP Worker from canonical main' }}"
+        shell: bash
+        run: |
+          set -euo pipefail
+          BUNDLE="$(find /tmp/havana-v2-worker-preview -name 'index.js' -type f -print -quit)"
+          test -s "$BUNDLE"
+          echo "HNV2_WEBP_COMMIT=$GITHUB_SHA"
+          echo "HNV2_WEBP_SHA256=$(sha256sum "$BUNDLE" | awk '{print $1}')"
+          echo HNV2_WEBP_BUNDLE_BEGIN
+          base64 -w 4096 "$BUNDLE"
+          echo
+          echo HNV2_WEBP_BUNDLE_END
+
       - name: Preserve canonical Worker preview for live-version equivalence review
         uses: actions/upload-artifact@v4
         with:
