@@ -78,6 +78,24 @@ test('Android status bar, keyboard viewport and right-edge clamping remain uncha
  assert.ok(low.top<=240-118-14,'short-screen menu remains inside native viewport');
 });
 
+test('Chat context menus are independent render-only components, not another session or WebSocket',()=>{
+ const pwa=readFileSync(new URL('../apps/pwa/src/features/chat/PwaChatMessageMenu.tsx',import.meta.url),'utf8');
+ const android=readFileSync(new URL('../apps/android/features/chat/NativeChatMessageMenu.tsx',import.meta.url),'utf8');
+ const webApp=readFileSync(new URL('../apps/pwa/src/app/App.tsx',import.meta.url),'utf8');
+ const nativeApp=readFileSync(new URL('../apps/android/App.tsx',import.meta.url),'utf8');
+ assert.match(webApp,/import PwaChatMessageMenu from/);
+ assert.match(nativeApp,/import NativeChatMessageMenu from/);
+ assert.match(webApp,/<PwaChatMessageMenu message=\{menuMessage\}/);
+ assert.match(nativeApp,/<NativeChatMessageMenu message=\{menuMessage\}/);
+ for(const src of [pwa,android]){
+  assert.match(src,/onReact\(message,emoji\)/);
+  assert.match(src,/onReply\(message\)/);
+  assert.match(src,/onDelete\(m\)/);
+  assert.doesNotMatch(src,/new WebSocket|startNamedChatSession|restoreNamedChatSession|getChatSnapshot|AsyncStorage|localStorage|fetch\(/);
+ }
+ assert.match(pwa,/¿Borrar este mensaje para todos\?/);
+ assert.match(android,/Alert\.alert\('Borrar mensaje'/);
+});
 test('both frontends call the same helper, never duplicate message edit policy',()=>{
  const paths=['apps/pwa/src/app/App.tsx','apps/android/App.tsx'];
  for(const path of paths){

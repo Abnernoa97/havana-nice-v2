@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
-  Alert, AppState, Keyboard, KeyboardAvoidingView, Modal, Platform, Pressable, SafeAreaView, ScrollView,
+  Alert, AppState, Keyboard, KeyboardAvoidingView, Platform, Pressable, SafeAreaView, ScrollView,
   StatusBar, Text, TextInput, View, Image, useWindowDimensions,
 } from 'react-native';
 import {
@@ -12,6 +12,7 @@ import {
 import { loadNativeLocalChat, saveNativeLocalChat } from './services/chatStorage';
 import type {BubbleAnchor} from './features/chat/SwipeableBubble';
 import NativeChatTimeline from './features/chat/NativeChatTimeline';
+import NativeChatMessageMenu from './features/chat/NativeChatMessageMenu';
 import NativeComposerIcon from './features/chat/ChatComposerIcon';
 import NativeMemberHome from './features/home/NativeMemberHome';
 import {uploadNativeChatFile} from './services/native-chat-r2-upload';
@@ -775,49 +776,15 @@ export default function App() {
               onLoadOlder={()=>void loadOlder()} onReply={replyToMessage}
               onMessageLongPress={showMessageMenu} onRetry={retryOutgoing}
             />
-            <Modal animationType="fade" transparent statusBarTranslucent visible={!!menuMessage}
-              onRequestClose={()=>setMenuMessage(null)}>
-              <Pressable style={styles.whatsappBackdrop} onPress={()=>setMenuMessage(null)}>
-                {menuMessage ? <Pressable
-                    accessibilityLabel="Opciones del mensaje"
-                    style={[styles.whatsappContext,{
-                      left:menuLeft,top:menuTop,width:menuWidth,
-                    }]} onPress={()=>{}}>
-                  <View style={styles.whatsappEmojiBar}>
-                    {(['👍','❤️','😂'] as ChatEmoji[]).map(emoji=>(
-                      <Pressable key={emoji} accessibilityRole="button" accessibilityLabel={emoji}
-                        disabled={connection!=='en vivo'}
-                        style={[styles.whatsappEmoji,connection!=='en vivo'&&styles.disabledMenuAction,
-                          reactions.some(r=>r.messageSeq===menuMessage.seq&&r.actorId===session.actorId&&r.emoji===emoji)
-                            &&styles.selectedMenuReaction]}
-                        onPress={()=>{react(menuMessage.seq,emoji);setMenuMessage(null);}}>
-                        <Text style={styles.whatsappEmojiText}>{emoji}</Text>
-                      </Pressable>
-                    ))}
-                  </View>
-                  <View style={styles.whatsappActionBar}>
-                    <Pressable accessibilityRole="button" style={styles.whatsappAction}
-                      onPress={()=>replyToMessage(menuMessage)}>
-                      <Text style={styles.whatsappActionText}>Responder</Text>
-                    </Pressable>
-                    {allowEdit ? <Pressable accessibilityRole="button" style={styles.whatsappAction}
-                      onPress={()=>{const m=menuMessage;setMenuMessage(null);manageOwn(m);}}>
-                      <Text style={styles.whatsappActionText}>Editar</Text>
-                    </Pressable> : null}
-                    {allowDelete ? <Pressable accessibilityRole="button" style={styles.whatsappAction}
-                      onPress={()=>{
-                        const m=menuMessage;setMenuMessage(null);
-                        Alert.alert('Borrar mensaje','¿Borrar este mensaje para todos?',[
-                          {text:'Cancelar',style:'cancel'},
-                          {text:'Borrar',style:'destructive',onPress:()=>manageOwn(m,true)},
-                        ]);
-                      }}>
-                      <Text style={styles.whatsappDeleteText}>Borrar</Text>
-                    </Pressable> : null}
-                  </View>
-                </Pressable>:null}
-              </Pressable>
-            </Modal>
+            <NativeChatMessageMenu message={menuMessage} actorId={session.actorId}
+              connection={connection} reactions={reactions} allowEdit={allowEdit} allowDelete={allowDelete}
+              left={menuLeft} top={menuTop} width={menuWidth}
+              onClose={()=>setMenuMessage(null)}
+              onReact={(m,emoji)=>{react(m.seq,emoji);setMenuMessage(null);}}
+              onReply={replyToMessage}
+              onEdit={m=>{setMenuMessage(null);manageOwn(m);}}
+              onDelete={m=>manageOwn(m,true)}
+            />
             {error ? <Text style={styles.errorBanner}>{error}</Text> : null}
             {connection !== 'en vivo' ? (
               <Pressable onPress={() => { retryAttempts.current = 0; connect(session); }} style={styles.reconnect}>

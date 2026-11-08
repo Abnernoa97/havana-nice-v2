@@ -9,6 +9,7 @@ import {
 import { loadLocalChat, saveLocalChat } from '../services/local';
 import type {MessageAnchor} from '../features/chat/SwipeMessage';
 import ChatTimeline from '../features/chat/ChatTimeline';
+import PwaChatMessageMenu from '../features/chat/PwaChatMessageMenu';
 import {usePwaMediaSelection} from '../features/chat/usePwaMediaSelection';
 import ComposerIcon from '../features/chat/ChatComposerIcon';
 import {uploadChatFile} from '../services/chat-media-upload';
@@ -661,36 +662,15 @@ export default function App() {
             onLoadOlder={()=>void loadOlder()} onReply={replyToMessage}
             onMessageLongPress={showMessageMenu} onRetry={retryMessage}
             bottomRef={bottom}/>
-          {menuMessage&&<div className="message-menu-overlay"
-              onClick={()=>setMenuMessage(null)} onKeyDown={event=>{
-                if(event.key==='Escape')setMenuMessage(null);
-              }}>
-            <div className="whatsapp-context" role="dialog" aria-modal="true" tabIndex={-1}
-              aria-label="Acciones del mensaje" style={{
-                left:menuLeft,top:menuTop,width:menuWidth,
-              }} onClick={event=>event.stopPropagation()}>
-              <div className="whatsapp-reactions">
-                {(['👍','❤️','😂'] as ChatEmoji[]).map(emoji=>
-                  <button type="button" key={emoji} aria-label={emoji}
-                    aria-pressed={reactions.some(r=>r.messageSeq===menuMessage.seq&&
-                      r.actorId===session.actorId&&r.emoji===emoji)}
-                    disabled={connection!=='en vivo'}
-                    onClick={()=>{react(menuMessage.seq,emoji);setMenuMessage(null);}}>
-                    {emoji}
-                  </button>)}
-              </div>
-              <div className="whatsapp-actions">
-                <button type="button" onClick={()=>replyToMessage(menuMessage)}>Responder</button>
-                {canEdit&&<button type="button" onClick={()=>{
-                  const m=menuMessage;setMenuMessage(null);updateOwn(m);
-                }}>Editar</button>}
-                {canDelete&&<button type="button" className="whatsapp-delete" onClick={()=>{
-                  const m=menuMessage;setMenuMessage(null);
-                  if(window.confirm('¿Borrar este mensaje para todos?'))updateOwn(m,true);
-                }}>Borrar</button>}
-              </div>
-            </div>
-          </div>}
+          <PwaChatMessageMenu message={menuMessage} actorId={session.actorId}
+            connection={connection} reactions={reactions} canEdit={canEdit} canDelete={canDelete}
+            left={menuLeft} top={menuTop} width={menuWidth}
+            onClose={()=>setMenuMessage(null)}
+            onReact={(m,emoji)=>{react(m.seq,emoji);setMenuMessage(null);}}
+            onReply={replyToMessage}
+            onEdit={m=>{setMenuMessage(null);updateOwn(m);}}
+            onDelete={m=>{setMenuMessage(null);if(window.confirm('¿Borrar este mensaje para todos?'))updateOwn(m,true);}}
+          />
           {error && <div className="inline-error" role="alert">{error}</div>}
           {connection !== 'en vivo' && <button className="reconnect" onClick={() => reconnect(session)}>Reintentar conexión</button>}
           {editing && <div className="reply-preview">Editando mensaje <button type="button" onClick={finishEditing} disabled={savingEdit}>Cancelar</button></div>}
