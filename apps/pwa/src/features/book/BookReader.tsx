@@ -25,7 +25,7 @@ type BookEngine={
  * (as in Quotes), but only *real editorial changes* update the DOM pages.
  * A notification or expiring media grant must never tear down the animation.
  */
-export default function BookReader({pages}:{pages:BookPage[]}){
+export default function BookReader({pages,edition='book',coverTitle}:{pages:BookPage[];edition?:'book'|'calendar';coverTitle?:string}){
  const [mode,setMode]=useState<'flip'|'scroll'>('flip');
  const [page,setPage]=useState(0);
  const [turning,setTurning]=useState(false);
@@ -296,8 +296,11 @@ export default function BookReader({pages}:{pages:BookPage[]}){
   <div className={'hn-book-leaf hn-book-front'+(pages[0]?.fit==='contain'?' hn-book-contain':'')} data-density="soft">
    {cover?<img src={cover} alt="" data-book-cover="true" loading="eager" decoding="async" fetchPriority="high"/>:null}
    <div className="hn-book-cover-shade"/>
-   <div className="hn-book-cover-heading"><small>THE PRIVATE EDITION</small><strong>HAVANA<br/>NICE</strong></div>
-   <div className="hn-book-cover-footer">BOOK HAVANA NICE <span>01 / EDITION</span></div>
+   <div className="hn-book-cover-heading"><small>{edition==='calendar'?'THE MEMORY EDITION':'THE PRIVATE EDITION'}</small>
+    <strong>{edition==='calendar'?'EVENT MEMORIES':<>HAVANA<br/>NICE</>}</strong>
+    {edition==='calendar'&&coverTitle?<span className="hn-book-memory-name">{coverTitle}</span>:null}
+   </div>
+   <div className="hn-book-cover-footer">{edition==='calendar'?'HAVANA NICE · EVENTS':'BOOK HAVANA NICE'} <span>01 / EDITION</span></div>
    <span className="hn-book-cover-corner" aria-hidden="true"/>
   </div>
   {pages.slice(1).map((item,i)=>{
@@ -313,9 +316,9 @@ export default function BookReader({pages}:{pages:BookPage[]}){
    <span className="hn-book-cover-corner" aria-hidden="true"/>
   </div>
  </>;
- },[pages]);
- if(!present)return <div className="hn-book-empty">Todavía no hay páginas publicadas. Las imágenes aparecerán cuando Administración las añada.</div>;
- return <section className="hn-book-reader" aria-label="BOOK HAVANA NICE · revista interactiva">
+ },[pages,edition,coverTitle]);
+ if(!present)return <div className="hn-book-empty">{edition==='calendar'?'Aún no hay fotografías de este evento.':'Todavía no hay páginas publicadas. Las imágenes aparecerán cuando Administración las añada.'}</div>;
+ return <section className={'hn-book-reader'+(edition==='calendar'?' hn-book-memory-edition':'')} aria-label={edition==='calendar'?'Recuerdos del evento · revista interactiva':'BOOK HAVANA NICE · revista interactiva'}>
   <div className="hn-book-switch" role="group" aria-label="Modo de lectura">
    <button type="button" aria-pressed={mode==='flip'} onClick={()=>setMode('flip')}>Revista 3D</button>
    <button type="button" aria-pressed={mode==='scroll'} onClick={()=>setMode('scroll')}>Desplazar</button>
