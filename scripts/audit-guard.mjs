@@ -56,6 +56,22 @@ assert.equal(reproducibleWorker.vars?.V2_ADMIN_LOGIN_SECRET,undefined,
 assert.equal(reproducibleWorker.services,undefined,
   'No separate service bridge may be reintroduced');
 
+const master = read('docs/PLAN-MAESTRO.md');
+const continuity = read('docs/CONTINUIDAD-EXACTA.md');
+// Do not recreate hundreds of kilobytes of contradictory development journals.
+// The canonical current checklist belongs in ONE master; history belongs to Git.
+assert.match(master,/^# HAVANA NICE V2 — PLAN MAESTRO ÚNICO/);
+assert.match(master,/## 4\. Tablero único, por orden de riesgo/);
+assert.match(continuity,/\[PLAN-MAESTRO\.md\]/);
+assert.ok(master.length<30000&&continuity.length<16000,
+ 'Current V2 plans must stay concise; review obsolete chronology in Git history');
+assert.doesNotMatch(master+continuity,/BITÁCORA PREVIA|ESTADO VIGENTE · .*07\/11\/2026/,
+ 'Do not restore superseded parallel project status blocks');
+assert.match(read('cloudflare/src/index.ts'),/export \{ChatRoom\} from '\.\/modules\/chat\/chat-room\.js'/);
+assert.match(read('cloudflare/src/modules/chat/chat-room.ts'),/export class ChatRoom/);
+assert.ok(read('cloudflare/src/index.ts').split('\\n').length<380,
+ 'Keep Cloudflare Worker entrypoint a small router; ChatRoom belongs in its domain');
+
 const readme = read('README.md');
 
 function absent(content,pattern,label) {
