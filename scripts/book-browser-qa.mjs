@@ -95,6 +95,28 @@ async function attach(){
     await new Promise((done,fail)=>{ws.onopen=done;ws.onerror=()=>fail(Error('CDP connect'))});
     ws.onmessage=event=>{
      const data=JSON.parse(event.data);
+     if(data.method==='Fetch.requestPaused'){
+      // Fake media bodies on the *actual* private Worker origin: exercise
+      // image decoding and portrait/landscape fitting, never real R2.
+      const paused=data.params;
+      const numeric=/\/api\/book\/media\/([1-6])/.exec(paused.request.url);
+      if(!numeric){
+       void rpc('Fetch.continueRequest',{requestId:paused.requestId}).catch(()=>{});
+       return;
+      }
+      const landscape=Number(numeric[1])%2===0;
+      const width=landscape?900:600,height=landscape?520:900;
+      const svg='<svg xmlns="http://www.w3.org/2000/svg" width="'+width+
+       '" height="'+height+'"><rect width="100%" height="100%" fill="#214b38"/>'+
+       '<circle cx="50%" cy="50%" r="100" fill="#eadfc6"/></svg>';
+      void rpc('Fetch.fulfillRequest',{requestId:paused.requestId,responseCode:200,
+       responseHeaders:[{name:'Content-Type',value:'image/svg+xml'},
+        {name:'Access-Control-Allow-Origin',value:'*'}],
+       body:Buffer.from(svg).toString('base64')}).catch(error=>{
+        console.warn('BOOK test image intercept:',String(error));
+       });
+      return;
+     }
      if(data.id&&pending.has(data.id)){
       const task=pending.get(data.id);pending.delete(data.id);
       if(data.error)task.reject(Error(JSON.stringify(data.error)));else task.resolve(data);
@@ -113,6 +135,10 @@ const scenario=[
  'const until=async(fn,label)=>{for(let i=0;i<80;i++){if(fn())return;await sleep(50);}throw Error("Timeout "+label)};',
  'await until(()=>document.querySelector(".hn-book-flip-host .stf__wrapper"),"BOOK mounted");',
  'await sleep(120);',
+ 'await until(()=>{const img=document.querySelector(".hn-book-flip-host .hn-book-wide-photo>img");',
+ 'return img&&img.complete&&img.naturalWidth>img.naturalHeight;}, "landscape fit and real photo decoding");',
+ 'const wide=document.querySelector(".hn-book-flip-host .hn-book-wide-photo>img");',
+ 'if(getComputedStyle(wide).objectFit!=="contain")throw Error("Wide photo was cropped");',
  'const rect=el=>{const r=el.getBoundingClientRect();return {x:r.x,y:r.y,w:r.width,h:r.height}};',
  'const snap=()=>{const stage=document.querySelector(".hn-book-stage");',
  'const wrapper=document.querySelector(".hn-book-flip-host .stf__wrapper");',
@@ -147,6 +173,7 @@ const scenario=[
 try{
  await attach();
  await rpc('Page.enable');await rpc('Runtime.enable');
+ await rpc('Fetch.enable',{patterns:[{urlPattern:'*api/book/media/*',requestStage:'Request'}]});
  await rpc('Page.addScriptToEvaluateOnNewDocument',{source:boot});
  for(const [width,height,label] of [[390,844,'phone'],[1024,800,'desktop']]){
   await rpc('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile:width<700});
