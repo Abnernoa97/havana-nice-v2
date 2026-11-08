@@ -7,6 +7,10 @@ import '../features/book/book.css';
 
 type RNWindow=Window&{ReactNativeWebView?:{postMessage:(message:string)=>void}};
 const TOK=/^[A-Za-z0-9_-]{40,100}$/;
+const READY='havana-v2-book-ready';
+const AUTHORIZED='havana-v2-book-authorized';
+const NATIVE_PROBE='havana-v2-book-native-probe';
+const announce=(type:string)=>(window as RNWindow).ReactNativeWebView?.postMessage(type);
 class ReaderBoundary extends React.Component<
  {children:React.ReactNode},{failed:boolean}
 >{
@@ -30,7 +34,11 @@ function PrivateNativeReader(){
  useEffect(()=>{
   const receive=(event:Event)=>{
    const detail=(event as CustomEvent<unknown>).detail;
-   if(typeof detail==='string'&&TOK.test(detail))setToken(detail);
+   if(typeof detail==='string'&&TOK.test(detail)){
+    setToken(detail);
+    // An ACK without any credentials verifies that the private event arrived.
+    announce(AUTHORIZED);
+   }
   };
   const refresh=()=>setTick(t=>t+1);
   const receiveMemory=(event:Event)=>{
@@ -41,14 +49,17 @@ function PrivateNativeReader(){
    const title=typeof item.title==='string'?item.title.slice(0,160):'';
    setMemory({eventId:item.eventId,title});
   };
+  const probe=()=>announce(READY);
   window.addEventListener('havana-v2-book-auth',receive);
+  window.addEventListener(NATIVE_PROBE,probe);
   window.addEventListener('havana-v2-book-calendar',receiveMemory);
   window.addEventListener('havana-v2-book-refresh',refresh);
   // The RN shell owns the existing musician session; neither the PWA nor
   // this page creates an alternate account, cookie or storage key.
-  (window as RNWindow).ReactNativeWebView?.postMessage('havana-v2-book-ready');
+  probe();
   return()=>{
    window.removeEventListener('havana-v2-book-auth',receive);
+   window.removeEventListener(NATIVE_PROBE,probe);
    window.removeEventListener('havana-v2-book-refresh',refresh);
    window.removeEventListener('havana-v2-book-calendar',receiveMemory);
   };

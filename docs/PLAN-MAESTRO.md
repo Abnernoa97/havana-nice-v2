@@ -123,7 +123,8 @@ tests/ + cloudflare/tests/ + scripts/ → reglas de seguridad y CI
 - [x] **Auditoría de estructura:** árbol exacto y detección de código huérfano / importaciones rotas en `scripts/check-structure.mjs`. Se actualizaron las pruebas para inspeccionar el controlador real, no la entrada reducida.
 - [x] **Chat Android, primera optimización de render:** mensajes con `FlatList` virtualizada (`windowSize=7`, lotes limitados) para no montar todas las fotos/videos del historial; claves estables, paginación manual y posición visible preservadas; no cambiar sesión, D1, R2 ni caché. Requiere QA física de desplazamiento/60 FPS.
 - [ ] **Optimización posterior de Chat:** el controlador sigue siendo grande y la lista sigue usando `ScrollView`; separar más responsabilidades y virtualizar solo con pruebas de desplazamiento, multimedia y memoria. No confundir organización con optimización de FPS.
-- [ ] **BOOK en Android:** la pantalla blanca notificada en el teléfono sigue abierta; reorganizar carpetas no implica haberla resuelto.
+- [x] **BOOK Android, diagnóstico y recuperación:** el puente JS confirma primero su montaje y luego la recepción del token con un ACK sin credenciales. Android valida el documento principal, vuelve a solicitar READY tras cargar, detecta falta de respuesta en 12 s y reconstruye la WebView si Android termina el proceso. El mismo `BookReader`/PageFlip continúa siendo el único motor. La corrección requiere nueva APK y QA físico antes de declarar resuelta la pantalla blanca.
+- [ ] **BOOK en Android:** sigue pendiente la prueba física del fallo anterior y su confirmación en la próxima APK acumulativa.
 - **Publicación:** no se genera una APK nueva por reorganizar archivos; el código está en `main`, pendiente de aprobación del flujo completo y de futuro lote nativo. Sin cambios a PWA, Worker, D1 ni R2 en este bloque.
 
 ## 4.1. Matriz de aceptación física antes de declarar sincronización 100 %

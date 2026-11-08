@@ -1,0 +1,35 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
+test('Android BOOK requires a real authenticated bridge ack before clearing loading',()=>{
+ const native=read('apps/android/features/book/NativeBook.tsx');
+ const web=read('apps/pwa/src/app/native-book-main.tsx');
+ assert.match(native,/BRIDGE_WATCHDOG_MS=12000/);
+ assert.match(native,/const AUTHORIZED='havana-v2-book-authorized'/);
+ assert.match(native,/event.nativeEvent.data===READY/);
+ assert.match(native,/event.nativeEvent.data===AUTHORIZED/);
+ assert.match(native,/trustedMainFrame.current/);
+ assert.match(native,/event.nativeEvent.url&&!trustedBookUrl/);
+ assert.match(native,/onLoadEnd=\{event=>/);
+ assert.match(native,/havana-v2-book-native-probe/);
+ assert.match(web,/window.addEventListener\(NATIVE_PROBE,probe\)/);
+ assert.match(web,/announce\(AUTHORIZED\)/);
+ assert.match(web,/TOK.test\(detail\)/);
+ assert.match(native,/BRIDGE_WATCHDOG_MS\)/);
+});
+test('A terminated Android WebView is replaced, not reused, without exposing token in URL',()=>{
+ const native=read('apps/android/features/book/NativeBook.tsx');
+ assert.match(native,/onRenderProcessGone=\{\(\)=>\{/);
+ assert.match(native,/setRendererGone\(true\)/);
+ assert.match(native,/!rendererGone&&<WebView<object> key=\{viewKey\}/);
+ assert.match(native,/setViewKey\(v=>v\+1\)/);
+ assert.match(native,/Reintentar BOOK/);
+ assert.match(native,/domStorageEnabled=\{false\}/);
+ assert.match(native,/originWhitelist=\{\[ORIGIN\]\}/);
+ assert.match(native,/onShouldStartLoadWithRequest=\{event=>trustedBookUrl\(event.url\)\}/);
+ assert.doesNotMatch(native,/\?token=|localStorage|AsyncStorage|new PageFlip|new WebSocket/);
+ const book=read('apps/pwa/src/features/book/BookReader.tsx');
+ assert.match(book,/new PageFlip\(/);
+ assert.doesNotMatch(native,/import \{PageFlip\}/);
+});
