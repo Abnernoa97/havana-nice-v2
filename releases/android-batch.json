@@ -1,7 +1,7 @@
 {
   "approved": true,
   "releaseMode": "explicit-batch",
-  "version": "0.0.15",
-  "versionCode": 15,
-  "notes": "Lote acumulativo V2 Android: Chat FlatList virtualizada, Familia galería FlatList sin ScrollView anidado, BOOK puente de autorización confirmado y recuperación de WebView. Conservar sesión, datos y R2. Verificar firma original, versión superior y respaldo 0.0.14 antes de publicar."
+  "version": "0.0.16",
+  "versionCode": 16,
+  "notes": "Corrección crítica BOOK V2: elimina el lector WebView blanco desde Android; muestra páginas y recuerdos mediante FlatList nativa usando la sesión existente y los mismos grants privados. El PageFlip 3D permanece únicamente en PWA, enlace sin tokens y validación de sesión web separada. Mantiene Chat, Familia, Calendario, datos, mismo package, firma previa y respaldo APK 0.0.15. Prueba física del lector pendiente."
 }
