@@ -73,6 +73,7 @@ export default function AdminCalendarMemories({token,eventId,title,revision=0}:{
   let converted=0;const errors:string[]=[];
   for(let i=0;i<pending.length;i++){
    const photo=pending[i];
+   if(!photo)continue;
    try{
     const url=calendarMemoryUrl(photo.originalUrl||'');
     if(!url)throw Error('Enlace privado inválido');
