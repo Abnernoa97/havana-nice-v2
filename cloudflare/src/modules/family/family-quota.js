@@ -10,7 +10,7 @@ const USAGE_SQL=`(SELECT COALESCE(SUM(size_bytes + CASE
 const CHAT_SQL=`(SELECT COALESCE(SUM(size_bytes),0) FROM chat_media_objects WHERE status='ready')`;
 // Count private R2 bytes until post-deletion cleanup has really completed.
 const MEMBER_DELETE_PENDING_SQL=`(SELECT COALESCE(SUM(size_bytes),0) FROM r2_member_delete_queue)`;
-const BOOK_SQL=`(SELECT COALESCE(SUM(size_bytes),0) FROM book_pages)`;
+const BOOK_SQL=`(SELECT COALESCE(SUM(size_bytes+optimized_size_bytes),0) FROM book_pages)`;
 const BOOK_DELETE_PENDING_SQL=`(SELECT COALESCE(SUM(size_bytes),0) FROM book_delete_queue)`;
 const GLOBAL_SQL=USAGE_SQL+'+'+CHAT_SQL+'+'+MEMBER_DELETE_PENDING_SQL+
  '+'+BOOK_SQL+'+'+BOOK_DELETE_PENDING_SQL;
