@@ -1,6 +1,6 @@
-import {useCallback,useEffect,useRef,useState,type FormEvent} from 'react';
+import {lazy,Suspense,useCallback,useEffect,useRef,useState,type FormEvent} from 'react';
 import {getCalendarEvents,calendarDate,calendarEventCompleted,HAVANA_V2_DEV_API_BASE_URL,type CalendarEvent,type CalendarEventInput} from '@havana/shared';
-import AdminCalendarMemories from './AdminCalendarMemories';
+const AdminCalendarMemories=lazy(()=>import('./AdminCalendarMemories'));
 import './calendar-memories.css';
 import {adminMembers,adminCreateCalendarEvent,adminUpdateCalendarEvent,adminDeleteCalendarEvent,
  type AdminMember,isAdminUnauthorized} from '../../services/admin-api';
@@ -145,7 +145,7 @@ export default function AdminCalendar({token,members,onExpired}:Props){
       {item.statusText&&<p>Estado: {item.statusText}</p>}
       <div className="a-cal-actions"><button type="button" onClick={()=>edit(item)}>Editar</button>
        <button type="button" className="a-cal-danger" onClick={()=>void remove(item)}>Borrar fecha</button></div>
-      <AdminCalendarMemories token={token} eventId={item.id} title={item.title} revision={revision}/>
+      <Suspense fallback={<p role="status">Abriendo fotografías del evento…</p>}><AdminCalendarMemories token={token} eventId={item.id} title={item.title} revision={revision}/></Suspense>
      </div>}
     </article>})}
   </div>
