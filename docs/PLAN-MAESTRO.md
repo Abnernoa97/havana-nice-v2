@@ -1,5 +1,18 @@
 ## ESTADO VIGENTE · BOOK HAVANA NICE V2 · 07/11/2026
 
+
+## OPTIMIZACIÓN BOOK · 08/11/2026 · PUBLICADO
+
+- [x] **Motor de reducción de imágenes:** `apps/pwa/src/features/book/book-image-optimizer.ts` genera WebP de alta calidad (máximo 2048 px de lado largo), sin servicios pagos ni compresión de videos. Solo conserva una copia derivada cuando ahorra espacio; EXIF/orientación se procesan con el decodificador del navegador. Los originales privados permanecen intactos.
+- [x] **Admin automático y retrocompatibilidad:** `AdminBook.tsx` genera copia ligera tras subir cada foto; en la próxima apertura de Administración procesa una vez las páginas existentes pendientes, con progreso, reintento manual y ahorro por fotografía. **Las siete fotos actuales todavía requieren abrir Administración para crear sus derivados desde el navegador autenticado**; no afirmar que se convirtieron remotamente.
+- [x] **Almacenamiento único:** migración aditiva `0028_book_optimized_images.sql` aplicada en D1, claves R2 independientes, grants temporales `optimized`/ `original`, sustitución/borrado seguro mediante `book_delete_queue`, protección cuota 9.5 GB que cuenta originales+derivados; si falta un WebP el lector recupera el maestro.
+- [x] **Backend publicado y verificado:** Worker **v64 100 %** `aed8f9b4-05f1-4a73-bd29-1d5a517c33b8`, compilado con Wrangler desde `main` commit `409b362e`, SHA256 `0f6ef4035d3f9c0ed90e5cd32eb4097b9f23f33dd0f49753ac856c43c3e958c7`, siete bindings originales preservados y prueba previa de rutas privadas/CORS sin tráfico antes de activarlo. [CI 42438525208 SUCCESS](https://github.com/Abnernoa97/havana-nice-v2/actions/runs/42438525208).
+- [x] **Prueba visual de tamaño:** Chrome real redujo un archivo sintético de **11,370,285 a 1,485,370 bytes (~87 %)**, dimensiones **2048×1103**, manteniendo paso de páginas y scroll sin saltos. Es medición sobre muestra de prueba; **no representa necesariamente la compresión exacta de las siete fotografías reales**.
+- [ ] **QA de aceptación:** abrir Admin PWA una vez para procesar siete originales BOOK (29,333,701 bytes a la fecha, **0 derivados creados todavía**); comprobar peso, ajuste visual, navegación en iPhone y próxima APK nativa. Familia, HAVANA CLOUD original y APK 0.0.13 no se modifican.
+
+**El contenido inferior de v63, ausencia de compresión y BOOK sin derivados es historial.** Mantener un único `main` y no usar parches del Worker compilado.
+
+
 ## MEJORA EDITORIAL · BOOK HAVANA NICE · 08/11/2026
 
 - [x] **Papel y encuadernación:** lomo de cubierta verde, canto y esquina discretos, profundidad de papel marfil, sombra fija de libro apoyado. Todos son estilos estáticos en `apps/pwa/src/features/book/book.css`: sin un segundo motor ni efectos de GPU por fotograma.
