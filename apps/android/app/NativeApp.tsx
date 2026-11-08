@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
-  Alert, AppState, Keyboard, KeyboardAvoidingView, Platform, Pressable, SafeAreaView, ScrollView,
+  Alert, AppState, Keyboard, KeyboardAvoidingView, Platform, Pressable, SafeAreaView, ScrollView, FlatList,
   StatusBar, Text, TextInput, View, Image, useWindowDimensions,
 } from 'react-native';
 import {
@@ -58,7 +58,7 @@ export default function App() {
   const socket = useRef<WebSocket | null>(null);
   const removedSeq = useRef<Set<number>>(new Set());
   const historyRequests=useRef(new ChatHistoryRequestGate());
-  const scroll = useRef<React.ElementRef<typeof ScrollView> | null>(null);
+  const scroll = useRef<FlatList<ChatMessage> | null>(null);
   useEffect(()=>{
     if(!session){setMediaReady(false);return;}
     let active=true;

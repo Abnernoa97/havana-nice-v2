@@ -194,6 +194,10 @@ test('Native Chat timeline is presentation-only; original scroll ownership stays
  assert.match(controller,/<NativeChatTimeline[\s\S]*onContentSizeChange=\{/);
  assert.match(controller,/onScrollBeginDrag=\{\(\)=>\{/);
  assert.match(controller,/onScrollEndDrag=\{trackUserScroll\}/);
+ assert.match(timeline,/<FlatList/);
+ assert.match(timeline,/data=\{visibleMessages\}/);
+ assert.match(timeline,/keyExtractor=\{message=>message.senderId\+':'\+message.clientMessageId\}/);
+ assert.match(timeline,/removeClippedSubviews=\{false\}/);
  assert.match(timeline,/onScrollBeginDrag=\{onScrollBeginDrag\}/);
  assert.match(timeline,/onScrollEndDrag=\{onScrollEndDrag\}/);
  assert.match(timeline,/onMomentumScrollEnd=\{onScrollEndDrag\}/);
