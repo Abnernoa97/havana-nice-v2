@@ -10,7 +10,7 @@ type Props={
 export default function PwaChatMessageMenu({message,actorId,connection,reactions,canEdit,canDelete,
  left,top,width,onClose,onReact,onReply,onEdit,onDelete}:Props){
  if(!message)return null;
- return {message&&<div className="message-menu-overlay"
+ return <div className="message-menu-overlay"
               onClick={()=>onClose()} onKeyDown={event=>{
                 if(event.key==='Escape')onClose();
               }}>
@@ -39,5 +39,5 @@ export default function PwaChatMessageMenu({message,actorId,connection,reactions
                 }}>Borrar</button>}
               </div>
             </div>
-          </div>};
+          </div>;
 }
