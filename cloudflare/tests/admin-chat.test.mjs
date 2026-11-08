@@ -75,10 +75,11 @@ test('moderation physically removes message, reactions and reply reference',asyn
 });
 test('one deletion implementation, broadcast event and CORS preflight',()=>{
  const source=readFileSync(new URL('../src/index.ts',import.meta.url),'utf8');
+ const room=readFileSync(new URL('../src/modules/chat/chat-room.ts',import.meta.url),'utf8');
  const helper=readFileSync(new URL('../src/modules/chat/message-removal.js',import.meta.url),'utf8');
- assert.match(source,/deleteChatMessageRecord\(this.env,input.seq\)/);
- assert.match(source,/this.broadcast\(\{type:'chat.deleted',seq:input.seq\}\)/);
- assert.match(source,/'chat.deleted':'admin.chat.deleted'/);
+ assert.match(room,/deleteChatMessageRecord\(this.env,input.seq\)/);
+ assert.match(room,/this.broadcast\(\{type:'chat.deleted',seq:input.seq\}\)/);
+ assert.match(room,/'chat.deleted':'admin.chat.deleted'/);
  assert.match(source,/'access-control-allow-methods': 'GET, POST, PUT, DELETE, OPTIONS'/);
  assert.match(helper,/UPDATE chat_messages SET reply_to_seq=NULL/);
  assert.match(helper,/DELETE FROM chat_reactions/);
