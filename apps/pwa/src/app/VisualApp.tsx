@@ -4,6 +4,7 @@ import {MEMBER_MODULES,type MemberScreen} from '@havana/shared';
 // existing authorized session stay mounted; no routes, APIs or data flow change.
 const CalendarAccordion=lazy(()=>import('../features/calendar/CalendarAccordion'));
 const MemberRepertoire=lazy(()=>import('../features/repertoire/MemberRepertoire'));
+const MemberMusicians=lazy(()=>import('../features/musicians/MemberMusicians'));
 const MemberFamily=lazy(()=>import('../features/family/MemberFamily'));
 
 type Props={
@@ -16,7 +17,7 @@ type Props={
 const notes:Record<Exclude<MemberScreen,'chat'|'home'>,string>={
   calendar:'El Calendario mostrará los eventos reales y sus horarios al conectar el Administrador.',
   repertoire:'Las canciones y listas estarán disponibles cuando se conecten los datos reales.',
-  musicians:'La información del equipo estará disponible cuando se implemente este módulo.',
+  musicians:'La lista de integrantes requiere la sesión autorizada del equipo.',
   family:'Las fotografías y los videos privados se muestran al entrar con una sesión autorizada. BOOK HAVANA NICE muestra las páginas que publique Administración.',
   notices:'Los avisos se mostrarán cuando exista almacenamiento y permisos para cada músico.',
   settings:'Las preferencias se habilitarán cuando podamos guardarlas de forma segura.',
@@ -84,6 +85,7 @@ export default function VisualApp({displayName,active,onNavigate,preview=false,t
           <Suspense fallback={<div className="visual-empty" role="status" aria-live="polite">Abriendo módulo…</div>}>
            {screen==='calendar'&&token?<CalendarAccordion token={token}/>:
             screen==='repertoire'&&token?<MemberRepertoire token={token}/>:
+            screen==='musicians'&&token?<MemberMusicians token={token}/>:
             screen==='family'&&token?<MemberFamily token={token}/>:
             <div className="visual-empty">
              <span className="visual-empty-icon" aria-hidden="true">◇</span>

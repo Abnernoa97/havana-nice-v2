@@ -3,6 +3,7 @@ import {Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
 import {MEMBER_MODULES,type MemberScreen} from '@havana/shared';
 import NativeCalendar from '../calendar/NativeCalendar';
 import NativeRepertoire from '../repertoire/NativeRepertoire';
+import NativeMusicians from '../musicians/NativeMusicians';
 import NativeFamily from '../family/NativeFamily';
 
 type Props={
@@ -47,6 +48,7 @@ export default function NativeMemberHome({displayName,token,active,onNavigate}:P
       <Text style={styles.lead}>{selected?.description}</Text>
       {active==='calendar'?<NativeCalendar token={token}/>:
        active==='repertoire'?<NativeRepertoire token={token}/>:
+       active==='musicians'?<NativeMusicians token={token}/>:
        active==='family'?<NativeFamily token={token}/>:<View style={styles.pending}>
         <Text style={styles.pendingTitle}>Módulo en preparación</Text>
         <Text style={styles.pendingDescription}>

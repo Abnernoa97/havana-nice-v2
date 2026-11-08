@@ -6,7 +6,7 @@ export const MEMBER_MODULES:readonly {id:MemberModule;label:string;glyph:string;
   {id:'chat',label:'Chat',glyph:'◉',description:'Mensajes del equipo',ready:true,nativeReady:true},
   {id:'calendar',label:'Calendario',glyph:'▦',description:'Eventos, horarios y vestuario',ready:true,nativeReady:true},
   {id:'repertoire',label:'Repertorio',glyph:'♫',description:'Canciones y listas por evento',ready:true,nativeReady:true},
-  {id:'musicians',label:'Músicos',glyph:'♙',description:'Información del equipo',ready:false,nativeReady:false},
+  {id:'musicians',label:'Músicos',glyph:'♙',description:'Integrantes autorizados del equipo',ready:true,nativeReady:true},
   {id:'family',label:'Familia HAVANA NICE',glyph:'▣',description:'Álbumes del equipo y BOOK HAVANA NICE',ready:true,nativeReady:true},
   {id:'notices',label:'Avisos',glyph:'◌',description:'Comunicaciones importantes',ready:false,nativeReady:false},
   {id:'settings',label:'Ajustes',glyph:'⚙',description:'Preferencias personales',ready:false,nativeReady:false},

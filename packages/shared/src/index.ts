@@ -218,6 +218,8 @@ export {CalendarHttpError,getCalendarEvents,calendarDate,safeCalendarMapUrl,cale
 export type {CalendarEvent,CalendarEventInput,CalendarEventList,CalendarEventStatus,CalendarMemoryPhoto,CalendarMemoryList} from './calendar';
 
 export {MEMBER_MODULES} from './memberModules';
+export {getMusicianDirectory} from './musicians';
+export type {MusicianDirectoryEntry} from './musicians';
 export type {MemberModule,MemberScreen} from './memberModules';
 
 export {getRepertoireSongs,getEventRepertoire,getAssignedEventRepertoire,safeRepertoireLink} from './repertoire';
