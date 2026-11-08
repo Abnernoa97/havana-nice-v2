@@ -48,7 +48,7 @@ assert.deepEqual(children('apps/pwa/src'),
  ['app','features','services','styles','vite-env.d.ts'],
  'PWA source root cannot grow parallel or legacy implementations');
 assert.deepEqual(children('apps/android'),
- ['App.tsx','app','app.json','features','package.json','services','storage','tsconfig.json'],
+ ['App.tsx','app','app.json','features','package.json','services','storage','styles','tsconfig.json'],
  'Android must keep one Expo entry and grouped modules');
 assert.deepEqual(children('cloudflare/src'),
  ['index.ts','modules','shared'],

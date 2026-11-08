@@ -1,7 +1,7 @@
 import React from 'react';
 import {Alert,Modal,Pressable,Text,View} from 'react-native';
 import type {ChatMessage,ChatEmoji,ChatReaction} from '@havana/shared';
-import {styles} from './chat-styles';
+import {styles} from '../../styles/chat-styles';
 // Presentation only: owns neither token, session lifecycle, socket nor local storage.
 type Props={message:ChatMessage|null;actorId:string;connection:string;reactions:ChatReaction[];
  allowEdit:boolean;allowDelete:boolean;left:number;top:number;width:number;

@@ -16,7 +16,7 @@ import NativeChatMessageMenu from '../features/chat/NativeChatMessageMenu';
 import NativeComposerIcon from '../features/chat/ChatComposerIcon';
 import NativeMemberHome from '../features/home/NativeMemberHome';
 import {uploadNativeChatFile} from '../services/native-chat-r2-upload';
-import {styles} from '../features/chat/chat-styles';
+import {styles} from '../styles/chat-styles';
 import {useNativeMediaSelection} from '../features/chat/useNativeMediaSelection';
 
 export default function App() {

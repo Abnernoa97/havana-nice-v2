@@ -6,7 +6,7 @@ import {
 } from '@havana/shared';
 import SwipeableBubble,{type BubbleAnchor} from './SwipeableBubble';
 import NativeChatMediaView from './NativeChatMediaView';
-import {styles} from './chat-styles';
+import {styles} from '../../styles/chat-styles';
 
 // Pure timeline: the one App.tsx owns the WebSocket, storage, scroll lifecycle,
 // media upload and keyboard behavior. This module only renders existing rows.
