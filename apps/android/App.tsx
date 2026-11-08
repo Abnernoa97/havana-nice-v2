@@ -5,7 +5,7 @@ import {
 } from 'react-native';
 import {
   HAVANA_V2_DEV_API_BASE_URL, fetchBackendHealth, getChatMediaAvailability, getChatSnapshot, getOlderChatMessages, searchChatMessages, getChatMenuState, getChatMessagePermissions, isWithinChatEditWindow, selectNextQueuedChatMessage, setOutgoingChatStatus, projectOutgoingChatStatus, CHAT_ACK_TIMEOUT_MS, newClientMessageId, uploadChatMediaBatch,
-  reconcileChatMessages, reconcileReactions, reconcileUpdatedMessage, reconcileDeletedMessage, reconcileChatSnapshot, startNamedChatSession, restoreNamedChatSession, chatSessionExpired, chatReconnectDelay, reconcileChatReadReceipt, removeChatReactionsForMessage, captureChatOfflineSnapshot, restoreChatOfflineOutbox,
+  reconcileChatMessages, reconcileReactions, reconcileUpdatedMessage, reconcileDeletedMessage, reconcileChatSnapshot, startNamedChatSession, restoreNamedChatSession, chatSessionExpired, chatReconnectDelay, reconcileChatReadReceipt, removeChatReactionsForMessage, withoutRemovedChatMessages, captureChatOfflineSnapshot, restoreChatOfflineOutbox,
   type ChatMessage, type ChatServerEvent, type ChatSession, type ChatReaction, type ChatEmoji, type ChatReadReceipt,
   CHAT_MEDIA_MAX_PER_SEND, type MemberScreen,
 } from '@havana/shared';
@@ -54,6 +54,7 @@ export default function App() {
   const [menuMessage,setMenuMessage] = useState<ChatMessage | null>(null);
   const [menuAnchor,setMenuAnchor] = useState<BubbleAnchor | null>(null);
   const socket = useRef<WebSocket | null>(null);
+  const removedSeq = useRef<Set<number>>(new Set());
   const scroll = useRef<React.ElementRef<typeof ScrollView> | null>(null);
   useEffect(()=>{
     if(!session){setMediaReady(false);return;}
@@ -173,7 +174,7 @@ export default function App() {
     try {
       const data=await getOlderChatMessages(session,Math.min(...seqs));
       setHasMore(data.hasMore);
-      setMessages(before=>reconcileChatMessages(data.messages,before));
+      setMessages(before=>reconcileChatMessages(before,withoutRemovedChatMessages(data.messages,removedSeq.current)));
       setReactions(before=>[...data.reactions.filter(x=>!before.some(y=>y.messageSeq===x.messageSeq&&y.actorId===x.actorId&&y.emoji===x.emoji)),...before]);
     } catch(e){setError(e instanceof Error?e.message:'No se pudo cargar el historial');}
     finally {setLoadingOlder(false);}
@@ -181,7 +182,11 @@ export default function App() {
   async function searchHistory(){
     if(!session||searchText.trim().length<2){setResults(null);return;}
     setSearching(true);
-    try{setResults(await searchChatMessages(session,searchText.trim()));}
+    try{
+      const found=await searchChatMessages(session,searchText.trim());
+      if(activeSession.current?.token===session.token)
+        setResults(withoutRemovedChatMessages(found,removedSeq.current));
+    }
     catch(e){setError(e instanceof Error?e.message:'No se pudo buscar');}
     finally{setSearching(false);}
   }
@@ -313,20 +318,20 @@ export default function App() {
   function syncMessages(next: ChatSession) {
     void getChatSnapshot(next)
       .then(({ messages:history, reactions:historyReactions, receipts:readHistory,hasMore:more }) => {
-        if (!disposed.current && activeSession.current?.actorId === next.actorId) {
+        if (!disposed.current && activeSession.current?.token === next.token) {
           if(initialHistoryPending.current)initialHistoryLoaded.current=true;
-          history.forEach(confirmMessage);
-          setReactions(historyReactions);
+          withoutRemovedChatMessages(history,removedSeq.current).forEach(confirmMessage);
+          setReactions(historyReactions.filter(reaction=>!removedSeq.current.has(reaction.messageSeq)));
           setReceipts(readHistory);
           setHasMore(more);
-          setMessages(before => reconcileChatSnapshot(before,history));
+          setMessages(before => reconcileChatSnapshot(before,withoutRemovedChatMessages(history,removedSeq.current)));
           if(initialHistoryPending.current)requestAnimationFrame(scheduleInitialBottom);
           sendReadReceipt(Math.max(0,...history.map(m=>m.seq)));
           flushOutbox();
         }
       })
       .catch(reason => {
-        if (!disposed.current && activeSession.current?.actorId === next.actorId) {
+        if (!disposed.current && activeSession.current?.token === next.token) {
           setError(reason instanceof Error ? reason.message : 'No se pudo actualizar el historial');
           // A temporary history failure must not block queued outgoing messages.
           flushOutbox();
@@ -421,7 +426,9 @@ export default function App() {
             if (item.active) typingTimer.current = setTimeout(() => setTyping(''), 4300);
           }
         } else if (item.type === 'chat.updated') {
-          setMessages(before=>reconcileUpdatedMessage(before,item.message));
+          if(item.message.deletedAt)removedSeq.current.add(item.message.seq);
+          setMessages(before=>item.message.deletedAt?
+            reconcileDeletedMessage(before,item.message.seq):reconcileUpdatedMessage(before,item.message));
           // Only finish the editor after receiving the server's confirmed update.
           if(editPending.current?.seq===item.message.seq){
             if(!item.message.deletedAt && item.message.text===editPending.current.text)
@@ -434,6 +441,7 @@ export default function App() {
           }
           setError('');
         } else if (item.type === 'chat.deleted') {
+          removedSeq.current.add(item.seq);
           setMessages(before=>reconcileDeletedMessage(before,item.seq));
           setResults(before=>before?.filter(m=>m.seq!==item.seq)??null);
           setReactions(before=>removeChatReactionsForMessage(before,item.seq));
@@ -443,10 +451,10 @@ export default function App() {
         } else if (item.type === 'chat.read') {
           setReceipts(before=>reconcileChatReadReceipt(before,item));
         } else if (item.type === 'chat.reaction') {
-          setReactions(before => reconcileReactions(before, item));
+          if(!removedSeq.current.has(item.messageSeq))setReactions(before => reconcileReactions(before, item));
         } else if (item.type === 'chat.message') {
           confirmMessage(item.message);
-          setMessages(before => reconcileChatMessages(before, [item.message]));
+          setMessages(before => removedSeq.current.has(item.message.seq)?before:reconcileChatMessages(before, [item.message]));
           sendReadReceipt(item.message.seq);
           flushOutbox();
         } else if (item.type === 'chat.revoked') {

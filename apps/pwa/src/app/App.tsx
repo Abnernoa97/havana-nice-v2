@@ -1,7 +1,7 @@
 import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import {
   fetchBackendHealth, getChatMediaAvailability, getChatSnapshot, getOlderChatMessages, searchChatMessages, getChatMenuState, getChatMessagePermissions, isWithinChatEditWindow, selectNextQueuedChatMessage, setOutgoingChatStatus, projectOutgoingChatStatus, CHAT_ACK_TIMEOUT_MS, newClientMessageId, uploadChatMediaBatch,
-  openChatSocket, reconcileChatMessages, startNamedChatSession, restoreNamedChatSession, chatSessionExpired, chatReconnectDelay, reconcileChatReadReceipt, removeChatReactionsForMessage, captureChatOfflineSnapshot, restoreChatOfflineOutbox,
+  openChatSocket, reconcileChatMessages, startNamedChatSession, restoreNamedChatSession, chatSessionExpired, chatReconnectDelay, reconcileChatReadReceipt, removeChatReactionsForMessage, withoutRemovedChatMessages, captureChatOfflineSnapshot, restoreChatOfflineOutbox,
   type BackendHealth, type ChatMessage, type ChatServerEvent, type ChatSession,
   CHAT_MEDIA_MAX_PER_SEND, HAVANA_V2_DEV_API_BASE_URL,
   reconcileReactions, reconcileUpdatedMessage, reconcileDeletedMessage, reconcileChatSnapshot, type ChatReaction, type ChatEmoji, type ChatReadReceipt, type MemberScreen,
@@ -152,7 +152,7 @@ export default function App() {
     scrollOlderOnce.current=true;
     try {
       const data=await getOlderChatMessages(session,oldest);
-      setMessages(prev=>reconcileChatMessages(prev,data.messages.filter(m=>!removedSeq.current.has(m.seq))));
+      setMessages(prev=>reconcileChatMessages(prev,withoutRemovedChatMessages(data.messages,removedSeq.current)));
       setHasMore(data.hasMore);
       setReactions(prev=>[...data.reactions.filter(x=>!prev.some(y=>y.messageSeq===x.messageSeq&&y.actorId===x.actorId&&y.emoji===x.emoji)),...prev]);
     } catch(e) { setError(e instanceof Error?e.message:'No se pudo cargar más mensajes'); }
@@ -161,7 +161,11 @@ export default function App() {
   async function runSearch() {
     if(!session || searchQuery.trim().length < 2) {setSearchResults(null);return;}
     setSearching(true);
-    try {setSearchResults(await searchChatMessages(session,searchQuery.trim()));}
+    try {
+      const found=await searchChatMessages(session,searchQuery.trim());
+      if(activeSession.current?.token===session.token)
+        setSearchResults(withoutRemovedChatMessages(found,removedSeq.current));
+    }
     catch(e){setError(e instanceof Error?e.message:'Error de búsqueda');}
     finally {setSearching(false);}
   }
@@ -274,12 +278,12 @@ export default function App() {
   }
   function refresh(next: ChatSession) {
     void getChatSnapshot(next).then(({messages:history,reactions:reactionHistory,receipts:readHistory,hasMore:more}) => {
-      if (disposed.current || activeSession.current?.actorId !== next.actorId) return;
+      if (disposed.current || activeSession.current?.token !== next.token) return;
       history.forEach(confirm);
-      setReactions(reactionHistory);
+      setReactions(reactionHistory.filter(reaction=>!removedSeq.current.has(reaction.messageSeq)));
       setReceipts(readHistory);
       setHasMore(more);
-      setMessages(before => reconcileChatSnapshot(before,history.filter(m=>!removedSeq.current.has(m.seq))));
+      setMessages(before => reconcileChatSnapshot(before,withoutRemovedChatMessages(history,removedSeq.current)));
       sendReadReceipt(Math.max(0,...history.map(m=>m.seq)));
       flushOutbox();
     }).catch(e => {
@@ -347,7 +351,9 @@ export default function App() {
             if (value.active) typingTimer.current = setTimeout(() => setTyping(''), 4200);
           }
         } else if (value.type === 'chat.updated') {
-          setMessages(before=>reconcileUpdatedMessage(before,value.message));
+          if(value.message.deletedAt)removedSeq.current.add(value.message.seq);
+          setMessages(before=>value.message.deletedAt?
+            reconcileDeletedMessage(before,value.message.seq):reconcileUpdatedMessage(before,value.message));
           // Only finish the editor after receiving the server's confirmed update.
           if(editPending.current?.seq===value.message.seq){
             if(!value.message.deletedAt && value.message.text===editPending.current.text)
@@ -370,7 +376,7 @@ export default function App() {
         } else if (value.type === 'chat.read') {
           setReceipts(before=>reconcileChatReadReceipt(before,value));
         } else if (value.type === 'chat.reaction') {
-          setReactions(before => reconcileReactions(before, value));
+          if(!removedSeq.current.has(value.messageSeq))setReactions(before => reconcileReactions(before, value));
         } else if (value.type === 'chat.message') {
           confirm(value.message);
           setMessages(before => removedSeq.current.has(value.message.seq)?before:reconcileChatMessages(before, [value.message]));
