@@ -164,6 +164,9 @@ jobs:
       - name: Guard virtualized native Chat list and preserve offline/media interactions
         run: node --test tests/native-chat-virtualization.test.mjs
 
+      - name: Verify BOOK 3D navigation links contain no sessions or private credentials
+        run: node --experimental-strip-types --test tests/book-reader-routing.test.mjs
+
       - name: Verify native BOOK fallback and authenticated PWA 3D navigation
         run: node --test tests/native-book-bridge.test.mjs
 
