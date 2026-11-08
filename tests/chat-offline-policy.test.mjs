@@ -48,7 +48,7 @@ test('compatibility: no new IndexedDB or Android SQLite storage keys are introdu
 });
 
 test('one snapshot and restore policy is consumed by both V2 client controllers',()=>{
- for(const path of ['apps/pwa/src/app/App.tsx','apps/android/App.tsx']){
+ for(const path of ['apps/pwa/src/app/App.tsx','apps/android/app/NativeApp.tsx']){
   const code=readFileSync(new URL('../'+path,import.meta.url),'utf8');
   assert.match(code,/captureChatOfflineSnapshot\(/,path);
   assert.match(code,/restoreChatOfflineOutbox\(saved\.outbox/,path);

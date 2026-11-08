@@ -28,7 +28,7 @@ test('installed Chat local storage keys stay compatible across cleanup releases'
 });
 
 test('Android native and iPhone PWA share the same Chat decisions, not alternate backends',()=>{
- const android=read('apps/android/App.tsx')+'\n'+read('apps/android/features/chat/NativeChatTimeline.tsx')+'\n'+read('apps/android/features/chat/useNativeMediaSelection.ts');
+ const android=read('apps/android/app/NativeApp.tsx')+'\n'+read('apps/android/features/chat/NativeChatTimeline.tsx')+'\n'+read('apps/android/features/chat/useNativeMediaSelection.ts');
  // ChatTimeline is presentation-only, but owns the shared delivery-label rendering.
  const pwa=read('apps/pwa/src/app/App.tsx')+'\n'+read('apps/pwa/src/features/chat/ChatTimeline.tsx')+'\n'+read('apps/pwa/src/features/chat/usePwaMediaSelection.ts');
  const common=[
@@ -49,7 +49,7 @@ test('Android and PWA share one authenticated media-availability fetch without o
  const shared=read('packages/shared/src/index.ts');
  assert.match(shared,/export async function getChatMediaAvailability/);
  assert.match(shared,/cache:'no-store'/);
- for(const path of ['apps/android/App.tsx','apps/pwa/src/app/App.tsx']){
+ for(const path of ['apps/android/app/NativeApp.tsx','apps/pwa/src/app/App.tsx']){
   const source=read(path);
   assert.match(source,/getChatMediaAvailability\(session\)/);
   if(path.includes('/android/'))assert.match(source,/uploadNativeChatFile/);
@@ -106,7 +106,7 @@ test('PWA camera icon requests camera capture directly instead of media gallery'
 });
 
 test('Android native: two gallery filters, camera direct, no legacy extra menu',()=>{
- const src=read('apps/android/App.tsx');
+ const src=read('apps/android/app/NativeApp.tsx');
  const icons=read('apps/android/features/chat/ChatComposerIcon.tsx');
  const picker=read('apps/android/features/chat/useNativeMediaSelection.ts');
  const manifest=JSON.parse(read('apps/android/package.json'));
@@ -147,7 +147,7 @@ test('Android native: two gallery filters, camera direct, no legacy extra menu',
 
 test('Emoji stays enabled; microphone is informative until M03',()=>{
  const pwa=read('apps/pwa/src/app/App.tsx');
- const native=read('apps/android/App.tsx');
+ const native=read('apps/android/app/NativeApp.tsx');
  assert.match(pwa,/aria-label="Insertar emoji"/);
  assert.match(native,/accessibilityLabel="Insertar emoji"/);
  assert.match(pwa,/Los mensajes de voz se habilitarán después de fotos y videos/);
@@ -188,7 +188,7 @@ test('PWA Chat Timeline stays presentation-only: one session, one history engine
  assert.doesNotMatch(timeline,/new WebSocket|startNamedChatSession|restoreNamedChatSession|saveLocalChat|uploadChatFile/);
 });
 test('Native Chat timeline is presentation-only; original scroll ownership stays in Expo App',()=>{
- const controller=read('apps/android/App.tsx');
+ const controller=read('apps/android/app/NativeApp.tsx');
  const timeline=read('apps/android/features/chat/NativeChatTimeline.tsx');
  assert.match(controller,/import NativeChatTimeline from '\.\/features\/chat\/NativeChatTimeline'/);
  assert.match(controller,/<NativeChatTimeline[\s\S]*onContentSizeChange=\{/);

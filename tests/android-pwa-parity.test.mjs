@@ -115,7 +115,7 @@ test('Android Familia reads the same albums, authorized grant URLs and real BOOK
 });
 
 test('Native Chat uploads the unchanged original quality to the same R2 endpoints with 3 concurrent 5MiB parts',()=>{
- const android=read('apps/android/App.tsx');
+ const android=read('apps/android/app/NativeApp.tsx');
  const helper=read('apps/android/services/native-chat-r2-upload.ts');
  const pwa=read('apps/pwa/src/services/chat-media-upload.ts');
  assert.match(android,/uploadNativeChatFile\(session,item/);
@@ -142,5 +142,5 @@ test('Android remains an explicit signed batch and the existing install is never
  assert.match(manifest,/apksigner/);
  assert.match(manifest,/apk-signature-gate\.py/);
  assert.match(android,/"package": "com\.havananice\.v2"/);
- assert.doesNotMatch(read('apps/android/App.tsx'),/clearApplicationData|deleteDatabase|uninstallApp/);
+ assert.doesNotMatch(read('apps/android/app/NativeApp.tsx'),/clearApplicationData|deleteDatabase|uninstallApp/);
 });

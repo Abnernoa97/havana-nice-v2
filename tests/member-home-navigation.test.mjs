@@ -10,7 +10,7 @@ test('One shared list of member HOME destinations, not a second access mechanism
  assert.doesNotMatch(modules,/token|password|startNamedChatSession|restoreNamedChatSession/);
 });
 test('Existing Android login and Chat engine stay in one mounted App',()=>{
- const source=read('apps/android/App.tsx');
+ const source=read('apps/android/app/NativeApp.tsx');
  assert.match(source,/startNamedChatSession\(name\.trim\(\)\)/);
  assert.match(source,/restoreNamedChatSession/);
  assert.match(source,/session&&activeScreen!=='chat'&&<NativeMemberHome/);
@@ -20,9 +20,9 @@ test('Existing Android login and Chat engine stay in one mounted App',()=>{
  assert.doesNotMatch(read('apps/android/features/home/NativeMemberHome.tsx'),/startNamedChatSession|AsyncStorage|WebView|session\.token|fetch\(/);
 });
 test('Android styles live outside Chat controller without changing navigation or IME safety',()=>{
- const app=read('apps/android/App.tsx');
+ const app=read('apps/android/app/NativeApp.tsx');
  const styles=read('apps/android/features/chat/chat-styles.ts');
- assert.match(app,/import \{styles\} from '\.\/features\/chat\/chat-styles'/);
+ assert.match(app,/import \{styles\} from '\.\.\/features\/chat\/chat-styles'/);
  assert.doesNotMatch(app,/StyleSheet\.create\(/);
  assert.match(styles,/export const styles = StyleSheet\.create\(/);
  assert.match(styles,/inactiveChat:\{display:'none'\}/);

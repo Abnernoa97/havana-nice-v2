@@ -22,7 +22,7 @@ test('A01: HOME lists the same modules from a single shared contract',()=>{
   assert.deepEqual(ids,['chat','calendar','repertoire','musicians','family','notices','settings']);
   assert.match(read('apps/android/features/home/NativeMemberHome.tsx'),/MEMBER_MODULES\.map/);
   assert.match(read('apps/pwa/src/app/VisualApp.tsx'),/MEMBER_MODULES/);
-  assert.match(read('apps/android/App.tsx'),/session&&activeScreen!=='chat'&&<NativeMemberHome/);
+  assert.match(read('apps/android/app/NativeApp.tsx'),/session&&activeScreen!=='chat'&&<NativeMemberHome/);
   assert.match(read('apps/pwa/src/app/App.tsx'),/session&&activeScreen!=='chat'&&<Suspense/);
   assert.match(read('apps/pwa/src/app/App.tsx'),/<VisualApp displayName=/);
 });
@@ -33,7 +33,7 @@ test('A01: only existing App shells own musician enrollment and session restorat
     assert.doesNotMatch(source,/startNamedChatSession|restoreNamedChatSession|\/api\/chat\/session|chat_single_device_owners|loginMusician|createChatSession/,name+' may not create a parallel login');
     assert.doesNotMatch(source,/new WebSocket|new DurableObject|new D1Database/,name+' must not create a separate backend');
   }
-  for(const path of ['apps/android/App.tsx','apps/pwa/src/app/App.tsx']){
+  for(const path of ['apps/android/app/NativeApp.tsx','apps/pwa/src/app/App.tsx']){
     assert.match(read(path),/startNamedChatSession\(name\.trim\(\)\)/);
     assert.match(read(path),/restoreNamedChatSession/);
   }

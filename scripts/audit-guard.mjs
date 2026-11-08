@@ -16,7 +16,7 @@ const worker = read('cloudflare/src/index.ts');
 const chatRoom = read('cloudflare/src/modules/chat/chat-room.ts');
 const chatSession = read('cloudflare/src/modules/chat/chat-session.ts');
 assert.doesNotMatch(worker,/\/\/\s*@ts-nocheck\b/,'V2 Worker entrypoint must remain strictly typechecked');
-const android = read('apps/android/App.tsx');
+const android = read('apps/android/app/NativeApp.tsx');
 const pwa = read('apps/pwa/src/app/App.tsx');
 const nativeBubble = read('apps/android/features/chat/SwipeableBubble.tsx');
 const nativeTimeline = read('apps/android/features/chat/NativeChatTimeline.tsx');
