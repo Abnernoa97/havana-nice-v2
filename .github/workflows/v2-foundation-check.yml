@@ -164,7 +164,7 @@ jobs:
       - name: Guard virtualized native Chat list and preserve offline/media interactions
         run: node --test tests/native-chat-virtualization.test.mjs
 
-      - name: Verify BOOK Android bridge acknowledgement and safe WebView recovery
+      - name: Verify native BOOK fallback and authenticated PWA 3D navigation
         run: node --test tests/native-book-bridge.test.mjs
 
       - name: Verify Familia Android virtualized gallery and non-nested HOME viewport

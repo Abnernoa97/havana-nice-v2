@@ -22,7 +22,7 @@ apps/
     index.html          → sesión músico y Chat web
     visual.html         → HOME / módulos visuales
     admin.html          → sesión y módulos Administración
-    book.html           → visor BOOK en WebView nativo
+    book.html           → compatibilidad temporal con APK 0.0.15 (puente WebView antiguo)
     src/app/            → puntos de entrada y controladores
     src/features/       → chat/, calendar/, repertoire/, family/, book/, admin/
     src/services/       → transporte y acceso a APIs
@@ -125,7 +125,8 @@ tests/ + cloudflare/tests/ + scripts/ → reglas de seguridad y CI
 - [x] **Chat Android, primera optimización de render:** mensajes con `FlatList` virtualizada (`windowSize=7`, lotes limitados) para no montar todas las fotos/videos del historial; claves estables, paginación manual y posición visible preservadas; no cambiar sesión, D1, R2 ni caché. Requiere QA física de desplazamiento/60 FPS.
 - [ ] **Optimización posterior de Chat:** el controlador sigue siendo grande, pero el timeline YA usa `FlatList`; dividir el controlador restante únicamente tras comprobar desplazamiento, gestos, multimedia y memoria en Android real. No confundir organización con FPS medidos.
 - [x] **BOOK Android, diagnóstico y recuperación:** el puente JS confirma primero su montaje y luego la recepción del token con un ACK sin credenciales. Android valida el documento principal, vuelve a solicitar READY tras cargar, detecta falta de respuesta en 12 s y reconstruye la WebView si Android termina el proceso. El mismo `BookReader`/PageFlip continúa siendo el único motor. La corrección requiere nueva APK y QA físico antes de declarar resuelta la pantalla blanca.
-- [ ] **BOOK en Android:** sigue pendiente la prueba física del fallo anterior y su confirmación en la próxima APK acumulativa.
+- [x] **BOOK Android a PWA (código):** el lector habitual ahora es un paginador nativo rápido basado en los mismos `getBookPages` y `getCalendarMemories` privados; NO se abre WebView ni se repite sesión. El PageFlip 3D queda únicamente en la PWA y la navegación usa fragmentos validados sin token. El navegador requiere sesión web previamente autorizada: el bloqueo por instalación única impide registrar otra vez el mismo nombre. El puente `book.html` se conserva temporalmente para APKs anteriores y podrá retirarse tras migrarlas.
+- [ ] **BOOK en Android:** pendiente APK acumulativa con el nuevo lector y confirmación física de foto/paginación; el efecto 3D de PWA requiere sesión web ya autorizada.
 - **Publicación:** las reorganizaciones y optimizaciones ya se acumularon y publicaron en la APK 0.0.15 firmada; pendiente validación real de usuario. Sin cambios a PWA, Worker, D1 ni R2 en este bloque.
 
 ## 4.1. Matriz de aceptación física antes de declarar sincronización 100 %

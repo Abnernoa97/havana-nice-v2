@@ -1,145 +1,158 @@
 import React,{useCallback,useEffect,useRef,useState} from 'react';
-import {ActivityIndicator,AppState,Modal,Pressable,StyleSheet,Text,View} from 'react-native';
-import {WebView} from 'react-native-webview';
+import {
+ ActivityIndicator,Alert,AppState,FlatList,Image,Linking,Modal,Pressable,
+ StyleSheet,Text,View,useWindowDimensions
+} from 'react-native';
+import {
+ BOOK_GRANT_RENEW_MS,bookMediaUrl,getBookPages,getCalendarMemories,pwaReaderUrl,
+ type BookPage
+} from '@havana/shared';
 
-// BOOK is the exact same PWA PageFlip engine used by the iPhone, framed inside
-// the native app. No second native animation engine or separate credentials.
-const ORIGIN='https://havana-nice-v2.pages.dev';
-const READER=ORIGIN+'/book.html';
-const READY='havana-v2-book-ready';
-const AUTHORIZED='havana-v2-book-authorized';
-const BRIDGE_WATCHDOG_MS=12000;
-function trustedBookUrl(raw:string):boolean{
- if(raw==='about:blank')return true;
- try{
-  const url=new URL(raw);
-  return url.origin===ORIGIN&&url.pathname==='/book.html'&&!url.search&&!url.hash;
- }catch{return false;}
-}
-function dispatchBookEvent(eventName:'havana-v2-book-auth'|'havana-v2-book-refresh'|'havana-v2-book-calendar'|'havana-v2-book-native-probe',detail?:unknown):string{
- return '(function(){if(location.origin==='+JSON.stringify(ORIGIN)+
-  '&&location.pathname==="/book.html")window.dispatchEvent(new CustomEvent('+
-  JSON.stringify(eventName)+
-  (detail===undefined?'':',{detail:'+JSON.stringify(detail)+'}')+
-  '));})();true;';
-}
+// Native is a fast, read-only fallback for the EXISTING authorized session.
+// The ONLY 3D PageFlip engine stays in the browser PWA. No WebView bridge,
+// duplicate login, media proxy, app tokens in links or second rendering engine.
+type ReaderPage=Pick<BookPage,'id'|'url'|'fit'|'position'>;
 export default function NativeBook({token,refreshKey,onClose,calendarEventId,calendarTitle}:{
- token:string;refreshKey:number;onClose:()=>void;calendarEventId?:string;calendarTitle?:string
+ token:string;refreshKey:number;onClose:()=>void;calendarEventId?:string;calendarTitle?:string;
 }){
- const view=useRef<WebView<object>>(null);
- const [ready,setReady]=useState(false);
- const [failed,setFailed]=useState(false);
- const [failureReason,setFailureReason]=useState('');
- const [rendererGone,setRendererGone]=useState(false);
- const [viewKey,setViewKey]=useState(0);
- const trustedMainFrame=useRef(false);
- const watchdog=useRef<ReturnType<typeof setTimeout>|null>(null);
- const refreshRef=useRef(refreshKey);
- const clearWatchdog=useCallback(()=>{
-  if(watchdog.current!==null){clearTimeout(watchdog.current);watchdog.current=null;}
- },[]);
- const markFailed=useCallback((reason:string)=>{
-  clearWatchdog();setReady(false);setFailed(true);setFailureReason(reason);
- },[clearWatchdog]);
- const restart=()=>{
-  clearWatchdog();trustedMainFrame.current=false;
-  setReady(false);setFailed(false);setRendererGone(false);
-  setFailureReason('');setViewKey(v=>v+1);
- };
- useEffect(()=>()=>clearWatchdog(),[clearWatchdog]);
- const onMessage=useCallback((event:{nativeEvent:{data:string;url?:string}})=>{
-  // Verify the primary document independently: Android's message event may
-  // omit url. Never trust a subframe or navigate away from the private page.
-  if(!trustedMainFrame.current)return;
-  if(event.nativeEvent.url&&!trustedBookUrl(event.nativeEvent.url))return;
-  if(event.nativeEvent.data===READY){
-   // Token is transferred solely by an injected event after the bridge mounts.
-   view.current?.injectJavaScript(dispatchBookEvent('havana-v2-book-auth',token));
-   if(calendarEventId)view.current?.injectJavaScript(dispatchBookEvent('havana-v2-book-calendar',
-    {eventId:calendarEventId,title:calendarTitle||''}));
-  }else if(event.nativeEvent.data===AUTHORIZED){
-   clearWatchdog();setReady(true);setFailed(false);setFailureReason('');
+ const {width,height}=useWindowDimensions();
+ const list=useRef<FlatList<ReaderPage>|null>(null);
+ const generation=useRef(0);
+ const [pages,setPages]=useState<ReaderPage[]>([]);
+ const [loading,setLoading]=useState(true);
+ const [error,setError]=useState('');
+ const [index,setIndex]=useState(0);
+ const refresh=useCallback(async()=>{
+  const request=++generation.current;
+  try{
+   const result:ReaderPage[]=calendarEventId
+    ?(await getCalendarMemories(token,calendarEventId)).map(photo=>({
+      id:photo.id,url:photo.url,fit:photo.fit,position:photo.position
+     }))
+    :await getBookPages(token);
+   if(request!==generation.current)return;
+   setPages(result);setError('');setLoading(false);
+  }catch(reason){
+   if(request!==generation.current)return;
+   setLoading(false);
+   setError(reason instanceof Error?reason.message:'No se pudieron cargar las fotografías.');
   }
- },[token,calendarEventId,calendarTitle,clearWatchdog]);
+ },[token,calendarEventId]);
  useEffect(()=>{
-  if(!ready||refreshRef.current===refreshKey)return;
-  refreshRef.current=refreshKey;
-  view.current?.injectJavaScript(dispatchBookEvent('havana-v2-book-refresh'));
- },[refreshKey,ready]);
- useEffect(()=>{
-  const sub=AppState.addEventListener('change',state=>{
-   if(state==='active'&&ready)view.current?.injectJavaScript(dispatchBookEvent('havana-v2-book-refresh'));
+  setLoading(true);setPages([]);setIndex(0);
+  void refresh();
+  const app=AppState.addEventListener('change',state=>{
+   if(state==='active')void refresh(); // Renew the existing short-lived private R2 grants.
   });
-  return()=>sub.remove();
- },[ready]);
- return <Modal visible animationType="fade" onRequestClose={onClose}
+  return()=>{generation.current++;app.remove();};
+ },[refresh,refreshKey]);
+ useEffect(()=>{
+  if(!pages.length)return;
+  const timer=setTimeout(()=>{
+   if(AppState.currentState==='active')void refresh();
+  },BOOK_GRANT_RENEW_MS);
+  return()=>clearTimeout(timer);
+ },[pages,refresh]);
+ const choose=(next:number)=>{
+  if(next<0||next>=pages.length)return;
+  setIndex(next);
+  list.current?.scrollToOffset({offset:next*width,animated:true});
+ };
+ const openPwa3D=()=>{
+  // Browser storage is separate from Expo. The one-installation owner is NEVER
+  // bypassed and credentials must never appear in query, fragment or storage.
+  const target=calendarEventId?{kind:'memory' as const,eventId:calendarEventId}:{kind:'book' as const};
+  let url:string;
+  try{url=pwaReaderUrl(target);}catch{return;}
+  Alert.alert('BOOK 3D en PWA',
+   'El efecto 3D se abre en el navegador y necesita una sesión web ya autorizada. La sesión de Android no se transfiere ni se vuelve a registrar el mismo nombre.',
+   [{text:'Cancelar',style:'cancel'},
+    {text:'Abrir PWA',onPress:()=>void Linking.openURL(url)}]);
+ };
+ const imageHeight=Math.max(250,Math.min(height*0.64,680));
+ return <Modal visible animationType="slide" onRequestClose={onClose}
   statusBarTranslucent presentationStyle="fullScreen">
   <View style={styles.root}>
    <View style={styles.toolbar}>
-    <Pressable accessibilityRole="button" accessibilityLabel="Cerrar BOOK HAVANA NICE"
-     onPress={onClose} style={styles.back}><Text style={styles.backText}>‹ Volver</Text></Pressable>
+    <Pressable accessibilityRole="button" accessibilityLabel="Cerrar BOOK"
+     onPress={onClose} style={styles.back}>
+     <Text style={styles.backText}>‹ Volver</Text>
+    </Pressable>
     <Text style={styles.title}>{calendarEventId?'RECUERDOS · HAVANA NICE':'BOOK HAVANA NICE'}</Text>
    </View>
-   {!rendererGone&&<WebView<object> key={viewKey} ref={view} source={{uri:READER}} originWhitelist={[ORIGIN]}
-    style={styles.web} javaScriptEnabled domStorageEnabled={false}
-    thirdPartyCookiesEnabled={false} sharedCookiesEnabled={false}
-    mixedContentMode="never" setSupportMultipleWindows={false}
-    allowsBackForwardNavigationGestures={false} pullToRefreshEnabled={false}
-    onShouldStartLoadWithRequest={event=>trustedBookUrl(event.url)}
-    onMessage={onMessage}
-    onLoadStart={event=>{
-     trustedMainFrame.current=event.nativeEvent.url===READER;
-     setReady(false);setFailed(false);
-     clearWatchdog();
-     watchdog.current=setTimeout(()=>markFailed('BOOK no respondió al iniciar. Comprueba la conexión y vuelve a intentarlo.'),
-      BRIDGE_WATCHDOG_MS);
-    }}
-    onLoadEnd={event=>{
-     if(event.nativeEvent.url===READER){
-      trustedMainFrame.current=true;
-      // Recover a ready event missed during Android WebView startup.
-      view.current?.injectJavaScript(dispatchBookEvent('havana-v2-book-native-probe'));
-     }
-    }}
-    onError={()=>markFailed('No se pudo cargar la página privada de BOOK.')}
-    onHttpError={event=>{
-     if(event.nativeEvent.statusCode>=400&&event.nativeEvent.url===READER)
-      markFailed('La página BOOK devolvió un error HTTP.');
-    }}
-    onRenderProcessGone={()=>{
-     // The original WebView process is unusable. Never reload that instance.
-     setRendererGone(true);trustedMainFrame.current=false;
-     markFailed('Android cerró el visor BOOK para liberar memoria.');
-    }}
-    renderLoading={()=> <View style={styles.loading}><ActivityIndicator color="#315843"/></View>}
-    startInLoadingState
-   />}
-   {!ready&&!failed?<View style={styles.bridgePending} accessibilityRole="text">
-     <ActivityIndicator size="small" color="#315843"/>
-     <Text style={styles.bridgeText}>Conectando el lector privado…</Text>
-   </View>:null}
-   {failed?<View style={styles.failure} accessibilityRole="alert">
-     <Text style={styles.failureText}>{failureReason||'No se pudo abrir BOOK.'}</Text>
-     <Pressable accessibilityRole="button" onPress={restart}>
-      <Text style={styles.tryAgain}>Reintentar BOOK</Text>
+   <Text style={styles.subtitle}>Lectura rápida · fotografías originales autorizadas</Text>
+   {!!calendarEventId&&!!calendarTitle&&<Text style={styles.eventTitle}>{calendarTitle}</Text>}
+   {loading?<View style={styles.center}><ActivityIndicator color="#315843"/>
+     <Text style={styles.status}>Cargando páginas privadas…</Text></View>:
+    error?<View style={styles.center}>
+     <Text style={styles.error}>{error}</Text>
+     <Pressable onPress={()=>{setLoading(true);void refresh();}} accessibilityRole="button">
+      <Text style={styles.action}>Reintentar</Text>
      </Pressable>
-   </View>:null}
+    </View>:!pages.length?<View style={styles.center}>
+     <Text style={styles.status}>Todavía no hay fotografías publicadas.</Text>
+    </View>:
+    <FlatList
+     ref={list} style={styles.gallery} data={pages} horizontal pagingEnabled
+     keyExtractor={page=>page.id} initialNumToRender={1}
+     maxToRenderPerBatch={2} windowSize={3} removeClippedSubviews={false}
+     showsHorizontalScrollIndicator={false}
+     getItemLayout={(_,i)=>({length:width,offset:i*width,index:i})}
+     onMomentumScrollEnd={event=>{
+      setIndex(Math.max(0,Math.min(pages.length-1,
+       Math.round(event.nativeEvent.contentOffset.x/width))));
+     }}
+     renderItem={({item})=>{
+      const uri=bookMediaUrl(item.url);
+      return <View style={[styles.page,{width}]}>
+       {uri?<Image source={{uri}} resizeMode={item.fit==='contain'?'contain':'cover'}
+        style={[styles.photo,{height:imageHeight}]}/>:
+        <Text style={styles.error}>Imagen no disponible.</Text>}
+      </View>;
+     }}
+    />}
+   <View style={styles.footer}>
+    <View style={styles.controls}>
+     <Pressable accessibilityRole="button" accessibilityLabel="Fotografía anterior"
+      disabled={loading||index===0} onPress={()=>choose(index-1)}>
+      <Text style={[styles.arrow,index===0&&styles.disabled]}>‹</Text>
+     </Pressable>
+     <Text style={styles.counter}>{pages.length?index+1:0} / {pages.length}</Text>
+     <Pressable accessibilityRole="button" accessibilityLabel="Fotografía siguiente"
+      disabled={loading||index>=pages.length-1} onPress={()=>choose(index+1)}>
+      <Text style={[styles.arrow,index>=pages.length-1&&styles.disabled]}>›</Text>
+     </Pressable>
+    </View>
+    <Pressable accessibilityRole="button" onPress={openPwa3D}
+     style={styles.pwaButton}>
+     <Text style={styles.pwaText}>Ver efecto 3D en PWA ↗</Text>
+    </Pressable>
+   </View>
   </View>
  </Modal>;
 }
 const styles=StyleSheet.create({
  root:{flex:1,backgroundColor:'#f3eddf',paddingTop:32},
- toolbar:{minHeight:50,flexDirection:'row',alignItems:'center',paddingHorizontal:13,gap:18,
-  borderBottomWidth:1,borderColor:'#d8d0c2',backgroundColor:'#f8f5ee'},
+ toolbar:{minHeight:53,flexDirection:'row',alignItems:'center',paddingHorizontal:13,gap:15,
+  backgroundColor:'#f8f5ee',borderBottomWidth:1,borderColor:'#d8d0c2'},
  back:{paddingHorizontal:10,paddingVertical:12},
- backText:{color:'#2c523c',fontSize:14,fontWeight:'700'},
- title:{fontSize:13,color:'#274632',letterSpacing:1.5,fontWeight:'800'},
- web:{flex:1,backgroundColor:'#f3eddf'},
- loading:{flex:1,alignItems:'center',justifyContent:'center'},
- bridgePending:{flexDirection:'row',alignItems:'center',justifyContent:'center',gap:10,
-  padding:10,backgroundColor:'#f8f5ee'},
- bridgeText:{fontSize:12,color:'#315843'},
- failure:{padding:20,gap:12,backgroundColor:'#fbf3e9'},
- failureText:{fontSize:13,color:'#7e3c32'},
- tryAgain:{fontSize:13,color:'#315843',fontWeight:'700'}
+ backText:{color:'#2c523c',fontSize:15,fontWeight:'700'},
+ title:{flexShrink:1,fontSize:12,color:'#274632',letterSpacing:1.3,fontWeight:'800'},
+ subtitle:{textAlign:'center',fontSize:12,color:'#706454',paddingTop:15},
+ eventTitle:{textAlign:'center',fontSize:19,color:'#3a4032',fontWeight:'700',paddingHorizontal:16},
+ gallery:{flex:1},
+ center:{flex:1,alignItems:'center',justifyContent:'center',gap:15,paddingHorizontal:18},
+ status:{fontSize:13,color:'#75695a',textAlign:'center'},
+ error:{fontSize:13,color:'#a64343',textAlign:'center'},
+ action:{fontSize:14,color:'#315843',fontWeight:'800'},
+ page:{flex:1,justifyContent:'center',alignItems:'center',paddingHorizontal:16},
+ photo:{width:'100%',backgroundColor:'#eee8db',borderRadius:6},
+ footer:{backgroundColor:'#f8f5ee',paddingBottom:23,gap:13,paddingHorizontal:18},
+ controls:{flexDirection:'row',justifyContent:'space-between',alignItems:'center'},
+ counter:{fontSize:14,fontWeight:'700',color:'#35523e'},
+ arrow:{fontSize:33,color:'#345541',paddingHorizontal:20},
+ disabled:{opacity:0.3},
+ pwaButton:{alignSelf:'center',borderWidth:1,borderRadius:18,
+  borderColor:'#315843',paddingVertical:11,paddingHorizontal:20},
+ pwaText:{fontSize:13,color:'#315843',fontWeight:'700'}
 });
