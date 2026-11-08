@@ -12,7 +12,7 @@ test('PWA and Android share a notification-only transport with no tokens in URLs
  assert.match(shared,/new WebSocket\(url,protocols\)/);
  assert.doesNotMatch(shared,/\?token|localStorage|indexedDB|\/api\/family\/media\/|object_key|setInterval/);
  const index=read('packages/shared/src/index.ts');
- assert.match(index,/export \{openFamilyRealtime\} from '\.\/family-realtime'/);
+ assert.match(index,/export \{openFamilyRealtime,FAMILY_WS_HANDSHAKE_TIMEOUT_MS\} from '\.\/family-realtime'/);
 });
 
 test('Both PWA Family screens refresh albums and media on the one live signal',()=>{
