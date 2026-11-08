@@ -164,6 +164,9 @@ jobs:
       - name: Guard virtualized native Chat list and preserve offline/media interactions
         run: node --test tests/native-chat-virtualization.test.mjs
 
+      - name: Verify Familia Android virtualized gallery and non-nested HOME viewport
+        run: node --test tests/native-family-virtualization.test.mjs
+
       - name: Verify visual media UI remains compatible
         run: node --test tests/chat-media-ui.test.mjs
 

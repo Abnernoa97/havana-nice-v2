@@ -109,6 +109,7 @@ tests/ + cloudflare/tests/ + scripts/ → reglas de seguridad y CI
 - [ ] **P3 Offline físico:** modo avión, regresar con red y primer arranque de cada módulo en iPhone PWA; validar que el Service Worker no cargue JS antiguo.
 - [ ] **P4 Colas persistentes:** si en el futuro quedan objetos pendientes tras fallo R2, diseñar reintento seguro desde rutas Admin sin introducir tareas de pago ni borrar activos. Ahora las colas están vacías.
 - [x] **P5 Nueva APK acumulativa:** lote explícito **0.0.14 / versionCode 14** compilado, firmado y publicado; controles de APK con JS incorporado, firma anterior y versión mayor **PASS** en [CI Android 42451609250](https://github.com/Abnernoa97/havana-nice-v2/actions/runs/42451609250). 0.0.13 preservada como PREVIOUS. **No afirmar que esté instalada**: actualización sobre el equipo y pruebas nativas quedan en P3.
+- [x] **P6a Familia Android — render de galería:** un `FlatList` vertical con tres columnas, miniaturas virtualizadas en lotes y datos memoizados; HOME elimina el `ScrollView` exterior únicamente en Familia para preservar la virtualización. El visor modal usa el video nativo existente, con fuentes R2 privadas y sin otro motor. Pendiente QA en teléfono.
 - [ ] **P6 Músicos / Multimedia:** completar y probar funcionalidad y sincronización antes de estética One UI definitiva.
 - [ ] **P7 Métricas reales:** medir tiempos de apertura, descargas por módulo, rendimientos Chat/medios y memoria Android; no inventar números de velocidad.
 

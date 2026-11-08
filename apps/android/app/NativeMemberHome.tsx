@@ -16,7 +16,7 @@ type Props={
 // owned by App.tsx: mounting HOME never issues, copies or revokes a token.
 export default function NativeMemberHome({displayName,token,active,onNavigate}:Props){
   const selected=MEMBER_MODULES.find(module=>module.id===active);
-  return <View style={styles.screen}><ScrollView style={styles.root} contentContainerStyle={styles.content}>
+  const content=<>
     <View style={styles.top}>
       <Text style={styles.brand}>HAVANA NICE</Text>
       <Text style={styles.subheading}>ESPACIO DEL EQUIPO · V2</Text>
@@ -56,7 +56,11 @@ export default function NativeMemberHome({displayName,token,active,onNavigate}:P
         </Text>
       </View>}
     </>}
-  </ScrollView>
+  </>;
+  return <View style={styles.screen}>
+   {active==='family'
+    ?<View style={[styles.root,styles.content,styles.familyViewport]}>{content}</View>
+    :<ScrollView style={styles.root} contentContainerStyle={styles.content}>{content}</ScrollView>}
   <View style={styles.bottomNav} accessibilityRole="tablist">
    {(['home','chat','calendar','repertoire','family'] as MemberScreen[]).map(dest=>{
     const match=MEMBER_MODULES.find(m=>m.id===dest);
@@ -81,6 +85,7 @@ const styles=StyleSheet.create({
   bottomLabel:{fontSize:10,color:'#8b8175'},
   activeLabel:{fontWeight:'800',color:'#272923'},
   content:{padding:24,paddingBottom:55},
+  familyViewport:{flex:1,minHeight:0,paddingBottom:0},
   top:{paddingTop:14,paddingBottom:25,borderBottomWidth:1,borderBottomColor:'#d8cdbc',marginBottom:25},
   brand:{fontSize:13,fontWeight:'800',letterSpacing:3.1,color:'#24251f'},
   subheading:{fontSize:10,letterSpacing:1.5,color:'#766b61',marginTop:7},

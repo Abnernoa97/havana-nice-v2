@@ -1,5 +1,5 @@
-import React,{useCallback,useEffect,useRef,useState} from 'react';
-import {ActivityIndicator,AppState,Image,Modal,Pressable,StyleSheet,Text,View,useWindowDimensions} from 'react-native';
+import React,{useCallback,useEffect,useMemo,useRef,useState} from 'react';
+import {ActivityIndicator,AppState,FlatList,Image,Modal,Pressable,ScrollView,StyleSheet,Text,View,useWindowDimensions} from 'react-native';
 import {useVideoPlayer,VideoView} from 'expo-video';
 import NativeBook from '../book/NativeBook';
 import {getFamilyDirectory,getFamilyAlbumMedia,familyAlbumCount,HAVANA_V2_DEV_API_BASE_URL,openFamilyRealtime,FAMILY_WS_HANDSHAKE_TIMEOUT_MS,
@@ -134,11 +134,11 @@ export default function NativeFamily({token}:{token:string}){
  const back=()=>{++mediaGeneration.current;setSelected(null);setBook(false);setFocused(null);};
  const active=directory?.albums.find(a=>a.actorId===selected);
  const cover=privateUrl(active?.coverUrl);
- const ready:ReadyMedia[]=items.flatMap(item=>{
+ const ready=useMemo<ReadyMedia[]>(()=>items.flatMap(item=>{
   const url=privateUrl(item.fileUrl);
   return url?[{id:item.id,kind:item.kind,
    image:privateUrl(item.thumbnailUrl)|| (item.kind==='photo'?url:null),file:url}]:[];
- });
+ }),[items]);
  const chosen=focused!==null?ready[focused]:null;
  const change=(step:number)=>setFocused(current=>current===null||!ready.length?null:
   (current+step+ready.length)%ready.length);
@@ -151,46 +151,63 @@ export default function NativeFamily({token}:{token:string}){
   </View>
   {!!error&&<Text accessibilityRole="alert" style={styles.error}>{error}</Text>}
   {loading?<ActivityIndicator color="#917252"/>:book?
-   <NativeBook token={token} refreshKey={bookTick} onClose={back}/>:active?<>
-   <Pressable onPress={back}><Text style={styles.action}>‹ Todos los álbumes</Text></Pressable>
-   <View style={styles.hero}>
-    {cover?<Image source={{uri:cover}} style={styles.heroImage} resizeMode="cover"/>:
-     <Text style={styles.monogram}>{active.name.slice(0,1).toUpperCase()}</Text>}
-    <View style={styles.heroCaption}>
-     <Text style={styles.heroTitle}>{active.name}</Text>
-     <Text style={styles.heroCount}>{familyAlbumCount(active)}</Text>
-    </View>
-   </View>
-   {mediaLoading?<ActivityIndicator color="#917252"/>:ready.length?<View style={styles.gallery}>
-    {ready.map((item,index)=><Pressable key={item.id}
+   <NativeBook token={token} refreshKey={bookTick} onClose={back}/>:active?
+   <FlatList
+    style={styles.albumList}
+    contentContainerStyle={styles.albumListContent}
+    data={mediaLoading?[]:ready}
+    keyExtractor={item=>item.id}
+    numColumns={3}
+    columnWrapperStyle={styles.galleryRow}
+    initialNumToRender={12}
+    maxToRenderPerBatch={9}
+    windowSize={5}
+    removeClippedSubviews={false}
+    keyboardShouldPersistTaps="handled"
+    ListHeaderComponent={<>
+     <Pressable onPress={back} style={styles.back}><Text style={styles.action}>‹ Todos los álbumes</Text></Pressable>
+     <View style={styles.hero}>
+      {cover?<Image source={{uri:cover}} style={styles.heroImage} resizeMode="cover"/>:
+       <Text style={styles.monogram}>{active.name.slice(0,1).toUpperCase()}</Text>}
+      <View style={styles.heroCaption}>
+       <Text style={styles.heroTitle}>{active.name}</Text>
+       <Text style={styles.heroCount}>{familyAlbumCount(active)}</Text>
+      </View>
+     </View>
+     {mediaLoading?<ActivityIndicator color="#917252" style={styles.mediaSpinner}/>:null}
+    </>}
+    ListEmptyComponent={!mediaLoading
+     ?<Text style={styles.empty}>{active.mediaReady?'Todavía no hay fotos ni videos en este álbum.':'El almacenamiento privado aún no está disponible.'}</Text>
+     :undefined}
+    renderItem={({item,index})=><Pressable
      accessibilityRole="button" accessibilityLabel={'Abrir '+(item.kind==='photo'?'foto':'video')}
      style={[styles.media,{width:(screenWidth-72)/3,height:(screenWidth-72)/3}]}
      onPress={()=>setFocused(index)}>
      {item.image?<Image source={{uri:item.image}} style={styles.fill} resizeMode="cover"/>:
       <Text style={styles.play}>▶</Text>}
      {item.kind==='video'&&<Text style={styles.videoMark}>▶</Text>}
-    </Pressable>)}
-   </View>:<Text style={styles.empty}>{active.mediaReady?'Todavía no hay fotos ni videos en este álbum.':'El almacenamiento privado aún no está disponible.'}</Text>}
-  </>:<>
-   <Text style={styles.empty}>Álbumes de los integrantes autorizados de HAVANA NICE.</Text>
-   <View style={styles.albums}>{directory?.albums.map(album=>{
-    const image=privateUrl(album.coverUrl);
-    return <Pressable key={album.actorId} accessibilityRole="button" style={styles.album}
-     onPress={()=>open(album)}>
-     {image?<Image source={{uri:image}} style={styles.fill} resizeMode="cover"/>:
-      <Text style={styles.monogram}>{album.name.slice(0,1).toUpperCase()}</Text>}
-     <View style={styles.albumOverlay}><Text style={styles.albumName}>{album.name}</Text>
-      <Text style={styles.heroCount}>{familyAlbumCount(album)}</Text></View>
-    </Pressable>;
-   })}</View>
-   <Pressable style={styles.bookButton} accessibilityRole="button"
-    onPress={()=>{setSelected(null);setBook(true);}}>
-    <Text style={styles.eyebrow}>EDICIONES EDITORIALES</Text>
-    <Text style={styles.bookName}>BOOK HAVANA NICE</Text>
-    <Text style={styles.empty}>La revista fotográfica de HAVANA NICE</Text>
-    <Text style={styles.action}>Ver sección editorial →</Text>
-   </Pressable>
-  </>}
+    </Pressable>}
+   />:
+   <ScrollView style={styles.albumList} contentContainerStyle={styles.directoryContent}>
+    <Text style={styles.empty}>Álbumes de los integrantes autorizados de HAVANA NICE.</Text>
+    <View style={styles.albums}>{directory?.albums.map(album=>{
+     const image=privateUrl(album.coverUrl);
+     return <Pressable key={album.actorId} accessibilityRole="button" style={styles.album}
+      onPress={()=>open(album)}>
+      {image?<Image source={{uri:image}} style={styles.fill} resizeMode="cover"/>:
+       <Text style={styles.monogram}>{album.name.slice(0,1).toUpperCase()}</Text>}
+      <View style={styles.albumOverlay}><Text style={styles.albumName}>{album.name}</Text>
+       <Text style={styles.heroCount}>{familyAlbumCount(album)}</Text></View>
+     </Pressable>;
+    })}</View>
+    <Pressable style={styles.bookButton} accessibilityRole="button"
+     onPress={()=>{setSelected(null);setBook(true);}}>
+     <Text style={styles.eyebrow}>EDICIONES EDITORIALES</Text>
+     <Text style={styles.bookName}>BOOK HAVANA NICE</Text>
+     <Text style={styles.empty}>La revista fotográfica de HAVANA NICE</Text>
+     <Text style={styles.action}>Ver sección editorial →</Text>
+    </Pressable>
+   </ScrollView>}
   <Modal visible={chosen!==null} animationType="fade" statusBarTranslucent
    onRequestClose={()=>setFocused(null)}>
    <View style={styles.modal}>
@@ -213,7 +230,13 @@ export default function NativeFamily({token}:{token:string}){
  </View>;
 }
 const styles=StyleSheet.create({
- root:{gap:15,paddingBottom:35},toolbar:{flexDirection:'row',justifyContent:'space-between'},
+ root:{flex:1,minHeight:0,gap:15},toolbar:{flexDirection:'row',justifyContent:'space-between'},
+ albumList:{flex:1,minHeight:0},
+ albumListContent:{paddingBottom:35},
+ directoryContent:{paddingBottom:35},
+ galleryRow:{gap:5,marginBottom:5},
+ back:{marginBottom:15},
+ mediaSpinner:{marginVertical:18},
  eyebrow:{color:'#917252',fontWeight:'700',fontSize:10,letterSpacing:1.4},
  action:{color:'#856243',fontWeight:'700',fontSize:13},error:{color:'#b23d2e',fontSize:13},
  empty:{fontSize:13,color:'#81756b',lineHeight:20,marginVertical:8},
