@@ -1,4 +1,18 @@
-## ESTADO VIGENTE · BOOK HAVANA NICE V2 · 07/11/2026
+## ESTADO VIGENTE · CALENDARIO / BOOK HAVANA NICE V2 · 08/11/2026
+
+## RECUERDOS DEL CALENDARIO · ENTREGADO EN UN SOLO MAIN
+
+- [x] **Cuño automático:** todo evento **confirmado** con fecha reconocida que ya terminó en su propia zona horaria presenta el sello «EVENTO REALIZADO». No marcar citas futuras, canceladas, tentativas o fechas libres imposibles de interpretar. El título, fecha y demás campos se mantienen originales.
+- [x] **Ficha resumida en pergamino:** al desplegar un evento pasado, el músico ve fecha, nombre, lugar y hora del show (si existen) con marco de papel, además de las fotos asignadas a ese día. Los eventos futuros conservan la ficha de trabajo, horarios, contacto y Maps.
+- [x] **Un único motor BOOK:** las fotografías del recuerdo usan el mismo `BookReader.tsx` / StPageFlip de 780 ms, con cubierta editorial del evento, giro fluido y desplazamiento vertical; sin motor ni cuenta paralelos. PWA iPhone y código nativo Android integrados (Android en el próximo paquete, APK instalada 0.0.13 intacta).
+- [x] **Administración real:** cada fecha muestra su propio panel para añadir fotos privadas, preparar WebP de hasta 2048 px con el optimizador existente, mover orden, borrar, ver ahorro y previsualizar en BOOK. Máximo 50 fotografías por evento, hasta cinco elegidas simultáneamente.
+- [x] **Seguridad y sincronización:** solo destinatarios vigentes ven álbum de evento pasado, verificado nuevamente para cada enlace privado de 10 minutos. Se invalidan sesiones visuales por el canal Calendar existente y se renuevan enlaces a los ocho minutos mientras el libro está abierto. Al borrar la fecha, D1 encola originales y WebP en R2 para borrado definitivo, incluso ante una caída temporal; todo sujeto a cuota global 9.5 GB. Sin tocar Familia, Chat, HAVANA CLOUD ni claves originales.
+- [x] **Infraestructura/QA:** migración aditiva D1 `0029_calendar_event_memories.sql` aplicada sin fallos FK; **4 eventos vigentes, 0 fotografías de recuerdos todavía**. Worker **v65 100 %** `81a512bb-a383-4258-8f5b-6aacf831b9b5`, siete bindings originales conservados, bundle auditado desde `main` (commit `d8567b3f`, SHA256 `478800a1a2cb99a4b1a9c8d9c244ae7a86b0fb3e21a460f51e9e8f7d34e30b74`). Pruebas de permisos, fotos asignadas, fechas futuras, R2, Chrome y Android aprobadas en [CI 42439938458](https://github.com/Abnernoa97/havana-nice-v2/actions/runs/42439938458), [CI 42440060312](https://github.com/Abnernoa97/havana-nice-v2/actions/runs/42440060312) y prueba del v65 sin tráfico real [CI 42440225680](https://github.com/Abnernoa97/havana-nice-v2/actions/runs/42440225680).
+- [ ] **Aceptación física:** Admin debe subir las fotos reales para una fecha y comprobar el efecto BOOK en iPhone y escritorio. Aún 0 recuerdos fotográficos; no atribuir compresión real a eventos sin fotos. La actualización Android se entregará en próximo APK acumulativo, no por ajuste individual.
+
+**Datos BOOK general aparte:** 7 imágenes originales (29,333,701 bytes), 0 WebP creados al último control. Abrir panel de Administración de BOOK para optimizar las existentes; no borrar originales. **Los estados de Worker v63/v64 y notas de ausencia de optimización en el historial inferior quedan supersedidos por este bloque.**
+
+
 
 
 ## OPTIMIZACIÓN BOOK · 08/11/2026 · PUBLICADO
