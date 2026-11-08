@@ -91,7 +91,8 @@ for(const path of sources){
   const local=match[1]||match[2]||match[3];
   const absolute=resolve(rootDir,dirname(path),local);
   const candidates=[absolute,absolute+'.ts',absolute+'.tsx',absolute+'.js',
-   absolute+'.css',join(absolute,'index.ts'),join(absolute,'index.tsx')];
+   absolute+'.css',join(absolute,'index.ts'),join(absolute,'index.tsx'),
+   ...(absolute.endsWith('.js')?[absolute.slice(0,-3)+'.ts',absolute.slice(0,-3)+'.tsx']:[])];
   const target=candidates.find(p=>existsSync(p)&&statSync(p).isFile());
   assert.ok(target,'Broken local import '+path+' -> '+local);
   const rel=relative(rootDir,target).replaceAll('\\','/');
@@ -128,7 +129,8 @@ for(const path of shared){
   const relImport=match[1]||match[2];
   const absolute=resolve(rootDir,dirname(path),relImport);
   const candidates=[absolute,absolute+'.ts',absolute+'.tsx',absolute+'.js',
-    join(absolute,'index.ts')];
+    join(absolute,'index.ts'),
+    ...(absolute.endsWith('.js')?[absolute.slice(0,-3)+'.ts',absolute.slice(0,-3)+'.tsx']:[])];
   const target=candidates.find(q=>existsSync(q)&&statSync(q).isFile());
   assert.ok(target,'Broken shared import '+path+' -> '+relImport);
   const relativePath=relative(rootDir,target).replaceAll('\\','/');
