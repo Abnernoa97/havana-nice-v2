@@ -38,6 +38,15 @@ export default function BookReader({pages}:{pages:BookPage[]}){
  const busyRef=useRef(false);
  const pendingImages=useRef<BookPage[]|null>(null);
  const touchStart=useRef<{id:number;x:number;y:number;at:number;vertical:boolean;corner:boolean;dragging:boolean}|null>(null);
+ // BOOK cover, pages and ending all use the same native paper renderer.
+ // Landscape editorial photos receive a separate layout without changing Admin fit.
+ const markPhotoLayout=useCallback((image:HTMLImageElement)=>{
+  if(!image.naturalWidth||!image.naturalHeight)return;
+  const leaf=image.closest<HTMLElement>('.hn-book-photo');
+  if(!leaf)return;
+  const wide=image.naturalWidth/image.naturalHeight>1.12;
+  leaf.classList.toggle('hn-book-wide-photo',wide);
+ },[]);
  const count=pages.length+1; // The first Admin image is the cover, never repeated.
  const countRef=useRef(count);
  countRef.current=count;
@@ -68,6 +77,26 @@ export default function BookReader({pages}:{pages:BookPage[]}){
   const next=bookMediaUrl(data[0]?.url);
   if(cover&&next&&cover.src!==next)cover.src=next;
  },[]);
+
+ // A decoded landscape image gets a full editorial mount instead of being
+ // cropped vertically. All formats retain the Admin's contain/cover choice.
+ useEffect(()=>{
+  const mount=mountRef.current;
+  const source=sourceRef.current;
+  const onImageLoad=(event:Event)=>{
+   if(event.target instanceof HTMLImageElement)markPhotoLayout(event.target);
+  };
+  mount?.addEventListener('load',onImageLoad,true);
+  source?.addEventListener('load',onImageLoad,true);
+  for(const img of [...(mount?.querySelectorAll<HTMLImageElement>('.hn-book-photo img')||[]),
+   ...(source?.querySelectorAll<HTMLImageElement>('.hn-book-photo img')||[])]){
+   if(img.complete)markPhotoLayout(img);
+  }
+  return()=>{
+   mount?.removeEventListener('load',onImageLoad,true);
+   source?.removeEventListener('load',onImageLoad,true);
+  };
+ },[mode,present,structure,markPhotoLayout]);
 
  // The library was previously given autoSize:true. It changes wrapper padding
  // from a single-page to a double-page ratio during a turn, moving the entire
@@ -158,18 +187,29 @@ export default function BookReader({pages}:{pages:BookPage[]}){
   syncMedia(pages);
  },[pages,syncMedia]);
 
- // Prime only the upcoming photos, not all 80 high-resolution originals.
+ // Decode only the current spread and the next two genuine R2 originals.
+ // No duplicate fetch engine, no compression, no 80-image preload and no
+ // regeneration of Book pages. This effect is idle between page turns.
  useEffect(()=>{
   if(mode!=='flip')return;
-  const images=mountRef.current?.querySelectorAll<HTMLImageElement>('img[data-book-id]');
-  if(!images)return;
-  for(let i=Math.max(0,page-1);i<Math.min(images.length,page+2);i++){
+  const mount=mountRef.current;
+  if(!mount)return;
+  const cover=mount.querySelector<HTMLImageElement>('img[data-book-cover]');
+  if(cover&&page<=1){
+   cover.loading='eager';
+   cover.fetchPriority=page===0?'high':'auto';
+   if(typeof cover.decode==='function')void cover.decode().catch(()=>{});
+  }
+  const images=mount.querySelectorAll<HTMLImageElement>('img[data-book-id]');
+  for(let i=Math.max(0,page-2);i<Math.min(images.length,page+2);i++){
    const img=images.item(i);
    if(!img)continue;
    img.loading='eager';
+   img.fetchPriority=i===Math.max(0,page-1)?'high':'auto';
    if(typeof img.decode==='function')void img.decode().catch(()=>{});
+   if(img.complete)markPhotoLayout(img);
   }
- },[page,mode,structure]);
+ },[page,mode,structure,markPhotoLayout]);
 
  const flip=useCallback((direction:'next'|'prev')=>{
   const engine=instance.current;
@@ -258,16 +298,19 @@ export default function BookReader({pages}:{pages:BookPage[]}){
    <div className="hn-book-cover-shade"/>
    <div className="hn-book-cover-heading"><small>THE PRIVATE EDITION</small><strong>HAVANA<br/>NICE</strong></div>
    <div className="hn-book-cover-footer">BOOK HAVANA NICE <span>01 / EDITION</span></div>
+   <span className="hn-book-cover-corner" aria-hidden="true"/>
   </div>
   {pages.slice(1).map((item,i)=>{
    const url=bookMediaUrl(item.url);
-   return <div key={item.id} className={'hn-book-leaf hn-book-photo '+(item.fit==='contain'?'hn-book-contain':'hn-book-cover-fit')} data-density="soft">
+   return <div key={item.id} data-book-fit={item.fit}
+    className={'hn-book-leaf hn-book-photo '+(item.fit==='contain'?'hn-book-contain':'hn-book-cover-fit')} data-density="soft">
     {url?<img src={url} data-book-id={item.id} alt={'Página '+(i+2)+' de BOOK HAVANA NICE'} loading={i<2?'eager':'lazy'} decoding="async"/>:null}
     <span className="hn-book-folio">{String(i+2).padStart(2,'0')}</span>
    </div>;
   })}
   <div className="hn-book-leaf hn-book-back" data-density="soft">
    <small>HAVANA NICE</small><strong>THE END.</strong><span>LIVE MUSIC · MADE PERSONAL</span>
+   <span className="hn-book-cover-corner" aria-hidden="true"/>
   </div>
  </>;
  },[pages]);
@@ -286,7 +329,7 @@ export default function BookReader({pages}:{pages:BookPage[]}){
    onPointerDown={onPointerDown} onPointerMove={onPointerMove}
    onPointerUp={onPointerUp}
    onPointerCancel={()=>{touchStart.current=null;}}>
-   <div className={'hn-book-mount'+(turning?' hn-book-turning':'')} ref={mountRef}/>
+   <div className={'hn-book-mount'+(turning?' hn-book-turning':'')+(page===0?' hn-book-closed':' hn-book-opened')} ref={mountRef}/>
   </div>:null}
   {mode==='scroll'?<div className="hn-book-scroll">{leaves}</div>:null}
   <div className="hn-book-source" aria-hidden="true" ref={sourceRef}>{leaves}</div>
