@@ -1,5 +1,5 @@
 import {useCallback,useEffect,useRef,useState} from 'react';
-import {addCalendarMemory,addCalendarMemoryWebp,calendarMemoryUrl,
+import {BOOK_GRANT_RENEW_MS,addCalendarMemory,addCalendarMemoryWebp,calendarMemoryUrl,
  deleteCalendarMemory,getCalendarMemories,moveCalendarMemory,
  type CalendarMemoryPhoto} from '@havana/shared';
 import {optimizeBookPhoto} from '../book/book-image-optimizer';
@@ -29,6 +29,15 @@ export default function AdminCalendarMemories({token,eventId,title,revision=0}:{
   void refresh();
   return()=>{requestId.current++;};
  },[refresh,revision]);
+ // Photo URLs are private, expiring grants just like BOOK. Renew once before
+ // expiration while this Admin editor is visible, never every Calendar poll.
+ useEffect(()=>{
+  if(!photos.length)return;
+  const timer=window.setTimeout(()=>{
+   if(!document.hidden&&navigator.onLine)void refresh();
+  },BOOK_GRANT_RENEW_MS);
+  return()=>window.clearTimeout(timer);
+ },[photos,refresh]);
  const upload=async(files:File[])=>{
   if(busy||!files.length)return;
   if(files.length>5){setError('Máximo cinco fotos por selección.');return;}
