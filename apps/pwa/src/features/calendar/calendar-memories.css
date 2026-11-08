@@ -1,0 +1,70 @@
+/* HAVANA NICE V2 · Calendar event archive: one dated stamp, one paper sheet.
+   The PHOTO book uses the exact existing BOOK / StPageFlip CSS and engine. */
+.hn-cal-completed .hn-cal-event-head,.a-cal-completed .a-cal-summary{background:#f7f0df}
+.hn-cal-completed .hn-cal-event-head,.a-cal-completed .a-cal-summary{min-height:112px;position:relative}
+.hn-cal-summary-main,.a-cal-summary-main{position:relative;min-width:0;flex:1}
+.hn-cal-stamp{pointer-events:none;user-select:none;display:inline-block;
+ border:3px double #914939;border-radius:5px;color:#914939;
+ background:#f8eada87;text-shadow:0 0 1px #8f45322e;
+ padding:7px 10px;font:800 clamp(11px,2.1vw,14px)/1.05 system-ui,sans-serif;
+ letter-spacing:.12em;box-shadow:inset 0 0 0 1px #9149395a;
+ transform:rotate(-9deg);width:max-content;max-width:90%;
+ margin:7px 0 0 12px;opacity:.86}
+.hn-cal-completed .hn-cal-summary-main{padding-right:5px}
+.a-cal-stamp{font-size:11px;margin:6px 0 0 7px;letter-spacing:.08em}
+.hn-cal-memory-sheet{--memory-ink:#483b2c;
+ position:relative;isolation:isolate;overflow:hidden;
+ padding:clamp(18px,4vw,34px);
+ background:
+  radial-gradient(circle at 20% 15%,#e6ca9d3d,transparent 39%),
+  radial-gradient(circle at 85% 80%,#a7875445,transparent 42%),
+  linear-gradient(110deg,#efe1c4 0%,#fff5dc 19%,#f7e8cb 73%,#e5d1ad 100%);
+ border:1px solid #d3bb8f;box-shadow:inset 0 0 24px #5c42221e,0 6px 16px #382a151a;
+ color:var(--memory-ink);margin:0}
+.hn-cal-memory-sheet::before{content:"";position:absolute;pointer-events:none;inset:9px;
+ border:1px solid #916d3c41}
+.hn-cal-memory-heading{display:grid;gap:7px;text-align:center;padding:0 0 17px;
+ border-bottom:1px solid #8b694e77;position:relative}
+.hn-cal-memory-heading span{color:#806247;font:700 10px system-ui,sans-serif;letter-spacing:.18em}
+.hn-cal-memory-heading strong{font:400 clamp(24px,5vw,34px)/1.2 Georgia,serif;color:#4a3929}
+.hn-cal-memory-facts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+ gap:11px 17px;margin:18px 0 23px;position:relative}
+.hn-cal-memory-facts>div{min-width:0;border-bottom:1px solid #a5845a49;padding-bottom:9px}
+.hn-cal-memory-facts dt{font:700 9px system-ui,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:#8a6b4f}
+.hn-cal-memory-facts dd{margin:5px 0 0;font:400 15px/1.35 Georgia,serif;overflow-wrap:anywhere;color:#4c3a2b}
+.hn-cal-memory-photos{position:relative}
+.hn-cal-memory-photos h4{font:600 12px system-ui,sans-serif;letter-spacing:.11em;
+ text-transform:uppercase;text-align:center;margin:0 0 12px;color:#66503c}
+.hn-cal-memory-gallery .hn-book-reader{background:#f9efdc6a;border-radius:10px;padding:9px 3px}
+.hn-cal-memory-gallery .hn-book-stage{height:clamp(390px,min(65vw,69svh),590px)}
+.hn-book-memory-edition .hn-book-memory-name{font:500 13px/1.35 Georgia,serif;
+ color:#f9f1de;display:block;margin-top:16px;max-width:94%;text-align:center}
+.hn-book-memory-edition .hn-book-cover-heading strong{font-size:clamp(23px,4.5vw,37px);line-height:1.03}
+.hn-cal-memory-placeholder{font-size:12px;line-height:1.65;text-align:center;
+ padding:20px;color:#765d42;border:1px dashed #aa8b62a1;background:#fff9e77f}
+.a-calendar-memory-admin{border-top:1px solid #d6c5a8;margin-top:22px;padding-top:18px;
+ display:grid;gap:12px;color:#51483e}
+.a-calendar-memory-admin h3{font-size:18px;margin:0;color:#453425}
+.a-calendar-memory-admin p{line-height:1.55;margin:0}
+.a-calendar-memory-picker{display:flex;flex-direction:column;gap:8px;
+ color:#795939;font-weight:650;padding:14px;background:#f4ead7;border:1px solid #d4c3a4;border-radius:10px}
+.a-calendar-memory-picker input{font:inherit;font-size:12px;max-width:100%}
+.a-calendar-memory-admin>button,.a-calendar-memory-preview>button{
+ border:1px solid #b69e7c;border-radius:8px;background:#f6eedc;
+ padding:11px 14px;color:#503b29;font-weight:700;width:max-content;max-width:100%}
+.a-calendar-memory-admin progress{height:9px;width:100%;accent-color:#305642}
+.a-calendar-memory-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:11px}
+.a-calendar-memory-photo{display:grid;gap:6px;background:#fff9ed;padding:7px;
+ border:1px solid #d9caaf;border-radius:10px}
+.a-calendar-memory-photo img{width:100%;aspect-ratio:3/4;object-fit:cover;border-radius:5px}
+.a-calendar-memory-photo small{font-size:10px;color:#76634e;line-height:1.45}
+.a-calendar-memory-actions{display:flex;gap:4px}
+.a-calendar-memory-actions button{flex:1;border:1px solid #c8b28e;border-radius:6px;
+ background:#f2e7d1;color:#60472f;padding:6px 4px;font-size:11px}
+.a-calendar-memory-actions button:disabled{opacity:.45}
+.a-calendar-memory-preview{display:grid;gap:14px;min-width:0}
+@media(max-width:480px){
+ .hn-cal-memory-facts{grid-template-columns:1fr}
+ .hn-cal-stamp{letter-spacing:.07em;font-size:10px}
+ .hn-cal-memory-gallery .hn-book-stage{height:clamp(375px,64svh,520px)}
+}
