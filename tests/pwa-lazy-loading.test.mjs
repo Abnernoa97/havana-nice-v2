@@ -14,7 +14,7 @@ function nodeFor(suffix){
  const label=suffix.split('/').at(-1).replace(/\.tsx?$/,'');
  const found=entries.filter(([key,value])=>key.endsWith(suffix)||
   (typeof value.src==='string'&&value.src.endsWith(suffix))||
-  (typeof value.file==='string'&&value.file.split('/').at(-1)?.startsWith(label+'-')));
+  (typeof value.file==='string'&&value.file.endsWith('.js')&&value.file.split('/').at(-1)?.startsWith(label+'-')));
  assert.equal(found.length,1,'Expected exactly one Vite chunk for '+suffix+
   '; built entries: '+entries.map(([key,value])=>value.file||key).join(', '));
  return found[0];
