@@ -1,7 +1,7 @@
 {
   "approved": true,
   "releaseMode": "explicit-batch",
-  "version": "0.0.16",
-  "versionCode": 16,
-  "notes": "Corrección crítica BOOK V2: elimina el lector WebView blanco desde Android; muestra páginas y recuerdos mediante FlatList nativa usando la sesión existente y los mismos grants privados. El PageFlip 3D permanece únicamente en PWA, enlace sin tokens y validación de sesión web separada. Mantiene Chat, Familia, Calendario, datos, mismo package, firma previa y respaldo APK 0.0.15. Prueba física del lector pendiente."
+  "version": "0.0.17",
+  "versionCode": 17,
+  "notes": "BOOK y Recuerdos 3D PWA dentro del cascarón Android, sin ventanas externas, con sesión única inyectada al WebView mediante injectedJavaScriptObject; mismo PageFlip. CSP restrictiva y validación en Chrome real + export Android. Conservar Chat, Familia, Calendario, D1, R2 y firma 0.0.16; publicar APK y respaldo con gate firmado. QA físico pendiente."
 }

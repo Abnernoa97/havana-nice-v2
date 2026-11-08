@@ -131,7 +131,7 @@ tests/ + cloudflare/tests/ + scripts/ → reglas de seguridad y CI
 
 ## 4.1. Matriz de aceptación física antes de declarar sincronización 100 %
 
-- [ ] **Instalación:** actualizar APK Android actual a **0.0.16** encima, sin desinstalar; comprobar sesión, historial Chat, outbox, paginador BOOK y Recuerdos. Firma compatible comprobada por CI.
+- [ ] **Instalación:** actualizar Android 0.0.16 a **0.0.17** encima, sin desinstalar; comprobar Chat, sesión, Familia y BOOK/Recuerdos 3D integrados. Certificado/JS del lote a verificar en GitHub Actions.
 - [ ] **Calendario Admin ↔ PWA ↔ Android:** crear/editar fecha real de prueba, cambiar destinatarios y eliminar únicamente esa fecha de prueba; observar notificación instantánea y que un músico desasignado deja de verla.
 - [ ] **Repertorio:** editar catálogo y lista por fecha desde Admin; comprobar actualización en ambos clientes y que quitar fecha invalida su lista.
 - [ ] **Chat:** texto, respuestas, reacciones, borrado definitivo, cinco fotos/videos combinados y reconexión al perder/recuperar red; corroborar que nada reaparece tras borrado.
@@ -151,4 +151,4 @@ tests/ + cloudflare/tests/ + scripts/ → reglas de seguridad y CI
 
 **Continuación:** `docs/CONTINUIDAD-EXACTA.md` contiene referencias prácticas cortas; este Plan Maestro manda. El historial íntegro de pasos y estados anteriores se recupera de los commits de Git, no de copias obsoletas en `main`.
 
-- [ ] **BOOK 3D integrado:** ejecutar CI y prueba real en APK futura para BOOK y Recuerdos, sin ventanas ni autorización extra. No confundir código aprobado con funcionamiento físico demostrado.
+- [~] **BOOK 3D integrado en APK 0.0.17:** código y CI aprobados en `main`; actualización firmada en construcción. Validar en el teléfono BOOK y Recuerdos como PWA embebida sin segundo login ni enlaces externos. La firma de APK debe conservar el certificado de 0.0.16 y guardar esa versión como respaldo.
