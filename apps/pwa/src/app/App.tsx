@@ -2,7 +2,7 @@ import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import {
   fetchBackendHealth, getChatMediaAvailability, getChatSnapshot, getOlderChatMessages, searchChatMessages, getChatMenuState, getChatMessagePermissions, isWithinChatEditWindow, selectNextQueuedChatMessage, setOutgoingChatStatus, projectOutgoingChatStatus, CHAT_ACK_TIMEOUT_MS, newClientMessageId, uploadChatMediaBatch,
   openChatSocket, reconcileChatMessages, startNamedChatSession, restoreNamedChatSession, chatSessionExpired, chatReconnectDelay, reconcileChatReadReceipt, removeChatReactionsForMessage, withoutRemovedChatMessages, ChatHistoryRequestGate, oldestConfirmedChatSeq, mergeOlderChatReactions, CHAT_WS_HANDSHAKE_TIMEOUT_MS, captureChatOfflineSnapshot, restoreChatOfflineOutbox,
-  type BackendHealth, type ChatMessage, type ChatServerEvent, type ChatSession,
+  type BackendHealth, type ChatMessage, type ChatServerEvent, type ChatSession, type PwaReaderTarget, parsePwaReaderHash,
   CHAT_MEDIA_MAX_PER_SEND, HAVANA_V2_DEV_API_BASE_URL,
   reconcileReactions, reconcileUpdatedMessage, reconcileDeletedMessage, reconcileChatSnapshot, type ChatReaction, type ChatEmoji, type ChatReadReceipt, type MemberScreen,
 } from '@havana/shared';
@@ -16,6 +16,7 @@ import {uploadChatFile} from '../services/chat-media-upload';
 // The authorized HOME is fetched only when needed; Chat's live socket
 // and the existing single-session access remain in this canonical shell.
 const VisualApp=lazy(()=>import('./VisualApp'));
+const PwaReaderRoute=lazy(()=>import('./PwaReaderRoute'));
 
 export default function App() {
   const [health, setHealth] = useState<BackendHealth | null>(null);
@@ -23,6 +24,21 @@ export default function App() {
   const [session, setSession] = useState<ChatSession | null>(null);
   // Existing approved ChatSession is the APP access; HOME adds no login or storage.
   const [activeScreen,setActiveScreen]=useState<MemberScreen>('home');
+  const [readerRoute,setReaderRoute]=useState<PwaReaderTarget|null>(
+    ()=>parsePwaReaderHash(window.location.hash));
+  useEffect(()=>{
+    const sync=()=>{
+      const route=parsePwaReaderHash(window.location.hash);
+      setReaderRoute(route);
+      if(route)setActiveScreen('home');
+    };
+    window.addEventListener('hashchange',sync);
+    return()=>window.removeEventListener('hashchange',sync);
+  },[]);
+  const closeReader=()=>{
+    window.history.replaceState(null,'',window.location.pathname+window.location.search);
+    setReaderRoute(null);setActiveScreen('home');
+  };
   const [restoringAccess,setRestoringAccess] = useState(true);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [draft, setDraft] = useState('');
@@ -650,8 +666,9 @@ export default function App() {
   return (
     <>
       {session&&activeScreen!=='chat'&&<Suspense fallback={<div className="visual-shell" role="status">Abriendo espacio del equipo…</div>}>
-        <VisualApp displayName={session.displayName}
-          active={activeScreen} token={session.token} onNavigate={setActiveScreen}/>
+        {readerRoute?<PwaReaderRoute token={session.token} route={readerRoute} onClose={closeReader}/>:
+         <VisualApp displayName={session.displayName}
+          active={activeScreen} token={session.token} onNavigate={setActiveScreen}/>}
       </Suspense>}
       <div className={session&&activeScreen!=='chat'?'member-chat-hidden':'member-chat-visible'}>
     <main className="chat-app">

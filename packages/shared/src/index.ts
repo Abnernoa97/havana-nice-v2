@@ -262,3 +262,5 @@ export type {ChatDisplayIndex,ChatReactionBadge} from './chat-display';
 
 export {getBookPages,uploadBookPage,uploadBookOptimized,updateBookPage,removeBookPage,bookMediaUrl,BookApiError,BOOK_GRANT_RENEW_MS} from './book';
 export type {BookPage,BookDirectory} from './book';
+export {pwaReaderUrl,parsePwaReaderHash} from './book-route';
+export type {PwaReaderTarget} from './book-route';
