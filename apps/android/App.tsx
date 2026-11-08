@@ -7,20 +7,16 @@ import {
   HAVANA_V2_DEV_API_BASE_URL, fetchBackendHealth, getChatMediaAvailability, getChatSnapshot, getOlderChatMessages, searchChatMessages, getChatMenuState, getChatMessagePermissions, isWithinChatEditWindow, selectNextQueuedChatMessage, setOutgoingChatStatus, projectOutgoingChatStatus, CHAT_ACK_TIMEOUT_MS, newClientMessageId,
   reconcileChatMessages, reconcileReactions, reconcileUpdatedMessage, reconcileDeletedMessage, reconcileChatSnapshot, startNamedChatSession, restoreNamedChatSession, chatSessionExpired, chatReconnectDelay, reconcileChatReadReceipt, removeChatReactionsForMessage, captureChatOfflineSnapshot, restoreChatOfflineOutbox,
   type ChatMessage, type ChatServerEvent, type ChatSession, type ChatReaction, type ChatEmoji, type ChatReadReceipt,
-  validateChatMediaSelection, CHAT_MEDIA_MAX_PER_SEND, type ChatMediaSelection, type ChatMediaKind, type ChatMediaSource, type MemberScreen,
+  CHAT_MEDIA_MAX_PER_SEND, type MemberScreen,
 } from '@havana/shared';
 import { loadNativeLocalChat, saveNativeLocalChat } from './services/chatStorage';
-import * as ImagePicker from 'expo-image-picker';
-import {File} from 'expo-file-system';
 import type {BubbleAnchor} from './features/chat/SwipeableBubble';
 import NativeChatTimeline from './features/chat/NativeChatTimeline';
 import NativeComposerIcon from './features/chat/ChatComposerIcon';
 import NativeMemberHome from './features/home/NativeMemberHome';
 import {uploadNativeChatFile} from './services/native-chat-r2-upload';
 import {styles} from './features/chat/chat-styles';
-const newMediaSelectionId=()=>String(Date.now())+'-'+Math.random().toString(36).slice(2);
-
-type NativeQueuedMedia=ChatMediaSelection&{id:string};
+import {useNativeMediaSelection} from './features/chat/useNativeMediaSelection';
 
 export default function App() {
   const {width: viewportWidth, height: viewportHeight} = useWindowDimensions();
@@ -33,13 +29,12 @@ export default function App() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [draft, setDraft] = useState('');
   const [composerPanel,setComposerPanel]=useState<'attachments'|'emojis'|null>(null);
-  const [selectedMedia,setSelectedMedia]=useState<NativeQueuedMedia[]>([]);
-  const [mediaError,setMediaError]=useState('');
-  const [mediaPicking,setMediaPicking]=useState(false);
+  const mediaUploadBusy=useRef(false);
+  const {selectedMedia,setSelectedMedia,mediaError,setMediaError,mediaPicking,chooseNativeMedia}=
+    useNativeMediaSelection({uploadBusy:mediaUploadBusy,onCloseMenu:()=>setComposerPanel(null)});
   const [mediaReady,setMediaReady]=useState(false);
   const [mediaUploading,setMediaUploading]=useState(false);
   const [mediaProgress,setMediaProgress]=useState(0);
-  const mediaUploadBusy=useRef(false);
   const [error, setError] = useState('');
   const [connection, setConnection] = useState('desconectado');
   const [joining, setJoining] = useState(false);
@@ -60,54 +55,6 @@ export default function App() {
   const [menuAnchor,setMenuAnchor] = useState<BubbleAnchor | null>(null);
   const socket = useRef<WebSocket | null>(null);
   const scroll = useRef<React.ElementRef<typeof ScrollView> | null>(null);
-  const chooseNativeMedia=async(source:ChatMediaSource,kind?:ChatMediaKind)=>{
-    setComposerPanel(null);setMediaError('');Keyboard.dismiss();
-    if(mediaPicking||mediaUploadBusy.current)return;
-    const free=CHAT_MEDIA_MAX_PER_SEND-selectedMedia.length;
-    if(free<1){setMediaError('Máximo 5 archivos entre Fotos y Video por envío.');return;}
-    setMediaPicking(true);
-    try{
-      if(source==='camera'){
-        const permission=await ImagePicker.requestCameraPermissionsAsync();
-        if(!permission.granted){
-          Alert.alert('Permiso de cámara','Permite el acceso a la cámara para tomar fotos o videos.');
-          return;
-        }
-      }
-      const options:ImagePicker.ImagePickerOptions={
-        mediaTypes:source==='camera'?['images','videos']:kind==='photo'?['images']:['videos'],
-        allowsEditing:false,quality:1,allowsMultipleSelection:source==='gallery',
-        selectionLimit:source==='gallery'?free:1
-      };
-      const result=source==='camera'
-        ?await ImagePicker.launchCameraAsync(options)
-        :await ImagePicker.launchImageLibraryAsync(options);
-      if(result.canceled||!result.assets?.length)return;
-      if(result.assets.length>free){
-        setMediaError('Máximo 5 archivos entre Fotos y Video por envío.');return;
-      }
-      const additions:NativeQueuedMedia[]=[];
-      for(const asset of result.assets){
-        const pickedKind:ChatMediaKind=asset.type==='video'||asset.mimeType?.startsWith('video/')?'video':'photo';
-        const name=asset.fileName||('havana-'+Date.now()+(pickedKind==='photo'?'.jpg':'.mp4'));
-        // Some Android image providers omit metadata even when the file exists.
-        // Derive size from the native file and preserve the original MIME/extension.
-        const mimeType=(asset.mimeType||
-          (pickedKind==='video'?(/\.mov$/i.test(name)?'video/quicktime':'video/mp4'):
-           /\.heic$/i.test(name)?'image/heic':
-           /\.heif$/i.test(name)?'image/heif':
-           /\.png$/i.test(name)?'image/png':
-           /\.webp$/i.test(name)?'image/webp':'image/jpeg')).toLowerCase();
-        const sizeBytes=asset.fileSize??new File(asset.uri).size;
-        const issue=validateChatMediaSelection({kind:pickedKind,name,mimeType,sizeBytes});
-        if(issue){setMediaError(name+': '+issue);return;}
-        additions.push({id:newMediaSelectionId(),kind:pickedKind,source,uri:asset.uri,name,mimeType,sizeBytes});
-      }
-      setSelectedMedia(previous=>[...previous,...additions]);
-    }catch{
-      setMediaError('No se pudo abrir la cámara o la galería. Inténtalo de nuevo.');
-    }finally{setMediaPicking(false);}
-  };
   useEffect(()=>{
     if(!session){setMediaReady(false);return;}
     let active=true;
