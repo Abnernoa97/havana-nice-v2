@@ -1,8 +1,10 @@
-import {useCallback,useEffect,useState,type FormEvent} from 'react';
-import AdminChatGeneral from '../chat/AdminChatGeneral';
-import AdminCalendar from '../calendar/AdminCalendar';
-import AdminRepertoire from '../repertoire/AdminRepertoire';
-import AdminFamily from '../family/AdminFamily';
+import {lazy,Suspense,useCallback,useEffect,useState,type FormEvent} from 'react';
+// Keep the authenticated Admin controller alive while feature panes are
+// loaded independently on demand. Access/session state is never restarted.
+const AdminChatGeneral=lazy(()=>import('../chat/AdminChatGeneral'));
+const AdminCalendar=lazy(()=>import('../calendar/AdminCalendar'));
+const AdminRepertoire=lazy(()=>import('../repertoire/AdminRepertoire'));
+const AdminFamily=lazy(()=>import('../family/AdminFamily'));
 import AdminMemberDirectory from './AdminMemberDirectory';
 import {adminAvailability,adminLogin,adminLogout,adminVerify,adminOtherSessions,adminRevokeOtherSessions,adminMembers,adminCreateMember,adminMemberHistory,adminDeletionPreview,adminRemoveMember,adminRetryMemberMediaCleanup,adminDuplicateLogins,adminReviewDuplicateLogin,adminReleaseInstallation,openAdminRealtime,
  type AdminSession,type AdminMember,type AdminMemberHistory,type AdminDeletionPreview,type AdminDuplicateLoginAlert,type AdminChatStreamEvent,isAdminUnauthorized} from '../../services/admin-api';
