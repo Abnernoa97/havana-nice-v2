@@ -61,7 +61,7 @@ test('both platforms memoize the index instead of quadratic per-bubble scans',()
   assert.doesNotMatch(code,/messages\.find\(m=>m\.seq===message\.replyToSeq\)/);
   assert.doesNotMatch(code,/reactions\.filter\(r=>r\.messageSeq===message\.seq/);
  }
- const controller=readFileSync(new URL('../apps/android/App.tsx',import.meta.url),'utf8');
+ const controller=readFileSync(new URL('../apps/android/app/NativeApp.tsx',import.meta.url),'utf8');
  assert.match(controller,/import NativeChatTimeline from '\.\/features\/chat\/NativeChatTimeline'/);
  assert.match(controller,/<NativeChatTimeline[\s\S]*onScrollBeginDrag=\{/);
  assert.doesNotMatch(controller,/<SwipeableBubble|<NativeChatMediaView|buildChatDisplayIndex\(/);

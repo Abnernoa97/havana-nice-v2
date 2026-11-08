@@ -24,7 +24,7 @@ test('one retry policy preserves the original backoff, max 20 seconds',()=>{
 
 test('both clients recover stalled WebSocket handshakes through their existing reconnect owner',()=>{
  assert.equal(CHAT_WS_HANDSHAKE_TIMEOUT_MS,9000);
- for(const path of ['apps/pwa/src/app/App.tsx','apps/android/App.tsx']){
+ for(const path of ['apps/pwa/src/app/App.tsx','apps/android/app/NativeApp.tsx']){
   const source=readFileSync(new URL('../'+path,import.meta.url),'utf8');
   assert.match(source,/connectionWatchdog=useRef/);
   assert.match(source,/connectionWatchdog\.current=setTimeout\(/);
@@ -35,7 +35,7 @@ test('both clients recover stalled WebSocket handshakes through their existing r
  }
 });
 test('PWA/Android use one expiry and retry policy without an extra socket',()=>{
- for(const path of ['apps/pwa/src/app/App.tsx','apps/android/App.tsx']){
+ for(const path of ['apps/pwa/src/app/App.tsx','apps/android/app/NativeApp.tsx']){
   const s=readFileSync(new URL('../'+path,import.meta.url),'utf8');
   assert.match(s,/chatSessionExpired\(next\)/,path);
   assert.match(s,/chatSessionExpired\(saved\.session\)/,path);

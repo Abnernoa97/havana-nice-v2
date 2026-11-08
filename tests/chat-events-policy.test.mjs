@@ -38,7 +38,7 @@ test('deleted messages cannot return through stale pages, results or socket reco
  const rows=[{seq:8,text:'A'},{seq:9,text:'B'},{seq:10,text:'C',deletedAt:'2026-11-08T00:00:00Z'}];
  assert.deepEqual(withoutRemovedChatMessages(rows,new Set([9])),[rows[0]]);
  assert.equal(rows.length,3,'input remains untouched');
- for(const path of ['apps/pwa/src/app/App.tsx','apps/android/App.tsx']){
+ for(const path of ['apps/pwa/src/app/App.tsx','apps/android/app/NativeApp.tsx']){
   const src=readFileSync(new URL('../'+path,import.meta.url),'utf8');
   assert.match(src,/removedSeq\.current\.add\((value|item)\.seq\)/,path);
   assert.match(src,/withoutRemovedChatMessages\(history,removedSeq\.current\)/,path);
@@ -46,11 +46,11 @@ test('deleted messages cannot return through stale pages, results or socket reco
   assert.match(src,/withoutRemovedChatMessages\(found,removedSeq\.current\)/,path);
   assert.match(src,/activeSession\.current\?\.token/,path);
  }
- const android=readFileSync(new URL('../apps/android/App.tsx',import.meta.url),'utf8');
+ const android=readFileSync(new URL('../apps/android/app/NativeApp.tsx',import.meta.url),'utf8');
  assert.match(android,/reconcileChatMessages\(before,withoutRemovedChatMessages\(data\.messages,removedSeq\.current\)\)/);
 });
 test('PWA and native Chat event handlers call only the canonical projections',()=>{
- for(const path of ['apps/pwa/src/app/App.tsx','apps/android/App.tsx']){
+ for(const path of ['apps/pwa/src/app/App.tsx','apps/android/app/NativeApp.tsx']){
   const src=readFileSync(new URL('../'+path,import.meta.url),'utf8');
   assert.match(src,/reconcileChatReadReceipt\(before,(value|item)\)/);
   assert.match(src,/removeChatReactionsForMessage\(before,(value|item)\.message\.seq\)/);

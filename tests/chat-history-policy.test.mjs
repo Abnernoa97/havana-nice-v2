@@ -49,7 +49,7 @@ test('one in-flight older page and only latest search may update visible chat',(
 
 test('PWA and Android history operations share one request gate and preserve their own session owner',()=>{
  const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
- for(const path of ['apps/pwa/src/app/App.tsx','apps/android/App.tsx']){
+ for(const path of ['apps/pwa/src/app/App.tsx','apps/android/app/NativeApp.tsx']){
   const app=read(path);
   assert.match(app,/historyRequests=useRef\(new ChatHistoryRequestGate\(\)\)/,path);
   assert.match(app,/oldestConfirmedChatSeq\(messages\)/,path);

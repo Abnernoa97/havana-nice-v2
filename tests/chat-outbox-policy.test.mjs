@@ -53,7 +53,7 @@ test('same optimistic state transition updates only pending bubbles from same se
 });
 
 test('one shared outbox and timeout implementation, no parallel client sort/ACK logic',()=>{
- for(const path of ['apps/pwa/src/app/App.tsx','apps/android/App.tsx']){
+ for(const path of ['apps/pwa/src/app/App.tsx','apps/android/app/NativeApp.tsx']){
   const s=readFileSync(new URL('../'+path,import.meta.url),'utf8');
   assert.match(s,/selectNextQueuedChatMessage\(outbox\.current\.values\(\)\)/,path);
   assert.match(s,/setOutgoingChatStatus\(outbox\.current,id,state\)/,path);
