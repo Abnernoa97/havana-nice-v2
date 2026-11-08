@@ -6,7 +6,7 @@
 
 - **Una sola rama `main`**, un solo repositorio V2. Sin parches temporales, duplicar rutas o dejar motores alternativos. Borrar lógica verdaderamente sustituida solo después de verificar referencias y equivalencia funcional.
 - **No tocar HAVANA CLOUD, PWA original, Drive original, cuentas ni producción ajena a V2.** No migrar datos del sistema anterior. V2 es autónoma.
-- **iPhone:** PWA instalable. **Android:** app React Native/Expo con Chat nativo; instalar futura APK acumulativa encima de la anterior. No generar APK por cada mejora. Android actual publicado/instalado: **0.0.13** (versionCode 13); código fuente más avanzado, APK NO actualizada.
+- **iPhone:** PWA instalable. **Android:** app React Native/Expo con Chat nativo; instalar futura APK acumulativa encima de la anterior. No generar APK por cada mejora. Android APK publicada **0.0.14** (versionCode 14) y firmada con el certificado compatible con 0.0.13; la instalación física encima de 0.0.13 **no se ha comprobado aún**.
 - **Identidad:** Admin autoriza nombres; el músico ingresa una vez y su instalación queda vinculada a una sola sesión/propietario. Rechazar desconocidos y revocados. Hasta 10 músicos, lista inicial Orly, Andy, Jali, Rafa, Noa y Fer. El Admin tiene sesión y permisos propios; un solo dueño de sesión para todos los módulos, sin nuevos accesos secundarios.
 - **Módulos independientes:** Chat, Calendario, Repertorio, Familia, BOOK, Músicos y futura Multimedia. HOME como navegación central; datos, estados y componentes separados; compartir contratos, servicios y sesión, no duplicar implementación.
 - **Primero funcionamiento, sincronización, velocidad y depuración.** Después pintura/estética. Preservar lo visual que el usuario ya confirmó de BOOK/Calendario.
@@ -76,11 +76,11 @@ tests/ + cloudflare/tests/ + scripts/ → reglas de seguridad y CI
 | --- | --- |
 | Git | una `main`; cero PR abiertos en última auditoría |
 | GitHub Actions | **2** workflows: `v2-foundation-check.yml` (compilación y QA) y `v2-android-apk.yml` (solo lote explícitamente aprobado) |
-| CI de Chat + Worker reorganizados | **SUCCESS** [ejecución 42444820118](https://github.com/Abnernoa97/havana-nice-v2/actions/runs/42444820118) |
+| CI de todos los módulos + pruebas contra Worker v66 en vivo | **SUCCESS**, [ejecución 42451952817, segundo intento](https://github.com/Abnernoa97/havana-nice-v2/actions/runs/42451952817) |
 | Cloudflare Pages | publica `main`; comprobar SHA/deploy tras cada cambio |
-| Worker **en vivo** | **v65** `81a512bb-a383-4258-8f5b-6aacf831b9b5`, 100 % al control |
-| Worker **en código** | refactor aprobado: `index.ts` de ~672 a ~265 líneas; `chat-room.ts`, `chat-session.ts`, `worker-http.ts`, `worker-types.ts` compartiendo el mismo DO. **Aún NO desplegado sobre v65** |
-| Android | fuente compilable/exportable en CI, APK disponible **0.0.13**, todavía sin paquete acumulativo nuevo |
+| Worker **en vivo** | **v66** `87e6d28a-f1eb-43ed-974b-eb1884198533` al 100 %. Despliegue gradual (sin tráfico → 1 % → 10 % → 100 %); v65 `81a512bb-a383-4258-8f5b-6aacf831b9b5` sigue disponible para reversión. |
+| Worker **en código** | Refactor publicado a v66 desde el bundle canónico Wrangler `SHA-256 0f67b065b8232a9adb1902711eb8850771ba17b3363dbbcbb8b5c135f714d02d`, idéntico en CI; mantiene los siete bindings y el mismo DO. |
+| Android | APK **0.0.14** publicada [aquí](https://github.com/Abnernoa97/havana-nice-v2/releases/download/v2-android-current/HAVANA-NICE-V2-LATEST.apk); firmado y verificado certificado anterior, `versionCode` 13 → 14 y APK 0.0.13 preservada como PREVIOUS. Instalación física pendiente. |
 | Colas R2 | BOOK, Calendario y baja de músicos: **0** operaciones pendientes al control |
 | Fotos personales | Calendario 4 recuerdos (3 WebP), BOOK 7 originales (0 WebP), Familia 16 archivos al control |
 
@@ -102,15 +102,27 @@ tests/ + cloudflare/tests/ + scripts/ → reglas de seguridad y CI
 - [x] **C3 Familia / Multimedia:** recuperación de WebSocket atascado al cambiar de red en iPhone y Android mediante timeout compartido; pruebas de paridad añadidas. Sin cambiar subida R2.
 - [x] **C2 Músicos / Admin:** lecturas de lista protegidas contra respuestas HTTP atrasadas: baja, alta, liberación de instalación y salida anulan fetches previos. Sin borrar músicos ni cambiar backend. Pruebas de regresión añadidas.
 - [x] **C1 Chat borrado definitivo:** marcadores compartidos evitan resucitar mensajes por respuestas HTTP, búsquedas o WebSocket atrasados en Android y PWA; orden de conciliación de historial nativo corregido. Pruebas de paridad incluidas; verificación física pendiente.
-- [x] **S1 Repertorio sincronizado en código:** cambios de asignación/calendario también invalidan listas de evento, evitando fechas y repertorios discordantes;  lectura D1 inmediata antes de conectar WebSocket;  cambios del Admin avisan a PWA, Android y Admin por el CalendarRoom privado ya existente, recuperan de D1 y eliminan polling de 30 s; **pendiente publicar Worker y QA real** (hasta entonces solo recuperación de reconexión y fallback a 60 s).
+- [x] **S1 Repertorio sincronizado en código:** cambios de asignación/calendario también invalidan listas de evento, evitando fechas y repertorios discordantes;  lectura D1 inmediata antes de conectar WebSocket;  cambios del Admin avisan a PWA, Android y Admin por el CalendarRoom privado ya existente, recuperan de D1 y eliminan polling de 30 s; **Worker v66 publicado y smoke tests CI de rutas privadas/DO superados; QA física entre Admin, PWA y Android pendiente**.
 - [x] **S2 Administración:** WebSocket privado con detector de conexión atascada (9 s), reconexión única, recuperación y limpieza de temporizador en segundo plano/cierre, sin borrar sesiones ni duplicar socket.
-- [ ] **P1 Worker release:** CI generó el bundle canónico de Wrangler en main; el preflight ya identifica v65 (`81a512bb-a383-4258-8f5b-6aacf831b9b5`) como versión protegida de reversión. **Sin despliegue nuevo:** no hay procedimiento verificado para transferir el bundle compilado mediante esta conexión, ni QA canario a 0 % completo. Mantener v65 al 100 %, los siete bindings y D1/R2 intactos hasta entonces.
+- [x] **P1 Worker release:** v66 `87e6d28a-f1eb-43ed-974b-eb1884198533` al **100 %** desde el bundle SHA-256 exacto aprobado por CI. Se transfirió sin recompilar ni editar la salida; se verificaron siete bindings heredados con modo estricto, compatibilidad, v65 de respaldo y despliegue gradual. Smoke tests CI y recuentos D1 posteriores aprobados; pruebas físicas todavía pendientes.
 - [ ] **P2 Chat estructural profundo:** extracción por capas de socket y estado en PWA/nativo **sin duplicar dueño de sesión**; someter cada cambio a CI y pruebas reales de reconexión.
 - [ ] **P3 Offline físico:** modo avión, regresar con red y primer arranque de cada módulo en iPhone PWA; validar que el Service Worker no cargue JS antiguo.
 - [ ] **P4 Colas persistentes:** si en el futuro quedan objetos pendientes tras fallo R2, diseñar reintento seguro desde rutas Admin sin introducir tareas de pago ni borrar activos. Ahora las colas están vacías.
-- [ ] **P5 Nueva APK acumulativa:** lote 0.0.14 (versionCode 14) autorizado mediante manifest explícito; ejecución de compilación/firma en curso. Publicar únicamente si comprueba el certificado de 0.0.13 y la nueva versión mayor; comprobar instalación encima y sincronización física antes de cerrar.
+- [x] **P5 Nueva APK acumulativa:** lote explícito **0.0.14 / versionCode 14** compilado, firmado y publicado; controles de APK con JS incorporado, firma anterior y versión mayor **PASS** en [CI Android 42451609250](https://github.com/Abnernoa97/havana-nice-v2/actions/runs/42451609250). 0.0.13 preservada como PREVIOUS. **No afirmar que esté instalada**: actualización sobre el equipo y pruebas nativas quedan en P3.
 - [ ] **P6 Músicos / Multimedia:** completar y probar funcionalidad y sincronización antes de estética One UI definitiva.
 - [ ] **P7 Métricas reales:** medir tiempos de apertura, descargas por módulo, rendimientos Chat/medios y memoria Android; no inventar números de velocidad.
+
+## 4.1. Matriz de aceptación física antes de declarar sincronización 100 %
+
+- [ ] **Instalación:** actualizar Android 0.0.13 → 0.0.14 encima, sin desinstalar, comprobar que conserva sesión y chats.
+- [ ] **Calendario Admin ↔ PWA ↔ Android:** crear/editar fecha real de prueba, cambiar destinatarios y eliminar únicamente esa fecha de prueba; observar notificación instantánea y que un músico desasignado deja de verla.
+- [ ] **Repertorio:** editar catálogo y lista por fecha desde Admin; comprobar actualización en ambos clientes y que quitar fecha invalida su lista.
+- [ ] **Chat:** texto, respuestas, reacciones, borrado definitivo, cinco fotos/videos combinados y reconexión al perder/recuperar red; corroborar que nada reaparece tras borrado.
+- [ ] **Familia/BOOK:** nueva foto y video de prueba desde permisos autorizados, visor y publicación; comprobar propagación y privacidad sin alterar archivos originales.
+- [ ] **iPhone PWA offline:** instalar, entrar previamente a módulos, modo avión, recuperación de red, versión actual y primer acceso a fragmentos no cargados.
+- [ ] **Android nativo:** envío y reproducción de fotos/videos, reabrir HOME/Chat y cambio de red; registrar resultados reales y corregir cualquier falla observable.
+
+**Puerta de estética:** pueden comenzar los estilos de módulos funcionales sobre la estructura actual; no cerrar el cartel «sincronización 100 % probada entre dispositivos» hasta esta matriz física. Avisos, Ajustes y Multimedia independiente siguen sin estar terminados y no se deben presentar como listos.
 
 ## 5. Política de cierre por bloque
 
