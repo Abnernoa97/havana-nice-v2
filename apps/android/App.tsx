@@ -4,7 +4,7 @@ import {
   StatusBar, Text, TextInput, View, Image, useWindowDimensions,
 } from 'react-native';
 import {
-  HAVANA_V2_DEV_API_BASE_URL, fetchBackendHealth, getChatMediaAvailability, getChatSnapshot, getOlderChatMessages, searchChatMessages, getChatMenuState, getChatMessagePermissions, isWithinChatEditWindow, selectNextQueuedChatMessage, setOutgoingChatStatus, projectOutgoingChatStatus, CHAT_ACK_TIMEOUT_MS, newClientMessageId,
+  HAVANA_V2_DEV_API_BASE_URL, fetchBackendHealth, getChatMediaAvailability, getChatSnapshot, getOlderChatMessages, searchChatMessages, getChatMenuState, getChatMessagePermissions, isWithinChatEditWindow, selectNextQueuedChatMessage, setOutgoingChatStatus, projectOutgoingChatStatus, CHAT_ACK_TIMEOUT_MS, newClientMessageId, uploadChatMediaBatch,
   reconcileChatMessages, reconcileReactions, reconcileUpdatedMessage, reconcileDeletedMessage, reconcileChatSnapshot, startNamedChatSession, restoreNamedChatSession, chatSessionExpired, chatReconnectDelay, reconcileChatReadReceipt, removeChatReactionsForMessage, captureChatOfflineSnapshot, restoreChatOfflineOutbox,
   type ChatMessage, type ChatServerEvent, type ChatSession, type ChatReaction, type ChatEmoji, type ChatReadReceipt,
   CHAT_MEDIA_MAX_PER_SEND, type MemberScreen,
@@ -616,19 +616,16 @@ export default function App() {
     if(!mediaReady){setMediaError('El almacenamiento R2 no está disponible.');return;}
     mediaUploadBusy.current=true;setMediaUploading(true);setMediaProgress(0);setMediaError('');
     try{
-      const batch=[...selectedMedia];
-      const total=batch.reduce((bytes,item)=>bytes+item.sizeBytes,0);
-      let saved=0;
-      for(const item of batch){
-        await uploadNativeChatFile(session,item,sent=>{
-          setMediaProgress(Math.round(100*Math.min(total,saved+sent)/Math.max(total,1)));
-        });
-        saved+=item.sizeBytes;
-        // Only remove confirmed originals; failed items stay in the retry queue.
-        setSelectedMedia(before=>before.filter(x=>x.id!==item.id));
-        syncMessages(session);
-      }
-      setMediaProgress(100);
+      await uploadChatMediaBatch([...selectedMedia],{
+        sizeOf:item=>item.sizeBytes,
+        upload:(item,onSent)=>uploadNativeChatFile(session,item,onSent),
+        progress:setMediaProgress,
+        confirmed:item=>{
+          // Only confirmed originals leave the queue; errors remain retryable.
+          setSelectedMedia(before=>before.filter(x=>x.id!==item.id));
+          syncMessages(session);
+        },
+      });
     }catch(e){
       setMediaError(e instanceof Error?e.message:'Se interrumpió la carga. Reintenta solo lo pendiente.');
     }finally{mediaUploadBusy.current=false;setMediaUploading(false);}
