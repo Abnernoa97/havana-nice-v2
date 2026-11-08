@@ -5,10 +5,12 @@ import {HAVANA_V2_DEV_API_BASE_URL as API} from '@havana/shared';
 
 export function watchNativeCalendar(token:string,onInvalidate:()=>void):()=>void{
  let disposed=false,connection:WebSocket|null=null;
- let retry:ReturnType<typeof setTimeout>|null=null,attempts=0;
+ let retry:ReturnType<typeof setTimeout>|null=null;
+ let watchdog:ReturnType<typeof setTimeout>|null=null,attempts=0;
  const url=API.replace(/^http/,'ws')+'/ws/calendar';
  const clear=()=>{
   if(retry!==null){clearTimeout(retry);retry=null;}
+  if(watchdog!==null){clearTimeout(watchdog);watchdog=null;}
   const previous=connection;connection=null;
   if(previous){
    previous.onopen=null;previous.onmessage=null;previous.onclose=null;previous.onerror=null;
@@ -26,7 +28,15 @@ export function watchNativeCalendar(token:string,onInvalidate:()=>void):()=>void
   try{socket=new WebSocket(url,['havana-v2-calendar','session.'+token]);}
   catch{schedule();return;}
   connection=socket;
-  socket.onopen=()=>{if(connection!==socket)return;attempts=0;onInvalidate();};
+  // Some Android devices leave a WSS handshake stuck in CONNECTING after a network switch.
+  watchdog=setTimeout(()=>{if(connection===socket&&socket.readyState!==WebSocket.OPEN){
+   clear();schedule();
+  }},9000);
+  socket.onopen=()=>{
+   if(connection!==socket)return;
+   if(watchdog!==null){clearTimeout(watchdog);watchdog=null;}
+   attempts=0;onInvalidate();
+  };
   socket.onmessage=e=>{
    if(connection!==socket)return;
    try{

@@ -49,7 +49,7 @@ tests/ + cloudflare/tests/ + scripts/ → reglas de seguridad y CI
 - Admin crea, edita y elimina fechas y destinatarios; músicos ven solo las suyas. Campos totalmente libres, no forzar date picker. Lecturas HTTP autoritativas con WebSocket de invalidación y reconexión iPhone; respaldo de recuperación a 60 s, **no polling antiguo cada 30 s**.
 - Pasado el día en la **zona horaria del evento**, solo fechas confirmadas y válidas muestran cuño «EVENTO REALIZADO». Al desplegar, ficha breve tipo pergamino y álbum de recuerdos con el mismo BOOK 3D. Futuras y canceladas mantienen ficha normal.
 - Admin añade, borra y ordena fotos de cada fecha; originales privados + derivado WebP opcional; permisos revalidados por destinatario al usar cada grant. Mismo R2, cuota compartida y cola de borrado duradera.
-- **Depuración verificada:** galería Admin se montaba **ya únicamente al expandir** `expanded===item.id`; ese falso pendiente se corrigió en el diagnóstico. Se eliminó refetch innecesario de `adminMembers` en cada invalidación; el componente usa `members` de su controlador Admin en tiempo real.
+- **Depuración:** galería Admin se monta sólo al expandir `expanded===item.id`; no se vuelve a pedir el roster cuando llega una invalidación. Las lecturas Admin ahora abortan respuestas antiguas y distinguen 401 para expirar sesión; Android descarta recuerdos sin permiso tras recargar y reinicia conexiones WSS bloqueadas. Las pruebas físicas permanecen pendientes.
 - **Datos al control:** cuatro fechas y cuatro fotos de recuerdos, tres copias WebP. No borrar ni reescribir.
 
 ### Chat
@@ -86,7 +86,7 @@ tests/ + cloudflare/tests/ + scripts/ → reglas de seguridad y CI
 
 - [x] **A0 Git limpio:** una `main`, cero PR y dos workflows útiles. No tocar sistema original.
 - [x] **A1 PWA carga independiente:** componentes grandes on demand, sesión intacta y prueba de navegación de usuario satisfactoria.
-- [x] **A2 Calendario:** detectar/evitar consultas de roster duplicadas; confirmar que galerías cerradas no se montan. Pruebas agregadas.
+- [x] **A2 Calendario:** roster único de Admin, galería sólo desplegada, detección explícita de HTTP 401, cancelación de consultas obsoletas, protección del WebSocket nativo atascado y cierre de recuerdos revocados. Pruebas de regresión añadidas; falta confirmación física iPhone/Android.
 - [x] **A3 Chat multimedia:** dos selectores específicos y una política compartida de lote, sin cambiar transportes R2; prueba de fallos/reintento.
 - [x] **A4 Código compartido:** añadir a la auditoría el grafo real de `packages/shared/src`, con resolución TypeScript/ESM correcta.
 - [x] **A5 Worker reorganizado en código:** ChatRoom extraído a un único módulo, tipos y sesión compartidos, index menor, compila, dry-run y pruebas en CI.

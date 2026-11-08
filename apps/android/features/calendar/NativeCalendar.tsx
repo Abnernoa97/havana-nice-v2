@@ -18,7 +18,12 @@ export default function NativeCalendar({token}:{token:string}){
   const controller=new AbortController();pending.current=controller;
   try{
    const next=await getCalendarEvents(token,HAVANA_V2_DEV_API_BASE_URL,false,controller.signal);
-   if(!controller.signal.aborted){setEvents(next);setRevision(n=>n+1);setError('');}
+   if(!controller.signal.aborted){
+    setEvents(next);
+    // Do not leave an already-open private BOOK for an event that was removed or unassigned.
+    setArchive(previous=>previous?next.find(item=>item.id===previous.id&&calendarEventCompleted(item))||null:null);
+    setRevision(n=>n+1);setError('');
+   }
   }catch(e){
    if(!controller.signal.aborted)setError(e instanceof Error?e.message:'No se pudo consultar Calendario.');
   }finally{

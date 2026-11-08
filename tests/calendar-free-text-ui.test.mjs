@@ -80,6 +80,20 @@ test('Admin Calendar mounts event photo editors only for the expanded date',()=>
  const controller=read('apps/pwa/src/features/admin/AdminChatAccess.tsx');
  assert.match(controller,/refreshMembers\(session\.token\)/);
 });
+test('Calendar reports HTTP 401 as an explicitly typed session error',async()=>{
+ const api={};
+ runInNewContext(compiled.outputText,{
+  exports:api,URL,Date,Intl,Error,Number,String,RegExp,
+  fetch:async()=>({ok:false,status:401,json:async()=>({error:'Sesión vencida'})}),
+  require(id){assert.equal(id,'./api-base');return {HAVANA_V2_DEV_API_BASE_URL:'https://example.test'};}
+ });
+ await assert.rejects(api.getCalendarEvents('token','https://example.test',true),error=>
+  error instanceof api.CalendarHttpError&&error.status===401&&error.message==='Sesión vencida');
+ const admin=read('apps/pwa/src/features/calendar/AdminCalendar.tsx');
+ assert.match(admin,/e instanceof CalendarHttpError&&e.status===401/);
+ assert.match(admin,/getCalendarEvents\(token,HAVANA_V2_DEV_API_BASE_URL,true,controller.signal\)/);
+ assert.match(admin,/pending.current\?\.abort\(\)/);
+});
 test('Calendar uses one private push protocol in native Android and PWA, without legacy timers',()=>{
  const member=read('apps/pwa/src/features/calendar/CalendarAccordion.tsx');
  const admin=read('apps/pwa/src/features/calendar/AdminCalendar.tsx');
@@ -117,6 +131,9 @@ test('Calendar uses one private push protocol in native Android and PWA, without
  assert.match(native,/watchNativeCalendar\(token/);
  assert.match(nativeTransport,/new WebSocket\(url,\['havana-v2-calendar','session\.'\+token\]\)/);
  assert.match(nativeTransport,/calendar\.invalidate/);
+ assert.match(nativeTransport,/watchdog=setTimeout\(/);
+ assert.match(nativeTransport,/socket.readyState!==WebSocket.OPEN/);
+ assert.match(native,/setArchive\(previous=>previous\?next.find\(/);
  assert.doesNotMatch(native,/setInterval\(/);
  assert.doesNotMatch(nativeTransport,/setInterval\(/);
 });

@@ -1,5 +1,5 @@
 import {lazy,Suspense,useCallback,useEffect,useRef,useState,type FormEvent} from 'react';
-import {getCalendarEvents,calendarDate,calendarEventCompleted,HAVANA_V2_DEV_API_BASE_URL,type CalendarEvent,type CalendarEventInput} from '@havana/shared';
+import {getCalendarEvents,calendarDate,calendarEventCompleted,CalendarHttpError,HAVANA_V2_DEV_API_BASE_URL,type CalendarEvent,type CalendarEventInput} from '@havana/shared';
 const AdminCalendarMemories=lazy(()=>import('./AdminCalendarMemories'));
 import './calendar-memories.css';
 import {adminCreateCalendarEvent,adminUpdateCalendarEvent,adminDeleteCalendarEvent,
@@ -29,6 +29,7 @@ export default function AdminCalendar({token,members,onExpired}:Props){
  const [loading,setLoading]=useState(true);
  const [revision,setRevision]=useState(0);
  const requestId=useRef(0);
+ const pending=useRef<AbortController|null>(null);
  const [error,setError]=useState('');
  const [notice,setNotice]=useState('');
  // AdminChatAccess owns the single realtime member directory. A Calendar
@@ -36,22 +37,27 @@ export default function AdminCalendar({token,members,onExpired}:Props){
  const active=members.filter(p=>p.active===1);
  const refresh=useCallback(async()=>{
   // Calendar notifications supersede older HTTP responses (also during rapid edits).
+  pending.current?.abort();
+  const controller=new AbortController();pending.current=controller;
   const request=++requestId.current;
   try{
-   const dates=await getCalendarEvents(token,HAVANA_V2_DEV_API_BASE_URL,true);
-   if(request!==requestId.current)return;
+   const dates=await getCalendarEvents(token,HAVANA_V2_DEV_API_BASE_URL,true,controller.signal);
+   if(request!==requestId.current||controller.signal.aborted)return;
    setEvents(dates);setError('');
   }catch(e){
-   if(request!==requestId.current)return;
-   if(isAdminUnauthorized(e))onExpired();
+   if(request!==requestId.current||controller.signal.aborted)return;
+   if(e instanceof CalendarHttpError&&e.status===401||isAdminUnauthorized(e))onExpired();
    else setError(e instanceof Error?e.message:'No fue posible cargar Calendario.');
-  }finally{if(request===requestId.current)setLoading(false);}
+  }finally{
+   if(pending.current===controller)pending.current=null;
+   if(request===requestId.current&&!controller.signal.aborted)setLoading(false);
+  }
  },[token,onExpired]);
  useEffect(()=>{
   const update=(reason?:'fallback')=>{if(!document.hidden&&navigator.onLine){if(reason!=='fallback')setRevision(n=>n+1);void refresh();}};
   update();
   const stop=watchCalendar(token,true,update);
-  return()=>{stop();requestId.current++;};
+  return()=>{stop();pending.current?.abort();pending.current=null;requestId.current++;};
  },[token,refresh]);
  function change<K extends keyof CalendarEventInput>(key:K,value:CalendarEventInput[K]){
   setForm(old=>({...old,[key]:value}));

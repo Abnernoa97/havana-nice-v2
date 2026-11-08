@@ -11,6 +11,9 @@ export interface CalendarEvent {
 }
 export type CalendarEventInput=Omit<CalendarEvent,'id'|'version'|'updatedAt'|'dateSort'|'memoryCount'> & {recipientIds:string[]};
 export interface CalendarEventList {events:CalendarEvent[];hasMore:boolean}
+export class CalendarHttpError extends Error {
+ constructor(message:string,public readonly status:number){super(message);this.name='CalendarHttpError';}
+}
 const PAGE=100;
 // One endpoint and token from the existing V2 session. No second login/cache.
 export async function getCalendarEvents(
@@ -21,7 +24,7 @@ export async function getCalendarEvents(
   const res=await fetch(base+(admin?'/api/calendar/admin/events':'/api/calendar/events')+
    '?offset='+offset,{headers:{Authorization:'Bearer '+token,Accept:'application/json'},cache:'no-store',...(signal?{signal}:{})});
   const data=await res.json() as CalendarEventList&{error?:string};
-  if(!res.ok)throw Error(data.error||'Calendario no disponible ('+res.status+')');
+  if(!res.ok)throw new CalendarHttpError(data.error||'Calendario no disponible ('+res.status+')',res.status);
   results.push(...data.events);
   if(!data.hasMore)return results;
  }
