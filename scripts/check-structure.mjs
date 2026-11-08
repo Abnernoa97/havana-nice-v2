@@ -116,4 +116,36 @@ const dormant=sources.filter(path=>!seen.has(path));
 assert.deepEqual(dormant,[],'Unused source files remain outside the live import graph');
 console.log('HAVANA NICE V2 architecture and reachable import graph: OK');
 
+// Shared library is an independent package. Every implementation must be
+// reachable through the ONE public index (directly or through a used module).
+// It was intentionally excluded from app roots, but not from architecture QA.
+const shared=collect('packages/shared/src').sort();
+const sharedSet=new Set(shared);
+const sharedRefs=new Map(shared.map(p=>[p,[]]));
+for(const path of shared){
+ const content=readFileSync(join(rootDir,path),'utf8');
+ for(const match of content.matchAll(/\bfrom\s+['"](\.[^'"]+)['"]|\bimport\s+['"](\.[^'"]+)['"]/g)){
+  const relImport=match[1]||match[2];
+  const absolute=resolve(rootDir,dirname(path),relImport);
+  const candidates=[absolute,absolute+'.ts',absolute+'.tsx',absolute+'.js',
+    join(absolute,'index.ts')];
+  const target=candidates.find(q=>existsSync(q)&&statSync(q).isFile());
+  assert.ok(target,'Broken shared import '+path+' -> '+relImport);
+  const relativePath=relative(rootDir,target).replaceAll('\\','/');
+  assert.ok(sharedSet.has(relativePath),'Shared package must not import application internals: '+path);
+  sharedRefs.get(path).push(relativePath);
+ }
+}
+const sharedSeen=new Set(),sharedQueue=['packages/shared/src/index.ts'];
+while(sharedQueue.length){
+ const current=sharedQueue.shift();
+ if(sharedSeen.has(current))continue;
+ assert.ok(sharedSet.has(current),'Missing public shared source: '+current);
+ sharedSeen.add(current);
+ sharedQueue.push(...(sharedRefs.get(current)||[]));
+}
+assert.deepEqual(shared.filter(path=>!sharedSeen.has(path)),[],
+ 'Orphaned shared code must be deleted or exported through the canonical package index');
+console.log('HAVANA NICE V2 single shared package import graph: OK');
+
 console.log('HAVANA NICE V2 foundation structure: OK');
