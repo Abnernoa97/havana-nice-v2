@@ -1,0 +1,7 @@
+{
+  "approved": true,
+  "releaseMode": "explicit-batch",
+  "version": "0.0.14",
+  "versionCode": 14,
+  "notes": "Lote acumulativo de sincronización HAVANA NICE V2: Calendario, Chat, Repertorio, Familia, BOOK y Músicos; validar firma de APK previa y no reemplazar si difiere."
+}

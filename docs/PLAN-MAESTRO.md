@@ -108,6 +108,7 @@ tests/ + cloudflare/tests/ + scripts/ → reglas de seguridad y CI
 - [ ] **P2 Chat estructural profundo:** extracción por capas de socket y estado en PWA/nativo **sin duplicar dueño de sesión**; someter cada cambio a CI y pruebas reales de reconexión.
 - [ ] **P3 Offline físico:** modo avión, regresar con red y primer arranque de cada módulo en iPhone PWA; validar que el Service Worker no cargue JS antiguo.
 - [ ] **P4 Colas persistentes:** si en el futuro quedan objetos pendientes tras fallo R2, diseñar reintento seguro desde rutas Admin sin introducir tareas de pago ni borrar activos. Ahora las colas están vacías.
+- [~] **P5 Nueva APK acumulativa:** lote autorizado 0.0.14, manifest explícito y versión 14; compilar y pasar barrera de certificado/versionCode. **No afirmar publicada ni instalada** hasta comprobar que el workflow terminó SUCCESS. El APK previo permanece disponible.
 - [ ] **P5 Nueva APK acumulativa:** solo con autorización explícita, subir versionCode y firmar con el mismo certificado, probar instalación encima de 0.0.13 y comportamiento nativo en Android.
 - [ ] **P6 Músicos / Multimedia:** completar y probar funcionalidad y sincronización antes de estética One UI definitiva.
 - [ ] **P7 Métricas reales:** medir tiempos de apertura, descargas por módulo, rendimientos Chat/medios y memoria Android; no inventar números de velocidad.
