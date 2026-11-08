@@ -1,3 +1,17 @@
+## PWA · DESCARGA MODULAR CONTROLADA · 08/11/2026
+
+- [x] Un solo `main`, sin ramas nuevas ni copias de motores. Continúan los cuatro documentos HTML existentes (`index.html`, `visual.html`, `admin.html`, `book.html`), la misma sesión autorizada, la misma navegación y los mismos módulos backend.
+- [x] **Chat / HOME:** `App.tsx` ya no importa HOME de manera estática. `VisualApp.tsx` se descarga cuando se entra al área del equipo; el Chat y su reconexión permanecen bajo la sesión canónica.
+- [x] **Músicos (PWA):** Calendario, Repertorio y Familia utilizan `React.lazy` con `Suspense` dentro de HOME. Son fragmentos JS/CSS separados y solo cargan al entrar en cada sección, sin modificar su API ni estado.
+- [x] **Administración:** `AdminChatAccess` mantiene el inicio de sesión montado y descarga independientemente los módulos Chat, Calendario, Repertorio y Familia al seleccionar cada pestaña.
+- [x] **BOOK pesado bajo demanda:** el lector 3D se carga cuando un músico/admin abre BOOK o un recuerdo fotográfico del Calendario, no al abrir un Calendario o Familia sin fotos visibles.
+- [x] **Verificación real del empaquetado:** Vite genera un manifiesto para comprobar qué fragmentos están en el arranque y cuáles son dinámicos; `tests/pwa-lazy-loading.test.mjs` bloquea regresiones de descarga prematura. El guard de estructura ahora reconoce `import()` sin clasificar archivos dinámicos como código muerto. Compilación y batería completa de pruebas **SUCCESS**: [CI 42442116188](https://github.com/Abnernoa97/havana-nice-v2/actions/runs/42442116188). Publicado por Cloudflare Pages desde `main`.
+- [ ] **Aún no son URLs/HTML independientes por módulo:** el usuario mantiene una sola SPA y una sola navegación; la separación implementada es de **descarga** por fragmentos, no de cada página como documento web diferente. Decidir en un paso posterior si las URL independientes aportan valor sin romper el acceso ni iPhone PWA.
+- [ ] **Aceptación física:** entrar y salir de Chat, Calendario, Repertorio, Familia y BOOK desde iPhone, comprobar caché de fragmentos y actualización del Service Worker. No afirmar latencia física ni 0 errores hasta esa prueba.
+- [ ] **Segunda etapa opcional:** separar CSS grande por función y reducir aún más el peso del controlador Chat inicial, solo después de validar esta etapa.
+
+**Restricción:** no tocar Android APK, Worker v65, D1, R2, Familia HAVANA CLOUD original ni rediseñar módulos para lograr la descarga modular.
+
 ## ESTADO VIGENTE · CALENDARIO / BOOK HAVANA NICE V2 · 08/11/2026
 
 ## RECUERDOS DEL CALENDARIO · ENTREGADO EN UN SOLO MAIN
