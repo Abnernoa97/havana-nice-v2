@@ -69,7 +69,7 @@ assert.doesNotMatch(master+continuity,/BITÁCORA PREVIA|ESTADO VIGENTE · .*07\/
  'Do not restore superseded parallel project status blocks');
 assert.match(read('cloudflare/src/index.ts'),/export \{ChatRoom\} from '\.\/modules\/chat\/chat-room\.js'/);
 assert.match(read('cloudflare/src/modules/chat/chat-room.ts'),/export class ChatRoom/);
-assert.ok(read('cloudflare/src/index.ts').split('\\n').length<380,
+assert.ok(read('cloudflare/src/index.ts').split('\n').length<380,
  'Keep Cloudflare Worker entrypoint a small router; ChatRoom belongs in its domain');
 
 const readme = read('README.md');
