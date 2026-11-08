@@ -472,7 +472,7 @@ export default {
     if (request.headers.has('origin') && !origin) return respond({ error: 'Origin not allowed' }, 403);
     if (request.method === 'OPTIONS') return new Response(null, {
       status: 204, headers: { 'access-control-allow-origin': origin || 'https://havana-nice-v2-dev.pages.dev',
-        'access-control-allow-methods': 'GET, POST, PUT, DELETE, OPTIONS', 'access-control-allow-headers': 'Authorization, Content-Type, Range, X-Havana-V2-Offset, X-Havana-V2-Upload-ID',
+        'access-control-allow-methods': 'GET, POST, PUT, DELETE, OPTIONS', 'access-control-allow-headers': 'Authorization, Content-Type, Range, X-Havana-V2-Offset, X-Havana-V2-Upload-ID, X-Book-Width, X-Book-Height',
         'access-control-max-age': '3600', 'vary': 'Origin' },
     });
     if (url.pathname === '/health') {
