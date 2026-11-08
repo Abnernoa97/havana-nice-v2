@@ -41,7 +41,8 @@ export function watchNativeCalendar(token:string,onInvalidate:()=>void,topic:'ca
    if(connection!==socket)return;
    try{
     const event=JSON.parse(String(e.data)) as {type?:string};
-    if(event.type==='calendar.invalidate'&&topic==='calendar')onInvalidate();
+    // Event assignment grants/revocations must refresh event repertoire too.
+    if(event.type==='calendar.invalidate')onInvalidate();
     if(event.type==='repertoire.invalidate'&&topic==='repertoire')onInvalidate();
    }catch{}
   };

@@ -43,7 +43,9 @@ test('one private Repertoire invalidation channel synchronizes Admin, PWA and An
  assert.match(entry,/ctx\.waitUntil\(notifyRepertoireClients\(env\)\)/);
  assert.match(room,/type:'repertoire.invalidate'/);
  assert.match(browserTransport,/watchRepertoire\(token/);
+ assert.match(browserTransport,/if\(message\.type==='calendar.invalidate'\)onInvalidate\(\)/);
  assert.match(nativeTransport,/watchNativeRepertoire\(token/);
+ assert.match(nativeTransport,/if\(event\.type==='calendar.invalidate'\)onInvalidate\(\)/);
  assert.match(admin,/void refreshAll\(\); \/\/ Carga D1 inmediata/);
  assert.match(admin,/watchRepertoire\(token,true/);
  assert.match(member,/void refresh\(\); \/\/ Initial D1 load/);
