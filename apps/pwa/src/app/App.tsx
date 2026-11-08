@@ -3,19 +3,18 @@ import {
   fetchBackendHealth, getChatMediaAvailability, getChatSnapshot, getOlderChatMessages, searchChatMessages, getChatMenuState, getChatMessagePermissions, isWithinChatEditWindow, selectNextQueuedChatMessage, setOutgoingChatStatus, projectOutgoingChatStatus, CHAT_ACK_TIMEOUT_MS, newClientMessageId,
   openChatSocket, reconcileChatMessages, startNamedChatSession, restoreNamedChatSession, chatSessionExpired, chatReconnectDelay, reconcileChatReadReceipt, removeChatReactionsForMessage, captureChatOfflineSnapshot, restoreChatOfflineOutbox,
   type BackendHealth, type ChatMessage, type ChatServerEvent, type ChatSession,
-  validateChatMediaSelection, CHAT_MEDIA_MAX_PER_SEND, HAVANA_V2_DEV_API_BASE_URL, type ChatMediaSelection, type ChatMediaKind, type ChatMediaSource,
+  CHAT_MEDIA_MAX_PER_SEND, HAVANA_V2_DEV_API_BASE_URL,
   reconcileReactions, reconcileUpdatedMessage, reconcileDeletedMessage, reconcileChatSnapshot, type ChatReaction, type ChatEmoji, type ChatReadReceipt, type MemberScreen,
 } from '@havana/shared';
 import { loadLocalChat, saveLocalChat } from '../services/local';
 import type {MessageAnchor} from '../features/chat/SwipeMessage';
 import ChatTimeline from '../features/chat/ChatTimeline';
+import {usePwaMediaSelection} from '../features/chat/usePwaMediaSelection';
 import ComposerIcon from '../features/chat/ChatComposerIcon';
 import {uploadChatFile} from '../services/chat-media-upload';
 // The authorized HOME is fetched only when needed; Chat's live socket
 // and the existing single-session access remain in this canonical shell.
 const VisualApp=lazy(()=>import('./VisualApp'));
-
-type PwaQueuedMedia={id:string;file:File;selection:ChatMediaSelection};
 
 export default function App() {
   const [health, setHealth] = useState<BackendHealth | null>(null);
@@ -27,16 +26,14 @@ export default function App() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [draft, setDraft] = useState('');
   const [composerPanel,setComposerPanel]=useState<'attachments'|'emojis'|null>(null);
-  const [selectedMedia,setSelectedMedia]=useState<PwaQueuedMedia[]>([]);
-  const [mediaError,setMediaError]=useState('');
-  const mediaQueue=useRef<PwaQueuedMedia[]>([]);
+  const {selectedMedia,setSelectedMedia,mediaError,setMediaError,mediaQueue,
+    photosPicker,videoPicker,cameraPicker,
+    removeSelectedMedia,openGalleryMedia,openCamera,chooseMedia}=
+    usePwaMediaSelection({onCloseMenu:()=>setComposerPanel(null)});
   const [mediaReady,setMediaReady]=useState(false);
   const [mediaUploading,setMediaUploading]=useState(false);
   const mediaUploadBusy=useRef(false);
   const [mediaProgress,setMediaProgress]=useState(0);
-  const photosPicker=useRef<HTMLInputElement|null>(null);
-  const videoPicker=useRef<HTMLInputElement|null>(null);
-  const cameraPicker=useRef<HTMLInputElement|null>(null);
   const [connection, setConnection] = useState('desconectado');
   const [error, setError] = useState('');
   const [joining, setJoining] = useState(false);
@@ -65,49 +62,6 @@ export default function App() {
   const bottom = useRef<HTMLDivElement | null>(null);
   const scrollOlderOnce=useRef(false);
   const typingLast = useRef(0);
-  const removeSelectedMedia=(id:string)=>{
-    
-    const removed=mediaQueue.current.find(x=>x.id===id);
-    if(removed)URL.revokeObjectURL(removed.selection.uri);
-    mediaQueue.current=mediaQueue.current.filter(x=>x.id!==id);
-    
-    setSelectedMedia([...mediaQueue.current]);setMediaError('');
-  };
-  const openGalleryMedia=(kind:ChatMediaKind)=>{
-    setComposerPanel(null);setMediaError('');
-    
-    if(mediaQueue.current.length>=CHAT_MEDIA_MAX_PER_SEND){
-      setMediaError('Máximo 5 archivos por envío, entre fotos y videos.');return;
-    }
-    (kind==='photo'?photosPicker:videoPicker).current?.click();
-  };
-  const openCamera=()=>{
-    setComposerPanel(null);setMediaError('');
-    
-    if(mediaQueue.current.length>=CHAT_MEDIA_MAX_PER_SEND){
-      setMediaError('Máximo 5 archivos por envío, entre fotos y videos.');return;
-    }
-    cameraPicker.current?.click();
-  };
-  const chooseMedia=(source:ChatMediaSource,kind:ChatMediaKind,files:File[])=>{
-    if(!files.length)return;
-    if(mediaQueue.current.length+files.length>CHAT_MEDIA_MAX_PER_SEND){
-      setMediaError('Máximo 5 archivos por envío, entre fotos y videos.');return;
-    }
-    for(const file of files){
-      const issue=validateChatMediaSelection({kind,name:file.name,
-        mimeType:file.type.toLowerCase(),sizeBytes:file.size});
-      if(issue){setMediaError(file.name+': '+issue);return;}
-    }
-    const additions=files.map(file=>{
-      const uri=URL.createObjectURL(file);
-      return {id:crypto.randomUUID(),file,
-        selection:{kind,source,uri,name:file.name,
-          mimeType:file.type.toLowerCase(),sizeBytes:file.size}} as PwaQueuedMedia;
-    });
-    mediaQueue.current=[...mediaQueue.current,...additions];
-    setSelectedMedia([...mediaQueue.current]);setMediaError('');
-  };
   useEffect(()=>{
     if(!session){setMediaReady(false);return;}
     let live=true;
@@ -146,7 +100,6 @@ export default function App() {
     if(draft.length+emoji.length<=2000)typeText(draft+emoji);
     setComposerPanel(null);
   };
-  useEffect(()=>()=>{for(const item of mediaQueue.current)URL.revokeObjectURL(item.selection.uri);},[]);
   const typingTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const storageQueue = useRef<Promise<void>>(Promise.resolve());
   const latestDraft = useRef('');
