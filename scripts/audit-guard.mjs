@@ -16,6 +16,8 @@ const android = read('apps/android/App.tsx');
 const pwa = read('apps/pwa/src/app/App.tsx');
 const nativeBubble = read('apps/android/features/chat/SwipeableBubble.tsx');
 const nativeTimeline = read('apps/android/features/chat/NativeChatTimeline.tsx');
+const nativeMenu = read('apps/android/features/chat/NativeChatMessageMenu.tsx');
+const pwaMenu = read('apps/pwa/src/features/chat/PwaChatMessageMenu.tsx');
 const webBubble = read('apps/pwa/src/features/chat/SwipeMessage.tsx');
 const pwaStyles = read('apps/pwa/src/styles/chat/chat.css');
 const serviceWorker = read('apps/pwa/public/sw.js');
@@ -230,7 +232,9 @@ present(android,/scrollToEnd\(\{animated:false\}\)/,'Native chat must avoid anim
 present(android,/onScrollBeginDrag=/,'Native chat must respect manual scroll');
 absent(android,/onContentSizeChange=\{\(\) => \{if\(autoScroll\.current\)scroll\.current\?\.scrollToEnd\(\{animated:true\}\);\}\}/,
   'Native chat must not animate every content size change');
-present(android,/Responder/,'Native contextual menu must provide a reply action');
+present(nativeMenu,/Responder/,'Native contextual menu must provide a reply action');
+present(android,/<NativeChatMessageMenu message=\{menuMessage\}/,'Native Chat must mount its context menu in the original owner');
+absent(nativeMenu,/startNamedChatSession|restoreNamedChatSession|new WebSocket|AsyncStorage/,'Native menu must stay presentation-only');
 absent(android,/whatsappPlus|whatsappPlusText/,'Remove inert extra-reaction button on Android');
 present(webBubble,/getBoundingClientRect\(\)/,'PWA Chat must measure held message');
 const chatTimeline=read('apps/pwa/src/features/chat/ChatTimeline.tsx');
@@ -238,8 +242,10 @@ present(pwa,/onMessageLongPress=\{showMessageMenu\}/,
   'PWA Chat must bind the existing secure contextual menu from App');
 present(chatTimeline,/onLongPress=\{anchor=>onMessageLongPress\(message,anchor\)\}/,
   'PWA Timeline must forward long-press anchors to the one Chat controller');
-present(pwa,/aria-modal="true"/,'PWA contextual menu must be a dialog');
-present(pwa,/Responder/,'PWA contextual menu must provide a reply action');
+present(pwaMenu,/aria-modal="true"/,'PWA contextual menu must be a dialog');
+present(pwaMenu,/Responder/,'PWA contextual menu must provide a reply action');
+present(pwa,/<PwaChatMessageMenu message=\{menuMessage\}/,'PWA Chat must mount its context menu in the original owner');
+absent(pwaMenu,/startNamedChatSession|restoreNamedChatSession|new WebSocket|localStorage/,'PWA menu must stay presentation-only');
 // C02: retain the target of the edit after app suspension/reopening.
 const pwaLocal=read('apps/pwa/src/services/local.ts');
 const androidLocal=read('apps/android/services/chatStorage.ts');
