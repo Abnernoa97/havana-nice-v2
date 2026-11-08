@@ -5,6 +5,7 @@ import {handleAdminChat} from './modules/admin/admin-chat.js';
 import {deleteChatMessageRecord} from './modules/chat/message-removal.js';
 import {claimFirstInstallation,auditDuplicateInstallation,handleSingleInstallationAdmin} from './modules/admin/single-installation.js';
 import {handleCalendarApi} from './modules/calendar/calendar.js';
+import {handleCalendarMemories} from './modules/calendar/calendar-memories.js';
 import {CalendarRoom,calendarSocketIdentity,calendarSocketAuthorized} from './modules/calendar/calendar-realtime.js';
 export {CalendarRoom};
 import {handleRepertoireApi} from './modules/repertoire/repertoire.js';
@@ -505,6 +506,11 @@ export default {
     }
     // Calendar is a separate V2 module on the same Worker/D1 and identity authority.
     // D1 migration 0018 must be applied before publishing this route.
+    // A single Worker/calendar namespace; completed-event memories have their
+    // own private media capabilities, not a second calendar or BOOK engine.
+    if(url.pathname.startsWith('/api/calendar/photo/')||
+       /^\/api\/calendar\/(?:admin\/)?events\/[0-9a-f-]{36}\/photos(?:\/|$)/.test(url.pathname))
+      return handleCalendarMemories(request,env,url,verifySession);
     if(url.pathname.startsWith('/api/calendar/'))
       return handleCalendarApi(request,env,url,origin,respond,verifySession);
     // Repertoire is separately routed with the existing session and D1 grants.
