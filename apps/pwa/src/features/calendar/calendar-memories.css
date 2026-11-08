@@ -68,3 +68,16 @@
  .hn-cal-stamp{letter-spacing:.07em;font-size:10px}
  .hn-cal-memory-gallery .hn-book-stage{height:clamp(375px,64svh,520px)}
 }
+
+/* The stamp sits *over* the finished date, like a real physical ink mark,
+   but remains decorative and never intercepts accordion taps. */
+.hn-cal-completed .hn-cal-summary-main,.a-cal-completed .a-cal-summary-main{min-height:75px;padding-right:clamp(125px,33%,185px)}
+.hn-cal-completed .hn-cal-stamp,.a-cal-completed .hn-cal-stamp{
+ position:absolute;top:7px;right:3px;margin:0;
+ width:max-content;max-width:160px;white-space:normal;text-align:center;
+ box-shadow:inset 0 0 0 1px #9149395a,0 1px 0 #fff6;
+}
+@media(max-width:440px){
+ .hn-cal-completed .hn-cal-summary-main,.a-cal-completed .a-cal-summary-main{padding-right:112px}
+ .hn-cal-completed .hn-cal-stamp,.a-cal-completed .hn-cal-stamp{font-size:9px;max-width:118px;right:0;top:4px}
+}
