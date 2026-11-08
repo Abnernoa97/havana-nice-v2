@@ -162,8 +162,8 @@ test('lazy Calendar/BOOK chunks remain usable offline only after their first aut
  assert.equal(cached.result.marker,'verified-static-chunk');
  const neverOpened=await sw.dispatch({url:book});
  assert.equal(neverOpened.handled,true);
- assert.equal(neverOpened.result?.ok,undefined,
-  'An unopened module cannot falsely work offline: this is an explicit QA constraint');
+ assert.equal(neverOpened.result?.ok,false,
+  'A module never downloaded online must fail clearly offline, not serve stale JS');
  assert.equal(sw.writes.filter(x=>String(x.key).includes('/api/')).length,0);
 });
 test('installed Administrator HTML is never cached or intercepted, including offline',async()=>{
