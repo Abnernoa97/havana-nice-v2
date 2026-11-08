@@ -188,6 +188,10 @@ try{
  for(const [width,height,label] of [[390,844,'phone'],[1024,800,'desktop']]){
   await rpc('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile:width<700});
   await rpc('Emulation.setTouchEmulationEnabled',{enabled:width<700,maxTouchPoints:1});
+  await rpc('Page.navigate',{url:'http://127.0.0.1:'+servePort+'/book.html'});
+  const result=await js(scenario,17500);
+  assert.ok(result,'Browser BOOK test must return result');
+  assert.equal(result.original.width,width,'Actual Chrome emulated width mismatch');
   if(width<700){
    const compressed=await js(`(async()=>{
     const {optimizeBookPhoto}=await import('/__book_optimizer_qa.js');
@@ -212,10 +216,6 @@ try{
    })()`,20000);
    console.log('BOOK actual Chrome image WebP: '+JSON.stringify(compressed));
   }
-  await rpc('Page.navigate',{url:'http://127.0.0.1:'+servePort+'/book.html'});
-  const result=await js(scenario,17500);
-  assert.ok(result,'Browser BOOK test must return result');
-  assert.equal(result.original.width,width,'Actual Chrome emulated width mismatch');
   if(width<700){
    // Put content above and below BOOK so the app has an actual scroll range.
    // This is DOM created exclusively in the isolated Chrome test page.
