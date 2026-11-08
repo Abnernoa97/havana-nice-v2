@@ -1,6 +1,6 @@
-import {useCallback,useEffect,useRef,useState} from 'react';
+import {lazy,Suspense,useCallback,useEffect,useRef,useState} from 'react';
 import {calendarDate,calendarEventCompleted,getCalendarEvents,HAVANA_V2_DEV_API_BASE_URL,safeCalendarMapUrl,type CalendarEvent} from '@havana/shared';
-import CalendarMemories from './CalendarMemories';
+const CalendarMemories=lazy(()=>import('./CalendarMemories'));
 import './calendar-memories.css';
 import {watchCalendar} from '../../services/calendar-live';
 // Member token is provided by the existing V2 session. Never create another login.
@@ -63,7 +63,7 @@ export default function CalendarAccordion({token}:{token:string}){
       {item.showTime?<div><dt>Presentación</dt><dd>{item.showTime}</dd></div>:null}
      </dl>
      <div className="hn-cal-memory-photos"><h4>Recuerdos de este día</h4>
-      <CalendarMemories token={token} eventId={item.id} title={item.title} revision={revision} photoCount={item.memoryCount||0}/>
+      <Suspense fallback={<p className="hn-cal-memory-placeholder" role="status">Abriendo recuerdos…</p>}><CalendarMemories token={token} eventId={item.id} title={item.title} revision={revision} photoCount={item.memoryCount||0}/></Suspense>
      </div>
     </div>:<div className="hn-cal-details">
      <div className="hn-cal-hours">
