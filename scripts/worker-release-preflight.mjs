@@ -46,6 +46,6 @@ const release={
   'HAVANA_ENV:plain_text','V2_ADMIN_LOGIN_MODE:plain_text',
   'V2_ADMIN_LOGIN_SECRET:secret_text',
  ],
- oldLiveMustRemain:'v61@100% pending complete version comparison and physical QA',
+ oldLiveMustRemain:'v65@100% (81a512bb-a383-4258-8f5b-6aacf831b9b5) until staged release passes and rollback is verified',
 };
 console.log(JSON.stringify(release,null,2));
