@@ -18,6 +18,7 @@ class DB{
   assert.doesNotMatch(migration,/DROP TABLE|ALTER TABLE chat_|DELETE FROM chat_/i);
   this.raw.exec(migration);
   this.raw.exec(readFileSync(new URL('../migrations/0019_calendar_free_text.sql',import.meta.url),'utf8'));
+  this.raw.exec(readFileSync(new URL('../migrations/0029_calendar_event_memories.sql',import.meta.url),'utf8'));
   for(const [id,name] of [[M1,'Noa'],[M2,'Fer']])this.raw.prepare('INSERT INTO chat_members VALUES (?,?,1)').run(id,name);
  }
  prepare(sql){
