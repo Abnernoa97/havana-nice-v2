@@ -44,6 +44,18 @@ test('Android Familia uses the same socket, with one AppState-aware connection a
  assert.match(native,/getFamilyDirectory\(token\)/);
 });
 
+test('Family transport reconnects after an iPhone or Android handshake stalls',()=>{
+ const shared=read('packages/shared/src/family-realtime.ts');
+ const index=read('packages/shared/src/index.ts');
+ assert.match(shared,/FAMILY_WS_HANDSHAKE_TIMEOUT_MS=9000/);
+ assert.match(index,/openFamilyRealtime,FAMILY_WS_HANDSHAKE_TIMEOUT_MS/);
+ for(const source of [read('apps/pwa/src/services/use-family-live.ts'),read('apps/android/features/family/NativeFamily.tsx')]){
+  assert.match(source,/watchdog=setTimeout/);
+  assert.match(source,/FAMILY_WS_HANDSHAKE_TIMEOUT_MS/);
+  assert.match(source,/opened.readyState===WebSocket.OPEN/);
+  assert.doesNotMatch(source,/setInterval/);
+ }
+});
 test('Family Worker uses existing D1, R2 and ChatRoom bindings without an extra backend',()=>{
  const src=read('cloudflare/src/index.ts');
  const room=read('cloudflare/src/modules/chat/chat-room.ts');

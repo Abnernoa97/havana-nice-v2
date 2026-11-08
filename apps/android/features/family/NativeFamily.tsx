@@ -2,7 +2,7 @@ import React,{useCallback,useEffect,useRef,useState} from 'react';
 import {ActivityIndicator,AppState,Image,Modal,Pressable,StyleSheet,Text,View,useWindowDimensions} from 'react-native';
 import {useVideoPlayer,VideoView} from 'expo-video';
 import NativeBook from '../book/NativeBook';
-import {getFamilyDirectory,getFamilyAlbumMedia,familyAlbumCount,HAVANA_V2_DEV_API_BASE_URL,openFamilyRealtime,
+import {getFamilyDirectory,getFamilyAlbumMedia,familyAlbumCount,HAVANA_V2_DEV_API_BASE_URL,openFamilyRealtime,FAMILY_WS_HANDSHAKE_TIMEOUT_MS,
  type FamilyAlbum,type FamilyDirectory,type FamilyMediaItem} from '@havana/shared';
 
 // Reuse the same short-lived private Family grants as PWA; no public R2 URL.
@@ -59,8 +59,12 @@ export default function NativeFamily({token}:{token:string}){
   // Chat and Calendar retain their own existing controllers and backend.
   let active=true,socket:WebSocket|null=null;
   let timer:ReturnType<typeof setTimeout>|null=null;
+  let watchdog:ReturnType<typeof setTimeout>|null=null;
   let retryDelay=1000;
-  const clear=()=>{if(timer!==null){clearTimeout(timer);timer=null;}};
+  const clear=()=>{
+   if(timer!==null){clearTimeout(timer);timer=null;}
+   if(watchdog!==null){clearTimeout(watchdog);watchdog=null;}
+  };
   const synchronize=()=>{
    setBookTick(value=>value+1);
    void refresh();
@@ -76,10 +80,25 @@ export default function NativeFamily({token}:{token:string}){
      if(event.type==='family.ready'||event.type==='family.invalidate')synchronize();
     });
     socket=opened;
-    opened.onopen=()=>{if(active&&socket===opened)retryDelay=1000;};
+    watchdog=setTimeout(()=>{
+     if(!active||socket!==opened||opened.readyState===WebSocket.OPEN)return;
+     socket=null;try{opened.close();}catch{}
+     clear();
+     if(AppState.currentState==='active'){
+      timer=setTimeout(connect,retryDelay);
+      retryDelay=Math.min(20000,retryDelay*2);
+     }
+    },FAMILY_WS_HANDSHAKE_TIMEOUT_MS);
+    opened.onopen=()=>{
+     if(active&&socket===opened){
+      if(watchdog!==null){clearTimeout(watchdog);watchdog=null;}
+      retryDelay=1000;
+     }
+    };
     opened.onclose=event=>{
      if(!active||socket!==opened)return;
      socket=null;
+     if(watchdog!==null){clearTimeout(watchdog);watchdog=null;}
      if(event.code===4003)return;
      if(AppState.currentState==='active'){
       clear();timer=setTimeout(connect,retryDelay);

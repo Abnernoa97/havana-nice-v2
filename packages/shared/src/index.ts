@@ -227,7 +227,7 @@ export {getFamilyDirectory,getFamilyAlbumMedia,uploadFamilyAlbumFile,uploadFamil
 export type {FamilyAlbum,FamilyDirectory,FamilyMediaItem} from './family';
 
 // Realtime Familia invalidation only; media remains private via existing REST grants.
-export {openFamilyRealtime} from './family-realtime';
+export {openFamilyRealtime,FAMILY_WS_HANDSHAKE_TIMEOUT_MS} from './family-realtime';
 export type {FamilyRealtimeEvent} from './family-realtime';
 
 // One chat context-menu permissions and geometry policy for PWA and Android.

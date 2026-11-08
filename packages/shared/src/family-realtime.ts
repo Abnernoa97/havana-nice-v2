@@ -3,6 +3,7 @@ import {HAVANA_V2_DEV_API_BASE_URL} from './api-base';
 // PWA and Android subscribe only while Familia is open.
 // The existing Worker/ChatRoom sends invalidation signals, never private media.
 export type FamilyRealtimeEvent={type:'family.ready'|'family.invalidate'};
+export const FAMILY_WS_HANDSHAKE_TIMEOUT_MS=9000;
 export function openFamilyRealtime(
  token:string,
  admin:boolean,
