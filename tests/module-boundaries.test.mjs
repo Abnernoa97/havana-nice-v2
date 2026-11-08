@@ -22,7 +22,8 @@ test('A01: HOME lists the same modules from a single shared contract',()=>{
   assert.match(read('apps/android/features/home/NativeMemberHome.tsx'),/MEMBER_MODULES\.map/);
   assert.match(read('apps/pwa/src/app/VisualApp.tsx'),/MEMBER_MODULES/);
   assert.match(read('apps/android/App.tsx'),/session&&activeScreen!=='chat'&&<NativeMemberHome/);
-  assert.match(read('apps/pwa/src/app/App.tsx'),/session&&activeScreen!=='chat'&&<VisualApp/);
+  assert.match(read('apps/pwa/src/app/App.tsx'),/session&&activeScreen!=='chat'&&<Suspense/);
+  assert.match(read('apps/pwa/src/app/App.tsx'),/<VisualApp displayName=/);
 });
 
 test('A01: only existing App shells own musician enrollment and session restoration',()=>{
