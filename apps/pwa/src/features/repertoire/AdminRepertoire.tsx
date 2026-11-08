@@ -69,7 +69,7 @@ export default function AdminRepertoire({token,onExpired}:{token:string;onExpire
   if(eventIdRef.current)await refreshItems(eventIdRef.current);
  },[refresh,refreshItems]);
  useEffect(()=>{
-  void refreshAll(); // Render immediately; WebSocket opening must not gate first load.
+  void refreshAll(); // Carga D1 inmediata; no esperar apertura del canal de avisos.
   const stop=watchRepertoire(token,true,()=>{if(!document.hidden&&navigator.onLine)void refreshAll();});
   return()=>{catalogRequest.current++;itemsRequest.current++;stop();};
  },[token,refreshAll]);
