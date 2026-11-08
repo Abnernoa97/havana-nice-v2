@@ -4,6 +4,7 @@ import {DatabaseSync} from 'node:sqlite';
 import {readFileSync} from 'node:fs';
 import {sha256Hex} from '../src/shared/crypto-helpers.js';
 import {handleBookApi} from '../src/modules/book/book.js';
+import {familyStorageUsage} from '../src/modules/family/family-quota.js';
 const ORIGIN='https://havana-nice-v2.pages.dev';
 const BASE='https://havana-nice-v2-dev.soloaplicaciones97.workers.dev';
 const ADMIN='a'.repeat(48);
@@ -133,6 +134,13 @@ test('private WebP derivatives never overwrite originals, and both count toward 
  assert.equal((await x.api(admin.pages[0].originalUrl)).headers.get('content-type'),'image/jpeg');
  const used=x.db.prepare('SELECT SUM(size_bytes+optimized_size_bytes) AS bytes FROM book_pages').get();
  assert.equal(used.bytes,1380);
+ assert.equal((await familyStorageUsage(x.env)).usedBytes,1380);
+ // If an optimized object vanishes independently, its grant falls back
+ // to the preserved original rather than leaving a blank page.
+ x.objects.delete(row.optimized_key);
+ const fallback=await x.api(light.pages[0].url);
+ assert.equal(fallback.headers.get('content-type'),'image/jpeg');
+ assert.equal((await fallback.arrayBuffer()).byteLength,1200);
  const deleted=await x.api('/api/book/admin/pages/'+id,{token:ADMIN,method:'DELETE'});
  assert.equal(deleted.status,200);
  assert.equal(x.objects.size,0);
