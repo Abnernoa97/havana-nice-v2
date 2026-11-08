@@ -66,21 +66,6 @@ jobs:
           node ../scripts/worker-release-preflight.mjs "$BUNDLE"
           echo "SUCCESS: V2 Worker bundled and guarded from source, no production changes"
 
-      # One-time canonical release handoff; remove after v65 is verified.
-      - name: Export canonical Calendar memory Worker v65 from verified source
-        if: "${{ github.event.head_commit.message == 'ci(v2): export Calendar memories Worker v65 from canonical main' }}"
-        shell: bash
-        run: |
-          set -euo pipefail
-          BUNDLE="$(find /tmp/havana-v2-worker-preview -name 'index.js' -type f -print -quit)"
-          test -s "$BUNDLE"
-          echo "HNV2_CALENDAR_COMMIT=$GITHUB_SHA"
-          echo "HNV2_CALENDAR_SHA256=$(sha256sum "$BUNDLE" | awk '{print $1}')"
-          echo HNV2_CALENDAR_BUNDLE_BEGIN
-          base64 -w 4096 "$BUNDLE"
-          echo
-          echo HNV2_CALENDAR_BUNDLE_END
-
       - name: Preserve canonical Worker preview for live-version equivalence review
         uses: actions/upload-artifact@v4
         with:
@@ -88,45 +73,6 @@ jobs:
           path: /tmp/havana-v2-worker-preview/
           retention-days: 7
           if-no-files-found: error
-
-      # Release-only smoke at 0% traffic; never uses real credentials or writes.
-      - name: Smoke test staged Calendar memories v65 before users see it
-        if: "${{ github.event.head_commit.message == 'ci(v2): smoke-test staged Calendar memories v65' }}"
-        shell: bash
-        run: |
-          set -euo pipefail
-          BASE="https://havana-nice-v2-dev.soloaplicaciones97.workers.dev"
-          H='Cloudflare-Workers-Version-Overrides: havana-nice-v2-dev="81a512bb-a383-4258-8f5b-6aacf831b9b5"'
-          curl -fsS -H "$H" "$BASE/health" | tee /tmp/calendar-memory-health.json
-          grep -q '"database":"ok"' /tmp/calendar-memory-health.json
-          for ROUTE in /api/calendar/events /api/calendar/admin/events \
-            /api/calendar/events/123e4567-e89b-42d3-a456-426614174001/photos \
-            /api/calendar/admin/events/123e4567-e89b-42d3-a456-426614174001/photos \
-            /api/book/pages /api/family/albums /api/repertoire/songs /api/chat/messages; do
-            STATUS="$(curl -sS -o /dev/null -w '%{http_code}' -H "$H" "$BASE$ROUTE")"
-            echo "$ROUTE -> $STATUS"
-            test "$STATUS" = "401"
-          done
-          STATUS="$(curl -sS -o /dev/null -w '%{http_code}' -H "$H" \
-            "$BASE/api/calendar/photo/00000000000000000000000000000000")"
-          test "$STATUS" = "404"
-          STATUS="$(curl -sS -o /dev/null -w '%{http_code}' -H "$H" \
-            -X POST -H 'Content-Type: image/jpeg' --data-binary 'denied' \
-            "$BASE/api/calendar/admin/events/123e4567-e89b-42d3-a456-426614174001/photos")"
-          test "$STATUS" = "401"
-          curl -fsS -D /tmp/calendar-memory-cors.txt -o /dev/null -H "$H" \
-            -H 'Origin: https://havana-nice-v2.pages.dev' \
-            "$BASE/api/calendar/photo/00000000000000000000000000000000" || true
-          grep -qi 'access-control-allow-origin: https://havana-nice-v2.pages.dev' \
-            /tmp/calendar-memory-cors.txt
-          curl -sS -D /tmp/calendar-memory-preflight.txt -o /dev/null -X OPTIONS -H "$H" \
-            -H 'Origin: https://havana-nice-v2.pages.dev' \
-            -H 'Access-Control-Request-Method: POST' \
-            -H 'Access-Control-Request-Headers: Authorization, Content-Type, X-Book-Width, X-Book-Height' \
-            "$BASE/api/calendar/admin/events/123e4567-e89b-42d3-a456-426614174001/photos"
-          grep -qi 'X-Book-Width' /tmp/calendar-memory-preflight.txt
-          grep -qi 'X-Book-Height' /tmp/calendar-memory-preflight.txt
-          echo 'PASS: staged v65 Calendar memory auth, private media, CORS and existing modules'
 
       - name: Verify one SHA-256 preserves old sessions and private-media grants
         run: node --test tests/worker-hash-parity.test.mjs
