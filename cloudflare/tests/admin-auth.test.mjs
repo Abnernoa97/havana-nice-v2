@@ -191,9 +191,10 @@ test('Worker rechecks admin sessions for WebSocket; DO keeps admin sockets out o
  const worker=fs('../src/index.ts');
  assert.match(worker,/url\.pathname === '\/ws\/admin'/);
  assert.match(worker,/verifyAdminSession\(adminTokenRequest\(token\),env\)/);
- assert.match(worker,/verifyAdminSession\(adminTokenRequest\(token\),this\.env\)/);
- assert.match(worker,/this\.adminSockets = new Map/);
- assert.match(worker,/this\.members\.set\(server, \{actorId/);
+ const room=fs('../src/modules/chat/chat-room.ts');
+ assert.match(room,/verifyAdminSession\(adminTokenRequest\(token\),this\.env\)/);
+ assert.match(room,/this\.adminSockets = new Map/);
+ assert.match(room,/this\.members\.set\(server, \{actorId/);
 });
 
 test('Administrator can review and close ONLY other active sessions',async()=>{
