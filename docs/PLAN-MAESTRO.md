@@ -1,5 +1,14 @@
 ## ESTADO VIGENTE · BOOK HAVANA NICE V2 · 07/11/2026
 
+## MEJORA EDITORIAL · BOOK HAVANA NICE · 08/11/2026
+
+- [x] **Papel y encuadernación:** lomo de cubierta verde, canto y esquina discretos, profundidad de papel marfil, sombra fija de libro apoyado. Todos son estilos estáticos en `apps/pwa/src/features/book/book.css`: sin un segundo motor ni efectos de GPU por fotograma.
+- [x] **Encuadre fotográfico:** páginas enmarcadas editorialmente, fotos horizontales detectadas al decodificar y presentadas completas, fotos verticales con relleno, opción Administración «imagen completa» respetada. Se aplica tanto en vista 3D como modo Scroll, sin modificar originales ni permisos.
+- [x] **Carga próxima:** se preparan solamente portada y dos fotografías cercanas a la página actual mediante `loading=eager` y `decode()`, sin precargar todo BOOK. Enlaces R2 privados se renuevan sin reconstruir el libro.
+- [x] **Portada y contraportada:** acabado visual de libro encuadernado; abrir y cerrar reutiliza exactamente el giro de StPageFlip de 780 ms, sin portada rígida que altere los gestos naturales.
+- [x] **Regresión técnica:** [CI 42435994852 SUCCESS](https://github.com/Abnernoa97/havana-nice-v2/actions/runs/42435994852) con Chrome real, imágenes de prueba privadas simuladas interceptadas, foto horizontal decodificada y visualizada completa, gestos vertical/horizontal, estabilidad del escenario y demás módulos V2. **Falta comprobación estética y táctil física con las fotografías reales del usuario.** No se modifica el Worker v63, el bucket R2 ni la APK instalada.
+
+
 **Cierre de gestos y acabado editorial (07/11):** En el único `main`, BOOK ahora distingue **desplazamiento vertical del documento** y **gestos horizontales del libro**: `mobileScrollSupport:true`, CSS `touch-action:pan-y` y un único árbitro de gestos táctiles que deja libre el navegador para subir/bajar, hace un giro por swipe lateral y conserva la manipulación física desde las esquinas. No hay motor adicional, motor duplicado, compresión, ni cronómetros de sincronización. El marco se dibuja con CSS estático en cada hoja: papel marfil, fotografía impresa dentro de un margen editorial, sombra de encuadernación y lomo/filo de las cubiertas. Evitar filtros/efectos por fotograma. **Prueba Chrome real [CI 42422748553 SUCCESS](https://github.com/Abnernoa97/havana-nice-v2/actions/runs/42422748553)**: móvil 390×844, dedo vertical desplaza la página `668→814` sin cambiar `03/07`, swipe horizontal avanza `03/07→04/07`, además de botones, toque, página estable y una sola instancia de render; escritorio 1024×800 también aprobado. Verificación funcional automatizada, **pendiente tacto físico en iPhone**.
 
 
