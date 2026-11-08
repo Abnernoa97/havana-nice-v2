@@ -167,8 +167,8 @@ jobs:
       - name: Verify BOOK 3D navigation links contain no sessions or private credentials
         run: node --experimental-strip-types --test tests/book-reader-routing.test.mjs
 
-      - name: Verify native BOOK fallback and authenticated PWA 3D navigation
-        run: node --test tests/native-book-bridge.test.mjs
+      - name: Verify Android shell embeds the existing PWA PageFlip with a single authorized session
+        run: node --experimental-strip-types --test tests/native-book-bridge.test.mjs
 
       - name: Verify Familia Android virtualized gallery and non-nested HOME viewport
         run: node --test tests/native-family-virtualization.test.mjs

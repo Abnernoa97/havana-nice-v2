@@ -101,11 +101,10 @@ test('Android Familia reads the same albums, authorized grant URLs and real BOOK
  const pwaRoute=read('apps/pwa/src/app/PwaReaderRoute.tsx');
  const reader=read('apps/pwa/src/features/book/BookReader.tsx');
  assert.match(native,/<NativeBook token=\{token\} refreshKey=\{bookTick\} onClose=\{back\}\/>/);
- assert.match(book,/getBookPages\(token\)/);
- assert.match(book,/getCalendarMemories\(token,calendarEventId\)/);
- assert.match(book,/<FlatList/);
- assert.match(book,/pwaReaderUrl\(target\)/);
- assert.doesNotMatch(book,/from ['"]react-native-webview['"]|<WebView\b|havana-v2-book-auth/);
+ assert.match(book,/injectedJavaScriptObject=\{nativeContext\}/);
+ assert.match(book,/<WebView<object>/);
+ assert.match(book,/source=\{\{uri:READER\}\}/);
+ assert.doesNotMatch(book,/Linking\.|Alert\.alert|havana-v2-book-auth|pwaReaderUrl/);
  assert.match(pwaRoute,/const MemberBook=lazy/);
  assert.match(reader,/from 'page-flip'/);
  assert.doesNotMatch(book,/localStorage|AsyncStorage|WebSocket|new PageFlip|\?token=/);

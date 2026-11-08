@@ -22,7 +22,7 @@ apps/
     index.html          → sesión músico y Chat web
     visual.html         → HOME / módulos visuales
     admin.html          → sesión y módulos Administración
-    book.html           → compatibilidad temporal con APK 0.0.15 (puente WebView antiguo)
+    book.html           → visor 3D de PWA embebido directamente en Android (misma sesión nativa)
     src/app/            → puntos de entrada y controladores
     src/features/       → chat/, calendar/, repertoire/, family/, book/, admin/
     src/services/       → transporte y acceso a APIs
@@ -125,7 +125,7 @@ tests/ + cloudflare/tests/ + scripts/ → reglas de seguridad y CI
 - [x] **Chat Android, primera optimización de render:** mensajes con `FlatList` virtualizada (`windowSize=7`, lotes limitados) para no montar todas las fotos/videos del historial; claves estables, paginación manual y posición visible preservadas; no cambiar sesión, D1, R2 ni caché. Requiere QA física de desplazamiento/60 FPS.
 - [ ] **Optimización posterior de Chat:** el controlador sigue siendo grande, pero el timeline YA usa `FlatList`; dividir el controlador restante únicamente tras comprobar desplazamiento, gestos, multimedia y memoria en Android real. No confundir organización con FPS medidos.
 - [x] **BOOK Android, diagnóstico y recuperación:** el puente JS confirma primero su montaje y luego la recepción del token con un ACK sin credenciales. Android valida el documento principal, vuelve a solicitar READY tras cargar, detecta falta de respuesta en 12 s y reconstruye la WebView si Android termina el proceso. El mismo `BookReader`/PageFlip continúa siendo el único motor. La corrección requiere nueva APK y QA físico antes de declarar resuelta la pantalla blanca.
-- [x] **BOOK Android a PWA (código):** el lector habitual ahora es un paginador nativo rápido basado en los mismos `getBookPages` y `getCalendarMemories` privados; NO se abre WebView ni se repite sesión. El PageFlip 3D queda únicamente en la PWA y la navegación usa fragmentos validados sin token. El navegador requiere sesión web previamente autorizada: el bloqueo por instalación única impide registrar otra vez el mismo nombre. El puente `book.html` se conserva temporalmente para APKs anteriores y podrá retirarse tras migrarlas.
+- [x] **BOOK Android PWA embebida (código):** Android mantiene HOME, navegación y la misma sesión ya autorizada; BOOK y Recuerdos se abren dentro de WebView con el PageFlip ORIGINAL de la PWA, recibiendo el token mediante `injectedJavaScriptObject`. Sin Chrome, ventanas externas, segundo login, query con token, almacenamiento web ni secuencia asíncrona de confirmaciones. PWA controla exclusivamente el 3D; Android conserva lo demás. La versión 0.0.16 publicada todavía tiene el paginador antiguo y no recibe este cambio hasta una APK nueva.
 - [x] **BOOK Android APK 0.0.16 correctiva:** compilada, firmada y publicada en V2 Release; `versionCode 16`, JavaScript integrado, certificado compatible y enlace estable verificados ([Android CI 42527090677](https://github.com/Abnernoa97/havana-nice-v2/actions/runs/42527090677)); 0.0.15 intacta como `PREVIOUS` (SHA-256 `388fe237...90b8`). **Prueba en dispositivo pendiente:** ver las 4 fotos del evento, navegar páginas y abrir BOOK; no afirmar instalada ni 3D accesible en navegador sin sesión PWA autorizada.
 - **Publicación:** las reorganizaciones y optimizaciones ya se acumularon y publicaron en la APK 0.0.15 firmada; pendiente validación real de usuario. Sin cambios a PWA, Worker, D1 ni R2 en este bloque.
 
@@ -150,3 +150,5 @@ tests/ + cloudflare/tests/ + scripts/ → reglas de seguridad y CI
 5. Registrar **qué cambió, qué sigue abierto, qué no se tocó**. Mostrar los puntos tachados en este único tablero; no crear otra bitácora paralela.
 
 **Continuación:** `docs/CONTINUIDAD-EXACTA.md` contiene referencias prácticas cortas; este Plan Maestro manda. El historial íntegro de pasos y estados anteriores se recupera de los commits de Git, no de copias obsoletas en `main`.
+
+- [ ] **BOOK 3D integrado:** ejecutar CI y prueba real en APK futura para BOOK y Recuerdos, sin ventanas ni autorización extra. No confundir código aprobado con funcionamiento físico demostrado.
