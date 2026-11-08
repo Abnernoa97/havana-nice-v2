@@ -4,6 +4,7 @@ import {createServer} from 'node:http';
 import {readFileSync,existsSync,mkdtempSync,rmSync} from 'node:fs';
 import {join,resolve,sep,extname} from 'node:path';
 import {tmpdir} from 'node:os';
+import ts from 'typescript';
 
 // Actual Chrome and wall-clock requestAnimationFrame. Fake private images only:
 // this browser suite never writes to HAVANA's real D1, R2 or accounts.
@@ -32,8 +33,17 @@ const boot=[
  '}),{status:200,headers:{"content-type":"application/json"}}));}',
  'return originalFetch(input,options);};'
 ].join('\n');
+// Compile the actual TypeScript optimizer into an isolated ESM test route.
+const optimizerSource=readFileSync('apps/pwa/src/features/book/book-image-optimizer.ts','utf8');
+const optimizerESM=ts.transpileModule(optimizerSource,{
+ compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.ESNext}
+}).outputText;
 const server=createServer((req,res)=>{
  const name=new URL(req.url||'/', 'http://127.0.0.1').pathname;
+ if(name==='/__book_optimizer_qa.js'){
+  res.writeHead(200,{'content-type':'text/javascript','cache-control':'no-store'});
+  res.end(optimizerESM);return;
+ }
  if(name.startsWith('/api/book/media/')){
   const svg='<svg xmlns="http://www.w3.org/2000/svg" width="640" height="900"><rect width="640" height="900" fill="#284a39"/><path d="M10 450 L640 600" stroke="#efe6ce" stroke-width="40"/></svg>';
   res.writeHead(200,{'content-type':'image/svg+xml','cache-control':'no-store'});res.end(svg);return;
@@ -178,6 +188,30 @@ try{
  for(const [width,height,label] of [[390,844,'phone'],[1024,800,'desktop']]){
   await rpc('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile:width<700});
   await rpc('Emulation.setTouchEmulationEnabled',{enabled:width<700,maxTouchPoints:1});
+  if(width<700){
+   const compressed=await js(`(async()=>{
+    const {optimizeBookPhoto}=await import('/__book_optimizer_qa.js');
+    const canvas=document.createElement('canvas');canvas.width=2600;canvas.height=1400;
+    const ctx=canvas.getContext('2d');
+    ctx.fillStyle='#263a34';ctx.fillRect(0,0,canvas.width,canvas.height);
+    for(let i=0;i<2200;i++){
+     ctx.fillStyle='rgb('+((i*29)%200)+','+((i*61)%200)+','+((i*11)%200)+')';
+     ctx.fillRect((i*83)%2600,(i*127)%1400,18+(i%70),8+(i%40));
+    }
+    const master=await new Promise(ok=>canvas.toBlob(ok,'image/png'));
+    const derivative=await optimizeBookPhoto(master);
+    if(!derivative)throw Error('BOOK optimizer produced no smaller copy');
+    if(derivative.blob.type!=='image/webp')throw Error('BOOK output is not WebP');
+    if(derivative.blob.size>=master.size*.94)throw Error('BOOK conversion did not save size');
+    if(Math.max(derivative.width,derivative.height)>2048)throw Error('BOOK image size too high');
+    const bitmap=await createImageBitmap(derivative.blob);
+    const size={masterBytes:master.size,readerBytes:derivative.blob.size,
+     width:bitmap.width,height:bitmap.height,
+     reductionPercent:Math.round(100*(1-derivative.blob.size/master.size))};
+    bitmap.close();return size;
+   })()`,20000);
+   console.log('BOOK actual Chrome image WebP: '+JSON.stringify(compressed));
+  }
   await rpc('Page.navigate',{url:'http://127.0.0.1:'+servePort+'/book.html'});
   const result=await js(scenario,17500);
   assert.ok(result,'Browser BOOK test must return result');
