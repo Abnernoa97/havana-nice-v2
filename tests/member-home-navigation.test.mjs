@@ -23,6 +23,8 @@ test('Android styles live outside Chat controller without changing navigation or
  const app=read('apps/android/app/NativeApp.tsx');
  const styles=read('apps/android/styles/chat-styles.ts');
  assert.match(app,/import \{styles\} from '\.\.\/styles\/chat-styles'/);
+ assert.match(app,/const keyboardOpen=useNativeKeyboardVisibility\(\)/);
+ assert.match(read('apps/android/hooks/useNativeKeyboardVisibility.ts'),/Keyboard.addListener\('keyboardDidHide'/);
  assert.doesNotMatch(app,/StyleSheet\.create\(/);
  assert.match(styles,/export const styles = StyleSheet\.create\(/);
  assert.match(styles,/inactiveChat:\{display:'none'\}/);

@@ -18,6 +18,7 @@ import NativeMemberHome from './NativeMemberHome';
 import {uploadNativeChatFile} from '../services/native-chat-r2-upload';
 import {styles} from '../styles/chat-styles';
 import {useNativeMediaSelection} from '../features/chat/useNativeMediaSelection';
+import {useNativeKeyboardVisibility} from '../hooks/useNativeKeyboardVisibility';
 
 export default function App() {
   const {width: viewportWidth, height: viewportHeight} = useWindowDimensions();
@@ -48,7 +49,7 @@ export default function App() {
   const [loadingOlder,setLoadingOlder] = useState(false);
   const [searchText,setSearchText] = useState('');
   const [searchOpen,setSearchOpen] = useState(false);
-  const [keyboardOpen,setKeyboardOpen] = useState(false);
+  const keyboardOpen=useNativeKeyboardVisibility();
   const [results,setResults] = useState<ChatMessage[] | null>(null);
   const [searching,setSearching] = useState(false);
   const [editing,setEditing] = useState<ChatMessage | null>(null);
@@ -97,11 +98,7 @@ export default function App() {
 
   // Android 16: keep the legacy navigation padding only when the IME is hidden.
   // The keyboard avoidance wrapper is responsible for lifting the composer.
-  useEffect(() => {
-    const show=Keyboard.addListener('keyboardDidShow',()=>setKeyboardOpen(true));
-    const hide=Keyboard.addListener('keyboardDidHide',()=>setKeyboardOpen(false));
-    return ()=>{show.remove();hide.remove();};
-  },[]);
+
 
   function scheduleInitialBottom() {
     if (!initialHistoryPending.current || !initialHistoryLoaded.current || userHasScrolled.current) return;
