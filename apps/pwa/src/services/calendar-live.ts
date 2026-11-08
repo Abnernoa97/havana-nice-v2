@@ -3,7 +3,7 @@
 import {HAVANA_V2_DEV_API_BASE_URL as API} from '@havana/shared';
 const MEMBER=/^[A-Za-z0-9_-]{40,100}$/;
 const ADMIN=/^[A-Za-z0-9_-]{40,128}$/;
-export function watchCalendar(token:string,admin:boolean,onInvalidate:()=>void):()=>void{
+export function watchCalendar(token:string,admin:boolean,onInvalidate:(reason?:'fallback')=>void):()=>void{
  if(!(admin?ADMIN:MEMBER).test(token))return ()=>{};
  const address=API.replace(/^http/,'ws')+'/ws/calendar';
  let socket:WebSocket|null=null,closed=false,retry:ReturnType<typeof setTimeout>|null=null;
@@ -65,7 +65,7 @@ export function watchCalendar(token:string,admin:boolean,onInvalidate:()=>void):
  const pageShow=(event:PageTransitionEvent)=>{if(event.persisted)resume();};
  // One fallback for both PWA roles: recover missed pushes without old 4-second polling.
  const fallback=window.setInterval(()=>{
-  if(!document.hidden&&navigator.onLine)onInvalidate();
+  if(!document.hidden&&navigator.onLine)onInvalidate('fallback');
  },60000);
  document.addEventListener('visibilitychange',visibility);
  window.addEventListener('online',online);
