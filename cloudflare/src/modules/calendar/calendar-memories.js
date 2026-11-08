@@ -230,7 +230,7 @@ async function reorderPhoto(request,env,eventId,id){
  return Number(result.meta?.changes||0)===1?response({ok:true}):response({error:'Foto no encontrada'},404);
 }
 // Called before normal Calendar CRUD routing from the SAME Worker.
-export async function handleCalendarMemories(request,env,url,verifyMusicianSession){
+async function calendarMemoriesRoute(request,env,url,verifyMusicianSession){
  const path=url.pathname;
  try{
   if(path.startsWith(ROUTE))return await servePhoto(request,env,path);
@@ -268,6 +268,15 @@ export async function handleCalendarMemories(request,env,url,verifyMusicianSessi
    return done(await reorderPhoto(request,env,match[1],match[2]));
   return response({error:'Método no permitido'},405);
  }catch{return response({error:'Recuerdo temporalmente no disponible'},503);}
+}
+// Match the existing Calendar/BOOK CORS contract for hosted PWA, WebView
+// and private original fetches. This wraps R2 streams without buffering them.
+export async function handleCalendarMemories(request,env,url,origin,verifyMusicianSession){
+ const reply=await calendarMemoriesRoute(request,env,url,verifyMusicianSession);
+ const headers=new Headers(reply.headers);
+ headers.set('access-control-allow-origin',origin||'https://havana-nice-v2.pages.dev');
+ headers.set('vary','Origin');
+ return new Response(reply.body,{status:reply.status,headers});
 }
 export async function queueCalendarPhotosOnEventDelete(env,eventId,version){
  const guard=' EXISTS (SELECT 1 FROM calendar_events WHERE id=? AND version=?)';
