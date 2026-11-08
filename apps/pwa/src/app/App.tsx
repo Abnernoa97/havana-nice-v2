@@ -1,6 +1,6 @@
 import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import {
-  fetchBackendHealth, getChatMediaAvailability, getChatSnapshot, getOlderChatMessages, searchChatMessages, getChatMenuState, getChatMessagePermissions, isWithinChatEditWindow, selectNextQueuedChatMessage, setOutgoingChatStatus, projectOutgoingChatStatus, CHAT_ACK_TIMEOUT_MS, newClientMessageId,
+  fetchBackendHealth, getChatMediaAvailability, getChatSnapshot, getOlderChatMessages, searchChatMessages, getChatMenuState, getChatMessagePermissions, isWithinChatEditWindow, selectNextQueuedChatMessage, setOutgoingChatStatus, projectOutgoingChatStatus, CHAT_ACK_TIMEOUT_MS, newClientMessageId, uploadChatMediaBatch,
   openChatSocket, reconcileChatMessages, startNamedChatSession, restoreNamedChatSession, chatSessionExpired, chatReconnectDelay, reconcileChatReadReceipt, removeChatReactionsForMessage, captureChatOfflineSnapshot, restoreChatOfflineOutbox,
   type BackendHealth, type ChatMessage, type ChatServerEvent, type ChatSession,
   CHAT_MEDIA_MAX_PER_SEND, HAVANA_V2_DEV_API_BASE_URL,
@@ -77,18 +77,16 @@ export default function App() {
     // Same successful Familia transport, sequential files with 3 parallel parts per video.
     // Never clear a failed file: tapping Enviar resumes its own R2 upload ID.
     try{
-      const total=mediaQueue.current.reduce((sum,item)=>sum+item.file.size,0);
-      let completed=0;
-      for(const item of [...mediaQueue.current]){
-        await uploadChatFile(session,item.file,item.selection.kind,(sent)=>{
-          setMediaProgress(Math.round(100*Math.min(total,completed+sent)/total));
-        });
-        completed+=item.file.size;
-        URL.revokeObjectURL(item.selection.uri);
-        mediaQueue.current=mediaQueue.current.filter(x=>x.id!==item.id);
-        setSelectedMedia([...mediaQueue.current]);
-      }
-      setMediaProgress(100);
+      await uploadChatMediaBatch([...mediaQueue.current],{
+        sizeOf:item=>item.file.size,
+        upload:(item,onSent)=>uploadChatFile(session,item.file,item.selection.kind,onSent),
+        progress:setMediaProgress,
+        confirmed:item=>{
+          URL.revokeObjectURL(item.selection.uri);
+          mediaQueue.current=mediaQueue.current.filter(x=>x.id!==item.id);
+          setSelectedMedia([...mediaQueue.current]);
+        },
+      });
       // The server broadcasts only confirmed media messages in the existing ChatRoom.
       if(activeSession.current)refreshLatest.current();
     }catch(e){
