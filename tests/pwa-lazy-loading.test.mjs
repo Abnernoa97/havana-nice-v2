@@ -8,9 +8,15 @@ const manifestPath=new URL('../apps/pwa/dist/.vite/manifest.json',import.meta.ur
 const manifest=JSON.parse(readFileSync(manifestPath,'utf8'));
 const entries=Object.entries(manifest);
 function nodeFor(suffix){
+ // Vite 8 may emit a shared chunk for a component that is both a direct
+ // preview dependency and a lazy authenticated dependency. Such a chunk is
+ // keyed by its generated asset filename rather than its source path.
+ const label=suffix.split('/').at(-1).replace(/\.tsx?$/,'');
  const found=entries.filter(([key,value])=>key.endsWith(suffix)||
-  (typeof value.src==='string'&&value.src.endsWith(suffix)));
- assert.equal(found.length,1,'Expected exactly one Vite chunk for '+suffix);
+  (typeof value.src==='string'&&value.src.endsWith(suffix))||
+  (typeof value.file==='string'&&value.file.split('/').at(-1)?.startsWith(label+'-')));
+ assert.equal(found.length,1,'Expected exactly one Vite chunk for '+suffix+
+  '; built entries: '+entries.map(([key,value])=>value.file||key).join(', '));
  return found[0];
 }
 function staticClosure(root){
