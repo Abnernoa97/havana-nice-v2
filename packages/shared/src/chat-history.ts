@@ -26,6 +26,7 @@ export function mergeOlderChatReactions(
 export class ChatHistoryRequestGate {
  private olderGeneration=0;
  private searchGeneration=0;
+ private snapshotGeneration=0;
  private olderPending=false;
  beginOlder():number|null{
   if(this.olderPending)return null;
@@ -41,8 +42,10 @@ export class ChatHistoryRequestGate {
  beginSearch():number{return ++this.searchGeneration;}
  isSearchCurrent(id:number):boolean{return id===this.searchGeneration;}
  cancelSearch():void{this.searchGeneration++;}
+ beginSnapshot():number{return ++this.snapshotGeneration;}
+ isSnapshotCurrent(id:number):boolean{return id===this.snapshotGeneration;}
  reset():void{
-  this.olderGeneration++;this.searchGeneration++;
+  this.olderGeneration++;this.searchGeneration++;this.snapshotGeneration++;
   this.olderPending=false;
  }
 }

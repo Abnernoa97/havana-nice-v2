@@ -36,7 +36,12 @@ test('one in-flight older page and only latest search may update visible chat',(
  assert.equal(gate.isSearchCurrent(b),true);
  gate.cancelSearch();
  assert.equal(gate.isSearchCurrent(b),false);
+ const oldSnapshot=gate.beginSnapshot();
+ const newSnapshot=gate.beginSnapshot();
+ assert.equal(gate.isSnapshotCurrent(oldSnapshot),false,'ignore slower first snapshot');
+ assert.equal(gate.isSnapshotCurrent(newSnapshot),true);
  gate.reset();
+ assert.equal(gate.isSnapshotCurrent(newSnapshot),false,'logout invalidates snapshot');
  assert.equal(gate.isOlderCurrent(2),false);
  assert.equal(gate.finishOlder(2),false);
  assert.ok(gate.beginOlder()>2,'new session starts clean');
@@ -54,6 +59,8 @@ test('PWA and Android history operations share one request gate and preserve the
   assert.match(app,/mergeOlderChatReactions\(/,path);
   assert.match(app,/historyRequests\.current\.beginSearch\(\)/,path);
   assert.match(app,/historyRequests\.current\.isSearchCurrent\(request\)/,path);
+  assert.match(app,/historyRequests\.current\.beginSnapshot\(\)/,path);
+  assert.match(app,/historyRequests\.current\.isSnapshotCurrent\(request\)/,path);
   assert.match(app,/activeSession\.current\?\.token===session\.token/,path);
   assert.match(app,/historyRequests\.current\.reset\(\)/,path);
   assert.match(app,/socket\.current=ws|socket\.current = ws/,path);

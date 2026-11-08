@@ -341,9 +341,11 @@ export default function App() {
   }
 
   function syncMessages(next: ChatSession) {
+    const request=historyRequests.current.beginSnapshot();
     void getChatSnapshot(next)
       .then(({ messages:history, reactions:historyReactions, receipts:readHistory,hasMore:more }) => {
-        if (!disposed.current && activeSession.current?.token === next.token) {
+        if (!disposed.current && activeSession.current?.token === next.token&&
+            historyRequests.current.isSnapshotCurrent(request)) {
           if(initialHistoryPending.current)initialHistoryLoaded.current=true;
           withoutRemovedChatMessages(history,removedSeq.current).forEach(confirmMessage);
           setReactions(historyReactions.filter(reaction=>!removedSeq.current.has(reaction.messageSeq)));
@@ -356,7 +358,8 @@ export default function App() {
         }
       })
       .catch(reason => {
-        if (!disposed.current && activeSession.current?.token === next.token) {
+        if (!disposed.current && activeSession.current?.token === next.token&&
+            historyRequests.current.isSnapshotCurrent(request)) {
           setError(reason instanceof Error ? reason.message : 'No se pudo actualizar el historial');
           // A temporary history failure must not block queued outgoing messages.
           flushOutbox();

@@ -301,8 +301,10 @@ export default function App() {
     }
   }
   function refresh(next: ChatSession) {
+    const request=historyRequests.current.beginSnapshot();
     void getChatSnapshot(next).then(({messages:history,reactions:reactionHistory,receipts:readHistory,hasMore:more}) => {
-      if (disposed.current || activeSession.current?.token !== next.token) return;
+      if (disposed.current || activeSession.current?.token !== next.token||
+          !historyRequests.current.isSnapshotCurrent(request))return;
       history.forEach(confirm);
       setReactions(reactionHistory.filter(reaction=>!removedSeq.current.has(reaction.messageSeq)));
       setReceipts(readHistory);
@@ -311,7 +313,9 @@ export default function App() {
       sendReadReceipt(Math.max(0,...history.map(m=>m.seq)));
       flushOutbox();
     }).catch(e => {
-      if (!disposed.current) setError(e instanceof Error ? e.message : 'Error al sincronizar');
+      if(disposed.current||activeSession.current?.token!==next.token||
+         !historyRequests.current.isSnapshotCurrent(request))return;
+      setError(e instanceof Error?e.message:'Error al sincronizar');
       flushOutbox();
     });
   }
