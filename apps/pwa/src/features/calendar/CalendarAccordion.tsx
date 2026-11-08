@@ -63,7 +63,7 @@ export default function CalendarAccordion({token}:{token:string}){
       {item.showTime?<div><dt>Presentación</dt><dd>{item.showTime}</dd></div>:null}
      </dl>
      <div className="hn-cal-memory-photos"><h4>Recuerdos de este día</h4>
-      <CalendarMemories token={token} eventId={item.id} title={item.title} revision={revision}/>
+      <CalendarMemories token={token} eventId={item.id} title={item.title} revision={revision} photoCount={item.memoryCount||0}/>
      </div>
     </div>:<div className="hn-cal-details">
      <div className="hn-cal-hours">
