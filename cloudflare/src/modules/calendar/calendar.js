@@ -2,11 +2,13 @@
 // Admin writes event + selected recipients atomically. Member reads only assigned dates.
 import {verifyAdminSession} from '../admin/admin-auth.js';
 import {notifyCalendarClients} from './calendar-realtime.js';
+import {queueCalendarPhotosOnEventDelete} from './calendar-memories.js';
 const ID=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 // The canonical musician actor IDs are member:<opaque-id>, NOT event UUIDs.
 const ACTOR_ID=/^member:[a-z0-9_-]{1,64}$/i;
 const STATUSES=new Set(['tentative','confirmed','cancelled']);
-const COLUMNS='e.id,e.event_date,e.time_zone,e.title,e.venue,e.city,e.call_time,e.soundcheck_time,e.arrival_time,e.show_time,e.end_time,e.wardrobe,e.details,e.contact_name,e.contact_phone,e.notes,e.map_url,e.status,e.status_text,e.version,e.updated_at';
+const COLUMNS='e.id,e.event_date,e.time_zone,e.title,e.venue,e.city,e.call_time,e.soundcheck_time,e.arrival_time,e.show_time,e.end_time,e.wardrobe,e.details,e.contact_name,e.contact_phone,e.notes,e.map_url,e.status,e.status_text,e.version,e.updated_at,e.date_sort,'+
+ '(SELECT COUNT(*) FROM calendar_event_photos p WHERE p.event_id=e.id) AS memory_count';
 const PAGE_SIZE=100;
 const ERR={401:'No autorizado',409:'La fecha cambió. Actualiza antes de editar.'};
 function string(value,max,label,required=false){
@@ -66,7 +68,8 @@ function event(row,admin=false){
   arrivalTime:row.arrival_time,showTime:row.show_time,endTime:row.end_time,
   wardrobe:row.wardrobe,details:row.details,contactName:row.contact_name,
   contactPhone:row.contact_phone,notes:row.notes,mapUrl:row.map_url,
-  status:row.status,statusText:row.status_text||'',version:row.version,updatedAt:row.updated_at
+  status:row.status,statusText:row.status_text||'',version:row.version,updatedAt:row.updated_at,
+  dateSort:row.date_sort||null,memoryCount:Number(row.memory_count||0)
  };
  if(admin)result.recipientIds=JSON.parse(row.recipients_json||'[]');
  return result;
@@ -173,8 +176,10 @@ export async function handleCalendarApi(request,env,url,origin,respond,verifyMus
   try{
    const previous=await env.DB.prepare('SELECT actor_id FROM calendar_event_recipients WHERE event_id=?')
     .bind(id).all();
-   const result=await env.DB.prepare('DELETE FROM calendar_events WHERE id=? AND version=?').bind(id,raw.version).run();
-   if(Number(result.meta?.changes)!==1)return reply({error:ERR[409]},409);
+   // Atomic conditional queue+delete: no R2 orphan when a date with photos
+   // is removed, and no photos are queued when a stale edit is rejected.
+   const deleted=await queueCalendarPhotosOnEventDelete(env,id,raw.version);
+   if(!deleted)return reply({error:ERR[409]},409);
    await notifyCalendarClients(env,(previous.results||[]).map(row=>row.actor_id));
    return reply({ok:true});
   }catch{return reply({error:'No se pudo eliminar la fecha'},503);}
