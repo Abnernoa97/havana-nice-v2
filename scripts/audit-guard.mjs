@@ -9,6 +9,7 @@ const allowedRoot=new Set(['.git','.github','.gitignore','.env.example','README.
 assert.deepEqual(readdirSync(new URL('../',import.meta.url)).filter(x=>!allowedRoot.has(x)),
  [],'Standalone V2 repository cannot include original app files');
 const worker = read('cloudflare/src/index.ts');
+const chatRoom = read('cloudflare/src/modules/chat/chat-room.ts');
 assert.doesNotMatch(worker,/\/\/\s*@ts-nocheck\b/,'V2 Worker entrypoint must remain strictly typechecked');
 const android = read('apps/android/App.tsx');
 const pwa = read('apps/pwa/src/app/App.tsx');
@@ -244,12 +245,12 @@ present(android,/editPending\.current=\{seq:editing\.seq,text\}/,'Android must a
 present(pwa,/editPending\.current=\{seq:editing\.seq,text\}/,'PWA must await edit confirmation');
 present(android,/Conexión interrumpida\. El texto editado sigue disponible/,'Android must retain edit on disconnect');
 present(pwa,/Conexión interrumpida\. El texto editado sigue disponible/,'PWA must retain edit on disconnect');
-present(worker,/own\.sender_id !== senderId/,'Server must restrict edit/delete to sender');
+present(chatRoom,/own\.sender_id !== senderId/,'Server must restrict edit/delete to sender');
 const remove=read('cloudflare/src/modules/chat/message-removal.js');
-present(worker,/deleteChatMessageRecord\(this.env,input.seq\)/,'Musicians must use the canonical deletion');
+present(chatRoom,/deleteChatMessageRecord\(this.env,input.seq\)/,'Musicians must use the canonical deletion');
 present(remove,/DELETE FROM chat_messages WHERE seq=\?/,'Deleting a message must remove its D1 record');
 present(remove,/UPDATE chat_messages SET reply_to_seq=NULL/,'Keep replies while detaching removed originals');
-present(worker,/chat.deleted/,'Chat must broadcast disappearance to clients');
+present(chatRoom,/chat.deleted/,'Chat must broadcast disappearance to clients');
 present(pwa,/reconcileDeletedMessage/,'iPhone Chat must remove bubbles');
 present(android,/reconcileDeletedMessage/,'Android Chat must remove bubbles');
 absent(pwa,/Cerrar reacciones|>＋<\/button>/,'Remove inert extra-reaction button in PWA');
@@ -262,7 +263,7 @@ assert.equal((pwaStyles.match(/\{/g)||[]).length,(pwaStyles.match(/\}/g)||[]).le
 
 // One authenticated V2 token-hashing primitive: no copies scattered across modules.
 const hashUsers=[
- 'cloudflare/src/index.ts','cloudflare/src/modules/admin/admin-auth.js',
+ 'cloudflare/src/index.ts','cloudflare/src/modules/chat/chat-session.ts','cloudflare/src/modules/admin/admin-auth.js',
  'cloudflare/src/modules/chat/chat-media.js','cloudflare/src/modules/family/family-media.js',
  'cloudflare/src/modules/calendar/calendar-realtime.js'
 ];
