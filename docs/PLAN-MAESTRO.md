@@ -1,3 +1,28 @@
+## AUDITORÍA ESTRUCTURAL VIGENTE · HAVANA NICE V2 · 08/11/2026
+
+**Resumen operativo (leer antes que el historial):** revisión de `main` y de Cloudflare V2. **Una rama `main`, cero PR abiertos, 181 archivos, dos workflows** (`v2-foundation-check` y APK por autorización explícita), cuatro entradas HTML PWA (Chat, Visual, Admin, BOOK), un Worker `havana-nice-v2-dev` v65 con tráfico 100 %, siete bindings (DB, R2, dos DO, dos vars y un secreto) y última CI integral **SUCCESS** [42442116188](https://github.com/Abnernoa97/havana-nice-v2/actions/runs/42442116188). En Pages el último commit de documentación publicado también aparece en SUCCESS. **No hay prueba de ausencia total de bugs o código muerto fuera del alcance del guard.**
+
+### Orden de depuración sin alterar el comportamiento
+
+- [x] **A0 — Fuente única y seguridad de publicación:** rama `main` única, PRs abiertos 0, un único punto de entrada Worker; separar Worker/Pages de producción original y no generar APK por cada cambio.
+- [x] **A1 — Independencia de carga PWA:** HOME, Chat, Calendar, Repertoire, Family, BOOK/Admin con `React.lazy`; Vite manifest inspeccionado en CI, sesión compartida sin nueva autenticación y prueba de usuario satisfactoria.
+- [x] **A2 — Reglas automáticas:** typecheck por workspace, pruebas de sesión/privacidad, D1 aislada, R2, Chat/Calendario tiempo real, Chrome BOOK, export Android y guard de arquitectura pasando.
+- [ ] **P1 — Calendario Admin:** montar `AdminCalendarMemories` **solo al desplegar cada fecha**. Ahora la lista renderiza un editor por evento y dispara consultas de fotos/grants incluso sin abrirlo; conservar el recuento y los cambios en tiempo real. Prioridad de velocidad.
+- [ ] **P2 — Android Chat:** extraer del archivo `apps/android/App.tsx` (~991 líneas) controladores claros para sesión/conexión, mensajes, multimedia y composición, sin modificar UI ni IDs de mensaje; mantener una sola app/entrada y misma lógica compartida.
+- [ ] **P3 — PWA Chat:** reducir `apps/pwa/src/app/App.tsx` (~824 líneas) de modo equivalente, sin duplicar motor de conexión ni romper el `main` de entrada. Comparar PWA vs Android por comportamiento, no copiar código visual nativo.
+- [ ] **P4 — Worker:** `cloudflare/src/index.ts` (~672 líneas) mezcla Durable Objects, router y utilidades. Extraer por función tras tests; **mantener exactamente una entrada Worker**, `ChatRoom` y `CalendarRoom` actuales y siete bindings.
+- [ ] **P5 — Auditoría de código compartido:** `scripts/check-structure.mjs` detecta módulos inalcanzables en PWA/Android/Worker, pero **no incluye `packages/shared/src` como raíz propia**. Ampliar verificación de exports/consumidores sin confundir módulos públicos de librería con código muerto.
+- [ ] **P6 — Cache offline modular:** el Service Worker usa un caché de 40 assets versionados y red primero. Probar actualizaciones, modo avión y fragmentos diferidos sin internet en iPhone, evitando shell viejo o chunks inexistentes; no eliminar reglas que ya funcionan.
+- [ ] **P7 — Borrados R2 diferidos:** BOOK y fotos de Calendario usan colas durables y reintentan al realizar otra mutación. Evaluar recuperación segura de colas antiguas, sin cron/costo adicional innecesario ni eliminar originales activos. En el control actual, colas BOOK, Calendario y bajas de músicos = 0.
+- [ ] **P8 — Consolidar documentación:** `PLAN-MAESTRO.md` ~159 KB y `CONTINUIDAD-EXACTA.md` ~110 KB más README ~26 KB, con bloques históricos mezclados con vigentes. Mantener **este tablero como estado de trabajo único** y, tras revisar referencias, consolidar o suprimir notas obsoletas; no multiplicar planes ni mover residuo a otras ramas.
+- [ ] **P9 — Próximo paquete nativo:** código Android actualizado pero versión publicada/instalada todavía `0.0.13` (versionCode 13). Preparar un APK acumulativo y probarlo **encima**, no generar uno por ajuste.
+
+**Inventario verificado sin datos personales:** D1 tiene 4 fechas de Calendario y 4 fotos de recuerdos (3 WebP optimizadas; 766,665 bytes originales y 286,972 bytes optimizados); BOOK general mantiene 7 originales (29,333,701 bytes) y **0 derivados WebP**, Familia 16 archivos. No confundir los recuerdos de Calendario con el BOOK general. Worker v65 sigue en producción 100 %. La protección global R2 usa alerta anticipada a 9.0 GB y bloqueo a 9.5 GB; no prometer «cero cobros» por una barrera de aplicación.
+
+**Alcance de esta auditoría:** lectura y comparación, sin borrar ramas, archivos, objetos R2 ni cambiar código funcional o publicar un nuevo Worker/APK. El historial inferior es referencia, no lista actual de pendientes.
+
+---
+
 ## PWA · DESCARGA MODULAR CONTROLADA · 08/11/2026
 
 - [x] Un solo `main`, sin ramas nuevas ni copias de motores. Continúan los cuatro documentos HTML existentes (`index.html`, `visual.html`, `admin.html`, `book.html`), la misma sesión autorizada, la misma navegación y los mismos módulos backend.
