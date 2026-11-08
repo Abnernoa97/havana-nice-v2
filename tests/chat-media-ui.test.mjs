@@ -30,7 +30,7 @@ test('installed Chat local storage keys stay compatible across cleanup releases'
 test('Android native and iPhone PWA share the same Chat decisions, not alternate backends',()=>{
  const android=read('apps/android/App.tsx')+'\n'+read('apps/android/features/chat/NativeChatTimeline.tsx')+'\n'+read('apps/android/features/chat/useNativeMediaSelection.ts');
  // ChatTimeline is presentation-only, but owns the shared delivery-label rendering.
- const pwa=read('apps/pwa/src/app/App.tsx')+'\n'+read('apps/pwa/src/features/chat/ChatTimeline.tsx');
+ const pwa=read('apps/pwa/src/app/App.tsx')+'\n'+read('apps/pwa/src/features/chat/ChatTimeline.tsx')+'\n'+read('apps/pwa/src/features/chat/usePwaMediaSelection.ts');
  const common=[
   'restoreNamedChatSession','getChatSnapshot','reconcileChatSnapshot',
   'reconcileUpdatedMessage','reconcileDeletedMessage','reconcileReactions',
@@ -61,6 +61,7 @@ test('Android and PWA share one authenticated media-availability fetch without o
 test('PWA attachment menu only offers Fotos and Video, with distinct media filters',()=>{
  const src=read('apps/pwa/src/app/App.tsx');
  const css=read('apps/pwa/src/styles/chat/chat.css');
+ const picker=read('apps/pwa/src/features/chat/usePwaMediaSelection.ts');
  const icon=read('apps/pwa/src/features/chat/ChatComposerIcon.tsx');
  const start=src.indexOf("composerPanel==='attachments'&&<div");
  const end=src.indexOf("composerPanel==='emojis'&&<div",start);
@@ -84,22 +85,23 @@ test('PWA attachment menu only offers Fotos and Video, with distinct media filte
  }
  assert.match(src,/sendSelectedMedia/);
  assert.match(src,/multiple onChange=/);
- assert.match(src,/mediaQueue\.current\.length\+files\.length>CHAT_MEDIA_MAX_PER_SEND/);
+ assert.match(picker,/mediaQueue\.current\.length\+files\.length>CHAT_MEDIA_MAX_PER_SEND/);
  assert.match(src,/selectedMedia\.map\(item=>/);
  assert.equal(existsSync(new URL('../apps/pwa/src/media-upload.ts',import.meta.url)),false);
 });
 
 test('PWA camera icon requests camera capture directly instead of media gallery',()=>{
  const src=read('apps/pwa/src/app/App.tsx');
- assert.match(src,/const openCamera=\(\)=>/);
- assert.match(src,/cameraPicker\.current\?\.click\(\)/);
+ const picker=read('apps/pwa/src/features/chat/usePwaMediaSelection.ts');
+ assert.match(picker,/const openCamera=\(\)=>/);
+ assert.match(picker,/cameraPicker\.current\?\.click\(\)/);
  assert.match(src,/onClick=\{openCamera\}/);
  assert.match(src,/ref=\{cameraPicker\}/);
  assert.match(src,/accept="image\/\*" capture="environment"/);
  assert.match(src,/chooseMedia\('camera','photo'/);
  assert.doesNotMatch(src,/accept="image\/\*,video\/\*"\s*capture/);
- assert.match(src,/URL.createObjectURL\(file\)/);
- assert.match(src,/URL.revokeObjectURL\(removed.selection.uri\)/);
+ assert.match(picker,/URL.createObjectURL\(file\)/);
+ assert.match(picker,/URL.revokeObjectURL\(removed.selection.uri\)/);
  assert.match(src,/onSubmit=\{event=>\{event.preventDefault\(\);if\(selectedMedia/);
 });
 
