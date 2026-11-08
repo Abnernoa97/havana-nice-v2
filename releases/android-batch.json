@@ -1,7 +1,7 @@
 {
   "approved": true,
   "releaseMode": "explicit-batch",
-  "version": "0.0.14",
-  "versionCode": 14,
-  "notes": "Lote acumulativo de sincronización HAVANA NICE V2: Calendario, Chat, Repertorio, Familia, BOOK y Músicos; validar firma de APK previa y no reemplazar si difiere."
+  "version": "0.0.15",
+  "versionCode": 15,
+  "notes": "Lote acumulativo V2 Android: Chat FlatList virtualizada, Familia galería FlatList sin ScrollView anidado, BOOK puente de autorización confirmado y recuperación de WebView. Conservar sesión, datos y R2. Verificar firma original, versión superior y respaldo 0.0.14 antes de publicar."
 }
