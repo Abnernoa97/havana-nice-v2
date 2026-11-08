@@ -352,12 +352,12 @@ export default function AdminChatAccess({section}:{section:Section}){
    </form>
    {error&&<p role="alert" className="a-admin-error">{error}</p>}
  </section>;
- if(section==='calendar')return <AdminCalendar token={session.token} members={members} onExpired={onChatExpired}/>;
- if(section==='repertoire')return <AdminRepertoire token={session.token} onExpired={onChatExpired}/>;
- if(section==='family')return <AdminFamily token={session.token} onExpired={onChatExpired}/>;
- if(section==='chat')return <>
+ if(section==='calendar')return <Suspense fallback={<section className="a-panel" role="status">Abriendo Calendario…</section>}><AdminCalendar token={session.token} members={members} onExpired={onChatExpired}/></Suspense>;
+ if(section==='repertoire')return <Suspense fallback={<section className="a-panel" role="status">Abriendo Repertorio…</section>}><AdminRepertoire token={session.token} onExpired={onChatExpired}/></Suspense>;
+ if(section==='family')return <Suspense fallback={<section className="a-panel" role="status">Abriendo Familia…</section>}><AdminFamily token={session.token} onExpired={onChatExpired}/></Suspense>;
+ if(section==='chat')return <Suspense fallback={<section className="a-panel" role="status">Abriendo Chat…</section>}>
   <AdminChatGeneral token={session.token} connected={realtime==='connected'} liveEvent={chatEvent} onExpired={onChatExpired}/>
- </>;
+ </Suspense>;
  return <div className="a-access-workspace">
    <section className="a-panel a-admin-private">
      <div className="a-admin-toolbar">
