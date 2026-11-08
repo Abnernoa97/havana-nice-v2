@@ -3,7 +3,7 @@
 import {AppState} from 'react-native';
 import {HAVANA_V2_DEV_API_BASE_URL as API} from '@havana/shared';
 
-export function watchNativeCalendar(token:string,onInvalidate:()=>void):()=>void{
+export function watchNativeCalendar(token:string,onInvalidate:()=>void,topic:'calendar'|'repertoire'='calendar'):()=>void{
  let disposed=false,connection:WebSocket|null=null;
  let retry:ReturnType<typeof setTimeout>|null=null;
  let watchdog:ReturnType<typeof setTimeout>|null=null,attempts=0;
@@ -41,7 +41,8 @@ export function watchNativeCalendar(token:string,onInvalidate:()=>void):()=>void
    if(connection!==socket)return;
    try{
     const event=JSON.parse(String(e.data)) as {type?:string};
-    if(event.type==='calendar.invalidate')onInvalidate();
+    if(event.type==='calendar.invalidate'&&topic==='calendar')onInvalidate();
+    if(event.type==='repertoire.invalidate'&&topic==='repertoire')onInvalidate();
    }catch{}
   };
   socket.onclose=()=>{if(connection!==socket)return;clear();schedule();};
@@ -53,4 +54,8 @@ export function watchNativeCalendar(token:string,onInvalidate:()=>void):()=>void
   else clear();
  });
  return ()=>{disposed=true;clear();subscription.remove();};
+}
+
+export function watchNativeRepertoire(token:string,onInvalidate:()=>void):()=>void{
+ return watchNativeCalendar(token,onInvalidate,'repertoire');
 }

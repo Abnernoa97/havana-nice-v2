@@ -1,5 +1,6 @@
 import React,{useCallback,useEffect,useRef,useState} from 'react';
-import {AppState,Linking,Pressable,StyleSheet,Text,View} from 'react-native';
+import {Linking,Pressable,StyleSheet,Text,View} from 'react-native';
+import {watchNativeRepertoire} from '../../services/native-calendar-live';
 import {calendarDate,getCalendarEvents,getAssignedEventRepertoire,getRepertoireSongs,
  safeRepertoireLink,HAVANA_V2_DEV_API_BASE_URL,
  type CalendarEvent,type RepertoireEventItem,type RepertoireSong} from '@havana/shared';
@@ -34,9 +35,8 @@ export default function NativeRepertoire({token}:{token:string}){
  },[token]);
  useEffect(()=>{
   setSongs([]);setAssigned([]);setOpened(null);setLoading(true);setError('');
-  void refresh();
-  const sub=AppState.addEventListener('change',state=>{if(state==='active')void refresh();});
-  return()=>{++requestId.current;sub.remove();};
+  const stop=watchNativeRepertoire(token,()=>void refresh());
+  return()=>{++requestId.current;stop();};
  },[refresh]);
  const categories=[...new Set(songs.map(song=>song.category))];
  const link=(value:string)=>{

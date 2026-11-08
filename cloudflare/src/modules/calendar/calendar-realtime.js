@@ -44,6 +44,14 @@ export async function notifyCalendarClients(env,ids){
    'https://internal/calendar-changed',{method:'POST',body:JSON.stringify({recipients})});
  }catch{ /* The next authenticated fetch/reconnect recovers missed updates. */ }
 }
+// Repertoire publishes a private hint on the existing authenticated CalendarRoom.
+export async function notifyRepertoireClients(env){
+ if(!env.CALENDAR_ROOMS)return;
+ try{
+  await env.CALENDAR_ROOMS.get(env.CALENDAR_ROOMS.idFromName('calendar-v2')).fetch(
+   'https://internal/repertoire-changed',{method:'POST'});
+ }catch{ /* Clients reconcile against D1 after reconnect/fallback. */ }
+}
 export class CalendarRoom {
  constructor(_state,env){
   this.env=env;
@@ -67,6 +75,17 @@ export class CalendarRoom {
      this.connections.delete(socket);continue;
     }
     this.send(socket,{type:'calendar.invalidate'});
+   }
+   return Response.json({ok:true});
+  }
+  if(path==='/repertoire-changed'&&request.method==='POST'){
+   for(const [socket,peer] of this.connections){
+    const current=await calendarSocketAuthorized(this.env,peer.identity).catch(()=>null);
+    if(!current){
+     try{socket.close(4003,'Access expired');}catch{}
+     this.connections.delete(socket);continue;
+    }
+    this.send(socket,{type:'repertoire.invalidate'});
    }
    return Response.json({ok:true});
   }

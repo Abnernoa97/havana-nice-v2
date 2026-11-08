@@ -1,4 +1,5 @@
 import {useCallback,useEffect,useRef,useState} from 'react';
+import {watchRepertoire} from '../../services/calendar-live';
 import {getCalendarEvents,HAVANA_V2_DEV_API_BASE_URL,getRepertoireSongs,getAssignedEventRepertoire,
  safeRepertoireLink,calendarDate,type RepertoireSong,type RepertoireEventItem,type CalendarEvent} from '@havana/shared';
 
@@ -39,14 +40,8 @@ export default function MemberRepertoire({token}:{token:string}){
  useEffect(()=>{
   // A newly authorized session must never see rows from a previous user.
   setSongs([]);setEvents([]);setOpen(null);setLoading(true);setError('');
-  void refresh();
-  const onResume=()=>{if(!document.hidden)void refresh();};
-  const timer=window.setInterval(onResume,30000);
-  document.addEventListener('visibilitychange',onResume);
-  window.addEventListener('online',onResume);
-  return()=>{++requestId.current;window.clearInterval(timer);
-   document.removeEventListener('visibilitychange',onResume);
-   window.removeEventListener('online',onResume);};
+  const stop=watchRepertoire(token,false,()=>{if(!document.hidden&&navigator.onLine)void refresh();});
+  return()=>{++requestId.current;stop();};
  },[refresh]);
  const categories=[...new Set(songs.map(s=>s.category))];
  return <section className="hn-repertoire" aria-label="Repertorio del equipo">

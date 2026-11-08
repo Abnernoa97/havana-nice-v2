@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {DatabaseSync} from 'node:sqlite';
-import {calendarSocketIdentity,calendarSocketAuthorized,CalendarRoom,notifyCalendarClients} from '../src/modules/calendar/calendar-realtime.js';
+import {calendarSocketIdentity,calendarSocketAuthorized,CalendarRoom,notifyCalendarClients,notifyRepertoireClients} from '../src/modules/calendar/calendar-realtime.js';
 import {sha256Hex} from '../src/shared/crypto-helpers.js';
 
 const M1='member:123e4567-e89b-42d3-a456-426614174001';
@@ -69,6 +69,30 @@ test('invalidation only reaches involved authorized members and Admin, never eve
   assert.deepEqual(received.admin,[{type:'calendar.invalidate'}]);
   assert.deepEqual(received.stranger,[]);
  }finally{globalThis.WebSocket=oldWebSocket;raw.close();}
+});
+
+test('Repertoire mutations signal active authorized members and Admin without sending catalog data',async()=>{
+ const {env,raw}=await environment();
+ const sent=[];
+ env.CALENDAR_ROOMS={idFromName:name=>name,get:()=>({async fetch(url,options){
+  sent.push({url,method:options.method});return Response.json({ok:true});
+ }})};
+ await notifyRepertoireClients(env);
+ assert.deepEqual(sent,[{url:'https://internal/repertoire-changed',method:'POST'}]);
+ const room=new CalendarRoom({},env);
+ const received={member:[],admin:[],revoked:[]};
+ const fake=messages=>({readyState:1,send(s){messages.push(JSON.parse(s));},close(){}});
+ room.connections.set(fake(received.member),{role:'member',actorId:M1,identity:{role:'member',token:MEMBER_TOKEN}});
+ room.connections.set(fake(received.admin),{role:'admin',actorId:null,identity:{role:'admin',token:ADMIN_TOKEN}});
+ room.connections.set(fake(received.revoked),{role:'member',actorId:M2,identity:{role:'member',token:'C'.repeat(43)}});
+ const old=globalThis.WebSocket;globalThis.WebSocket={OPEN:1};
+ try{
+  const response=await room.fetch(new Request('https://internal/repertoire-changed',{method:'POST'}));
+  assert.equal(response.status,200);
+  assert.deepEqual(received.member,[{type:'repertoire.invalidate'}]);
+  assert.deepEqual(received.admin,[{type:'repertoire.invalidate'}]);
+  assert.deepEqual(received.revoked,[]);
+ }finally{globalThis.WebSocket=old;raw.close();}
 });
 
 test('one canonical SHA-256 helper preserves hashed credentials and grants',async()=>{

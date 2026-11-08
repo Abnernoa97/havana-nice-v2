@@ -32,6 +32,23 @@ test('Músicos reads one authorized roster in both apps without a second login',
  assert.match(read('apps/android/features/home/NativeMemberHome.tsx'),/active==='musicians'\?<NativeMusicians token=\{token\}/);
  assert.match(read('packages/shared/src/memberModules.ts'),/id:'musicians'[^\n]*ready:true,nativeReady:true/);
 });
+test('one private Repertoire invalidation channel synchronizes Admin, PWA and Android',()=>{
+ const entry=read('cloudflare/src/index.ts');
+ const room=read('cloudflare/src/modules/calendar/calendar-realtime.js');
+ const browserTransport=read('apps/pwa/src/services/calendar-live.ts');
+ const nativeTransport=read('apps/android/services/native-calendar-live.ts');
+ const admin=read('apps/pwa/src/features/repertoire/AdminRepertoire.tsx');
+ const member=read('apps/pwa/src/features/repertoire/MemberRepertoire.tsx');
+ const android=read('apps/android/features/repertoire/NativeRepertoire.tsx');
+ assert.match(entry,/ctx\.waitUntil\(notifyRepertoireClients\(env\)\)/);
+ assert.match(room,/type:'repertoire.invalidate'/);
+ assert.match(browserTransport,/watchRepertoire\(token/);
+ assert.match(nativeTransport,/watchNativeRepertoire\(token/);
+ assert.match(admin,/watchRepertoire\(token,true/);
+ assert.match(member,/watchRepertoire\(token,false/);
+ assert.match(android,/watchNativeRepertoire\(token/);
+ for(const s of [admin,member,android])assert.doesNotMatch(s,/setInterval\(/);
+});
 test('Android HOME has same mobile destinations and visual navigation as PWA, not stale placeholders',()=>{
  const shared=read('packages/shared/src/memberModules.ts');
  const home=read('apps/android/features/home/NativeMemberHome.tsx');

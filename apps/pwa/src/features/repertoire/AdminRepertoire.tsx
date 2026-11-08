@@ -2,6 +2,7 @@ import {useCallback,useEffect,useRef,useState,type FormEvent} from 'react';
 import {getCalendarEvents,calendarDate,CalendarHttpError,HAVANA_V2_DEV_API_BASE_URL,getRepertoireSongs,
  getEventRepertoire,safeRepertoireLink,type RepertoireSong,type RepertoireSongInput,
  type RepertoireEventItem,type CalendarEvent} from '@havana/shared';
+import {watchRepertoire} from '../../services/calendar-live';
 import {adminCreateSong,adminEditSong,adminDeleteSong,adminAddEventSongs,
  adminAddEventSpecial,adminRemoveEventItem,adminCompleteEventItem,adminReorderEventItems,
  isAdminUnauthorized} from '../../services/admin-api';
@@ -68,14 +69,9 @@ export default function AdminRepertoire({token,onExpired}:{token:string;onExpire
   if(eventIdRef.current)await refreshItems(eventIdRef.current);
  },[refresh,refreshItems]);
  useEffect(()=>{
-  void refreshAll();
-  const onResume=()=>{if(!document.hidden)void refreshAll();};
-  const timer=window.setInterval(onResume,30000);
-  window.addEventListener('online',onResume);
-  document.addEventListener('visibilitychange',onResume);
-  return()=>{catalogRequest.current++;window.clearInterval(timer);window.removeEventListener('online',onResume);
-   document.removeEventListener('visibilitychange',onResume);};
- },[refreshAll]);
+  const stop=watchRepertoire(token,true,()=>{if(!document.hidden&&navigator.onLine)void refreshAll();});
+  return()=>{catalogRequest.current++;itemsRequest.current++;stop();};
+ },[token,refreshAll]);
  useEffect(()=>{void refreshItems(eventId);setChecked([]);},[eventId,refreshItems]);
  useEffect(()=>()=>{itemsRequest.current+=1;},[]);
  const wrap=async(action:()=>Promise<unknown>,message:string)=>{

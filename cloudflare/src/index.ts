@@ -4,7 +4,7 @@ import {handleAdminChat} from './modules/admin/admin-chat.js';
 import {claimFirstInstallation,auditDuplicateInstallation,handleSingleInstallationAdmin} from './modules/admin/single-installation.js';
 import {handleCalendarApi} from './modules/calendar/calendar.js';
 import {handleCalendarMemories} from './modules/calendar/calendar-memories.js';
-import {CalendarRoom,calendarSocketIdentity,calendarSocketAuthorized} from './modules/calendar/calendar-realtime.js';
+import {CalendarRoom,calendarSocketIdentity,calendarSocketAuthorized,notifyRepertoireClients} from './modules/calendar/calendar-realtime.js';
 export {CalendarRoom};
 import {handleRepertoireApi} from './modules/repertoire/repertoire.js';
 import {handleFamilyApi} from './modules/family/family.js';
@@ -107,8 +107,13 @@ export default {
     if(url.pathname.startsWith('/api/calendar/'))
       return handleCalendarApi(request,env,url,origin,respond,verifySession);
     // Repertoire is separately routed with the existing session and D1 grants.
-    if(url.pathname.startsWith('/api/repertoire/'))
-      return handleRepertoireApi(request,env,url,origin,respond,verifySession);
+    if(url.pathname.startsWith('/api/repertoire/')){
+      const response=await handleRepertoireApi(request,env,url,origin,respond,verifySession);
+      // Successful authenticated Admin writes invalidate all subscribers via existing DO.
+      if(request.method!=='GET'&&url.pathname.startsWith('/api/repertoire/admin/')&&response.ok)
+        ctx.waitUntil(notifyRepertoireClients(env));
+      return response;
+    }
     // BOOK: independent editorial pages; shares the canonical Worker, D1, R2 and ChatRoom signal.
     if(url.pathname.startsWith('/api/book/'))
       return handleBookApi(request,env,url,origin,verifySession,ctx);

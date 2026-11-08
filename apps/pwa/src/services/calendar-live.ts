@@ -3,7 +3,7 @@
 import {HAVANA_V2_DEV_API_BASE_URL as API} from '@havana/shared';
 const MEMBER=/^[A-Za-z0-9_-]{40,100}$/;
 const ADMIN=/^[A-Za-z0-9_-]{40,128}$/;
-export function watchCalendar(token:string,admin:boolean,onInvalidate:(reason?:'fallback')=>void):()=>void{
+export function watchCalendar(token:string,admin:boolean,onInvalidate:(reason?:'fallback')=>void,topic:'calendar'|'repertoire'='calendar'):()=>void{
  if(!(admin?ADMIN:MEMBER).test(token))return ()=>{};
  const address=API.replace(/^http/,'ws')+'/ws/calendar';
  let socket:WebSocket|null=null,closed=false,retry:ReturnType<typeof setTimeout>|null=null;
@@ -44,7 +44,8 @@ export function watchCalendar(token:string,admin:boolean,onInvalidate:(reason?:'
    if(socket!==next)return;
    try{
     const message=JSON.parse(String(event.data)) as {type?:string};
-    if(message.type==='calendar.invalidate')onInvalidate();
+    if(message.type==='calendar.invalidate'&&topic==='calendar')onInvalidate();
+    if(message.type==='repertoire.invalidate'&&topic==='repertoire')onInvalidate();
    }catch{}
   };
   next.onclose=()=>{if(socket!==next)return;disconnect();schedule();};
@@ -81,4 +82,9 @@ export function watchCalendar(token:string,admin:boolean,onInvalidate:(reason?:'
   window.removeEventListener('focus',foreground);
   window.removeEventListener('pageshow',pageShow);
  };
+}
+
+// Same private CalendarRoom transport; no new socket engine.
+export function watchRepertoire(token:string,admin:boolean,onInvalidate:(reason?:'fallback')=>void):()=>void{
+ return watchCalendar(token,admin,onInvalidate,'repertoire');
 }
