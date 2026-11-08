@@ -114,6 +114,16 @@ tests/ + cloudflare/tests/ + scripts/ → reglas de seguridad y CI
 
 - [x] **BOOK Android: prevención de pantalla blanca (08/11):** `book.html` ahora presenta un estado de carga visible antes del JavaScript; el puente `native-book-main.tsx` inicia sesión privada y render antes de cargar bajo demanda el mismo `BookReader`/PageFlip, y captura errores de carga con reintento visible. **Cambio exclusivo PWA de entrada BOOK**, sin tocar React Native, archivos, Calendar ni D1/R2. Su efecto en el Android del usuario necesita prueba real; no declarado resuelto hasta entonces.
 
+### Android — organización nativa consolidada (08/11)
+
+- [x] **Raíz de Expo mínima:** `apps/android/App.tsx` es solo la entrada, y `app/NativeApp.tsx` conserva el único controlador de sesión, Chat y navegación.
+- [x] **HOME y módulos separados:** `app/NativeMemberHome.tsx` + `features/{chat,calendar,repertoire,musicians,family,book}`. No quedaron copias de `features/home`.
+- [x] **Integraciones y persistencia aisladas:** `services/` mantiene transportes nativos; `storage/chatStorage.ts` conserva exactamente `havana-v2-chat-local-v1` para sesión, borradores y mensajes pendientes; `hooks/useNativeKeyboardVisibility.ts` centraliza los listeners de teclado; `styles/chat-styles.ts` es la única fuente del estilo Chat Android.
+- [x] **Auditoría de estructura:** árbol exacto y detección de código huérfano / importaciones rotas en `scripts/check-structure.mjs`. Se actualizaron las pruebas para inspeccionar el controlador real, no la entrada reducida.
+- [ ] **Optimización posterior de Chat:** el controlador sigue siendo grande y la lista sigue usando `ScrollView`; separar más responsabilidades y virtualizar solo con pruebas de desplazamiento, multimedia y memoria. No confundir organización con optimización de FPS.
+- [ ] **BOOK en Android:** la pantalla blanca notificada en el teléfono sigue abierta; reorganizar carpetas no implica haberla resuelto.
+- **Publicación:** no se genera una APK nueva por reorganizar archivos; el código está en `main`, pendiente de aprobación del flujo completo y de futuro lote nativo. Sin cambios a PWA, Worker, D1 ni R2 en este bloque.
+
 ## 4.1. Matriz de aceptación física antes de declarar sincronización 100 %
 
 - [ ] **Instalación:** actualizar Android 0.0.13 → 0.0.14 encima, sin desinstalar, comprobar que conserva sesión y chats.

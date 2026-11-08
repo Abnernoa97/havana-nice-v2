@@ -50,6 +50,28 @@ assert.deepEqual(children('apps/pwa/src'),
 assert.deepEqual(children('apps/android'),
  ['App.tsx','app','app.json','features','hooks','package.json','services','storage','styles','tsconfig.json'],
  'Android must keep one Expo entry and grouped modules');
+// Android must retain exactly one Expo entry, one navigation owner, and one
+// source of each module. Moved source files cannot survive as compatibility copies.
+assert.deepEqual(children('apps/android/app'),['NativeApp.tsx','NativeMemberHome.tsx']);
+assert.deepEqual(children('apps/android/features'),
+ ['book','calendar','chat','family','musicians','repertoire']);
+assert.deepEqual(children('apps/android/hooks'),['useNativeKeyboardVisibility.ts']);
+assert.deepEqual(children('apps/android/storage'),['chatStorage.ts']);
+assert.deepEqual(children('apps/android/styles'),['chat-styles.ts']);
+assert.deepEqual(children('apps/android/services'),
+ ['native-calendar-live.ts','native-chat-r2-upload.ts']);
+const expoEntry=readFileSync(join(rootDir,'apps/android/App.tsx'),'utf8');
+assert.match(expoEntry,/export \{default\} from '\.\/app\/NativeApp'/);
+assert.ok(expoEntry.split('\n').length<12,'Expo entry must remain a tiny loader');
+const nativeController=readFileSync(join(rootDir,'apps/android/app/NativeApp.tsx'),'utf8');
+assert.match(nativeController,/startNamedChatSession/);
+assert.match(nativeController,/restoreNamedChatSession/);
+assert.match(nativeController,/from '\.\.\/storage\/chatStorage'/);
+assert.match(nativeController,/from '\.\.\/styles\/chat-styles'/);
+assert.match(nativeController,/useNativeKeyboardVisibility\(\)/);
+assert.match(readFileSync(join(rootDir,'apps/android/storage/chatStorage.ts'),'utf8'),
+ /havana-v2-chat-local-v1/,'Never lose the installed Android session/drafts/outbox key');
+
 assert.deepEqual(children('cloudflare/src'),
  ['index.ts','modules','shared'],
  'The Worker must keep a single typed entry point');
