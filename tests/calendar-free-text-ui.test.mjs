@@ -68,6 +68,18 @@ test('Admin, PWA and native Calendar all use the same shared date function',()=>
  assert.match(native,/safeCalendarMapUrl\(item\.mapUrl\)/);
 });
 
+test('Admin Calendar mounts event photo editors only for the expanded date',()=>{
+ const src=read('apps/pwa/src/features/calendar/AdminCalendar.tsx');
+ assert.match(src,/expanded===item\.id&&<div className="a-cal-event-body">/);
+ assert.match(src,/<AdminCalendarMemories token=\{token\} eventId=\{item\.id\}/);
+ assert.match(src,/const AdminCalendarMemories=lazy\(\(\)=>import\('\.\/AdminCalendarMemories'\)\)/);
+ // AdminChatAccess already owns the live member directory. One Calendar
+ // event notification must trigger only its own events request.
+ assert.doesNotMatch(src,/adminMembers\(/);
+ assert.match(src,/const active=members\.filter\(p=>p\.active===1\)/);
+ const controller=read('apps/pwa/src/features/admin/AdminChatAccess.tsx');
+ assert.match(controller,/refreshMembers\(session\.token\)/);
+});
 test('Calendar uses one private push protocol in native Android and PWA, without legacy timers',()=>{
  const member=read('apps/pwa/src/features/calendar/CalendarAccordion.tsx');
  const admin=read('apps/pwa/src/features/calendar/AdminCalendar.tsx');
