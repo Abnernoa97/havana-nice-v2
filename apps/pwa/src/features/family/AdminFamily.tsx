@@ -1,9 +1,9 @@
-import {useCallback,useEffect,useRef,useState,type ChangeEvent} from 'react';
+import {lazy,Suspense,useCallback,useEffect,useRef,useState,type ChangeEvent} from 'react';
 import {familyAlbumCount,getFamilyDirectory,getFamilyAlbumMedia,uploadFamilyAlbumFile,uploadFamilyVideoPoster,updateFamilyAlbumFile,FamilyApiError,type FamilyDirectory,type FamilyAlbum,type FamilyMediaItem} from '@havana/shared';
 import FamilyMediaGallery,{familyPrivateMediaUrl} from './FamilyMediaGallery';
 import {useFamilyLive} from '../../services/use-family-live';
 import {createFamilyVideoPoster} from '../../services/family-video-poster';
-import AdminBook from '../book/AdminBook';
+const AdminBook=lazy(()=>import('../book/AdminBook'));
 
 function formatStorageGB(bytes:number){return (bytes/1_000_000_000).toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2});}
 function formatFileMB(bytes:number){return (bytes/1_000_000).toFixed(0)+' MB';}
@@ -202,7 +202,7 @@ export default function AdminFamily({token,onExpired}:{token:string;onExpired:()
   {error&&<p className="a-admin-error" role="alert">{error}</p>}
   {bookOpen||album?<button type="button" className="a-family-back" onClick={goBack}>‹ Todos los álbumes</button>:null}
   {bookOpen?<>
-   <AdminBook token={token} onExpired={onExpired} tick={mediaTick}/>
+   <Suspense fallback={<p role="status">Abriendo editor BOOK…</p>}><AdminBook token={token} onExpired={onExpired} tick={mediaTick}/></Suspense>
   </>:album?<>
    <div className="a-family-cover">
     {cover?<img className="a-family-cover-photo" src={cover} alt="" decoding="async"/>:
