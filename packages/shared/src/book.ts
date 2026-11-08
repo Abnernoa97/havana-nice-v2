@@ -33,7 +33,7 @@ export function bookMediaUrl(value:string|null|undefined):string|null{
  try{
   const base=new URL(API),result=new URL(value,base);
   return result.protocol==='https:'&&result.origin===base.origin&&
-   /^\/api\/book\/media\/[a-f0-9]{32}$/.test(result.pathname)?result.href:null;
+   /^\/api\/(?:book\/media|calendar\/photo)\/[a-f0-9]{32}$/.test(result.pathname)?result.href:null;
  }catch{return null;}
 }
 export async function uploadBookPage(
