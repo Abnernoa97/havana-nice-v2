@@ -1,10 +1,10 @@
 import React from 'react';
 import {Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
 import {MEMBER_MODULES,type MemberScreen} from '@havana/shared';
-import NativeCalendar from '../calendar/NativeCalendar';
-import NativeRepertoire from '../repertoire/NativeRepertoire';
-import NativeMusicians from '../musicians/NativeMusicians';
-import NativeFamily from '../family/NativeFamily';
+import NativeCalendar from '../features/calendar/NativeCalendar';
+import NativeRepertoire from '../features/repertoire/NativeRepertoire';
+import NativeMusicians from '../features/musicians/NativeMusicians';
+import NativeFamily from '../features/family/NativeFamily';
 
 type Props={
   displayName:string;

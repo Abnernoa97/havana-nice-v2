@@ -57,7 +57,7 @@ assert.deepEqual(children('cloudflare/src'),
 for(const name of ['calendar','chat','family','repertoire'])
  assert.ok(existsSync(join(rootDir,'apps/pwa/src/features',name)),
   'Missing PWA feature: '+name);
-for(const name of ['calendar','chat','family','home','repertoire'])
+for(const name of ['book','calendar','chat','family','musicians','repertoire'])
  assert.ok(existsSync(join(rootDir,'apps/android/features',name)),
   'Missing native feature: '+name);
 for(const name of ['admin','calendar','chat','family','repertoire'])

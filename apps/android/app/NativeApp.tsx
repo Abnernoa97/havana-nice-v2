@@ -14,7 +14,7 @@ import type {BubbleAnchor} from '../features/chat/SwipeableBubble';
 import NativeChatTimeline from '../features/chat/NativeChatTimeline';
 import NativeChatMessageMenu from '../features/chat/NativeChatMessageMenu';
 import NativeComposerIcon from '../features/chat/ChatComposerIcon';
-import NativeMemberHome from '../features/home/NativeMemberHome';
+import NativeMemberHome from './NativeMemberHome';
 import {uploadNativeChatFile} from '../services/native-chat-r2-upload';
 import {styles} from '../styles/chat-styles';
 import {useNativeMediaSelection} from '../features/chat/useNativeMediaSelection';

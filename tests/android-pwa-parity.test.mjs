@@ -29,7 +29,7 @@ test('Músicos reads one authorized roster in both apps without a second login',
  assert.match(native,/openFamilyRealtime\(token,false/);
  assert.match(native,/FAMILY_WS_HANDSHAKE_TIMEOUT_MS/);
  assert.match(read('apps/pwa/src/app/VisualApp.tsx'),/screen==='musicians'&&token\?<MemberMusicians token=\{token\}/);
- assert.match(read('apps/android/features/home/NativeMemberHome.tsx'),/active==='musicians'\?<NativeMusicians token=\{token\}/);
+ assert.match(read('apps/android/app/NativeMemberHome.tsx'),/active==='musicians'\?<NativeMusicians token=\{token\}/);
  assert.match(read('packages/shared/src/memberModules.ts'),/id:'musicians'[^\n]*ready:true,nativeReady:true/);
 });
 test('one private Repertoire invalidation channel synchronizes Admin, PWA and Android',()=>{
@@ -55,7 +55,7 @@ test('one private Repertoire invalidation channel synchronizes Admin, PWA and An
 });
 test('Android HOME has same mobile destinations and visual navigation as PWA, not stale placeholders',()=>{
  const shared=read('packages/shared/src/memberModules.ts');
- const home=read('apps/android/features/home/NativeMemberHome.tsx');
+ const home=read('apps/android/app/NativeMemberHome.tsx');
  const pwa=read('apps/pwa/src/app/VisualApp.tsx');
  assert.match(shared,/id:'repertoire'[^\n]*ready:true,nativeReady:true/);
  assert.match(shared,/id:'family'[^\n]*ready:true,nativeReady:true/);

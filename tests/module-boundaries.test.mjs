@@ -4,7 +4,7 @@ import {readFileSync} from 'node:fs';
 
 const read=(path)=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
 const screens=[
-  ['HOME Android','apps/android/features/home/NativeMemberHome.tsx'],
+  ['HOME Android','apps/android/app/NativeMemberHome.tsx'],
   ['HOME PWA','apps/pwa/src/app/VisualApp.tsx'],
   ['Calendario Android','apps/android/features/calendar/NativeCalendar.tsx'],
   ['Calendario PWA','apps/pwa/src/features/calendar/CalendarAccordion.tsx'],
@@ -20,7 +20,7 @@ test('A01: HOME lists the same modules from a single shared contract',()=>{
   const list=read('packages/shared/src/memberModules.ts');
   const ids=[...list.matchAll(/\bid:'(chat|calendar|repertoire|musicians|family|notices|settings)'/g)].map(x=>x[1]);
   assert.deepEqual(ids,['chat','calendar','repertoire','musicians','family','notices','settings']);
-  assert.match(read('apps/android/features/home/NativeMemberHome.tsx'),/MEMBER_MODULES\.map/);
+  assert.match(read('apps/android/app/NativeMemberHome.tsx'),/MEMBER_MODULES\.map/);
   assert.match(read('apps/pwa/src/app/VisualApp.tsx'),/MEMBER_MODULES/);
   assert.match(read('apps/android/app/NativeApp.tsx'),/session&&activeScreen!=='chat'&&<NativeMemberHome/);
   assert.match(read('apps/pwa/src/app/App.tsx'),/session&&activeScreen!=='chat'&&<Suspense/);

@@ -17,7 +17,7 @@ test('Existing Android login and Chat engine stay in one mounted App',()=>{
  assert.match(source,/session && activeScreen!=='chat' && styles\.inactiveChat/);
  assert.match(read('apps/android/styles/chat-styles.ts'),/inactiveChat:\{display:'none'\}/);
  assert.match(source,/accessibilityLabel="Volver a Inicio"/);
- assert.doesNotMatch(read('apps/android/features/home/NativeMemberHome.tsx'),/startNamedChatSession|AsyncStorage|WebView|session\.token|fetch\(/);
+ assert.doesNotMatch(read('apps/android/app/NativeMemberHome.tsx'),/startNamedChatSession|AsyncStorage|WebView|session\.token|fetch\(/);
 });
 test('Android styles live outside Chat controller without changing navigation or IME safety',()=>{
  const app=read('apps/android/app/NativeApp.tsx');
@@ -56,5 +56,5 @@ test('PWA and Android availability remain truthful without duplicating HOME',()=
  assert.match(data,/id:'repertoire'[^\n]*ready:true,nativeReady:true/);
  assert.match(data,/id:'calendar'[^\n]*ready:true,nativeReady:true/);
  assert.match(read('apps/pwa/src/app/VisualApp.tsx'),/item\.ready\?'DISPONIBLE':'EN PREPARACIÓN'/);
- assert.match(read('apps/android/features/home/NativeMemberHome.tsx'),/module\.nativeReady\?'Disponible':'En preparación'/);
+ assert.match(read('apps/android/app/NativeMemberHome.tsx'),/module\.nativeReady\?'Disponible':'En preparación'/);
 });
