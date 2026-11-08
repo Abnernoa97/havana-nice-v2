@@ -146,6 +146,26 @@ test('BOOK 3D has a separate offline shell and cannot overwrite the Chat HOME',a
  assert.equal(sw.writes.length,2);
 });
 
+test('lazy Calendar/BOOK chunks remain usable offline only after their first authorized online load',async()=>{
+ let offline=false;
+ const sw=serviceWorkerHarness(async()=>{
+  if(offline)throw Error('airplane mode');
+  return {ok:true,type:'basic',marker:'verified-static-chunk',clone(){return this;}};
+ });
+ const calendar=ORIGIN+'/assets/CalendarAccordion-safe.js';
+ const book=ORIGIN+'/assets/BookReader-safe.js';
+ const first=await sw.dispatch({url:calendar});
+ assert.equal(first.result.marker,'verified-static-chunk');
+ offline=true;
+ const cached=await sw.dispatch({url:calendar});
+ assert.equal(cached.handled,true);
+ assert.equal(cached.result.marker,'verified-static-chunk');
+ const neverOpened=await sw.dispatch({url:book});
+ assert.equal(neverOpened.handled,true);
+ assert.equal(neverOpened.result?.ok,undefined,
+  'An unopened module cannot falsely work offline: this is an explicit QA constraint');
+ assert.equal(sw.writes.filter(x=>String(x.key).includes('/api/')).length,0);
+});
 test('installed Administrator HTML is never cached or intercepted, including offline',async()=>{
  const sw=serviceWorkerHarness(async()=>{throw Error('offline');});
  const res=await sw.dispatch({url:ORIGIN+'/admin.html',mode:'navigate'});
