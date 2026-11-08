@@ -5,7 +5,7 @@ export type NativeBookContext={
  memory:{eventId:string;title:string}|null;
 };
 const TOKEN=/^[A-Za-z0-9_-]{40,100}$/;
-const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 export function parseNativeBookContext(json:string|undefined|null):NativeBookContext|null{
  if(!json||json.length>600)return null;
  try{
