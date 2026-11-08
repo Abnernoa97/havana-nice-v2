@@ -214,8 +214,8 @@ export function validateChatMediaSelection(
  return null;
 }
 
-export {getCalendarEvents,calendarDate,safeCalendarMapUrl} from './calendar';
-export type {CalendarEvent,CalendarEventInput,CalendarEventList,CalendarEventStatus} from './calendar';
+export {getCalendarEvents,calendarDate,safeCalendarMapUrl,calendarEventCompleted,calendarMemoryUrl,getCalendarMemories,addCalendarMemory,addCalendarMemoryWebp,deleteCalendarMemory,moveCalendarMemory} from './calendar';
+export type {CalendarEvent,CalendarEventInput,CalendarEventList,CalendarEventStatus,CalendarMemoryPhoto,CalendarMemoryList} from './calendar';
 
 export {MEMBER_MODULES} from './memberModules';
 export type {MemberModule,MemberScreen} from './memberModules';
