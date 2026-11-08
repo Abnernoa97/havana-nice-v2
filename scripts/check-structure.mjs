@@ -83,9 +83,12 @@ const imports=new Map(sources.map(s=>[s,[]]));
 for(const path of sources){
  if(path.endsWith('.css'))continue;
  const code=readFileSync(join(rootDir,path),'utf8');
- const pattern=/\bfrom\s+['"](\.[^'"]+)['"]|\bimport\s+['"](\.[^'"]+)['"]/g;
+ // Dynamic import() is a *reachable lazy edge*, not dead source. The graph
+ // must validate both eager and on-demand feature modules without treating
+ // a deliberate chunk boundary as an orphaned implementation.
+ const pattern=/\bfrom\s+['"](\.[^'"]+)['"]|\bimport\s+['"](\.[^'"]+)['"]|\bimport\s*\(\s*['"](\.[^'"]+)['"]\s*\)/g;
  for(const match of code.matchAll(pattern)){
-  const local=match[1]||match[2];
+  const local=match[1]||match[2]||match[3];
   const absolute=resolve(rootDir,dirname(path),local);
   const candidates=[absolute,absolute+'.ts',absolute+'.tsx',absolute+'.js',
    absolute+'.css',join(absolute,'index.ts'),join(absolute,'index.tsx')];
