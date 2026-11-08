@@ -22,6 +22,7 @@ function setup(){
  raw.exec(readFileSync(new URL('../migrations/0025_chat_media_r2.sql',import.meta.url),'utf8'));
  raw.exec(readFileSync(new URL('../migrations/0026_member_delete_media_cleanup.sql',import.meta.url),'utf8'));
  raw.exec(readFileSync(new URL('../migrations/0027_book_havana_nice.sql',import.meta.url),'utf8'));
+ raw.exec(readFileSync(new URL('../migrations/0028_book_optimized_images.sql',import.meta.url),'utf8'));
  const DB={async batch(stmts){return Promise.all(stmts.map(stmt=>stmt.run()))},prepare(sql){return {bind(...args){
    return {async all(){return {results:raw.prepare(sql).all(...args)}},
     async first(){return raw.prepare(sql).get(...args)||null},
