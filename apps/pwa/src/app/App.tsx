@@ -691,7 +691,17 @@ export default function App() {
         </div>
       </header>
 
-      {restoringAccess ? <section className="join-panel"><p>Abriendo HAVANA NICE…</p></section> : !session ? (
+      {restoringAccess ? <section className="join-panel"><p>Abriendo HAVANA NICE…</p></section>
+       : !session&&readerRoute ? (
+        <section className="join-panel">
+         <span className="overline">BOOK HAVANA NICE · PWA</span>
+         <h2>Sesión web no autorizada</h2>
+         <p>Este lector 3D funciona con una sesión PWA previamente autorizada.
+          La sesión de Android no se transfiere al navegador. No vuelvas a registrar
+          el mismo nombre: solo puede estar vinculado a una instalación.</p>
+         <button type="button" onClick={closeReader}>Volver a la aplicación PWA</button>
+        </section>
+       ) : !session ? (
         <section className="join-panel">
           <span className="overline">ACCESO HAVANA NICE</span>
           <h2>Bienvenido.</h2>

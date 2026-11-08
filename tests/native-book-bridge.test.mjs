@@ -29,5 +29,8 @@ test('PWA is the single original 3D renderer and receives only a safe route afte
  assert.match(app,/parsePwaReaderHash\(window.location.hash\)/);
  assert.match(app,/readerRoute\?<PwaReaderRoute token=\{session.token\}/);
  assert.match(app,/restoreNamedChatSession/);
+ assert.match(app,/!session&&readerRoute/);
+ assert.match(app,/Sesión web no autorizada/);
+ assert.match(app,/No vuelvas a registrar/);
  assert.doesNotMatch(pwa,/startNamedChatSession|restoreNamedChatSession|new WebSocket/);
 });
