@@ -71,7 +71,7 @@ async function setup(){
    Authorization:'Bearer '+(admin?ADMIN:other?'other':'member'),...headers},
    ...(body!==undefined?{body}:{})});
   const response=path.includes('/photos')||path.includes('/api/calendar/photo/')?
-   await handleCalendarMemories(request,env,new URL(request.url),verify):
+   await handleCalendarMemories(request,env,new URL(request.url),'https://havana-nice-v2.pages.dev',verify):
    await handleCalendarApi(request,env,new URL(request.url),'',(data,status=200)=>Response.json(data,{status}),verify);
   return response;
  }
