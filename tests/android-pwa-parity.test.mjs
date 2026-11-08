@@ -44,7 +44,9 @@ test('one private Repertoire invalidation channel synchronizes Admin, PWA and An
  assert.match(room,/type:'repertoire.invalidate'/);
  assert.match(browserTransport,/watchRepertoire\(token/);
  assert.match(nativeTransport,/watchNativeRepertoire\(token/);
+ assert.match(admin,/void refreshAll\(\); \/\/ Render immediately/);
  assert.match(admin,/watchRepertoire\(token,true/);
+ assert.match(member,/void refresh\(\); \/\/ Initial D1 load/);
  assert.match(member,/watchRepertoire\(token,false/);
  assert.match(android,/watchNativeRepertoire\(token/);
  for(const s of [admin,member,android])assert.doesNotMatch(s,/setInterval\(/);

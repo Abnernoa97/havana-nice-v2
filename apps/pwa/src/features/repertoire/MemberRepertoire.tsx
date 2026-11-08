@@ -40,6 +40,7 @@ export default function MemberRepertoire({token}:{token:string}){
  useEffect(()=>{
   // A newly authorized session must never see rows from a previous user.
   setSongs([]);setEvents([]);setOpen(null);setLoading(true);setError('');
+  void refresh(); // Initial D1 load is independent of handshake latency.
   const stop=watchRepertoire(token,false,()=>{if(!document.hidden&&navigator.onLine)void refresh();});
   return()=>{++requestId.current;stop();};
  },[refresh]);
