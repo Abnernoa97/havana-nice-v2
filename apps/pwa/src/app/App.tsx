@@ -1,7 +1,7 @@
 import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import {
   fetchBackendHealth, getChatMediaAvailability, getChatSnapshot, getOlderChatMessages, searchChatMessages, getChatMenuState, getChatMessagePermissions, isWithinChatEditWindow, selectNextQueuedChatMessage, setOutgoingChatStatus, projectOutgoingChatStatus, CHAT_ACK_TIMEOUT_MS, newClientMessageId, uploadChatMediaBatch,
-  openChatSocket, reconcileChatMessages, startNamedChatSession, restoreNamedChatSession, chatSessionExpired, chatReconnectDelay, reconcileChatReadReceipt, removeChatReactionsForMessage, withoutRemovedChatMessages, ChatHistoryRequestGate, oldestConfirmedChatSeq, mergeOlderChatReactions, captureChatOfflineSnapshot, restoreChatOfflineOutbox,
+  openChatSocket, reconcileChatMessages, startNamedChatSession, restoreNamedChatSession, chatSessionExpired, chatReconnectDelay, reconcileChatReadReceipt, removeChatReactionsForMessage, withoutRemovedChatMessages, ChatHistoryRequestGate, oldestConfirmedChatSeq, mergeOlderChatReactions, CHAT_WS_HANDSHAKE_TIMEOUT_MS, captureChatOfflineSnapshot, restoreChatOfflineOutbox,
   type BackendHealth, type ChatMessage, type ChatServerEvent, type ChatSession,
   CHAT_MEDIA_MAX_PER_SEND, HAVANA_V2_DEV_API_BASE_URL,
   reconcileReactions, reconcileUpdatedMessage, reconcileDeletedMessage, reconcileChatSnapshot, type ChatReaction, type ChatEmoji, type ChatReadReceipt, type MemberScreen,
@@ -59,6 +59,7 @@ export default function App() {
   const outbox = useRef<Map<string, ChatMessage>>(new Map());
   const ackTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
   const retryTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const connectionWatchdog=useRef<ReturnType<typeof setTimeout>|null>(null);
   const retryCount = useRef(0);
   const disposed = useRef(false);
   const bottom = useRef<HTMLDivElement | null>(null);
@@ -115,6 +116,7 @@ export default function App() {
   const refreshLatest = useRef<() => void>(() => {});
 
   function revokeCurrentAccess() {
+    clearConnectionWatchdog();
     historyRequests.current.reset();
     setLoadingOlder(false);setSearching(false);setSearchResults(null);
     setActiveScreen('home');
@@ -274,6 +276,10 @@ export default function App() {
     if (retryTimer.current) clearTimeout(retryTimer.current);
     retryTimer.current = null;
   }
+  function clearConnectionWatchdog(){
+    if(connectionWatchdog.current!==null)clearTimeout(connectionWatchdog.current);
+    connectionWatchdog.current=null;
+  }
   function flushOutbox() {
     const ws = socket.current;
     if (!ws || ws.readyState !== WebSocket.OPEN) return;
@@ -312,6 +318,7 @@ export default function App() {
   function reconnect(next: ChatSession) {
     if (disposed.current) return;
     if (chatSessionExpired(next)) {
+      clearConnectionWatchdog();
       clearRetry();
       const old = socket.current;
       socket.current = null;
@@ -323,7 +330,7 @@ export default function App() {
       return;
     }
     activeSession.current = next;
-    clearRetry();
+    clearRetry();clearConnectionWatchdog();
     const old = socket.current;
     if (old) pausePending();
     socket.current = null;
@@ -346,8 +353,17 @@ export default function App() {
         }
       }, delay);
     }
+    // Mobile Safari may keep the TLS/WS handshake CONNECTING after network changes.
+    // Reuse this same owner's retry timer; never create a second WebSocket.
+    connectionWatchdog.current=setTimeout(()=>{
+      if(disposed.current||socket.current!==ws||ws.readyState===WebSocket.OPEN)return;
+      connectionWatchdog.current=null;
+      try{ws.close();}catch{}
+      retry();
+    },CHAT_WS_HANDSHAKE_TIMEOUT_MS);
     ws.onopen = () => {
       if (disposed.current || socket.current !== ws) return;
+      clearConnectionWatchdog();
       retryCount.current = 0;
       clearRetry();
       setConnection('en vivo');
@@ -412,6 +428,7 @@ export default function App() {
     };
     ws.onclose = () => {
       if (disposed.current || socket.current !== ws) return;
+      clearConnectionWatchdog();
       abandonPendingEdit('Conexión interrumpida. El texto editado sigue disponible.');
       pausePending();
       setConnection('desconectado');
@@ -419,6 +436,7 @@ export default function App() {
     };
     ws.onerror = () => {
       if (disposed.current || socket.current !== ws) return;
+      clearConnectionWatchdog();
       abandonPendingEdit('Conexión interrumpida. El texto editado sigue disponible.');
       setConnection('sin conexión');
       retry();
@@ -481,6 +499,7 @@ export default function App() {
       });
     };
     const offline = () => {
+      clearConnectionWatchdog();
       pausePending();
       setConnection('sin conexión');
       clearRetry();
@@ -496,7 +515,7 @@ export default function App() {
       document.removeEventListener('visibilitychange', resume);
       window.removeEventListener('online', resume);
       window.removeEventListener('offline', offline);
-      clearRetry();
+      clearRetry();clearConnectionWatchdog();
       for (const timer of ackTimers.current.values()) clearTimeout(timer);
       ackTimers.current.clear();
       socket.current?.close();

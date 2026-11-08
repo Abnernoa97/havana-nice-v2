@@ -3,6 +3,8 @@
 import type {ChatSession} from './index';
 
 export const CHAT_RECONNECT_MAX_DELAY_MS=20_000;
+// Abort only handshakes that never open. Existing retry owns every reconnection.
+export const CHAT_WS_HANDSHAKE_TIMEOUT_MS=9000;
 export function chatSessionExpired(session:Pick<ChatSession,'expiresAt'>,now=Date.now()):boolean{
  return Date.parse(session.expiresAt)<=now;
 }

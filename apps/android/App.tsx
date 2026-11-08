@@ -5,7 +5,7 @@ import {
 } from 'react-native';
 import {
   HAVANA_V2_DEV_API_BASE_URL, fetchBackendHealth, getChatMediaAvailability, getChatSnapshot, getOlderChatMessages, searchChatMessages, getChatMenuState, getChatMessagePermissions, isWithinChatEditWindow, selectNextQueuedChatMessage, setOutgoingChatStatus, projectOutgoingChatStatus, CHAT_ACK_TIMEOUT_MS, newClientMessageId, uploadChatMediaBatch,
-  reconcileChatMessages, reconcileReactions, reconcileUpdatedMessage, reconcileDeletedMessage, reconcileChatSnapshot, startNamedChatSession, restoreNamedChatSession, chatSessionExpired, chatReconnectDelay, reconcileChatReadReceipt, removeChatReactionsForMessage, withoutRemovedChatMessages, ChatHistoryRequestGate, oldestConfirmedChatSeq, mergeOlderChatReactions, captureChatOfflineSnapshot, restoreChatOfflineOutbox,
+  reconcileChatMessages, reconcileReactions, reconcileUpdatedMessage, reconcileDeletedMessage, reconcileChatSnapshot, startNamedChatSession, restoreNamedChatSession, chatSessionExpired, chatReconnectDelay, reconcileChatReadReceipt, removeChatReactionsForMessage, withoutRemovedChatMessages, ChatHistoryRequestGate, oldestConfirmedChatSeq, mergeOlderChatReactions, CHAT_WS_HANDSHAKE_TIMEOUT_MS, captureChatOfflineSnapshot, restoreChatOfflineOutbox,
   type ChatMessage, type ChatServerEvent, type ChatSession, type ChatReaction, type ChatEmoji, type ChatReadReceipt,
   CHAT_MEDIA_MAX_PER_SEND, type MemberScreen,
 } from '@havana/shared';
@@ -75,6 +75,7 @@ export default function App() {
   const activeSession = useRef<ChatSession | null>(null);
   const appLifecycle = useRef(AppState.currentState);
   const retryTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const connectionWatchdog=useRef<ReturnType<typeof setTimeout>|null>(null);
   const retryAttempts = useRef(0);
   const disposed = useRef(false);
   const connectLatest = useRef<(next: ChatSession) => void>(() => {});
@@ -136,6 +137,7 @@ export default function App() {
   }
 
   function revokeCurrentAccess() {
+    clearConnectionWatchdog();
     historyRequests.current.reset();
     setLoadingOlder(false);setSearching(false);setResults(null);
     setActiveScreen('home');
@@ -333,6 +335,10 @@ export default function App() {
     if (retryTimer.current) clearTimeout(retryTimer.current);
     retryTimer.current = null;
   }
+  function clearConnectionWatchdog(){
+    if(connectionWatchdog.current!==null)clearTimeout(connectionWatchdog.current);
+    connectionWatchdog.current=null;
+  }
 
   function syncMessages(next: ChatSession) {
     void getChatSnapshot(next)
@@ -365,6 +371,7 @@ export default function App() {
     activeSession.current = next;
     persistLocal();
     if (chatSessionExpired(next)) {
+      clearConnectionWatchdog();
       clearRetryTimer();
       for (const timer of acknowledgementTimers.current.values()) clearTimeout(timer);
       acknowledgementTimers.current.clear();
@@ -377,7 +384,7 @@ export default function App() {
       setError('Tu acceso no está disponible. Escribe tu nombre para solicitar la entrada.');
       return;
     }
-    clearRetryTimer();
+    clearRetryTimer();clearConnectionWatchdog();
     const previous = socket.current;
     if (previous) pauseOutgoing();
     socket.current = null; // previous close events cannot race with a new connection
@@ -422,8 +429,16 @@ export default function App() {
       return;
     }
     socket.current = ws;
+    // A stalled native handshake must not leave Chat stuck in "conectando".
+    connectionWatchdog.current=setTimeout(()=>{
+      if(disposed.current||socket.current!==ws||ws.readyState===WebSocket.OPEN)return;
+      connectionWatchdog.current=null;
+      try{ws.close();}catch{}
+      retry();
+    },CHAT_WS_HANDSHAKE_TIMEOUT_MS);
     ws.onopen = () => {
       if (disposed.current || socket.current !== ws) return;
+      clearConnectionWatchdog();
       retryAttempts.current = 0;
       clearRetryTimer();
       setConnection('en vivo');
@@ -488,11 +503,13 @@ export default function App() {
     };
     ws.onerror = () => {
       if (disposed.current || socket.current !== ws) return;
+      clearConnectionWatchdog();
       abandonPendingEdit('Conexión interrumpida. El texto editado sigue disponible.');
       retry();
     };
     ws.onclose = event => {
       if (disposed.current || socket.current !== ws) return;
+      clearConnectionWatchdog();
       abandonPendingEdit('Conexión interrumpida. El texto editado sigue disponible.');
       pauseOutgoing();
       if (appLifecycle.current === 'active') {
@@ -567,6 +584,7 @@ export default function App() {
             connectLatest.current(currentSession);
         });
       } else if (state === 'background') {
+        clearConnectionWatchdog();
         persistLocal();
         clearRetryTimer();
         pauseOutgoing();
@@ -580,7 +598,7 @@ export default function App() {
     return () => {
       disposed.current = true;
       subscription.remove();
-      clearRetryTimer();
+      clearRetryTimer();clearConnectionWatchdog();
       socket.current?.close();
       socket.current = null;
       if (typingTimer.current) clearTimeout(typingTimer.current);

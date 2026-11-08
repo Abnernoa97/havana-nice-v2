@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {
- chatSessionExpired,chatReconnectDelay,CHAT_RECONNECT_MAX_DELAY_MS
+ chatSessionExpired,chatReconnectDelay,CHAT_RECONNECT_MAX_DELAY_MS,CHAT_WS_HANDSHAKE_TIMEOUT_MS
 } from '../packages/shared/src/chat-connection.ts';
 
 const now=Date.parse('2026-11-07T14:00:00.000Z');
@@ -22,6 +22,18 @@ test('one retry policy preserves the original backoff, max 20 seconds',()=>{
  [1000,2000,4000,8000,16000,20000,20000,20000,20000]);
 });
 
+test('both clients recover stalled WebSocket handshakes through their existing reconnect owner',()=>{
+ assert.equal(CHAT_WS_HANDSHAKE_TIMEOUT_MS,9000);
+ for(const path of ['apps/pwa/src/app/App.tsx','apps/android/App.tsx']){
+  const source=readFileSync(new URL('../'+path,import.meta.url),'utf8');
+  assert.match(source,/connectionWatchdog=useRef/);
+  assert.match(source,/connectionWatchdog\.current=setTimeout\(/);
+  assert.match(source,/ws\.readyState===WebSocket\.OPEN/);
+  assert.match(source,/CHAT_WS_HANDSHAKE_TIMEOUT_MS/);
+  assert.match(source,/clearConnectionWatchdog\(\)/);
+  assert.match(source,/try\{ws\.close\(\);\}catch\{\}\s*retry\(\)/);
+ }
+});
 test('PWA/Android use one expiry and retry policy without an extra socket',()=>{
  for(const path of ['apps/pwa/src/app/App.tsx','apps/android/App.tsx']){
   const s=readFileSync(new URL('../'+path,import.meta.url),'utf8');
@@ -36,5 +48,5 @@ test('PWA/Android use one expiry and retry policy without an extra socket',()=>{
  const shared=readFileSync(new URL('../packages/shared/src/chat-connection.ts',import.meta.url),'utf8');
  assert.doesNotMatch(shared,/WebSocket|setTimeout|localStorage|AsyncStorage|fetch\(/);
  const exports=readFileSync(new URL('../packages/shared/src/index.ts',import.meta.url),'utf8');
- assert.match(exports,/export \{chatSessionExpired,chatReconnectDelay,CHAT_RECONNECT_MAX_DELAY_MS\} from '\.\/chat-connection'/);
+ assert.match(exports,/export \{chatSessionExpired,chatReconnectDelay,CHAT_RECONNECT_MAX_DELAY_MS,CHAT_WS_HANDSHAKE_TIMEOUT_MS\} from '\.\/chat-connection'/);
 });
