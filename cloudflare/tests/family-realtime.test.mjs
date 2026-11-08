@@ -51,13 +51,14 @@ test('Invalidations happen only after successful mutations; not from media reads
 
 test('Existing Worker verifies Family subscribers independently and does not broadcast Chat content',()=>{
  const worker=source('src/index.ts');
+ const room=source('src/modules/chat/chat-room.ts');
  assert.match(worker,/url\.pathname==='\/ws\/family'/);
  assert.match(worker,/verifyAdminSession\(adminTokenRequest\(adminToken\),env\)/);
  assert.match(worker,/verifySession\(env,memberToken\)/);
- assert.match(worker,/this\.familySockets = new Map\(\)/);
- assert.match(worker,/async invalidateFamilyClients\(\)/);
- assert.match(worker,/this\.send\(socket,\{type:'family.invalidate'\}\)/);
- assert.match(worker,/socket\.close\(4003,'Access revoked'\)/);
+ assert.match(room,/this\.familySockets = new Map\(\)/);
+ assert.match(room,/async invalidateFamilyClients\(\)/);
+ assert.match(room,/this\.send\(socket,\{type:'family.invalidate'\}\)/);
+ assert.match(room,/socket\.close\(4003,'Access revoked'\)/);
  assert.match(worker,/ctx\.waitUntil\(notifyFamilyClients\(env\)\)/);
  assert.doesNotMatch(worker,/new DurableObjectNamespace|new R2Bucket/);
 });
