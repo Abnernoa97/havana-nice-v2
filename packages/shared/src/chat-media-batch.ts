@@ -4,7 +4,7 @@
 // in the caller's queue, just as before extracting the duplicated loops.
 export interface ChatMediaBatchOptions<T>{
  sizeOf:(item:T)=>number;
- upload:(item:T,onSentBytes:(bytes:number)=>void)=>Promise<void>;
+ upload:(item:T,onSentBytes:(bytes:number)=>void)=>Promise<unknown>;
  confirmed:(item:T)=>void;
  progress:(percent:number)=>void;
 }
