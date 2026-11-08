@@ -131,7 +131,7 @@ tests/ + cloudflare/tests/ + scripts/ → reglas de seguridad y CI
 
 ## 4.1. Matriz de aceptación física antes de declarar sincronización 100 %
 
-- [ ] **Instalación:** actualizar Android 0.0.16 a **0.0.17** encima, sin desinstalar; comprobar Chat, sesión, Familia y BOOK/Recuerdos 3D integrados. Certificado/JS del lote a verificar en GitHub Actions.
+- [ ] **Instalación/QA:** actualizar Android 0.0.16 a **0.0.17** encima, sin desinstalar; comprobar Chat, sesión, Familia y BOOK/Recuerdos 3D integrados. Certificado/JS del lote **verificados** en GitHub Actions; UX física por confirmar.
 - [ ] **Calendario Admin ↔ PWA ↔ Android:** crear/editar fecha real de prueba, cambiar destinatarios y eliminar únicamente esa fecha de prueba; observar notificación instantánea y que un músico desasignado deja de verla.
 - [ ] **Repertorio:** editar catálogo y lista por fecha desde Admin; comprobar actualización en ambos clientes y que quitar fecha invalida su lista.
 - [ ] **Chat:** texto, respuestas, reacciones, borrado definitivo, cinco fotos/videos combinados y reconexión al perder/recuperar red; corroborar que nada reaparece tras borrado.
@@ -151,4 +151,4 @@ tests/ + cloudflare/tests/ + scripts/ → reglas de seguridad y CI
 
 **Continuación:** `docs/CONTINUIDAD-EXACTA.md` contiene referencias prácticas cortas; este Plan Maestro manda. El historial íntegro de pasos y estados anteriores se recupera de los commits de Git, no de copias obsoletas en `main`.
 
-- [~] **BOOK 3D integrado en APK 0.0.17:** código y CI aprobados en `main`; actualización firmada en construcción. Validar en el teléfono BOOK y Recuerdos como PWA embebida sin segundo login ni enlaces externos. La firma de APK debe conservar el certificado de 0.0.16 y guardar esa versión como respaldo.
+- [x] **BOOK 3D integrado en APK 0.0.17:** compilación firmada, JS incorporado, certificado compatible, versión 17 superior a 16 y enlace estable publicados ([CI Android 42529962866](https://github.com/Abnernoa97/havana-nice-v2/actions/runs/42529962866)); 0.0.16 preservada como `PREVIOUS` SHA-256 `07ad1f90...3086e6`. La PWA y la prueba de PageFlip en Chrome móvil/escritorio aprobaron CI ([42529962685](https://github.com/Abnernoa97/havana-nice-v2/actions/runs/42529962685)). **Prueba física BOOK/Recuerdos y sesión sin prompts pendiente; no afirmar instalada.**
