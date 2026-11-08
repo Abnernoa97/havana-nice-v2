@@ -195,7 +195,7 @@ test('Admin session count stays accurate on manual refresh, foreground, and WebS
 
 test('Administrator reconnects safely after offline and background without duplicate sockets',()=>{
  const panel=read('../src/features/admin/AdminChatAccess.tsx')+'\n'+directory;
- assert.match(panel,/const previous=socket;\s*socket=null; \/\/ The next foreground\/online event may connect immediately\./);
+ assert.match(panel,/const previous=socket;\s*clearWatchdog\(\);socket=null; \/\/ The next foreground\/online event may connect immediately\./);
  assert.match(panel,/if\(previous&&previous\.readyState!==WebSocket\.CLOSED\)previous\.close\(\)/);
  assert.match(panel,/if\(!active\|\|socket!==opened\)return/);
  assert.match(panel,/socket&&\(socket\.readyState===WebSocket\.OPEN\|\|socket\.readyState===WebSocket\.CONNECTING\)/);
