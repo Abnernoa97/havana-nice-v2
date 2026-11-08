@@ -304,7 +304,7 @@ export default function BookReader({pages}:{pages:BookPage[]}){
    const url=bookMediaUrl(item.url);
    return <div key={item.id} data-book-fit={item.fit}
     className={'hn-book-leaf hn-book-photo '+(item.fit==='contain'?'hn-book-contain':'hn-book-cover-fit')} data-density="soft">
-    {url?<img src={url} data-book-id={item.id} alt={'Página '+(i+2)+' de BOOK HAVANA NICE'} loading={i<2?'eager':'lazy'} decoding="async"/>:null}
+    {url?<img src={url} data-book-id={item.id} alt={'Página '+(i+2)+' de BOOK HAVANA NICE'} loading={i<2?'eager':'lazy'} decoding="async" onLoad={event=>markPhotoLayout(event.currentTarget)}/>:null}
     <span className="hn-book-folio">{String(i+2).padStart(2,'0')}</span>
    </div>;
   })}
