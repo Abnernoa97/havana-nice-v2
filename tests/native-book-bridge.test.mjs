@@ -9,6 +9,10 @@ const event='781c1e49-216e-475b-8245-a4efb1b7250b';
 test('Android opens the PWA 3D directly in its own shell with the existing login',()=>{
  const n=read('apps/android/features/book/NativeBook.tsx');
  assert.match(n,/<WebView<object>/);
+ assert.match(n,/onMessage=/);
+ assert.match(n,/readerWatchdog/);
+ assert.match(n,/ActivityIndicator/);
+ assert.match(n,/message.type!=='havana-v2-book-status'/);
  assert.match(n,/injectedJavaScriptObject=\{nativeContext\}/);
  assert.match(n,/source=\{\{uri:READER\}\}/);
  assert.match(n,/token,eventId:calendarEventId\|\|''/);
@@ -17,7 +21,7 @@ test('Android opens the PWA 3D directly in its own shell with the existing login
  assert.match(n,/thirdPartyCookiesEnabled=\{false\}/);
  assert.match(n,/setSupportMultipleWindows=\{false\}/);
  assert.match(n,/window.dispatchEvent\(new Event\("havana-v2-book-refresh"\)\)/);
- assert.doesNotMatch(n,/Linking\.|Alert\.alert|pwaReaderUrl|FlatList|getBookPages|havana-v2-book-auth|AUTHORIZED|postMessage|injectedJavaScriptBeforeContentLoaded/);
+ assert.doesNotMatch(n,/Linking\.|Alert\.alert|pwaReaderUrl|FlatList|getBookPages|havana-v2-book-auth|AUTHORIZED|injectedJavaScriptBeforeContentLoaded/);
  assert.doesNotMatch(n,/\?token=|localStorage|AsyncStorage|startNamedChatSession|restoreNamedChatSession/);
 });
 test('The embedded PWA uses the original PageFlip and initial native context, no external login',()=>{
@@ -27,6 +31,10 @@ test('The embedded PWA uses the original PageFlip and initial native context, no
  assert.match(p,/\.ReactNativeWebView\?\.injectedObjectJson\?\.\(\)/);
  assert.match(p,/parseNativeBookContext\(json\)/);
  assert.match(p,/const MemberBook=lazy/);
+ assert.match(p,/reportReaderStatus\(state\)/);
+ assert.match(p,/stf__block/);
+ assert.match(h,/id="book-boot-status"/);
+ assert.match(p,/JSON\.stringify\(\{type:'havana-v2-book-status',status\}\)/);
  assert.match(p,/const CalendarMemories=lazy/);
  assert.match(p,/<CalendarMemories token=\{context.token\}/);
  assert.match(reader,/new PageFlip\(/);

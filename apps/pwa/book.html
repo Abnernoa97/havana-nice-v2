@@ -7,10 +7,8 @@
  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://havana-nice-v2-dev.soloaplicaciones97.workers.dev; connect-src https://havana-nice-v2-dev.soloaplicaciones97.workers.dev; font-src 'self'; base-uri 'none'; form-action 'none'; frame-src 'none'; object-src 'none'"/>
  <title>BOOK HAVANA NICE · Lectura privada</title>
 </head><body style="margin:0;background:#f3eddf">
- <div id="book-root">
-  <div role="status" style="padding:32px 18px;text-align:center;font:14px/1.6 system-ui,sans-serif;color:#5b665c">
-   Abriendo BOOK HAVANA NICE…
-  </div>
- </div>
+ <!-- Outside React: remains visible if the JS bundle never mounts. -->
+ <div id="book-boot-status" role="status" style="padding:32px 18px;text-align:center;font:14px/1.6 system-ui,sans-serif;color:#315843">Abriendo BOOK HAVANA NICE…</div>
+ <div id="book-root"></div>
  <script type="module" src="/src/app/native-book-main.tsx"></script>
 </body></html>

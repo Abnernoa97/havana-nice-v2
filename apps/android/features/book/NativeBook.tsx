@@ -1,5 +1,5 @@
 import React,{useEffect,useMemo,useRef,useState} from 'react';
-import {AppState,Modal,Pressable,StyleSheet,Text,View} from 'react-native';
+import {ActivityIndicator,AppState,Modal,Pressable,StyleSheet,Text,View} from 'react-native';
 import {WebView} from 'react-native-webview';
 
 // Android owns the ONE musician session and native navigation. The existing
@@ -26,6 +26,36 @@ export default function NativeBook({token,refreshKey,onClose,calendarEventId,cal
  const lastRefresh=useRef(refreshKey);
  const [viewKey,setViewKey]=useState(0);
  const [failed,setFailed]=useState('');
+ const [readerReady,setReaderReady]=useState(false);
+ const readerWatchdog=useRef<ReturnType<typeof setTimeout>|null>(null);
+ const clearReaderWatchdog=()=>{
+  if(readerWatchdog.current!==null)clearTimeout(readerWatchdog.current);
+  readerWatchdog.current=null;
+ };
+ const armReaderWatchdog=()=>{
+  clearReaderWatchdog();
+  readerWatchdog.current=setTimeout(()=>{
+   readerWatchdog.current=null;
+   setFailed('La revista no terminó de cargar. Comprueba la conexión y reintenta.');
+  },24000);
+ };
+ useEffect(()=>{
+  armReaderWatchdog();
+  return()=>clearReaderWatchdog();
+ },[viewKey]);
+ const onReaderStatus=(raw:string)=>{
+  try{
+   const value:unknown=JSON.parse(raw);
+   if(!value||typeof value!=='object')return;
+   const message=value as Record<string,unknown>;
+   if(message.type!=='havana-v2-book-status')return;
+   if(message.status==='ready'){
+    clearReaderWatchdog();setReaderReady(true);setFailed('');
+   }else if(message.status==='error'){
+    clearReaderWatchdog();setFailed('No se pudo dibujar la revista 3D. Reintenta.');
+   }
+  }catch{/* Ignore malformed web messages. */}
+ };
  const nativeContext=useMemo(()=>({
   token,eventId:calendarEventId||'',title:(calendarTitle||'').slice(0,160)
  }),[token,calendarEventId,calendarTitle]);
@@ -41,7 +71,7 @@ export default function NativeBook({token,refreshKey,onClose,calendarEventId,cal
   });
   return()=>sub.remove();
  },[]);
- const retry=()=>{setFailed('');setViewKey(n=>n+1);};
+ const retry=()=>{clearReaderWatchdog();setReaderReady(false);setFailed('');setViewKey(n=>n+1);};
  return <Modal visible animationType="fade" onRequestClose={onClose}
   statusBarTranslucent presentationStyle="fullScreen">
   <View style={styles.root}>
@@ -61,14 +91,22 @@ export default function NativeBook({token,refreshKey,onClose,calendarEventId,cal
     allowsBackForwardNavigationGestures={false} pullToRefreshEnabled={false}
     startInLoadingState
     style={styles.web}
-    onLoadStart={()=>setFailed('')}
-    onError={()=>setFailed('No se pudo cargar el lector de HAVANA NICE.')}
-    onHttpError={event=>{
-     if(event.nativeEvent.statusCode>=400)
-      setFailed('No se pudo descargar el lector 3D.');
+    onLoadStart={()=>{setReaderReady(false);setFailed('');armReaderWatchdog();}}
+    onMessage={event=>{
+     if(trustedBookUrl(event.nativeEvent.url))onReaderStatus(event.nativeEvent.data);
     }}
-    onRenderProcessGone={()=>setFailed('Android cerró el lector para liberar memoria.')}
+    onError={()=>{clearReaderWatchdog();setFailed('No se pudo cargar el lector de HAVANA NICE.');}}
+    onHttpError={event=>{
+     if(event.nativeEvent.statusCode>=400&&event.nativeEvent.url===READER){
+      clearReaderWatchdog();setFailed('No se pudo descargar el lector 3D.');
+     }
+    }}
+    onRenderProcessGone={()=>{clearReaderWatchdog();setFailed('Android cerró el lector para liberar memoria.');}}
    />
+   {!readerReady&&!failed&&<View style={styles.loading} pointerEvents="none">
+    <ActivityIndicator size="large" color="#315843"/>
+    <Text style={styles.loadingText}>Abriendo revista 3D…</Text>
+   </View>}
    {!!failed&&<View style={styles.failure} accessibilityRole="alert">
     <Text style={styles.failureText}>{failed}</Text>
     <Pressable accessibilityRole="button" onPress={retry}>
@@ -86,7 +124,11 @@ const styles=StyleSheet.create({
  backText:{color:'#2c523c',fontSize:15,fontWeight:'700'},
  title:{flexShrink:1,fontSize:13,color:'#274632',letterSpacing:1.4,fontWeight:'800'},
  web:{flex:1,backgroundColor:'#f3eddf'},
- failure:{padding:18,gap:12,backgroundColor:'#fffaf2',alignItems:'center'},
- failureText:{color:'#863f34',fontSize:13,textAlign:'center'},
+ loading:{position:'absolute',top:90,bottom:0,left:0,right:0,alignItems:'center',
+  justifyContent:'center',gap:18,backgroundColor:'#f3eddf'},
+ loadingText:{color:'#315843',fontSize:14,fontWeight:'600'},
+ failure:{position:'absolute',top:90,bottom:0,left:0,right:0,padding:24,gap:16,
+  justifyContent:'center',backgroundColor:'#f3eddf',alignItems:'center'},
+ failureText:{color:'#863f34',fontSize:14,textAlign:'center',lineHeight:22},
  retry:{color:'#315843',fontSize:14,fontWeight:'800'}
 });

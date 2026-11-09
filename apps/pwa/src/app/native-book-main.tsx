@@ -8,7 +8,40 @@ import './native-book-reader.css';
 const MemberBook=lazy(()=>import('../features/book/MemberBook'));
 const CalendarMemories=lazy(()=>import('../features/calendar/CalendarMemories'));
 
-type RNWindow=Window&{ReactNativeWebView?:{injectedObjectJson?:()=>string}};
+type RNWindow=Window&{ReactNativeWebView?:{
+ injectedObjectJson?:()=>string;
+ postMessage?:(message:string)=>void;
+}};
+// One-way rendering telemetry: no token, login or auth confirmation.
+function reportReaderStatus(status:'ready'|'error'){
+ try{
+  (window as RNWindow).ReactNativeWebView?.postMessage?.(
+   JSON.stringify({type:'havana-v2-book-status',status}));
+ }catch{/* No native bridge must never stop PWA rendering. */}
+}
+function useReaderDisplayStatus(){
+ useEffect(()=>{
+  const root=document.getElementById('book-root');
+  if(!root)return;
+  let last='';
+  const inspect=()=>{
+   // Only the real StPageFlip stage (or its honest empty/error fallback)
+   // can dismiss the native spinner. HTML onLoad is not enough.
+   const content=root.querySelector('.hn-book-reader .stf__block, .hn-book-scroll, .hn-book-empty:not([role="alert"]), .hn-cal-memory-placeholder');
+   const failure=root.querySelector('[role="alert"]');
+   const state=content?'ready':failure?'error':'loading';
+   if(state==='loading')return;
+   document.getElementById('book-boot-status')?.remove();
+   if(last===state)return;
+   last=state;
+   reportReaderStatus(state);
+  };
+  const observer=new MutationObserver(inspect);
+  observer.observe(root,{childList:true,subtree:true,attributes:true,attributeFilter:['class']});
+  inspect();
+  return()=>observer.disconnect();
+ },[]);
+}
 class ReaderBoundary extends React.Component<
  {children:React.ReactNode},{failed:boolean}
 >{
@@ -23,6 +56,7 @@ class ReaderBoundary extends React.Component<
  }
 }
 function PrivateNativeReader(){
+ useReaderDisplayStatus();
  const [context]=useState(()=>{
   let json:string|undefined;
   try{json=(window as RNWindow).ReactNativeWebView?.injectedObjectJson?.();}
