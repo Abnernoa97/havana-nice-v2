@@ -57,8 +57,8 @@ test('PWA and Android history operations share one request gate and preserve the
   assert.match(app,/historyRequests\.current\.isOlderCurrent\(request\)/,path);
   assert.match(app,/historyRequests\.current\.finishOlder\(request\)/,path);
   assert.match(app,/mergeOlderChatReactions\(/,path);
-  assert.match(app,/historyRequests\.current\.beginSearch\(\)/,path);
-  assert.match(app,/historyRequests\.current\.isSearchCurrent\(request\)/,path);
+  // The shared request gate remains reusable, but the musician UI no longer starts search jobs.
+  assert.doesNotMatch(app,/historyRequests\.current\.beginSearch\(\)|historyRequests\.current\.isSearchCurrent\(request\)/,path);
   assert.match(app,/historyRequests\.current\.beginSnapshot\(\)/,path);
   assert.match(app,/historyRequests\.current\.isSnapshotCurrent\(request\)/,path);
   assert.match(app,/activeSession\.current\?\.token===session\.token/,path);
