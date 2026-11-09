@@ -33,6 +33,8 @@ assert.deepEqual(workflows,['v2-android-apk.yml','v2-foundation-check.yml'],
 const reproducibleWorker=JSON.parse(workerConfig);
 const cloudflarePackage=JSON.parse(read('cloudflare/package.json'));
 const foundationWorkflow=read('.github/workflows/v2-foundation-check.yml');
+assert.match(foundationWorkflow,/Enforce a single main branch and zero open PRs/,
+  'The one verification workflow must enforce the single-main Git policy');
 // A normal release must come from the checked-in Wrangler entrypoint, not an
 // edited compiled index.js, a second Worker, or a direct-version API upload.
 assert.equal(reproducibleWorker.main,'./src/index.ts',

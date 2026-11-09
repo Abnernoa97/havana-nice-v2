@@ -18,6 +18,7 @@ on:
 
 permissions:
   contents: read
+  pull-requests: read
 
 concurrency:
   group: havana-nice-v2-main-check
@@ -31,6 +32,26 @@ jobs:
         working-directory: .
     steps:
       - uses: actions/checkout@v5
+
+      - name: Enforce a single main branch and zero open PRs
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          branches="$(gh api --paginate "repos/$GITHUB_REPOSITORY/branches?per_page=100" --jq '.[].name')"
+          if [[ "$branches" != "main" ]]; then
+            echo '::error::V2 must have exactly one branch: main'
+            printf 'Found branches: %s\n' "$branches"
+            exit 1
+          fi
+          prs="$(gh api --paginate "repos/$GITHUB_REPOSITORY/pulls?state=open&per_page=100" --jq '.[].number')"
+          if [[ -n "$prs" ]]; then
+            echo '::error::V2 must have zero open PRs; work directly on main'
+            printf 'Found open PRs: %s\n' "$prs"
+            exit 1
+          fi
+          echo 'One main branch, zero open pull requests: OK'
 
       - uses: actions/setup-node@v5
         with:

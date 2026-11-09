@@ -2,7 +2,7 @@
 
 **Aplicación autónoma del equipo HAVANA NICE.** Un repositorio, una rama `main`, una PWA instalable para iPhone, una app nativa React Native para Android y un único backend Cloudflare (Workers + D1 + Durable Objects + R2). **No es HAVANA CLOUD original**. Ni su código, datos ni despliegues deben tocarse.
 
-**Estado de referencia: 09/11/2026.** Worker V2 **v66** (`87e6d28a-f1eb-43ed-974b-eb1884198533`) publicado al 100 % mediante despliegue controlado, con el refactor de ChatRoom integrado; v65 permanece como versión anterior disponible para reversión. APK Android firmada y publicada **0.0.21** (`versionCode 21`): BOOK/Recuerdos conservan la ruta canónica `/book` y ahora reciben la misma sesión nativa por un puente directo `boot → injectJavaScript → sesión validada`, sin depender de `injectedObjectJson()`. [CI general/BOOK: SUCCESS](https://github.com/Abnernoa97/havana-nice-v2/actions/runs/42571102501) y [CI APK/firma/release: SUCCESS](https://github.com/Abnernoa97/havana-nice-v2/actions/runs/42571102335). Se preserva 0.0.20 como PREVIOUS. **BOOK y Recuerdos aún pendientes de QA física: no declarar solucionado en dispositivo hasta la prueba.**
+**Estado de referencia: 09/11/2026.** Worker V2 **v66** (`87e6d28a-f1eb-43ed-974b-eb1884198533`) publicado al 100 % mediante despliegue controlado, con el refactor de ChatRoom integrado; v65 permanece como versión anterior disponible para reversión. APK Android firmada y publicada **0.0.21** (`versionCode 21`): BOOK/Recuerdos conservan la ruta canónica `/book` y ahora reciben la misma sesión nativa por un puente directo `boot → injectJavaScript → sesión validada`, sin depender de `injectedObjectJson()`. [CI general/BOOK: SUCCESS](https://github.com/Abnernoa97/havana-nice-v2/actions/runs/42571102501) y [CI APK/firma/release: SUCCESS](https://github.com/Abnernoa97/havana-nice-v2/actions/runs/42571102335). Se preserva 0.0.20 como PREVIOUS. **BOOK 3D confirmado en uso por el usuario en Android y PWA el 09/11; siguen pendientes las pruebas físicas completas de Recuerdos y de sincronización entre módulos.**
 
 ## Aplicaciones
 
@@ -11,7 +11,7 @@
 | PWA músico | `https://havana-nice-v2.pages.dev/` | Acceso autorizado por nombre y Chat PWA |
 | HOME | `/visual.html` | Calendario, Repertorio y Familia, por código diferido |
 | Administrador | `/admin.html` | Sesión propia y gestión de módulos |
-| BOOK | `/book.html` | Visor editorial 3D autorizado desde WebView |
+| BOOK | `/book` (fuente `book.html`) | Lector editorial 3D compartido, servido desde la ruta canónica de Cloudflare Pages |
 | Android | `apps/android/` | `app/NativeApp.tsx` mantiene la única sesión y HOME nativos; BOOK 3D PWA va embebido en WebView (sin segundo login) |
 
 Las entradas web son cuatro documentos HTML; los módulos no necesitan documentos/URLs independientes para **cargar su JavaScript de forma independiente**. `React.lazy`/`Suspense` difiere Calendar, Repertoire, Family, BOOK y paneles Admin. No crear sesiones separadas en cada sección. Un mismo usuario aprobado por Admin inicia sesión una vez.
@@ -23,7 +23,8 @@ apps/pwa/src/app/         puntos de entrada PWA, HOME y Admin
 apps/pwa/src/features/    chat, calendar, repertoire, family, book, admin
 apps/pwa/src/services/    API, conexión de calendario, medios y almacenamiento
 apps/pwa/public/sw.js     caché estático público, nunca respuestas privadas
-apps/android/App.tsx      único dueño de la sesión y Chat nativo
+apps/android/App.tsx      entrada mínima de Expo
+apps/android/app/NativeApp.tsx  único dueño de sesión, Chat y navegación nativa
 apps/android/features/    componentes nativos por dominio
 apps/android/services/    almacenamiento y subida nativa a R2
 packages/shared/src/     APIs, modelos, política offline/ACK, reconexión, subida por lotes
@@ -36,7 +37,7 @@ tests/, cloudflare/tests/, scripts/  comprobaciones y prevención de residuos
 
 **Chat Android/PWA:** el módulo de selección de archivos es independiente (`useNativeMediaSelection.ts` / `usePwaMediaSelection.ts`). La cola de subida secuencial y el progreso son una sola función `packages/shared/src/chat-media-batch.ts` que mantiene el original y reintenta solo lo que no se confirmó. Los transportes de R2 de Android y navegador siguen adaptados a cada plataforma; ChatRoom continúa siendo el único backend de mensajes.
 
-**Worker reorganizado:** `cloudflare/src/modules/chat/chat-room.ts` define la única clase `ChatRoom`; `chat-session.ts` contiene la verificación de sesión y los grants no se sustituyen. `cloudflare/src/shared/worker-types.ts` conserva los siete bindings y `worker-http.ts` una respuesta HTTP común no cacheable. `cloudflare/src/index.ts` exporta la clase para que Wrangler mantenga el nombre del Durable Object; este código requiere publicación controlada tras verificación del bundle canónico.
+**Worker reorganizado:** `cloudflare/src/modules/chat/chat-room.ts` define la única clase `ChatRoom`; `chat-session.ts` contiene la verificación de sesión y los grants no se sustituyen. `cloudflare/src/shared/worker-types.ts` conserva los siete bindings y `worker-http.ts` una respuesta HTTP común no cacheable. `cloudflare/src/index.ts` exporta la clase para que Wrangler mantenga el nombre del Durable Object; el Worker v66 ya está desplegado; cualquier cambio posterior requiere publicación controlada tras verificar el bundle canónico.
 
 ## Privacidad, almacenamiento y rendimiento
 

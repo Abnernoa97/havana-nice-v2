@@ -1,6 +1,6 @@
 # HAVANA NICE V2 — PLAN MAESTRO ÚNICO
 
-**Estado verificado: 8 de noviembre de 2026.** Fuente de verdad: repositorio [Abnernoa97/havana-nice-v2](https://github.com/Abnernoa97/havana-nice-v2), rama `main`. Este documento describe lo **vigente**; las versiones anteriores están en el historial de Git, sin copiar expedientes obsoletos dentro del árbol actual. Actualizar este archivo en el mismo commit de cada bloque concluido.
+**Estado verificado: 9 de noviembre de 2026.** Fuente de verdad: repositorio [Abnernoa97/havana-nice-v2](https://github.com/Abnernoa97/havana-nice-v2), rama `main`. Este documento describe lo **vigente**; las versiones anteriores están en el historial de Git, sin copiar expedientes obsoletos dentro del árbol actual. Actualizar este archivo en el mismo commit de cada bloque concluido.
 
 ## 1. Contrato irrenunciable
 
@@ -80,7 +80,7 @@ tests/ + cloudflare/tests/ + scripts/ → reglas de seguridad y CI
 | Cloudflare Pages | publica `main`; comprobar SHA/deploy tras cada cambio |
 | Worker **en vivo** | **v66** `87e6d28a-f1eb-43ed-974b-eb1884198533` al 100 %. Despliegue gradual (sin tráfico → 1 % → 10 % → 100 %); v65 `81a512bb-a383-4258-8f5b-6aacf831b9b5` sigue disponible para reversión. |
 | Worker **en código** | Refactor publicado a v66 desde el bundle canónico Wrangler `SHA-256 0f67b065b8232a9adb1902711eb8850771ba17b3363dbbcbb8b5c135f714d02d`, idéntico en CI; mantiene los siete bindings y el mismo DO. |
-| Android | APK **0.0.21** publicada [aquí](https://github.com/Abnernoa97/havana-nice-v2/releases/download/v2-android-current/HAVANA-NICE-V2-LATEST.apk); firma 0.0.20 compatible, JS integrado, `versionCode` 21 y descarga estable verificados en [CI 42571102335](https://github.com/Abnernoa97/havana-nice-v2/actions/runs/42571102335). APK 0.0.20 preservada como PREVIOUS; BOOK/Recuerdos en Android físico pendientes. |
+| Android | APK **0.0.21** publicada [aquí](https://github.com/Abnernoa97/havana-nice-v2/releases/download/v2-android-current/HAVANA-NICE-V2-LATEST.apk); firma 0.0.20 compatible, JS integrado, `versionCode` 21 y descarga estable verificados en [CI 42571102335](https://github.com/Abnernoa97/havana-nice-v2/actions/runs/42571102335). APK 0.0.20 preservada como PREVIOUS; BOOK 3D confirmado por usuario en Android, Recuerdos en QA pendiente. |
 | Colas R2 | BOOK, Calendario y baja de músicos: **0** operaciones pendientes al control |
 | Fotos personales | Calendario 4 recuerdos (3 WebP), BOOK 7 originales (0 WebP), Familia 16 archivos al control |
 
@@ -97,7 +97,7 @@ tests/ + cloudflare/tests/ + scripts/ → reglas de seguridad y CI
 - [x] **A6 Prueba offline de fragmentos PWA:** caché de chunks previamente visitados, fallo explícito de recursos no descargados y sin almacenar APIs privadas. **No equivale a validación iPhone sin conexión**.
 - [x] **A7 Datos y borrados R2 auditados:** todas las colas consultadas en 0, límites compartidos vigentes; no ejecutar borrado innecesario.
 - [x] **A8 Documentación consolidada:** un plan vigente y continuidad breve; notas obsoletas no deben quedar como segundo estado contradictorio. Git conserva la trazabilidad de cambios antiguos.
-- [x] **A8b Estado operativo alineado (09/11):** README, continuidad y Plan Maestro reflejan Worker v66 desplegado y APK 0.0.21 firmada/publicada, **sin QA física de BOOK/Recuerdos aún**. No se tocó código, sesión, D1, R2 ni producción ajena.
+- [x] **A8b Estado operativo alineado (09/11):** README, continuidad y Plan Maestro reflejan Worker v66 desplegado y APK 0.0.21 firmada/publicada, **BOOK en Android/PWA confirmado por usuario; Recuerdos y QA entre módulos pendientes**. No se tocó código, sesión, D1, R2 ni producción ajena.
 - [x] **C5 Músicos / HOME:** directorio privado funcional con nombres reales de integrantes activos, en PWA y Android; usa la autoridad D1 y eventos privados ya existentes de Familia, sin duplicar tabla, sesiones ni Worker. Perfiles ampliados aún pendientes.
 - [x] **C4 Repertorio:** panel Admin descarta resultados de consultas antiguas y detecta expiraciones HTTP 401 originadas por Calendario. Sin cambiar tablas ni listas de canciones.
 - [x] **C3 Familia / Multimedia:** recuperación de WebSocket atascado al cambiar de red en iPhone y Android mediante timeout compartido; pruebas de paridad añadidas. Sin cambiar subida R2.
@@ -109,13 +109,9 @@ tests/ + cloudflare/tests/ + scripts/ → reglas de seguridad y CI
 - [ ] **P2 Chat estructural profundo:** extracción por capas de socket y estado en PWA/nativo **sin duplicar dueño de sesión**; someter cada cambio a CI y pruebas reales de reconexión.
 - [ ] **P3 Offline físico:** modo avión, regresar con red y primer arranque de cada módulo en iPhone PWA; validar que el Service Worker no cargue JS antiguo.
 - [ ] **P4 Colas persistentes:** si en el futuro quedan objetos pendientes tras fallo R2, diseñar reintento seguro desde rutas Admin sin introducir tareas de pago ni borrar activos. Ahora las colas están vacías.
-- [x] **P5 Nueva APK acumulativa:** lote explícito **0.0.14 / versionCode 14** compilado, firmado y publicado; controles de APK con JS incorporado, firma anterior y versión mayor **PASS** en [CI Android 42451609250](https://github.com/Abnernoa97/havana-nice-v2/actions/runs/42451609250). 0.0.13 preservada como PREVIOUS. **No afirmar que esté instalada**: actualización sobre el equipo y pruebas nativas quedan en P3.
 - [x] **P6a Familia Android — render de galería:** un `FlatList` vertical con tres columnas, miniaturas virtualizadas en lotes y datos memoizados; HOME elimina el `ScrollView` exterior únicamente en Familia para preservar la virtualización. El visor modal usa el video nativo existente, con fuentes R2 privadas y sin otro motor. Pendiente QA en teléfono.
-- [x] **P5b APK 0.0.15:** lote acumulativo firmado, compilado y publicado en V2 Release. Firma anterior compatible, `versionCode 15` > 14, JS incorporado, enlace estable verificado y 0.0.14 preservada como `PREVIOUS` ([CI Android 42516517909](https://github.com/Abnernoa97/havana-nice-v2/actions/runs/42516517909)). **Prueba física BOOK, Chat/Familia y mantenimiento de sesión pendiente; no afirmar instalada.**
 - [ ] **P6 Músicos / Multimedia:** completar y probar funcionalidad y sincronización antes de estética One UI definitiva.
 - [ ] **P7 Métricas reales:** medir tiempos de apertura, descargas por módulo, rendimientos Chat/medios y memoria Android; no inventar números de velocidad.
-
-- [x] **BOOK Android: prevención de pantalla blanca (08/11):** `book.html` ahora presenta un estado de carga visible antes del JavaScript; el puente `native-book-main.tsx` inicia sesión privada y render antes de cargar bajo demanda el mismo `BookReader`/PageFlip, y captura errores de carga con reintento visible. **Cambio exclusivo PWA de entrada BOOK**, sin tocar React Native, archivos, Calendar ni D1/R2. Su efecto en el Android del usuario necesita prueba real; no declarado resuelto hasta entonces.
 
 ### Android — organización nativa consolidada (08/11)
 
@@ -125,14 +121,11 @@ tests/ + cloudflare/tests/ + scripts/ → reglas de seguridad y CI
 - [x] **Auditoría de estructura:** árbol exacto y detección de código huérfano / importaciones rotas en `scripts/check-structure.mjs`. Se actualizaron las pruebas para inspeccionar el controlador real, no la entrada reducida.
 - [x] **Chat Android, primera optimización de render:** mensajes con `FlatList` virtualizada (`windowSize=7`, lotes limitados) para no montar todas las fotos/videos del historial; claves estables, paginación manual y posición visible preservadas; no cambiar sesión, D1, R2 ni caché. Requiere QA física de desplazamiento/60 FPS.
 - [ ] **Optimización posterior de Chat:** el controlador sigue siendo grande, pero el timeline YA usa `FlatList`; dividir el controlador restante únicamente tras comprobar desplazamiento, gestos, multimedia y memoria en Android real. No confundir organización con FPS medidos.
-- [x] **BOOK Android, diagnóstico y recuperación:** el puente JS confirma primero su montaje y luego la recepción del token con un ACK sin credenciales. Android valida el documento principal, vuelve a solicitar READY tras cargar, detecta falta de respuesta en 12 s y reconstruye la WebView si Android termina el proceso. El mismo `BookReader`/PageFlip continúa siendo el único motor. La corrección requiere nueva APK y QA físico antes de declarar resuelta la pantalla blanca.
-- [x] **BOOK Android PWA embebida (código):** Android mantiene HOME, navegación y la misma sesión ya autorizada; BOOK y Recuerdos se abren dentro de WebView con el PageFlip ORIGINAL de la PWA, recibiendo el token mediante `injectedJavaScriptObject`. Sin Chrome, ventanas externas, segundo login, query con token, almacenamiento web ni secuencia asíncrona de confirmaciones. PWA controla exclusivamente el 3D; Android conserva lo demás. La versión 0.0.16 publicada todavía tiene el paginador antiguo y no recibe este cambio hasta una APK nueva.
-- [x] **BOOK Android APK 0.0.16 correctiva:** compilada, firmada y publicada en V2 Release; `versionCode 16`, JavaScript integrado, certificado compatible y enlace estable verificados ([Android CI 42527090677](https://github.com/Abnernoa97/havana-nice-v2/actions/runs/42527090677)); 0.0.15 intacta como `PREVIOUS` (SHA-256 `388fe237...90b8`). **Prueba en dispositivo pendiente:** ver las 4 fotos del evento, navegar páginas y abrir BOOK; no afirmar instalada ni 3D accesible en navegador sin sesión PWA autorizada.
-- **Publicación:** las reorganizaciones y optimizaciones ya se acumularon y publicaron en la APK 0.0.15 firmada; pendiente validación real de usuario. Sin cambios a PWA, Worker, D1 ni R2 en este bloque.
 
 ## 4.1. Matriz de aceptación física antes de declarar sincronización 100 %
 
-- [ ] **Instalación/QA:** actualizar Android 0.0.20 a **0.0.21** encima, sin desinstalar; comprobar Chat, sesión, Familia y BOOK/Recuerdos 3D integrados. Certificado/JS del lote **verificados** en GitHub Actions; UX física por confirmar.
+- [x] **BOOK 3D Android/PWA:** el usuario confirmó que abrió y que el giro hacia atrás y el deslizamiento mejorado funcionan con 0.0.21 y actualizaciones web.
+- [ ] **QA restante Android/PWA:** verificar Recuerdos de Calendario y sincronización real de Chat/Familia/Calendario; no confundir BOOK validado con toda la aplicación validada.
 - [ ] **Calendario Admin ↔ PWA ↔ Android:** crear/editar fecha real de prueba, cambiar destinatarios y eliminar únicamente esa fecha de prueba; observar notificación instantánea y que un músico desasignado deja de verla.
 - [ ] **Repertorio:** editar catálogo y lista por fecha desde Admin; comprobar actualización en ambos clientes y que quitar fecha invalida su lista.
 - [ ] **Chat:** texto, respuestas, reacciones, borrado definitivo, cinco fotos/videos combinados y reconexión al perder/recuperar red; corroborar que nada reaparece tras borrado.
@@ -154,7 +147,7 @@ tests/ + cloudflare/tests/ + scripts/ → reglas de seguridad y CI
 
 ## 6. BOOK y Recuerdos 3D · una sola entrada Android (09/11/2026)
 
-- [x] **Sensibilidad del deslizamiento 3D (09/11):** reportado doblez de la esquina que regresaba a la misma página. Reproducido por prueba nueva de swipe corto (~62 px) en Chrome móvil [42575174531](https://github.com/Abnernoa97/havana-nice-v2/actions/runs/42575174531). Corrección en único `BookReader.tsx`: un gesto horizontal suficiente termina el mismo pliegue a través del lomo antes de liberar el dedo; gesto insuficiente sigue cancelable, scroll vertical intacto. Animación 780 → 650 ms. [CI completa SUCCESS](https://github.com/Abnernoa97/havana-nice-v2/actions/runs/42575432656), PWA publicada en Pages commit `a931343c`. **QA física de tacto y fluidez en Android/iPhone pendiente, sin nueva APK ni cambios a D1/R2/Worker.**
+- [x] **Sensibilidad del deslizamiento 3D (09/11):** reportado doblez de la esquina que regresaba a la misma página. Reproducido por prueba nueva de swipe corto (~62 px) en Chrome móvil [42575174531](https://github.com/Abnernoa97/havana-nice-v2/actions/runs/42575174531). Corrección en único `BookReader.tsx`: un gesto horizontal suficiente termina el mismo pliegue a través del lomo antes de liberar el dedo; gesto insuficiente sigue cancelable, scroll vertical intacto. Animación 780 → 650 ms. [CI completa SUCCESS](https://github.com/Abnernoa97/havana-nice-v2/actions/runs/42575432656), PWA publicada en Pages commit `a931343c`. **El usuario confirmó el 09/11 que la fluidez mejoró considerablemente. Pruebas de Recuerdos y cobertura iPhone pendientes; sin APK nueva ni cambios a D1/R2/Worker.**
 
 - [x] **Retorno de páginas 3D compartido (09/11):** bug reproducido en Chrome antes de corregirlo: `Página anterior` no cambiaba hoja. `page-flip@2.0.7` calcula `x=10` para `flipPrev` y, en un libro centrado con `disableFlipByClick:true`, la esquina queda fuera del libro. Solución en el **único** `BookReader.tsx`: enviar la esquina física `rect.left+10` / `rect.top+rect.height-2` al mismo controlador PageFlip. La prueba [42573769336 SUCCESS](https://github.com/Abnernoa97/havana-nice-v2/actions/runs/42573769336) verifica avance, retroceso hasta portada, swipe inverso, scroll vertical y una sola instancia en móvil/escritorio. Pages publicó `d4b866c` correctamente; **sin APK nueva**. QA en teléfono pendiente.
 
@@ -163,6 +156,17 @@ tests/ + cloudflare/tests/ + scripts/ → reglas de seguridad y CI
 - [x] **Sustitución arquitectónica implementada en `main`:** un solo puente en memoria: página registra listener → emite `boot` → Android entrega contexto mediante `injectJavaScript`, comprobando origen y ruta → PWA valida el token existente y abre el único PageFlip. Se elimina dependencia del objeto inyectado y el bucle de 30 reintentos. Sin login adicional, token en URL o almacenamiento persistente.
 - [x] **CI completa 0.0.21:** TypeScript, permisos, Android/PWA, PageFlip Chrome con el mismo JS nativo de entrega de sesión, rutas privadas, Worker dry-run, PWA y export nativo: [42570903423 SUCCESS](https://github.com/Abnernoa97/havana-nice-v2/actions/runs/42570903423).
 - [x] **Entrega Android 0.0.21 publicada:** `versionCode 21`, JS integrado, firma anterior compatible, enlace estable verificado y 0.0.20 preservada como PREVIOUS: [APK SUCCESS 42571102335](https://github.com/Abnernoa97/havana-nice-v2/actions/runs/42571102335), [CI general SUCCESS 42571102501](https://github.com/Abnernoa97/havana-nice-v2/actions/runs/42571102501).
-- [ ] **QA física Android 0.0.21:** instalar encima de 0.0.20, verificar páginas BOOK y Recuerdos, regreso y sesión. No marcar funcionamiento real sin evidencia en teléfono. Chat, Repertorio, Familia, Calendario, Worker, D1 y R2 intocables.
+- [x] **BOOK 3D Android 0.0.21:** usuario confirmó apertura, sesión, retroceso y fluidez desde la PWA compartida.
+- [ ] **Recuerdos / regresión integral:** probar páginas de una fecha completada y retorno a Calendario, además de navegación nativa y reconexión. Chat, Repertorio, Familia, Worker, D1 y R2 intocables.
 
 Versiones y pruebas anteriores se consultan en Git; no repetir una bitácora cronológica en el Plan Maestro.
+
+## 7. Limpieza estructural y línea única (09/11/2026)
+
+- [x] **Git:** sólo `main`, sin PR abiertos. Dos workflows distintos y necesarios: verificación general y APK por lote expresamente aprobado.
+- [x] **Sin código fuente huérfano conocido:** `check:structure` recorre importaciones normales y lazy de PWA, Android, Worker y paquete compartido; la CI vigente es verde. Se conserva la historia de migraciones D1: no es basura.
+- [x] **Sin instrucciones de versiones obsoletas:** retiradas de este Plan Maestro las notas ejecutables de APK 0.0.14–0.0.16 y el puente `injectedJavaScriptObject` sustituido. La trazabilidad permanece en el historial Git.
+- [x] **Nueva protección de una línea:** la CI consulta directamente GitHub y falla si aparecen ramas adicionales a `main` o PR abiertos. Se conserva el mismo workflow, no se crea otro.
+- [ ] **Refactor profundo de Chat:** `apps/pwa/src/app/App.tsx` y `apps/android/app/NativeApp.tsx` siguen siendo controladores grandes; separar responsabilidades sólo con pruebas de sesión, reconexión y multimedia. No mover código por estética ni arriesgar datos.
+- [ ] **QA física de integración:** Recuerdos/Calendario, Chat, Repertorio y Familia entre Admin/PWA/Android. Aún no afirmar sincronización total.
+

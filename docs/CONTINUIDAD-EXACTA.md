@@ -1,13 +1,13 @@
 # HAVANA NICE V2 — CONTINUIDAD EXACTA
 
-**Fecha de referencia: 08/11/2026.** La descripción vigente y la lista única de pendientes están en [PLAN-MAESTRO.md](./PLAN-MAESTRO.md). No guardar otro plan paralelo: cualquier modificación debe actualizar aquel tablero. El historial completo de implementación se consulta en Git, no en archivos obsoletos dentro de la app.
+**Fecha de referencia: 09/11/2026.** La descripción vigente y la lista única de pendientes están en [PLAN-MAESTRO.md](./PLAN-MAESTRO.md). No guardar otro plan paralelo: cualquier modificación debe actualizar aquel tablero. El historial completo de implementación se consulta en Git, no en archivos obsoletos dentro de la app.
 
 ## Identificación precisa
 
-- Repositorio: `Abnernoa97/havana-nice-v2`, única rama `main`; en la auditoría, PRs abiertos **0**. PWA: `https://havana-nice-v2.pages.dev`; acceso habitual de músico `/`, vista visual `/visual.html`, Admin `/admin.html`, BOOK `/book.html`.
+- Repositorio: `Abnernoa97/havana-nice-v2`, única rama `main`; en la auditoría, PRs abiertos **0**. PWA: `https://havana-nice-v2.pages.dev`; acceso habitual de músico `/`, vista visual `/visual.html`, Admin `/admin.html`, BOOK canónico `/book` (`book.html` en el código fuente).
 - Worker único `havana-nice-v2-dev` (en Cloudflare bajo cuenta y proyecto V2, no HAVANA CLOUD). **Versión viva v66:** `87e6d28a-f1eb-43ed-974b-eb1884198533` al 100 %; refactor de ChatRoom desplegado desde bundle Wrangler verificado. v65 (`81a512bb-a383-4258-8f5b-6aacf831b9b5`) se conserva para reversión.
 - D1 única `6a4abd3a-c01b-4d4f-b0ed-49f7eaca0cc5`. Bucket R2 único privado `havana-nice-v2-media` → `MEDIA_BUCKET`. DO `CHAT_ROOMS` clase `ChatRoom` y `CALENDAR_ROOMS` clase `CalendarRoom`. Siete bindings conservados; credencial Admin solo secreto de Cloudflare, nunca fuente.
-- Android package ID `com.havananice.v2`; APK más reciente publicada **0.0.21**, `versionCode 21`, firmada y compatible con 0.0.20 según CI; corrige sesión nativa en BOOK y Recuerdos mediante puente directo tras `boot`. **Instalación física sobre 0.0.20, sesión y revista 3D pendientes.** Solo se crea una nueva versión mediante lote explícitamente autorizado.
+- Android package ID `com.havananice.v2`; APK más reciente publicada **0.0.21**, `versionCode 21`, firmada y compatible con 0.0.20 según CI; corrige sesión nativa en BOOK y Recuerdos mediante puente directo tras `boot`. **Usuario confirmó BOOK en Android 0.0.21 y PWA, incluidos retroceso y mayor fluidez del giro. Recuerdos y QA integral pendientes.** Solo se crea una nueva versión mediante lote explícitamente autorizado.
 - GitHub Actions: exactamente dos workflows, `.github/workflows/v2-foundation-check.yml` y `v2-android-apk.yml`. CI verde de Android 0.0.21: [42571102335](https://github.com/Abnernoa97/havana-nice-v2/actions/runs/42571102335); CI general/BOOK: [42571102501](https://github.com/Abnernoa97/havana-nice-v2/actions/runs/42571102501). La exportación Android de la CI general **no** publica APK; la versión firmada se libera únicamente mediante el workflow de lote.
 
 ## Principios no negociables
@@ -22,7 +22,7 @@
 
 `apps/pwa/src/app/App.tsx`: dueño de sesión músico, controlador Chat web y navegación HOME. `VisualApp.tsx` y sus Calendar/Repertoire/Family son lazy. Admin en `features/admin/AdminChatAccess.tsx` es único dueño de sesión Administrador; sus pestañas son lazy. BOOK: `features/book/BookReader.tsx` + `book-image-optimizer.ts`. Calendario de recuerdos: `features/calendar/CalendarMemories.tsx` y `AdminCalendarMemories.tsx`, el editor sólo monta cuando se abre una fecha. El Service Worker cachéa solo shells/recursos públicos y evita privadas.
 
-`apps/android/App.tsx`: entrada reducida; `apps/android/app/NativeApp.tsx` es el único dueño de sesión y Chat nativo, con navegación `NativeMemberHome`. Módulos en `features/{calendar,repertoire,family,book,chat,musicians}`. El BOOK nativo usa WebView autorizado hacia `/book.html`. Control del picker separado en `features/chat/useNativeMediaSelection.ts`; PWA tiene `features/chat/usePwaMediaSelection.ts`.
+`apps/android/App.tsx`: entrada reducida; `apps/android/app/NativeApp.tsx` es el único dueño de sesión y Chat nativo, con navegación `NativeMemberHome`. Módulos en `features/{calendar,repertoire,family,book,chat,musicians}`. El BOOK nativo abre la ruta canónica `/book` y recibe la sesión existente tras `boot`, mediante un único puente en memoria. Control del picker separado en `features/chat/useNativeMediaSelection.ts`; PWA tiene `features/chat/usePwaMediaSelection.ts`.
 
 `packages/shared/src/index.ts`: contrato compartido, importador de `chat-media-batch.ts` para envíos originales de ambos sistemas, Chat offline/outbox/ACK, reconexión, display, APIs de Calendar, R2, Repertorio y BOOK. El guard `scripts/check-structure.mjs` valida también este paquete y resuelve importaciones ESM/TS.
 
@@ -36,14 +36,14 @@
 - Colas de borrado de BOOK, recuerdos y bajas de músicos: cero pendientes; reservas R2 en vuelo: cero. Si hay errores R2 futuros, revisar persistencia y recuperación segura sin cron innecesario.
 - Chat multimedia refactor: Android y PWA tienen selectores separados, subida original con los mismos transportes, y **una** política compartida de progreso/confirmación; las colas fallidas siguen disponibles para reintento.
 - Worker refactor: una clase Durable Object y un `index.ts` delgado. **CI SUCCESS** para Worker dry-run, binding checks, pruebas privadas, Chrome BOOK, PWA y export Android. Worker v66 ya está desplegado tras validación de bundle SHA, siete bindings y smoke tests; no volver a desplegar sin necesidad verificada.
-- No confundir compilación + pruebas con experiencia física. En iPhone la navegación modular fue confirmada por usuario. Modo avión con primera apertura de lazy chunks y nuevo APK Android todavía no están validados.
+- No confundir compilación + pruebas con experiencia física. En iPhone la navegación modular fue confirmada por usuario; el lector BOOK 3D Android/PWA también fue confirmado después de la corrección. Siguen pendientes modo avión, Recuerdos y QA integral de Chat/Familia/Calendario.
 
 ## Próximos pasos en orden
 
 1. **Worker v66 ya publicado y verificado:** conservar los siete bindings y v65 como opción de reversión; no tocar Worker/D1/R2 durante QA física de Android 0.0.21.
 2. Continuar segmentando los controladores Chat nativo/PWA (sobre todo sockets y estado), sin mover ni duplicar autoridad de sesión. Prueba CI y reconexión con pérdida de internet.
 3. Comprobar cache offline PWA de módulos abiertos/no abiertos en iPhone real; conservar semántica y no cachear APIs ni archivos privados.
-4. **Validar físicamente APK 0.0.21 sin desinstalar la 0.0.20:** misma sesión, BOOK y Recuerdos 3D, Chat/Familia/Calendario; próxima APK acumulativa sólo después de reunir fallos comprobados, manteniendo la firma.
+4. **Conservar APK 0.0.21:** BOOK y el gesto 3D están confirmados por el usuario; verificar Recuerdos y sincronización Chat/Familia/Calendario en pruebas independientes. La próxima APK requiere un lote explícito, manteniendo la firma.
 5. Completar Músicos y Multimedia, después detalles One UI y diseño; medir tiempos reales antes de prometer velocidad.
 
 ## Regla de trabajo del siguiente chat

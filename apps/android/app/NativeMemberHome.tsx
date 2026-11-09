@@ -13,7 +13,7 @@ type Props={
   onNavigate:(screen:MemberScreen)=>void;
 };
 // HOME is a navigation surface. Authentication and the native Chat remain
-// owned by App.tsx: mounting HOME never issues, copies or revokes a token.
+// owned by app/NativeApp.tsx: mounting HOME never issues, copies or revokes a token.
 export default function NativeMemberHome({displayName,token,active,onNavigate}:Props){
   const selected=MEMBER_MODULES.find(module=>module.id===active);
   const content=<>
