@@ -16,7 +16,9 @@ test('Existing Android login and Chat engine stay in one mounted App',()=>{
  assert.match(source,/session&&activeScreen!=='chat'&&<NativeMemberHome/);
  assert.match(source,/session && activeScreen!=='chat' && styles\.inactiveChat/);
  assert.match(read('apps/android/styles/chat-styles.ts'),/inactiveChat:\{display:'none'\}/);
- assert.match(source,/accessibilityLabel="Volver a Inicio"/);
+ assert.match(source,/BackHandler.addEventListener\\('hardwareBackPress'/);
+ assert.match(source,/onMoveShouldSetPanResponderCapture/);
+ assert.doesNotMatch(source,/accessibilityLabel="Volver a Inicio"/);
  assert.doesNotMatch(read('apps/android/app/NativeMemberHome.tsx'),/startNamedChatSession|AsyncStorage|WebView|session\.token|fetch\(/);
 });
 test('Android styles live outside Chat controller without changing navigation or IME safety',()=>{
