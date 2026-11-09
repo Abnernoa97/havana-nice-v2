@@ -66,6 +66,13 @@ export default function App() {
   const [restoringAccess,setRestoringAccess] = useState(true);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [draft, setDraft] = useState('');
+  const draftInput=useRef<HTMLTextAreaElement|null>(null);
+  useLayoutEffect(()=>{
+    const field=draftInput.current;
+    if(!field)return;
+    field.style.height='0px';
+    field.style.height=Math.min(132,Math.max(46,field.scrollHeight))+'px';
+  },[draft]);
   const [composerPanel,setComposerPanel]=useState<'attachments'|'emojis'|null>(null);
   const {selectedMedia,setSelectedMedia,mediaError,setMediaError,mediaQueue,
     photosPicker,videoPicker,cameraPicker,
@@ -831,7 +838,8 @@ export default function App() {
                 onClick={()=>setComposerPanel(p=>p==='emojis'?null:'emojis')}>
                 <ComposerIcon name="emoji" size={25}/>
               </button>
-              <input aria-label="Escribir mensaje" disabled={savingEdit} value={draft} maxLength={2000}
+              <textarea aria-label="Escribir mensaje" ref={draftInput}
+                rows={1} disabled={savingEdit} value={draft} maxLength={2000}
                 onChange={event=>{typeText(event.target.value);setComposerPanel(null);}}
                 placeholder={connection==='en vivo'?'Mensaje':'Sin conexión: se enviará después…'}/>
               <button type="button" className="chat-icon-button" aria-label="Adjuntar fotografía o video"
