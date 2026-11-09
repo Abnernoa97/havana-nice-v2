@@ -177,13 +177,16 @@ jobs:
       - name: Verify one Chat message actions policy across iPhone and Android
         run: node --experimental-strip-types --test tests/chat-menu-policy.test.mjs tests/chat-reaction-burst.test.mjs tests/chat-fullscreen-back.test.mjs
 
+      - name: Keep Chat media and composer unmounted outside Chat without duplicating the engine
+        run: node --test tests/chat-idle-isolation.test.mjs
+
       - name: Verify one Chat reconnect and session expiry policy across PWA and Android
         run: node --experimental-strip-types --test tests/chat-connection-policy.test.mjs tests/chat-presence-policy.test.mjs
 
       - name: Verify single shared Chat event receipt and reaction reconciliation
         run: node --experimental-strip-types --test tests/chat-events-policy.test.mjs
 
-      - name: Verify one Chat history pagination and search request gate across both clients
+      - name: Verify one Chat history pagination and request gate across both clients
         run: node --experimental-strip-types --test tests/chat-history-policy.test.mjs
 
       - name: Verify one offline snapshot policy with original PWA and Android storage keys
