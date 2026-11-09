@@ -1,7 +1,7 @@
 {
   "approved": true,
   "releaseMode": "explicit-batch",
-  "version": "0.0.21",
-  "versionCode": 21,
-  "notes": "Correctiva autorizada por el usuario 09/11/2026 para BOOK/Recuerdos en V2. La 0.0.20 ya abre la PWA /book, pero Android no entrega un contexto válido mediante injectedJavaScriptObject/injectedObjectJson. La 0.0.21 conserva la misma sesión nativa y sustituye ese mecanismo por entrega directa en memoria tras evento boot desde el lector React, con comprobación estricta de origen/ruta y recepción validada. Elimina bucle antiguo de reintentos, sin navegación externa, sin token en URL o almacenamiento, sin nuevos logins ni cambios a Chat, Repertorio, Familia, Calendario, PageFlip, D1/R2/Worker o HAVANA CLOUD. Tests 42570903423 SUCCESS incluido Chrome ejecutando el JS real de transferencia. Mantener certificado anterior y 0.0.20 como PREVIOUS. QA física de ambas vistas pendiente; no declarar arreglada hasta verla."
+  "version": "0.0.22",
+  "versionCode": 22,
+  "notes": "Lote nativo acumulativo autorizado por el usuario 09/11/2026 después de CI 42654446562 SUCCESS y Gradle debug 42651956006 SUCCESS. Integra Expo SDK 58.0.23, React Native 0.88.1, expo-sqlite 58.0.15, expo-video 58.0.13, dependencias bloqueadas con npm y seguridad 5 avisos moderados / cero altos. Incorpora refactor conservador de Chat: vistas de selección multimedia separadas, una sola política compartida de lectura, presencia y reacciones; mantiene una sola sesión, un WebSocket por cliente, R2, D1 y todos los permisos. No cambia el motor BOOK 3D ni su puente Android 0.0.21, no altera Familia/Calendario/Repertorio/Worker y no toca HAVANA CLOUD. Reemplazar APK únicamente tras compilación release firmada y verificación de firma coincidente, preservando 0.0.21 como PREVIOUS. QA física y revisión visual de HOME pendientes; estética se desarrollará en paquete independiente y solo con nueva firma tras aprobarla."
 }
