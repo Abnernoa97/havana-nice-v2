@@ -101,7 +101,8 @@ test('Android Familia reads the same albums, authorized grant URLs and real BOOK
  const pwaRoute=read('apps/pwa/src/app/PwaReaderRoute.tsx');
  const reader=read('apps/pwa/src/features/book/BookReader.tsx');
  assert.match(native,/<NativeBook token=\{token\} refreshKey=\{bookTick\} onClose=\{back\}\/>/);
- assert.match(book,/injectedJavaScriptObject=\{nativeContext\}/);
+ assert.match(book,/bookContextDeliveryScript\(nativeContext\)/);
+ assert.doesNotMatch(book,/injectedJavaScriptObject=/);
  assert.match(book,/<WebView<object>/);
  assert.match(book,/source=\{\{uri:READER\}\}/);
  assert.doesNotMatch(book,/Linking\.|Alert\.alert|havana-v2-book-auth|pwaReaderUrl/);

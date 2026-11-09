@@ -4,12 +4,12 @@ import {parseNativeBookContext,type NativeBookContext} from './native-book-conte
 import './native-book-reader.css';
 
 // The exact same lazily loaded PageFlip renderer as the authorized PWA.
-// No browser login, second renderer, URL token or asynchronous auth messages.
+// No browser login, second renderer, URL token or persistent browser storage.
+// One direct boot -> context delivery from the authorized Android shell.
 const MemberBook=lazy(()=>import('../features/book/MemberBook'));
 const CalendarMemories=lazy(()=>import('../features/calendar/CalendarMemories'));
 
 type RNWindow=Window&{ReactNativeWebView?:{
- injectedObjectJson?:()=>string;
  postMessage?:(message:string)=>void;
 }};
 // One-way rendering telemetry: no token, login or auth confirmation.
@@ -68,32 +68,31 @@ class ReaderBoundary extends React.Component<
   return this.props.children;
  }
 }
-// Android may deliver the initial object after the PWA module starts.
-// Retry the SAME injected object briefly, never reauthorize or persist it.
-function readNativeContext():NativeBookContext|null{
- try{return parseNativeBookContext(
-  (window as RNWindow).ReactNativeWebView?.injectedObjectJson?.());}
- catch{return null;}
-}
+// The receiving listener is installed BEFORE Android receives the boot signal.
+// This avoids the Android-specific injectedObjectJson() race entirely.
 function PrivateNativeReader(){
  useReaderDisplayStatus();
- useEffect(()=>reportReaderPhase('boot'),[]);
- const [context,setContext]=useState<NativeBookContext|null>(readNativeContext);
+ const [context,setContext]=useState<NativeBookContext|null>(null);
  const [bridgeUnavailable,setBridgeUnavailable]=useState(false);
- useEffect(()=>{if(context)reportReaderPhase('session');},[context]);
  useEffect(()=>{
-  if(context)return;
-  let attempts=0;
-  let timer:ReturnType<typeof setTimeout>|null=null;
-  const retry=()=>{
-   const received=readNativeContext();
-   if(received){setContext(received);return;}
-   if(++attempts>=30){setBridgeUnavailable(true);return;}
-   timer=setTimeout(retry,150);
+  let received=false;
+  const expiry=setTimeout(()=>{if(!received)setBridgeUnavailable(true);},8000);
+  const onContext=(event:Event)=>{
+   const detail=(event as CustomEvent<unknown>).detail;
+   const next=parseNativeBookContext(typeof detail==='string'?detail:null);
+   if(!next||received)return;
+   received=true;clearTimeout(expiry);
+   setBridgeUnavailable(false);
+   setContext(next);
   };
-  timer=setTimeout(retry,150);
-  return()=>{if(timer!==null)clearTimeout(timer);};
- },[context]);
+  window.addEventListener('havana-v2-book-context',onContext);
+  reportReaderPhase('boot');
+  return()=>{
+   clearTimeout(expiry);
+   window.removeEventListener('havana-v2-book-context',onContext);
+  };
+ },[]);
+ useEffect(()=>{if(context)reportReaderPhase('session');},[context]);
  const [tick,setTick]=useState(0);
  useEffect(()=>{
   const refresh=()=>setTick(t=>t+1);

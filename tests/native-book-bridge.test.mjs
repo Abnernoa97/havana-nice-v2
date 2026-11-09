@@ -1,6 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
+import {runInNewContext} from 'node:vm';
+import {BOOK_ORIGIN,BOOK_READER_URL,bookContextDeliveryScript,trustedBookUrl} from '../apps/android/features/book/book-bridge.ts';
 import {parseNativeBookContext} from '../apps/pwa/src/app/native-book-context.ts';
 const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
 const token='A'.repeat(64);
@@ -18,11 +20,15 @@ test('Android opens the PWA 3D directly in its own shell with the existing login
  assert.match(n,/readerWatchdog/);
  assert.match(n,/ActivityIndicator/);
  assert.match(n,/message.type!=='havana-v2-book-status'/);
- assert.match(n,/injectedJavaScriptObject=\{nativeContext\}/);
+ assert.doesNotMatch(n,/injectedJavaScriptObject=/);
+ assert.match(n,/bookContextDeliveryScript\(nativeContext\)/);
+ assert.match(n,/\.injectJavaScript\(bookContextDeliveryScript/);
  assert.match(n,/source=\{\{uri:READER\}\}/);
- assert.match(n,/const READER=ORIGIN\+'\/book';/);
- assert.match(n,/url\.pathname==='\/book'/);
- assert.doesNotMatch(n,/url\.pathname==='\/book\.html'/);
+ assert.match(n,/const READER=BOOK_READER_URL;/);
+ assert.equal(BOOK_READER_URL,BOOK_ORIGIN+'/book');
+ assert.equal(trustedBookUrl(BOOK_READER_URL),true);
+ assert.equal(trustedBookUrl(BOOK_ORIGIN+'/book.html'),false);
+ assert.equal(trustedBookUrl('https://untrusted.example/book'),false);
  assert.match(n,/location\.pathname==="\/book"/);
  assert.match(n,/token,eventId:calendarEventId\|\|''/);
  assert.match(n,/onShouldStartLoadWithRequest=\{event=>trustedBookUrl\(event.url\)\}/);
@@ -37,11 +43,12 @@ test('The embedded PWA uses the original PageFlip and initial native context, no
  const p=read('apps/pwa/src/app/native-book-main.tsx');
  const h=read('apps/pwa/book.html');
  const reader=read('apps/pwa/src/features/book/BookReader.tsx');
- assert.match(p,/\.ReactNativeWebView\?\.injectedObjectJson\?\.\(\)/);
+ assert.doesNotMatch(p,/injectedObjectJson|attempts>=30/);
+ assert.match(p,/window.addEventListener\('havana-v2-book-context',onContext\)/);
+ assert.match(p,/reportReaderPhase\('boot'\)/);
  assert.match(p,/parseNativeBookContext\(/);
  assert.match(p,/const MemberBook=lazy/);
- assert.match(p,/readNativeContext\(\)/);
- assert.match(p,/attempts>=30/);
+ assert.match(p,/parseNativeBookContext\(typeof detail==='string'\?detail:null\)/);
  assert.match(p,/\.hn-book-empty:not\(\[role\]\)/);
  assert.match(p,/reportReaderStatus\(state\)/);
  assert.match(p,/reportReaderPhase\('boot'\)/);
@@ -58,6 +65,26 @@ test('The embedded PWA uses the original PageFlip and initial native context, no
  assert.match(h,/frame-src 'none'/);
  assert.match(h,/script-src 'self'/);
  assert.doesNotMatch(p,/startNamedChatSession|restoreNamedChatSession|window\.location\.search|localStorage|new WebSocket/);
+});
+test('Android session delivery only targets the trusted BOOK origin and returns event metadata',()=>{
+ const payload={token,eventId:event,title:'Recuerdo "A" <B>'};
+ const delivered=[];
+ const js=bookContextDeliveryScript(payload);
+ class NativeEvent{constructor(type,options){this.type=type;this.detail=options.detail;}}
+ const window={dispatchEvent:e=>delivered.push(e)};
+ const normal={window,location:{origin:BOOK_ORIGIN,pathname:'/book',search:'',hash:''},CustomEvent:NativeEvent};
+ runInNewContext(js,normal);
+ assert.equal(delivered.length,1);
+ assert.deepEqual(JSON.parse(delivered[0].detail),payload);
+ assert.ok(!js.includes('localStorage')&&!js.includes('document.cookie'));
+ for(const wrong of [{origin:'https://untrusted.example',pathname:'/book'},
+  {origin:BOOK_ORIGIN,pathname:'/admin'},
+  {origin:BOOK_ORIGIN,pathname:'/book',search:'?token=bad'}]){
+  delivered.length=0;
+  runInNewContext(js,{window,CustomEvent:NativeEvent,location:{
+   origin:wrong.origin,pathname:wrong.pathname,search:wrong.search||'',hash:''}});
+  assert.equal(delivered.length,0);
+ }
 });
 test('One-time native object strictly validates the event and token without persistence',()=>{
  assert.deepEqual(parseNativeBookContext(JSON.stringify({token,eventId:'',title:''})),

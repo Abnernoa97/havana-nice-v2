@@ -1,26 +1,17 @@
 import React,{useEffect,useMemo,useRef,useState} from 'react';
 import {ActivityIndicator,AppState,Modal,Pressable,StyleSheet,Text,View} from 'react-native';
 import {WebView} from 'react-native-webview';
+import {BOOK_ORIGIN,BOOK_READER_URL,bookContextDeliveryScript,trustedBookUrl} from './book-bridge';
 
 // Android owns the ONE musician session and native navigation. The existing
-// PWA BookReader owns the ONE 3D PageFlip engine. The initial WebView object
-// delivers the same session before React boot, without URLs, browser logins,
-// persistent web storage or async authorization handshake races.
-const ORIGIN='https://havana-nice-v2.pages.dev';
-// Cloudflare Pages canonicalizes /book.html to /book. Navigate directly to
-// the canonical URL: WebView must never reject the redirect to its own reader.
-const READER=ORIGIN+'/book';
+// PWA BookReader owns the ONE 3D PageFlip engine. Android waits for its
+// "boot" event then sends the already authorized session to that same page.
+// The native session is never put in navigation URLs or browser storage.
+const ORIGIN=BOOK_ORIGIN;
+const READER=BOOK_READER_URL;
 type ReaderPhase='opening-page'|'html-loaded'|'script-started'|'session-received'|'pages-loading';
 const REFRESH_JS='(function(){if(location.origin==='+JSON.stringify(ORIGIN)+
  '&&location.pathname==="/book")window.dispatchEvent(new Event("havana-v2-book-refresh"));})();true;';
-
-function trustedBookUrl(raw:string):boolean{
- if(raw==='about:blank')return true;
- try{
-  const url=new URL(raw);
-  return url.origin===ORIGIN&&url.pathname==='/book'&&!url.search&&!url.hash;
- }catch{return false;}
-}
 
 export default function NativeBook({token,refreshKey,onClose,calendarEventId,calendarTitle}:{
  token:string;refreshKey:number;onClose:()=>void;calendarEventId?:string;calendarTitle?:string;
@@ -64,7 +55,12 @@ export default function NativeBook({token,refreshKey,onClose,calendarEventId,cal
    if(!value||typeof value!=='object')return;
    const message=value as Record<string,unknown>;
    if(message.type==='havana-v2-book-phase'){
-    if(message.phase==='boot')updatePhase('script-started');
+    if(message.phase==='boot'){
+     updatePhase('script-started');
+     // postMessage proves the WebView's actual JS is listening. Return the
+     // current in-memory session only to /book, after that readiness signal.
+     view.current?.injectJavaScript(bookContextDeliveryScript(nativeContext));
+    }
     else if(message.phase==='session')updatePhase('session-received');
     else if(message.phase==='pages')updatePhase('pages-loading');
     return;
@@ -107,7 +103,6 @@ export default function NativeBook({token,refreshKey,onClose,calendarEventId,cal
    </View>
    <WebView<object> key={viewKey} ref={view}
     source={{uri:READER}}
-    injectedJavaScriptObject={nativeContext}
     originWhitelist={[ORIGIN]}
     onShouldStartLoadWithRequest={event=>trustedBookUrl(event.url)}
     javaScriptEnabled domStorageEnabled={false}

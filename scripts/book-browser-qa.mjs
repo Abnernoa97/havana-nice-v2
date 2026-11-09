@@ -20,9 +20,15 @@ const pages=Array.from({length:6},(_,i)=>({
  url:'/api/book/media/'+String(i+1).repeat(32)
 }));
 const boot=[
- 'window.ReactNativeWebView={injectedObjectJson(){return JSON.stringify({',
+ 'window.ReactNativeWebView={postMessage(message){',
+ 'const event=JSON.parse(message);',
+ '(window.__bookStatus||(window.__bookStatus=[])).push(event);',
+ 'if(event.type==="havana-v2-book-phase"&&event.phase==="boot"){',
+ 'setTimeout(()=>window.dispatchEvent(new CustomEvent("havana-v2-book-context",{detail:JSON.stringify({',
  'token:"'+('A'.repeat(64))+'",eventId:"",title:""',
- '});},postMessage(message){(window.__bookStatus||(window.__bookStatus=[])).push(JSON.parse(message));}};',
+ '})})),0);',
+ '}',
+ '}};',
  'const originalFetch=window.fetch.bind(window);let refreshCount=0;',
  'window.fetch=(input,options)=>{',
  'const name=typeof input==="string"?input:input.url;',

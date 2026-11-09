@@ -88,7 +88,8 @@ test('Native BOOK bootstraps the bridge before dynamically loading the existing 
  const page=source('apps/pwa/book.html');
  assert.match(sourceText,/const MemberBook=lazy\(\(\)=>import\('\.\.\/features\/book\/MemberBook'\)\)/);
  assert.match(sourceText,/const CalendarMemories=lazy\(\(\)=>import\('\.\.\/features\/calendar\/CalendarMemories'\)\)/);
- assert.match(sourceText,/\.ReactNativeWebView\?\.injectedObjectJson\?\.\(\)/);
+ assert.match(sourceText,/window.addEventListener\('havana-v2-book-context',onContext\)/);
+ assert.match(sourceText,/reportReaderPhase\('boot'\)/);
  assert.match(sourceText,/<ReaderBoundary key=\{/);
  assert.match(sourceText,/<Suspense fallback=\{/);
  assert.doesNotMatch(sourceText,/^import (?:MemberBook|CalendarMemories) from /m);
