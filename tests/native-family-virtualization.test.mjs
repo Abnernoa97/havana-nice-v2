@@ -35,7 +35,8 @@ test('Family stays private, modal video is only mounted on demand, BOOK unchange
  assert.match(f,/useVideoPlayer\(\{uri:url\}/);
  assert.match(f,/surfaceType="surfaceView"/);
  assert.match(book,/<WebView<object>/);
- assert.match(book,/injectedJavaScriptObject=\{nativeContext\}/);
+ assert.match(book,/bookContextDeliveryScript\(nativeContext\)/);
+ assert.doesNotMatch(book,/injectedJavaScriptObject=/);
  assert.doesNotMatch(book,/Linking\.|Alert\.alert/);
  assert.doesNotMatch(f,/new WebSocket\(|localStorage|AsyncStorage|\.put\(/);
 });
