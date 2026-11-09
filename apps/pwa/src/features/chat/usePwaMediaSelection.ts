@@ -30,12 +30,11 @@ function toStored(item:PwaQueuedMedia):StoredChatMediaItem{
 }
 
 export function usePwaMediaSelection({
- actorId,uploadBusy,onCloseMenu,onCameraLaunch,
+ actorId,uploadBusy,onCloseMenu,
 }:{
  actorId:string|null;
  uploadBusy:RefObject<boolean>;
  onCloseMenu:()=>void;
- onCameraLaunch:()=>void;
 }){
  const [selectedMedia,setSelectedMedia]=useState<PwaQueuedMedia[]>([]);
  const [mediaError,setMediaError]=useState('');
@@ -96,7 +95,6 @@ export function usePwaMediaSelection({
    }
    const picker=cameraPicker.current;
    if(!picker)return;
-   onCameraLaunch();
    picker.click();
  };
  const chooseMedia=(source:ChatMediaSource,kind:ChatMediaKind,files:File[])=>{

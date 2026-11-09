@@ -74,13 +74,13 @@ test('Opening Chat lands at the true bottom even after media sizes change',()=>{
   assert.match(native,/onScrollBeginDrag=\{onTimelineScrollBeginDrag\}/);
 });
 
-test('Home remains reachable after Chat and old browser history is neutralized',()=>{
+test('Back navigation belongs to App, not to camera or attachment recovery',()=>{
  const pwa=read('apps/pwa/src/app/App.tsx');
  const picker=read('apps/pwa/src/features/chat/usePwaMediaSelection.ts');
- const policy=read('apps/pwa/src/features/chat/chat-media-return.ts');
+ const nativePicker=read('apps/android/features/chat/useNativeMediaSelection.ts');
  assert.match(pwa,/window\.history\.replaceState\(\{\.\.\.window\.history\.state,hnChatNavigation:false\}/);
  assert.match(pwa,/setActiveScreen\(previousScreen\.current\);\s*if\(window\.history\.state\?\.hnChatNavigation\)window\.history\.back\(\)/);
- assert.match(picker,/onCameraLaunch\(\)/);
- assert.match(policy,/storage\.removeItem\(KEY\);\s*const item=JSON\.parse\(raw\)/);
- assert.doesNotMatch(pwa,/writeChatReturnIntent\(window\.localStorage,target==='chat'\)/);
+ assert.match(pwa,/const \[activeScreen,setActiveScreen\]=useState<MemberScreen>\('home'\)/);
+ assert.doesNotMatch(picker,/onCameraLaunch/);
+ assert.match(nativePicker,/if\(recovered&&active\)onRecovered\(\)/);
 });

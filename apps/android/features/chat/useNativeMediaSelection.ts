@@ -102,7 +102,8 @@ export function useNativeMediaSelection({
        const saved=await loadNativePendingMedia(actorId);
        if(!active||actorRef.current!==actorId)return;
        if(saved.length&&!selectedRef.current.length){
-         selectedRef.current=saved;setSelectedMedia([...saved]);onRecovered();
+         // A saved draft restores silently; it never chooses the initial screen.
+         selectedRef.current=saved;setSelectedMedia([...saved]);
        }
      }catch{}
      if(Platform.OS!=='android')return;

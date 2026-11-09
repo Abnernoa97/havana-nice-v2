@@ -11,7 +11,6 @@ import { loadLocalChat, saveLocalChat } from '../services/local';
 import type {MessageAnchor} from '../features/chat/SwipeMessage';
 import ChatTimeline from '../features/chat/ChatTimeline';
 import {useChatScrollAnchor} from '../features/chat/useChatScrollAnchor';
-import {readChatReturnIntent,writeChatReturnIntent} from '../features/chat/chat-media-return';
 import PwaChatMessageMenu from '../features/chat/PwaChatMessageMenu';
 import {usePwaMediaSelection} from '../features/chat/usePwaMediaSelection';
 import PwaChatMediaQueuePreview from '../features/chat/PwaChatMediaQueuePreview';
@@ -26,8 +25,8 @@ export default function App() {
   const [name, setName] = useState('');
   const [session, setSession] = useState<ChatSession | null>(null);
   // Existing approved ChatSession is the APP access; HOME adds no login or storage.
-  const [activeScreen,setActiveScreen]=useState<MemberScreen>(()=>
-    readChatReturnIntent(window.localStorage)?'chat':'home');
+  // Only member navigation owns the screen. Camera and unsent photos cannot redirect HOME.
+  const [activeScreen,setActiveScreen]=useState<MemberScreen>('home');
   const previousScreen=useRef<MemberScreen>('home');
   // Reset stale Chat history on a normal launch; keep a real camera recovery.
   useEffect(()=>{
@@ -94,7 +93,6 @@ export default function App() {
     usePwaMediaSelection({
       actorId:session?.actorId??null,uploadBusy:mediaUploadBusy,
       onCloseMenu:()=>setComposerPanel(null),
-      onCameraLaunch:()=>writeChatReturnIntent(window.localStorage,true),
     });
   const [mediaReady,setMediaReady]=useState(false);
   const [mediaUploading,setMediaUploading]=useState(false);
@@ -175,7 +173,6 @@ export default function App() {
   const refreshLatest = useRef<() => void>(() => {});
 
   function revokeCurrentAccess() {
-    writeChatReturnIntent(window.localStorage,false);
     clearSelectedMedia();
     clearConnectionWatchdog();
     historyRequests.current.reset();
@@ -806,7 +803,6 @@ export default function App() {
           <input className="chat-media-hidden-input" type="file" ref={cameraPicker}
             tabIndex={-1} aria-hidden="true" accept="image/*" capture="environment"
             onChange={e=>{
-              writeChatReturnIntent(window.localStorage,false);
               chooseMedia('camera','photo',Array.from(e.currentTarget.files||[]));
               e.currentTarget.value='';
             }}/>

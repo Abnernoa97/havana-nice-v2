@@ -31,7 +31,6 @@ Si una subida falla, el archivo permanece pendiente y puede reintentarse.
 | --- | --- |
 | `usePwaMediaSelection.ts` | Interacción con cámara/galería y cola seleccionada |
 | `chat-media-draft.ts` | Recuperación temporal y validada del archivo pendiente |
-| `chat-media-return.ts` | Conservar la navegación de regreso a Chat, sin credenciales |
 | `PwaChatMediaQueuePreview.tsx` | Mostrar adjuntos pendientes y progreso |
 | `chat-media-upload.ts` | Subir originales a R2 y confirmar mensajes |
 | `chat-media-grant.ts` | Solicitar URL autorizada temporal de lectura |
@@ -67,6 +66,18 @@ compartido se utiliza también en la sección administrativa.
 El módulo de fotos **no** inicializa un reproductor de video; el módulo de
 video **no** descarga ni decodifica fotos. No se eliminan originales completos
 del cache solo por reorganizar el código.
+
+## Responsabilidad de la navegación
+
+Inicio es la pantalla inicial en PWA y Android. El controlador principal
+decide el destino y gestiona Atrás. Cámara, selección, almacenamiento temporal
+y subida no pueden abrir una pantalla por su cuenta cuando hay archivos
+pendientes. La recuperación de una selección es independiente de la
+navegación. Si iOS reinicia la PWA al tomar una foto, se vuelve a Inicio y
+el archivo ya guardado temporalmente estará disponible al entrar a Chat.
+Android mantiene el retorno explícito a Chat tras un resultado nuevo que
+entrega `ImagePicker.getPendingResultAsync`, pero los borradores antiguos
+no cambian la pantalla inicial.
 
 ## Contratos que deben respetarse
 
