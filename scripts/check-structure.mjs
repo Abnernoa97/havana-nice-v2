@@ -59,7 +59,7 @@ assert.deepEqual(children('apps/android/hooks'),['useNativeKeyboardVisibility.ts
 assert.deepEqual(children('apps/android/storage'),['chatPhotoCache.ts','chatStorage.ts']);
 assert.deepEqual(children('apps/android/styles'),['chat-styles.ts']);
 assert.deepEqual(children('apps/android/services'),
- ['native-calendar-live.ts','native-chat-r2-upload.ts']);
+ ['native-calendar-live.ts','native-chat-r2-upload.ts','native-chat-socket.ts']);
 const expoEntry=readFileSync(join(rootDir,'apps/android/App.tsx'),'utf8');
 assert.match(expoEntry,/export \{default\} from '\.\/app\/NativeApp'/);
 assert.ok(expoEntry.split('\n').length<12,'Expo entry must remain a tiny loader');
