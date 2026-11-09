@@ -167,7 +167,7 @@ jobs:
         run: npm run test:admin -w @havana/pwa
 
       - name: Verify one Chat message actions policy across iPhone and Android
-        run: node --experimental-strip-types --test tests/chat-menu-policy.test.mjs tests/chat-reaction-burst.test.mjs tests/chat-fullscreen-back.test.mjs
+        run: node --experimental-strip-types --test tests/chat-menu-policy.test.mjs tests/chat-reaction-burst.test.mjs tests/chat-fullscreen-back.test.mjs tests/chat-render-isolation.test.mjs
 
       - name: Keep Chat media and composer unmounted outside Chat without duplicating the engine
         run: node --test tests/chat-idle-isolation.test.mjs

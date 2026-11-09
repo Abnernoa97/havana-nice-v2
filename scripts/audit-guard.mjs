@@ -199,7 +199,7 @@ present(androidWorkflow,/sha256sum -c -/,'H01: verify hash of preceding released
 // C01: both interfaces anchor the long-press menu to a real bubble; do not
 // allow the old centered overlay or inert '+' to regress on Android/iPhone.
 present(nativeBubble,/measureInWindow\(/,'Native Chat must measure held bubble');
-present(android,/onMessageLongPress=\{showMessageMenu\}/,
+present(android,/onMessageLongPress=\{onTimelineLongPress\}/,
   'Native Chat controller must pass its single contextual-menu action to the timeline');
 present(nativeTimeline,/onLongPress=\{\(anchor\) => onMessageLongPress\(message,anchor\)\}/,
   'Native Chat timeline must forward the actual measured bubble to the single controller');
@@ -246,7 +246,7 @@ absent(nativeMenu,/startNamedChatSession|restoreNamedChatSession|new WebSocket|A
 absent(android,/whatsappPlus|whatsappPlusText/,'Remove inert extra-reaction button on Android');
 present(webBubble,/getBoundingClientRect\(\)/,'PWA Chat must measure held message');
 const chatTimeline=read('apps/pwa/src/features/chat/ChatTimeline.tsx');
-present(pwa,/onMessageLongPress=\{showMessageMenu\}/,
+present(pwa,/onMessageLongPress=\{onTimelineLongPress\}/,
   'PWA Chat must bind the existing secure contextual menu from App');
 present(chatTimeline,/onLongPress=\{anchor=>onMessageLongPress\(message,anchor\)\}/,
   'PWA Timeline must forward long-press anchors to the one Chat controller');
