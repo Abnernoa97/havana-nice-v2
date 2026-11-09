@@ -52,13 +52,8 @@ h1 span { font-weight:400; }
 .reply-preview button {border:0;background:transparent;color:#8a5a3c;font-weight:700}
 .header-status{max-width:100%;overflow:hidden;text-overflow:ellipsis}
 
-/* Unified Chat pack: searchable server history with compact mobile-safe controls. */
-.chat-search{display:flex;align-items:center;gap:7px;padding:5px 15px 11px;flex-shrink:0}
-.chat-search input{flex:1;min-width:0;background:#fffaf4;border:1px solid #d9ccbc;border-radius:16px;color:#23231d;padding:9px 12px;font-size:13px}
-.chat-search button{background:transparent;border:0;color:#80583d;font-size:12px;font-weight:700;padding:7px 3px}
-.search-count{text-align:center;align-self:center;color:#68655f;font-size:12px;margin:0 0 7px}
 .load-older{align-self:center;background:transparent;border:1px solid #d9ccbc;border-radius:14px;padding:8px 14px;color:#775a49;font-size:12px;margin:0 0 8px}
-@media(max-width:380px){.chat-search{gap:4px;padding-inline:8px}.bubble{max-width:94%}}
+@media(max-width:380px){.bubble{max-width:94%}}
 /* Messaging gestures: content-first bubbles, reply by swipe, context actions on hold */
 .bubble{position:relative;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;min-width:92px;}
 /* Protect long-press reactions from WebKit/Android text-selection handles. */
@@ -165,6 +160,5 @@ h1 span { font-weight:400; }
 .a-chat-bubble:has(.hn-chat-media){min-width:0;max-width:100%}
 @media(max-width:380px){.bubble:has(.hn-chat-media){width:min(94%,390px)}}
 
-/* HOME hides the view, not the Chat engine: socket and unsent drafts stay mounted. */
-.member-chat-hidden{display:none}
+/* HOME leaves one Chat engine live; no message/media interface is mounted. */
 .member-chat-visible{height:100dvh}
