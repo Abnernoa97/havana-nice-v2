@@ -1,11 +1,11 @@
-import {memo,useLayoutEffect,useMemo,useRef,useState,type RefObject,type UIEvent,type KeyboardEvent,type TouchEvent,type WheelEvent} from 'react';
+import {memo,useEffect,useLayoutEffect,useMemo,useRef,useState,type RefObject,type UIEvent,type KeyboardEvent,type TouchEvent,type WheelEvent} from 'react';
 import {
  buildChatDisplayIndex,messageDeliveryLabel,
  type ChatMessage,type ChatReaction,type ChatReadReceipt
 } from '@havana/shared';
 import SwipeMessage,{type MessageAnchor} from './SwipeMessage';
 import ChatMediaView from './ChatMediaView';
-import {chatWindowKey,selectChatMessageWindow,previousChatWindowEnd,nextChatWindowEnd,chatWindowEdgeAction} from './chat-message-window';
+import {CHAT_MESSAGE_WINDOW_SIZE,CHAT_MESSAGE_WINDOW_STEP,chatWindowKey,selectChatMessageWindow,previousChatWindowEnd,nextChatWindowEnd,chatWindowEdgeAction} from './chat-message-window';
 
 // Presentation only. Authentication, WebSocket, history and offline outbox stay in App.tsx.
 type ChatTimelineProps={
@@ -43,6 +43,10 @@ function ChatTimeline({
  const gestureDirection=useRef<-1|0|1>(0);
  const lastTouchY=useRef<number|null>(null);
  const nextWindowAllowedAt=useRef(0);
+ const touchActive=useRef(false);
+ const pendingDirection=useRef<-1|0|1>(0);
+ const scrollIdleTimer=useRef<ReturnType<typeof setTimeout>|null>(null);
+ useEffect(()=>()=>{if(scrollIdleTimer.current!==null)clearTimeout(scrollIdleTimer.current);},[]);
  // Preserve the same on-screen message when the bounded view moves backward,
  // including after asynchronous server pagination prepends older messages.
  const preserveVisibleMessage=()=>{
@@ -78,7 +82,7 @@ function ChatTimeline({
    }else if(hasMore){
      // Pre-position on the oldest loaded rows. A server page then becomes
      // immediately visible, rather than requiring a second "Ver anteriores" tap.
-     const overlap=windowed.rows[Math.min(windowed.rows.length-1,59)];
+     const overlap=windowed.rows[Math.min(windowed.rows.length-1,CHAT_MESSAGE_WINDOW_SIZE-CHAT_MESSAGE_WINDOW_STEP-1)];
      if(overlap)setEndAnchorKey(chatWindowKey(overlap));
      onLoadOlder();
    }
@@ -97,57 +101,87 @@ function ChatTimeline({
    setEndAnchorKey(null);
    onReturnLatest();
  };
- // Edge-triggered window rotation uses the user's actual touch/wheel/keyboard
- // scrolling, never a programmatic scroll adjustment or late media layout.
+ // WebKit momentum must finish before changing 24 mounted rows.
+ // Switching while the finger is still down fights native iPhone scrolling.
+ const settleWindow=(list:HTMLElement)=>{
+   if(scrollIdleTimer.current!==null)clearTimeout(scrollIdleTimer.current);
+   scrollIdleTimer.current=setTimeout(()=>{
+     scrollIdleTimer.current=null;
+     if(touchActive.current||!list.isConnected)return;
+     const now=Date.now();
+     const action=chatWindowEdgeAction({
+       scrollTop:list.scrollTop,scrollHeight:list.scrollHeight,clientHeight:list.clientHeight,
+       direction:pendingDirection.current,
+       recentGesture:now-recentGesture.current<1500,
+       transitionBlocked:now<nextWindowAllowedAt.current,
+       hasOlder:windowed.hasOlder||hasMore,
+       hasNewer:windowed.hasNewer,
+       loadingOlder,
+       readingHistory:endAnchorKey!==null,
+     });
+     if(!action)return;
+     // One window change per gesture. Later layout/anchor corrections are ignored.
+     nextWindowAllowedAt.current=now+550;
+     gestureDirection.current=0;
+     pendingDirection.current=0;
+     recentGesture.current=0;
+     if(action==='older')showOlder();
+     else if(action==='newer')showNext();
+     else jumpLatest();
+   },180);
+ };
  const markTouchStart=(event:TouchEvent<HTMLElement>)=>{
+   touchActive.current=true;
+   if(scrollIdleTimer.current!==null)clearTimeout(scrollIdleTimer.current);
+   scrollIdleTimer.current=null;
    recentGesture.current=Date.now();
    gestureDirection.current=0;
+   pendingDirection.current=0;
    lastTouchY.current=event.touches[0]?.clientY??null;
  };
  const markTouchMove=(event:TouchEvent<HTMLElement>)=>{
    const y=event.touches[0]?.clientY;
    if(y===undefined)return;
    recentGesture.current=Date.now();
-   if(lastTouchY.current!==null&&Math.abs(y-lastTouchY.current)>1){
+   if(lastTouchY.current!==null&&Math.abs(y-lastTouchY.current)>1)
      gestureDirection.current=y<lastTouchY.current?1:-1;
-   }
    lastTouchY.current=y;
  };
- const markTouchEnd=()=>{recentGesture.current=Date.now();lastTouchY.current=null;};
+ const markTouchEnd=(event:TouchEvent<HTMLElement>)=>{
+   touchActive.current=false;
+   recentGesture.current=Date.now();
+   lastTouchY.current=null;
+   if(gestureDirection.current!==0)settleWindow(event.currentTarget);
+ };
+ const markTouchCancel=()=>{
+   touchActive.current=false;
+   gestureDirection.current=0;
+   pendingDirection.current=0;
+   lastTouchY.current=null;
+   if(scrollIdleTimer.current!==null)clearTimeout(scrollIdleTimer.current);
+   scrollIdleTimer.current=null;
+ };
  const markWheel=(event:WheelEvent<HTMLElement>)=>{
    recentGesture.current=Date.now();
    if(event.deltaY!==0)gestureDirection.current=event.deltaY>0?1:-1;
+   settleWindow(event.currentTarget);
  };
  const handleWindowScroll=(event:UIEvent<HTMLElement>)=>{
    const list=event.currentTarget;
-   const top=list.scrollTop;
-   const delta=top-lastScrollTop.current;
+   const top=list.scrollTop,delta=top-lastScrollTop.current;
    lastScrollTop.current=top;
-   const now=Date.now();
-   // Ignore anchor restoration and async media reflow, even during momentum.
    const observedDirection=Math.abs(delta)>1?(delta>0?1:-1):0;
-   const direction=observedDirection===gestureDirection.current?observedDirection:0;
-   const action=chatWindowEdgeAction({
-     scrollTop:top,scrollHeight:list.scrollHeight,clientHeight:list.clientHeight,
-     direction,
-     recentGesture:now-recentGesture.current<900,
-     transitionBlocked:now<nextWindowAllowedAt.current,
-     hasOlder:windowed.hasOlder||hasMore,
-     hasNewer:windowed.hasNewer,
-     loadingOlder,
-     readingHistory:endAnchorKey!==null,
-   });
-   if(!action)return;
-   nextWindowAllowedAt.current=now+420;
-   if(action==='older')showOlder();
-   else if(action==='newer')showNext();
-   else jumpLatest();
+   if(observedDirection!==0)
+     pendingDirection.current=observedDirection===gestureDirection.current?observedDirection:0;
+   if(!touchActive.current&&gestureDirection.current!==0&&Date.now()-recentGesture.current<1500)
+     settleWindow(list);
  };
  const handleWindowKeyDown=(event:KeyboardEvent<HTMLElement>)=>{
    if(['ArrowUp','PageUp','Home'].includes(event.key))gestureDirection.current=-1;
    else if(['ArrowDown','PageDown','End',' '].includes(event.key))gestureDirection.current=1;
    else return;
    recentGesture.current=Date.now();
+   settleWindow(event.currentTarget);
  };
  // An outgoing message from the middle of history behaves like WhatsApp:
  // jump back to the latest bubble, rather than hiding the new sent message.
@@ -161,7 +195,7 @@ function ChatTimeline({
           <section className="chat-messages" aria-label="Mensajes"
             onScroll={handleWindowScroll} onTouchStart={markTouchStart}
             onTouchMove={markTouchMove} onTouchEnd={markTouchEnd}
-            onWheel={markWheel} onKeyDown={handleWindowKeyDown}>
+            onTouchCancel={markTouchCancel} onWheel={markWheel} onKeyDown={handleWindowKeyDown}>
             <div className="chat-message-content">
             {(windowed.hasOlder||hasMore)&&<button type="button" className="load-older"
               disabled={loadingOlder} onClick={showOlder}>

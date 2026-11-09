@@ -11,11 +11,11 @@ const message=(n)=>({
  senderName:'Test',text:'Mensaje '+n,sentAt:new Date(1_700_000_000_000+n*1000).toISOString(),
 });
 
-test('1,000 messages mount only the newest 120 and never discard the data',()=>{
+test('1,000 messages mount only the newest 80 and never discard the data',()=>{
  const all=Array.from({length:1000},(_,i)=>message(i+1));
  const view=selectChatMessageWindow(all,null);
  assert.equal(view.rows.length,CHAT_MESSAGE_WINDOW_SIZE);
- assert.equal(view.rows[0].seq,881);
+ assert.equal(view.rows[0].seq,921);
  assert.equal(view.rows.at(-1).seq,1000);
  assert.equal(view.total,1000);
  assert.equal(all.length,1000);
@@ -29,9 +29,9 @@ test('Previous and next pages overlap, remain bounded and never skip message IDs
  const latestKey=chatWindowKey(current.rows[0]);
  const previousEnd=previousChatWindowEnd(current.start,current.end);
  const older=selectChatMessageWindow(all,chatWindowKey(all[previousEnd-1]));
- assert.equal(CHAT_MESSAGE_WINDOW_STEP,40);
- assert.equal(previousEnd,current.end-40);
- assert.equal(older.rows.length,120);
+ assert.equal(CHAT_MESSAGE_WINDOW_STEP,24);
+ assert.equal(previousEnd,current.end-24);
+ assert.equal(older.rows.length,80);
  assert.ok(older.rows.some(row=>chatWindowKey(row)===latestKey));
  assert.equal(older.hasNewer,true);
  assert.equal(older.hasOlder,true);
@@ -48,7 +48,7 @@ test('Stable anchor survives new incoming messages and older server pagination',
  const after=selectChatMessageWindow(all,chatWindowKey(message(660)));
  assert.equal(after.rows[0].seq,first);
  assert.equal(after.rows.at(-1).seq,660);
- assert.equal(after.rows.length,120);
+ assert.equal(after.rows.length,80);
  assert.equal(after.hasNewer,true);
 });
 
@@ -76,7 +76,7 @@ test('Outgoing messages request the newest window even from an older page',()=>{
 test('Server pagination reveals the older page on the first request',()=>{
  const timeline=readFileSync(new URL('../apps/pwa/src/features/chat/ChatTimeline.tsx',import.meta.url),'utf8');
  assert.match(timeline,/else if\(hasMore\)\{/);
- assert.match(timeline,/const overlap=windowed\.rows\[Math\.min\(windowed\.rows\.length-1,59\)\]/);
+ assert.match(timeline,/const overlap=windowed\.rows\[Math\.min\(windowed\.rows\.length-1,CHAT_MESSAGE_WINDOW_SIZE-CHAT_MESSAGE_WINDOW_STEP-1\)\]/);
  assert.match(timeline,/if\(overlap\)setEndAnchorKey\(chatWindowKey\(overlap\)\)/);
  assert.match(timeline,/onLoadOlder\(\)/);
 });
@@ -100,13 +100,38 @@ test('Scrolling across loaded history windows is automatic only for real user ge
  assert.equal(check({scrollTop:40,direction:-1,scrollHeight:800}),null);
 });
 
+test('Window transitions wait for Safari momentum to settle instead of flipping during touch',()=>{
+ const timeline=readFileSync(new URL('../apps/pwa/src/features/chat/ChatTimeline.tsx',import.meta.url),'utf8');
+ const follow=readFileSync(new URL('../apps/pwa/src/features/chat/useChatScrollAnchor.ts',import.meta.url),'utf8');
+ assert.match(timeline,/if\(touchActive\.current\|\|!list\.isConnected\)return/);
+ assert.match(timeline,/scrollIdleTimer\.current=setTimeout\(\(\)=>\{/);
+ assert.match(timeline,/onTouchCancel=\{markTouchCancel\}/);
+ assert.match(timeline,/gestureDirection\.current=0;\s*pendingDirection\.current=0;\s*recentGesture\.current=0;/);
+ assert.match(follow,/stickToLatest\.current=false;/);
+ assert.match(follow,/if\(stickToLatest\.current&&!userScrollGesture\.current\)/);
+ assert.match(follow,/gap\(\)<=24\)stickToLatest\.current=true/);
+ assert.doesNotMatch(follow,/requestAnimationFrame\(\(\)=>\{userScrollGesture\.current=false;\}\)/);
+});
+
 test('Bounded window keeps the scroll anchor when entering the newest range',()=>{
  const timeline=readFileSync(new URL('../apps/pwa/src/features/chat/ChatTimeline.tsx',import.meta.url),'utf8');
  assert.match(timeline,/onScroll=\{handleWindowScroll\}/);
  assert.match(timeline,/onTouchMove=\{markTouchMove\}/);
- assert.match(timeline,/const direction=observedDirection===gestureDirection\.current\?observedDirection:0/);
+ assert.match(timeline,/pendingDirection\.current=observedDirection===gestureDirection\.current\?observedDirection:0/);
  assert.match(timeline,/onWheel=\{markWheel\}/);
- assert.match(timeline,/nextWindowAllowedAt\.current=now\+420/);
+ assert.match(timeline,/nextWindowAllowedAt\.current=now\+550/);
  assert.match(timeline,/if\(nextMessage\)setEndAnchorKey\(chatWindowKey\(nextMessage\)\)/);
  assert.doesNotMatch(timeline,/if\(nextEnd===windowed\.total\)\{setEndAnchorKey\(null\);onReturnLatest\(\);\}/);
+});
+
+test('iPhone rubber band offsets never rotate a history window',()=>{
+ const normal={
+  scrollHeight:11000,clientHeight:700,recentGesture:true,
+  transitionBlocked:false,hasOlder:true,hasNewer:true,
+  loadingOlder:false,readingHistory:true,
+ };
+ assert.equal(chatWindowEdgeAction({...normal,scrollTop:-16,direction:-1}),null);
+ assert.equal(chatWindowEdgeAction({...normal,scrollTop:10330,direction:1}),null);
+ assert.equal(chatWindowEdgeAction({...normal,scrollTop:45,direction:-1}),'older');
+ assert.equal(chatWindowEdgeAction({...normal,scrollTop:10255,direction:1}),'newer');
 });

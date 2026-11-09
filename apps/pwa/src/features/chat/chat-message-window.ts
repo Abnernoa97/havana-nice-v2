@@ -2,8 +2,8 @@ import type {ChatMessage} from '@havana/shared';
 
 // Rendering window only: data, pagination, receipts and unsent messages remain
 // untouched in the single Chat engine. Newer/older pages overlap to keep context.
-export const CHAT_MESSAGE_WINDOW_SIZE=120;
-export const CHAT_MESSAGE_WINDOW_STEP=40;
+export const CHAT_MESSAGE_WINDOW_SIZE=80;
+export const CHAT_MESSAGE_WINDOW_STEP=24;
 
 export function chatWindowKey(message:ChatMessage):string {
  return message.senderId+':'+message.clientMessageId;
@@ -24,7 +24,7 @@ export function selectChatMessageWindow(
  };
 }
 
-// The next page overlaps 80 current rows, so a visible bubble can be anchored
+// The next page overlaps 56 current rows, so a visible bubble can be anchored
 // while older rows appear above it. Never skip or duplicate a message.
 export function previousChatWindowEnd(start:number,end:number){
  return Math.min(end,start+CHAT_MESSAGE_WINDOW_SIZE-CHAT_MESSAGE_WINDOW_STEP);
@@ -52,6 +52,10 @@ export function chatWindowEdgeAction(input:{
 }):ChatWindowEdgeAction {
  if(!input.recentGesture||input.transitionBlocked||
    input.clientHeight<=0||input.scrollHeight<=input.clientHeight+1)return null;
+ // iOS Safari rubber-band reports negative or beyond-end scroll offsets.
+ // Never interpret those overshoot frames as a new pagination request.
+ const maxScroll=input.scrollHeight-input.clientHeight;
+ if(input.scrollTop<0||input.scrollTop>maxScroll+1)return null;
  if(input.direction<0&&input.scrollTop<=96&&
    input.hasOlder&&!input.loadingOlder)return 'older';
  const remaining=input.scrollHeight-input.scrollTop-input.clientHeight;

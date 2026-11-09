@@ -186,3 +186,14 @@ Las fotos enviadas desde la PWA generan su miniatura en paralelo a la
 subida, directamente desde el archivo local, sin pedir una descarga posterior
 del original a R2. La generación es no bloqueante y su error nunca puede
 interrumpir la subida. No cambia el flujo de videos ni el original enviado.
+
+## Desplazamiento del Chat PWA en iPhone
+
+El Chat de iPhone mantiene un rango de 80 mensajes (saltos de 24, solapamiento
+de 56), sin modificar ni borrar el historial almacenado. La paginación
+automática espera a que termine el desplazamiento, no se activa mientras el
+dedo está apoyado, e ignora valores fuera de rango del rebote elástico de
+iOS. El seguimiento al último mensaje queda suspendido durante el gesto
+y el momentum; el `ResizeObserver` no lucha contra el usuario cuando cargan
+fotos o videos. El desplazamiento a lo último sigue disponible por acción
+explícita o cuando el usuario realmente llega al fondo.

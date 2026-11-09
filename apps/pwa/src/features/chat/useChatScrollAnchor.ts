@@ -22,6 +22,7 @@ export function useChatScrollAnchor({
  const resumeLatest=useCallback(()=>{
    explicitlyBrowsing.current=false;
    stickToLatest.current=true;
+   userScrollGesture.current=false;
    requestAnimationFrame(()=>{
      const list=bottomRef.current?.closest('.chat-messages') as HTMLElement|null;
      if(list)list.scrollTop=Math.max(0,list.scrollHeight-list.clientHeight);
@@ -62,42 +63,64 @@ export function useChatScrollAnchor({
    const content=list?.querySelector('.chat-message-content');
    if(!list||!content)return;
    const gap=()=>list.scrollHeight-list.scrollTop-list.clientHeight;
+   let touchActive=false;
+   let settleTimer:ReturnType<typeof setTimeout>|null=null;
+   const settle=()=>{
+     if(settleTimer!==null)clearTimeout(settleTimer);
+     if(touchActive)return;
+     settleTimer=setTimeout(()=>{
+       settleTimer=null;
+       userScrollGesture.current=false;
+       // Follow only if the user actually reached the latest message.
+       // Never wrestle against Safari's inertial scrolling or a paused history.
+       if(!explicitlyBrowsing.current&&gap()<=24)stickToLatest.current=true;
+     },280);
+   };
    const onScroll=()=>{
      if(explicitlyBrowsing.current)return;
-     if(gap()<=64)stickToLatest.current=true;
-     else if(userScrollGesture.current)stickToLatest.current=false;
+     if(userScrollGesture.current){
+       stickToLatest.current=false;
+       settle();
+     }else if(gap()<=24)stickToLatest.current=true;
    };
-   const onTouchMove=()=>{userScrollGesture.current=true;};
-   const onTouchEnd=()=>{
-     requestAnimationFrame(()=>{userScrollGesture.current=false;});
+   const onTouchStart=()=>{touchActive=true;};
+   const onTouchMove=()=>{
+     userScrollGesture.current=true;
+     stickToLatest.current=false;
    };
+   const onTouchEnd=()=>{touchActive=false;settle();};
    const onWheel=()=>{
      userScrollGesture.current=true;
-     requestAnimationFrame(()=>{onScroll();userScrollGesture.current=false;});
+     stickToLatest.current=false;
+     settle();
    };
    const onKeyDown=(event:KeyboardEvent)=>{
      if(['ArrowUp','ArrowDown','PageUp','PageDown','Home','End',' '].includes(event.key)){
        userScrollGesture.current=true;
-       requestAnimationFrame(()=>{onScroll();userScrollGesture.current=false;});
+       stickToLatest.current=false;
+       settle();
      }
    };
    list.addEventListener('scroll',onScroll,{passive:true});
+   list.addEventListener('touchstart',onTouchStart,{passive:true});
    list.addEventListener('touchmove',onTouchMove,{passive:true});
    list.addEventListener('touchend',onTouchEnd,{passive:true});
    list.addEventListener('touchcancel',onTouchEnd,{passive:true});
    list.addEventListener('wheel',onWheel,{passive:true});
    list.addEventListener('keydown',onKeyDown);
-   // Watch both actual message content (late photos/videos) and available
-   // viewport (keyboard/composer height). Do not chase manual history reading.
+   // Media loads must not force a bottom snap during a finger movement.
    const observer=new ResizeObserver(()=>{
-     if(stickToLatest.current)scrollChatToLatest();
+     if(stickToLatest.current&&!userScrollGesture.current)
+       scrollChatToLatest();
    });
    observer.observe(content);
    observer.observe(list);
    if(stickToLatest.current)scrollChatToLatest();
    return()=>{
      observer.disconnect();
+     if(settleTimer!==null)clearTimeout(settleTimer);
      list.removeEventListener('scroll',onScroll);
+     list.removeEventListener('touchstart',onTouchStart);
      list.removeEventListener('touchmove',onTouchMove);
      list.removeEventListener('touchend',onTouchEnd);
      list.removeEventListener('touchcancel',onTouchEnd);
