@@ -193,10 +193,21 @@ const scenario=[
  'await until(()=>snap().count!==first.count,"quick tap");',
  'await sleep(100);const tapped=snap();',
  'if(!stable(original,tapped))throw Error("Tap shifted viewport "+JSON.stringify({original,tapped}));',
+ // Reverse is a first-class navigation path for both native BOOK and PWA.
+ 'const previous=document.querySelector("button[aria-label=\\\"Página anterior\\\"]");',
+ 'if(!previous||previous.disabled)throw Error("Previous is disabled after forward turns");',
+ 'previous.click();await until(()=>snap().count!==tapped.count,"first reverse turn");',
+ 'await sleep(100);const reversed=snap();',
+ 'if(!stable(original,reversed))throw Error("Reverse turn shifted viewport "+JSON.stringify({original,reversed}));',
+ 'if(previous.disabled)throw Error("Previous unexpectedly disabled before cover");',
+ 'previous.click();await until(()=>snap().count===original.count,"reverse to cover");',
+ 'await sleep(100);const restored=snap();',
+ 'if(!stable(original,restored))throw Error("Return to cover shifted viewport "+JSON.stringify({original,restored}));',
+ 'if(!previous.disabled)throw Error("Previous must be disabled on cover");',
  'dispatchEvent(new Event("havana-v2-book-refresh"));await sleep(180);',
  'const renewed=snap();',
  'if(!stable(original,renewed))throw Error("Grant refresh rebuilt book "+JSON.stringify({original,renewed}));',
- 'return {original,first,tapped,renewed};',
+ 'return {original,first,tapped,reversed,restored,renewed};',
  '})()'
 ].join('\n');
 try{
@@ -286,11 +297,21 @@ try{
     hosts:document.querySelectorAll('.hn-book-flip-host').length})`);
    assert.notEqual(sideways.count,vertical.count,'Horizontal swipe should turn a paper page: '+JSON.stringify({start,vertical,h,sideways}));
    assert.equal(sideways.hosts,1);
+   const backward=await js(`(()=>{const stage=document.querySelector('.hn-book-stage');
+    const r=stage.getBoundingClientRect();
+    return {x:r.left+r.width*.2,y:r.top+r.height*.55}})()`);
+   await swipe(backward.x,backward.y,backward.x+135,backward.y);
+   await sleep(600);
+   const reversedSwipe=await js(`({count:document.querySelector('.hn-book-counter strong').textContent,
+    hosts:document.querySelectorAll('.hn-book-flip-host').length})`);
+   assert.equal(reversedSwipe.count,vertical.count,
+    'Right swipe must return to the previous page: '+JSON.stringify({vertical,sideways,reversedSwipe}));
+   assert.equal(reversedSwipe.hosts,1);
    console.log('BOOK real touch: vertical scroll '+start.y+' -> '+vertical.y+
-    ', page unchanged '+vertical.count+'; horizontal swipe turns to '+sideways.count);
+    ', forward '+sideways.count+' and reverse '+reversedSwipe.count);
   }
   console.log('BOOK 3D '+label+': PASS '+result.original.count+' -> '+
-   result.first.count+' -> '+result.tapped.count+
+   result.first.count+' -> '+result.tapped.count+' -> '+result.reversed.count+' -> '+result.restored.count+
    '; stage y='+result.original.stage.y+' -> '+result.renewed.stage.y+
    ', instances='+result.renewed.hosts);
  }
