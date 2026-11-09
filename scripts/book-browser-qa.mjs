@@ -307,6 +307,25 @@ try{
    assert.equal(reversedSwipe.count,vertical.count,
     'Right swipe must return to the previous page: '+JSON.stringify({vertical,sideways,reversedSwipe}));
    assert.equal(reversedSwipe.hosts,1);
+   // A natural short swipe from the page corner must finish the curl instead
+   // of snapping the leaf back. Both directions share the same live engine.
+   const corner=await js(`(()=>{const stage=document.querySelector('.hn-book-stage');
+    const r=stage.getBoundingClientRect();
+    return {right:r.right-r.width*.075,left:r.left+r.width*.075,
+     y:r.top+r.height*.86}})()`);
+   await swipe(corner.right,corner.y,corner.right-62,corner.y);
+   await sleep(680);
+   const shortForward=await js(`({count:document.querySelector('.hn-book-counter strong').textContent,
+    hosts:document.querySelectorAll('.hn-book-flip-host').length})`);
+   assert.notEqual(shortForward.count,reversedSwipe.count,
+    'Short corner swipe should finish forward curl, not spring back: '+JSON.stringify({corner,reversedSwipe,shortForward}));
+   await swipe(corner.left,corner.y,corner.left+62,corner.y);
+   await sleep(680);
+   const shortReverse=await js(`({count:document.querySelector('.hn-book-counter strong').textContent,
+    hosts:document.querySelectorAll('.hn-book-flip-host').length})`);
+   assert.equal(shortReverse.count,reversedSwipe.count,
+    'Short corner swipe should finish backward curl: '+JSON.stringify({shortForward,shortReverse}));
+   assert.equal(shortReverse.hosts,1,'Corner interaction must not rebuild the PageFlip engine');
    console.log('BOOK real touch: vertical scroll '+start.y+' -> '+vertical.y+
     ', forward '+sideways.count+' and reverse '+reversedSwipe.count);
   }
