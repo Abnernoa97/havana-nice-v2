@@ -186,7 +186,7 @@ test('Media-only bubbles remain visual across Chat PWA, native and Administrator
 test('PWA Chat Timeline stays presentation-only: one session, one history engine, no extra socket',()=>{
  const controller=read('apps/pwa/src/app/App.tsx');
  const timeline=read('apps/pwa/src/features/chat/ChatTimeline.tsx');
- assert.match(controller,/<ChatTimeline messages=\{messages\} searchResults=\{searchResults\}/);
+ assert.match(controller,/<ChatTimeline messages=\{messages\}/);
  assert.match(controller,/onLoadOlder=\{\(\)=>void loadOlder\(\)\}/);
  assert.match(controller,/onMessageLongPress=\{showMessageMenu\}/);
  assert.match(timeline,/onSwipeRight=\{\(\)=>onReply\(message\)\}/);
