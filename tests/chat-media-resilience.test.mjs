@@ -4,6 +4,26 @@ import {readFileSync} from 'node:fs';
 
 const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
 
+test('Pending attachments never carry across member session changes',()=>{
+ const web=read('apps/pwa/src/features/chat/usePwaMediaSelection.ts');
+ const native=read('apps/android/features/chat/useNativeMediaSelection.ts');
+ for(const source of [web,native]){
+   assert.match(source,/const mediaOwner=useRef\(actorId\)/);
+   const effect=source.match(/useLayoutEffect\(\(\)=>\{[\s\S]*?\},\[actorId\]\);/)?.[0];
+   assert.ok(effect,'Each media selector must clear its transient queue on an actor change');
+   assert.match(effect,/if\(mediaOwner\.current===actorId\)return/);
+   assert.match(effect,/mediaOwner\.current=actorId/);
+   assert.match(effect,/setSelectedMedia\(\[\]\)/);
+   assert.match(effect,/setMediaError\(''\)/);
+   assert.doesNotMatch(effect,/clearChatMediaDraft|clearNativePendingMedia|discardNativePendingMedia|persistQueue\(\[\]\)/);
+ }
+ assert.match(web,/for\(const item of mediaQueue\.current\)URL\.revokeObjectURL\(item\.selection\.uri\)/);
+ assert.match(web,/mediaQueue\.current=\[\]/);
+ assert.match(native,/selectedRef\.current=\[\]/);
+ assert.match(web,/loadChatMediaDraft\(actorId\)/);
+ assert.match(native,/loadNativePendingMedia\(actorId\)/);
+});
+
 test('Startup always opens Home; recovery of old media never changes the destination',()=>{
  const web=read('apps/pwa/src/app/App.tsx');
  const native=read('apps/android/app/NativeApp.tsx');

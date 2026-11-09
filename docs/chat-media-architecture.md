@@ -67,6 +67,15 @@ El módulo de fotos **no** inicializa un reproductor de video; el módulo de
 video **no** descarga ni decodifica fotos. No se eliminan originales completos
 del cache solo por reorganizar el código.
 
+## Aislamiento de adjuntos por integrante
+
+Si cambia o termina la sesión autorizada, PWA y Android vacían inmediatamente la
+cola multimedia **en memoria** para que otra identidad no pueda reutilizar las
+fotos o videos pendientes. Las URL temporales de la PWA se revocan. Esta medida
+no modifica el historial, R2, la caché de originales confirmados ni los
+archivos permanentes de otras secciones. La recuperación de borradores sigue
+validando el `actorId` autorizado.
+
 ## Responsabilidad de la navegación
 
 Inicio es la pantalla inicial en PWA y Android. El controlador principal

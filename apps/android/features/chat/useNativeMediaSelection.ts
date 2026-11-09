@@ -1,6 +1,6 @@
 // Native camera/gallery selection only. Media originals and pending metadata
 // are private to this app; upload, ChatRoom and authentication stay in NativeApp.
-import {useEffect,useRef,useState} from 'react';
+import {useEffect,useLayoutEffect,useRef,useState} from 'react';
 import {Alert,Keyboard,Platform} from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import {File} from 'expo-file-system';
@@ -31,6 +31,16 @@ export function useNativeMediaSelection({
  const selectedRef=useRef<NativeQueuedMedia[]>([]);
  const actorRef=useRef(actorId);
  actorRef.current=actorId;
+ const mediaOwner=useRef(actorId);
+ // Queued attachments may only be used by the member who selected them.
+ // Do not delete stored originals when a session rotates: storage owns expiry.
+ useLayoutEffect(()=>{
+  if(mediaOwner.current===actorId)return;
+  mediaOwner.current=actorId;
+  selectedRef.current=[];
+  setSelectedMedia([]);
+  setMediaError('');
+ },[actorId]);
  const pickingRef=useRef(false);
  const writeChain=useRef<Promise<void>>(Promise.resolve());
  const persist=(items:NativeQueuedMedia[])=>{

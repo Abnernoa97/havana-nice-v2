@@ -1,7 +1,7 @@
 // Browser-only camera/gallery controller. The Chat socket, R2 transport and
 // authenticated session stay in App; private selected originals can survive a
 // system-camera PWA restart in an isolated short-lived IndexedDB draft.
-import {useEffect,useRef,useState,type RefObject} from 'react';
+import {useEffect,useLayoutEffect,useRef,useState,type RefObject} from 'react';
 import {validateChatMediaSelection,CHAT_MEDIA_MAX_PER_SEND,
  type ChatMediaKind,type ChatMediaSource,type ChatMediaSelection} from '@havana/shared';
 import {
@@ -45,6 +45,17 @@ export function usePwaMediaSelection({
  const persistChain=useRef<Promise<void>>(Promise.resolve());
  const actorRef=useRef(actorId);
  actorRef.current=actorId;
+ const mediaOwner=useRef(actorId);
+ // A new authorized member must never inherit the previous member's pending files.
+ // Discard only transient object URLs/state, not completed R2 media or Chat caches.
+ useLayoutEffect(()=>{
+  if(mediaOwner.current===actorId)return;
+  mediaOwner.current=actorId;
+  for(const item of mediaQueue.current)URL.revokeObjectURL(item.selection.uri);
+  mediaQueue.current=[];
+  setSelectedMedia([]);
+  setMediaError('');
+ },[actorId]);
  const persistQueue=(queue:PwaQueuedMedia[])=>{
    if(!actorId)return;
    const records=queue.map(toStored);
