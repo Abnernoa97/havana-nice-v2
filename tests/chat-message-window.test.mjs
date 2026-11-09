@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {
  CHAT_MESSAGE_WINDOW_SIZE,CHAT_MESSAGE_WINDOW_STEP,
- selectChatMessageWindow,previousChatWindowEnd,nextChatWindowEnd,chatWindowKey,
+ selectChatMessageWindow,previousChatWindowEnd,nextChatWindowEnd,chatWindowKey,chatWindowEdgeAction,
 } from '../apps/pwa/src/features/chat/chat-message-window.ts';
 
 const message=(n)=>({
@@ -79,4 +79,32 @@ test('Server pagination reveals the older page on the first request',()=>{
  assert.match(timeline,/const overlap=windowed\.rows\[Math\.min\(windowed\.rows\.length-1,59\)\]/);
  assert.match(timeline,/if\(overlap\)setEndAnchorKey\(chatWindowKey\(overlap\)\)/);
  assert.match(timeline,/onLoadOlder\(\)/);
+});
+
+test('Scrolling across loaded history windows is automatic only for real user gestures',()=>{
+ const base={
+   scrollHeight:10000,clientHeight:800,recentGesture:true,transitionBlocked:false,
+   loadingOlder:false,hasOlder:true,hasNewer:true,readingHistory:true,
+ };
+ const check=(updates)=>chatWindowEdgeAction({...base,...updates});
+ assert.equal(check({scrollTop:40,direction:-1}),'older');
+ assert.equal(check({scrollTop:9145,direction:1}),'newer');
+ assert.equal(check({scrollTop:9180,direction:1,hasNewer:false}),'latest');
+ assert.equal(check({scrollTop:9145,direction:1,hasNewer:false}),null);
+ assert.equal(check({scrollTop:40,direction:1}),null);
+ assert.equal(check({scrollTop:9145,direction:-1}),null);
+ assert.equal(check({scrollTop:40,direction:-1,recentGesture:false}),null);
+ assert.equal(check({scrollTop:40,direction:-1,transitionBlocked:true}),null);
+ assert.equal(check({scrollTop:40,direction:-1,loadingOlder:true}),null);
+ assert.equal(check({scrollTop:40,direction:-1,hasOlder:false}),null);
+ assert.equal(check({scrollTop:40,direction:-1,scrollHeight:800}),null);
+});
+
+test('Bounded window keeps the scroll anchor when entering the newest range',()=>{
+ const timeline=readFileSync(new URL('../apps/pwa/src/features/chat/ChatTimeline.tsx',import.meta.url),'utf8');
+ assert.match(timeline,/onScroll=\{handleWindowScroll\}/);
+ assert.match(timeline,/onTouchMove=\{markGesture\}/);
+ assert.match(timeline,/nextWindowAllowedAt\.current=now\+420/);
+ assert.match(timeline,/if\(nextMessage\)setEndAnchorKey\(chatWindowKey\(nextMessage\)\)/);
+ assert.doesNotMatch(timeline,/if\(nextEnd===windowed\.total\)\{setEndAnchorKey\(null\);onReturnLatest\(\);\}/);
 });

@@ -1,11 +1,11 @@
-import {memo,useLayoutEffect,useMemo,useRef,useState,type RefObject} from 'react';
+import {memo,useLayoutEffect,useMemo,useRef,useState,type RefObject,type UIEvent} from 'react';
 import {
  buildChatDisplayIndex,messageDeliveryLabel,
  type ChatMessage,type ChatReaction,type ChatReadReceipt
 } from '@havana/shared';
 import SwipeMessage,{type MessageAnchor} from './SwipeMessage';
 import ChatMediaView from './ChatMediaView';
-import {chatWindowKey,selectChatMessageWindow,previousChatWindowEnd,nextChatWindowEnd} from './chat-message-window';
+import {chatWindowKey,selectChatMessageWindow,previousChatWindowEnd,nextChatWindowEnd,chatWindowEdgeAction} from './chat-message-window';
 
 // Presentation only. Authentication, WebSocket, history and offline outbox stay in App.tsx.
 type ChatTimelineProps={
@@ -38,6 +38,9 @@ function ChatTimeline({
  const windowed=useMemo(()=>selectChatMessageWindow(messages,endAnchorKey),
   [messages,endAnchorKey]);
  const pendingPosition=useRef<{key:string;offset:number}|null>(null);
+ const lastScrollTop=useRef(0);
+ const recentGesture=useRef(0);
+ const nextWindowAllowedAt=useRef(0);
  // Preserve the same on-screen message when the bounded view moves backward,
  // including after asynchronous server pagination prepends older messages.
  const preserveVisibleMessage=()=>{
@@ -82,16 +85,43 @@ function ChatTimeline({
    onBrowseOlder();
    preserveVisibleMessage();
    const nextEnd=nextChatWindowEnd(windowed.end,windowed.total);
-   if(nextEnd===windowed.total){setEndAnchorKey(null);onReturnLatest();}
-   else {
-     const nextMessage=messages.filter(item=>!item.deletedAt)[nextEnd-1];
-     if(nextMessage)setEndAnchorKey(chatWindowKey(nextMessage));
-   }
+   // Enter the newest window without jumping to the very bottom. Follow-live
+   // resumes only when the reader actually reaches the bottom or requests it.
+   const nextMessage=messages.filter(item=>!item.deletedAt)[nextEnd-1];
+   if(nextMessage)setEndAnchorKey(chatWindowKey(nextMessage));
  };
  const jumpLatest=()=>{
    pendingPosition.current=null;
    setEndAnchorKey(null);
    onReturnLatest();
+ };
+ // Edge-triggered window rotation uses the user's actual touch/wheel/keyboard
+ // scrolling, never a programmatic scroll adjustment or late media layout.
+ const markGesture=()=>{recentGesture.current=Date.now();};
+ const handleWindowScroll=(event:UIEvent<HTMLElement>)=>{
+   const list=event.currentTarget;
+   const top=list.scrollTop;
+   const delta=top-lastScrollTop.current;
+   lastScrollTop.current=top;
+   const now=Date.now();
+   const action=chatWindowEdgeAction({
+     scrollTop:top,scrollHeight:list.scrollHeight,clientHeight:list.clientHeight,
+     direction:Math.abs(delta)>1?(delta>0?1:-1):0,
+     recentGesture:now-recentGesture.current<900,
+     transitionBlocked:now<nextWindowAllowedAt.current,
+     hasOlder:windowed.hasOlder||hasMore,
+     hasNewer:windowed.hasNewer,
+     loadingOlder,
+     readingHistory:endAnchorKey!==null,
+   });
+   if(!action)return;
+   nextWindowAllowedAt.current=now+420;
+   if(action==='older')showOlder();
+   else if(action==='newer')showNext();
+   else jumpLatest();
+ };
+ const handleWindowKeyDown=(event:React.KeyboardEvent<HTMLElement>)=>{
+   if(['ArrowUp','ArrowDown','PageUp','PageDown','Home','End',' '].includes(event.key))markGesture();
  };
  // An outgoing message from the middle of history behaves like WhatsApp:
  // jump back to the latest bubble, rather than hiding the new sent message.
@@ -102,7 +132,10 @@ function ChatTimeline({
    onReturnLatest();
  },[latestMessageRequest,onReturnLatest]);
  return (
-          <section className="chat-messages" aria-label="Mensajes">
+          <section className="chat-messages" aria-label="Mensajes"
+            onScroll={handleWindowScroll} onTouchStart={markGesture}
+            onTouchMove={markGesture} onTouchEnd={markGesture}
+            onWheel={markGesture} onKeyDown={handleWindowKeyDown}>
             <div className="chat-message-content">
             {(windowed.hasOlder||hasMore)&&<button type="button" className="load-older"
               disabled={loadingOlder} onClick={showOlder}>

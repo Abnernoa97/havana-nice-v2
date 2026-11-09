@@ -32,3 +32,32 @@ export function previousChatWindowEnd(start:number,end:number){
 export function nextChatWindowEnd(end:number,total:number){
  return Math.min(total,end+CHAT_MESSAGE_WINDOW_STEP);
 }
+
+/** Only a recent user scroll may rotate the visible 120-message window.
+ * Programmatic scrolls (initial open, ResizeObserver, restored anchors) are ignored.
+ * A transition cooldown prevents two pages from flipping during the same gesture.
+ */
+export type ChatWindowEdgeAction='older'|'newer'|'latest'|null;
+export function chatWindowEdgeAction(input:{
+ scrollTop:number;
+ scrollHeight:number;
+ clientHeight:number;
+ direction:-1|0|1;
+ recentGesture:boolean;
+ transitionBlocked:boolean;
+ hasOlder:boolean;
+ hasNewer:boolean;
+ loadingOlder:boolean;
+ readingHistory:boolean;
+}):ChatWindowEdgeAction {
+ if(!input.recentGesture||input.transitionBlocked||
+   input.clientHeight<=0||input.scrollHeight<=input.clientHeight+1)return null;
+ if(input.direction<0&&input.scrollTop<=96&&
+   input.hasOlder&&!input.loadingOlder)return 'older';
+ const remaining=input.scrollHeight-input.scrollTop-input.clientHeight;
+ if(input.direction>0&&remaining<=96){
+   if(input.hasNewer)return 'newer';
+   if(input.readingHistory&&remaining<=24)return 'latest';
+ }
+ return null;
+}
