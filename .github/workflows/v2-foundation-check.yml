@@ -197,6 +197,9 @@ jobs:
       - name: Verify BOOK 3D in real headless Chrome on phone and desktop viewports
         run: node scripts/book-browser-qa.mjs
 
+      - name: Probe live Cloudflare Pages BOOK HTML and bundled script
+        run: node scripts/book-live-serving-qa.mjs
+
       - name: Archive one clean V2 PWA preview for browser QA
         uses: actions/upload-artifact@v4
         with:
