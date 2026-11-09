@@ -82,7 +82,8 @@ h1 span { font-weight:400; }
    by the shared particle policy for smooth iPad/iPhone/Android web rendering. */
 .message-menu-overlay{isolation:isolate;}
 .whatsapp-context{z-index:2;}
-.chat-reaction-shower{position:fixed;inset:0;z-index:1;pointer-events:none;overflow:hidden;}
+/* Shower lives outside the context menu, so it survives the tap and closes naturally. */
+.chat-reaction-shower{position:fixed;inset:0;z-index:1002;pointer-events:none;overflow:hidden;}
 .chat-reaction-particle{position:absolute;display:block;line-height:1;pointer-events:none;
   user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;
   opacity:0;will-change:transform,opacity;animation:hn-reaction-float ease-out forwards;}
@@ -103,11 +104,13 @@ h1 span { font-weight:400; }
 
 /* One WhatsApp-style dock: controls stay in a single row; popovers NEVER push messages. */
 .chat-app{position:relative}
-.chat-composer{position:relative;z-index:12;padding:7px 12px 9px}
-.chat-input-pill{flex:1;min-width:0;height:50px;background:#fff;border:1px solid #e4e0da;
-  border-radius:27px;display:flex;align-items:center;gap:0;padding:0 5px}
-.chat-composer .chat-input-pill input{flex:1;min-width:0;height:46px;padding:8px 6px;
-  border:0;background:transparent;outline:none;font-size:16px;color:#202322}
+.chat-composer{position:relative;z-index:12;padding:7px 12px 9px;align-items:flex-end}
+.chat-input-pill{flex:1;min-width:0;min-height:50px;max-height:142px;background:#fff;border:1px solid #e4e0da;
+  border-radius:27px;display:flex;align-items:flex-end;gap:0;padding:2px 5px}
+.chat-composer .chat-input-pill textarea{flex:1;min-width:0;width:100%;height:46px;
+  min-height:46px;max-height:132px;padding:11px 6px;line-height:22px;overflow-y:auto;
+  border:0;background:transparent;outline:none;resize:none;
+  font-family:inherit;font-size:16px;color:#202322;-webkit-appearance:none}
 .chat-composer .chat-icon-button{flex:0 0 37px;width:37px;min-width:37px;
   height:44px;display:grid;place-items:center;border:0;padding:0;border-radius:22px;
   background:transparent;color:#70787c}
