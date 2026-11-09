@@ -156,6 +156,21 @@ export default function App() {
     userHasScrolled.current=false;
     autoScroll.current=true;
   }
+  // Native Chat is kept mounted behind HOME. Re-entering must not restore
+  // the old FlatList offset from the previous visit.
+  useEffect(()=>{
+    if(activeScreen!=='chat'||!session)return;
+    userHasScrolled.current=false;
+    autoScroll.current=true;
+    initialHistoryPending.current=true;
+    initialHistoryLoaded.current=true;
+    scheduleInitialBottom();
+    return()=>{
+      if(initialBottomTimer.current)clearTimeout(initialBottomTimer.current);
+      initialBottomTimer.current=null;
+    };
+  },[activeScreen,session?.token]);
+
   function trackUserScroll(event:{nativeEvent:{contentOffset:{y:number};contentSize:{height:number};layoutMeasurement:{height:number}}}) {
     const {contentOffset,contentSize,layoutMeasurement}=event.nativeEvent;
     const gap=contentSize.height-contentOffset.y-layoutMeasurement.height;
