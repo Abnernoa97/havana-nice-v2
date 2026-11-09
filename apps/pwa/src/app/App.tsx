@@ -26,6 +26,28 @@ export default function App() {
   const [session, setSession] = useState<ChatSession | null>(null);
   // Existing approved ChatSession is the APP access; HOME adds no login or storage.
   const [activeScreen,setActiveScreen]=useState<MemberScreen>('home');
+  const previousScreen=useRef<MemberScreen>('home');
+  const edgeSwipeStart=useRef<{x:number;y:number}|null>(null);
+  const navigateTo=(target:MemberScreen)=>{
+    if(target==='chat'&&activeScreen!=='chat'){
+      previousScreen.current=activeScreen;
+      window.history.pushState({...window.history.state,hnChatNavigation:true},'',window.location.href);
+    }
+    setActiveScreen(target);
+  };
+  const closeChat=()=>{
+    setMenuMessage(null);
+    if(window.history.state?.hnChatNavigation)window.history.back();
+    else setActiveScreen(previousScreen.current);
+  };
+  useEffect(()=>{
+    const syncBack=()=>{
+      if(window.history.state?.hnChatNavigation)setActiveScreen('chat');
+      else setActiveScreen(current=>current==='chat'?previousScreen.current:current);
+    };
+    window.addEventListener('popstate',syncBack);
+    return()=>window.removeEventListener('popstate',syncBack);
+  },[]);
   const [readerRoute,setReaderRoute]=useState<PwaReaderTarget|null>(
     ()=>parsePwaReaderHash(window.location.hash));
   useEffect(()=>{
@@ -58,7 +80,7 @@ export default function App() {
   const [joining, setJoining] = useState(false);
   const [replyTo, setReplyTo] = useState<ChatMessage | null>(null);
   const [reactions, setReactions] = useState<ChatReaction[]>([]);
-  const [onlineUsers, setOnlineUsers] = useState(0);
+  const [onlineActorIds,setOnlineActorIds]=useState<ReadonlySet<string>>(()=>new Set());
   const [typing, setTyping] = useState('');
   const [receipts, setReceipts] = useState<ChatReadReceipt[]>([]);
   const [hasMore, setHasMore] = useState(false);
@@ -398,9 +420,9 @@ export default function App() {
       try {
         const value = JSON.parse(String(event.data)) as ChatServerEvent;
         if (value.type === 'chat.ready') {
-          setOnlineUsers(value.users?.length || 1);
+          setOnlineActorIds(new Set((value.users??[]).map(user=>user.actorId)));
         } else if (value.type === 'chat.presence') {
-          setOnlineUsers(value.users.length);
+          setOnlineActorIds(new Set(value.users.map(user=>user.actorId)));
         } else if (value.type === 'chat.typing') {
           if (value.actorId !== next.actorId) {
             setTyping(value.active ? `${value.senderName} está escribiendo…` : '');
@@ -657,12 +679,12 @@ export default function App() {
 
   // Shared policy keeps edit/delete windows identical on iPhone and Android.
   // Browser visual viewport offsets still protect the keyboard and notch.
-  const {owned:menuOwn,canEdit,canDelete,width:menuWidth,top:menuTop,left:menuLeft}=getChatMenuState(
+  const {width:menuWidth,top:menuTop,left:menuLeft}=getChatMenuState(
     menuMessage,session?.actorId,connection,menuAnchor,{
       width:window.innerWidth,
       height:window.visualViewport?.height??window.innerHeight,
       offsetTop:window.visualViewport?.offsetTop??0,
-      topPadding:10,bottomPadding:10,maxWidth:290,menuHeight:122,
+      topPadding:10,bottomPadding:10,maxWidth:220,menuHeight:64,
     });
 
   return (
@@ -670,28 +692,23 @@ export default function App() {
       {session&&activeScreen!=='chat'&&<Suspense fallback={<div className="visual-shell" role="status">Abriendo espacio del equipo…</div>}>
         {readerRoute?<PwaReaderRoute token={session.token} route={readerRoute} onClose={closeReader}/>:
          <VisualApp displayName={session.displayName}
-          active={activeScreen} token={session.token} onNavigate={setActiveScreen}/>}
+          active={activeScreen} token={session.token} onNavigate={navigateTo}/>}
       </Suspense>}
       <div className={session&&activeScreen!=='chat'?'member-chat-hidden':'member-chat-visible'}>
-    <main className="chat-app">
-      <header className="chat-header">
-        <div>
-          <span className="brand">HAVANA NICE</span>
-          <h1>Chat <span>V2</span></h1>
-        </div>
-        <div className="header-actions">
-          <div className="header-status">
-            <span className={connection === 'en vivo' ? 'online-dot' : 'offline-dot'} />
-            {session ? `${connection}${connection === 'en vivo' ? ` · ${onlineUsers} en línea` : ''}` : health?.ok ? 'API conectada' : 'Laboratorio'}
-          </div>
-          {session&&<button type="button" className="search-toggle" aria-label="Volver a Inicio"
-            onClick={()=>setActiveScreen('home')}>‹ Inicio</button>}
-          {session&&<button className="search-toggle" type="button" aria-label="Buscar mensajes"
-            aria-expanded={searchOpen} onClick={()=>{
-              historyRequests.current.cancelSearch();setSearchOpen(open=>!open);setSearchResults(null);setSearchQuery('');setSearching(false);
-            }}>{searchOpen?'Cerrar':'Buscar'}</button>}
-        </div>
-      </header>
+    <main className="chat-app" onTouchStart={event=>{
+        const t=event.touches[0];
+        const isIphone=/iPhone|iPad|iPod/.test(navigator.userAgent);
+        const standalone=window.matchMedia('(display-mode: standalone)').matches||
+          (navigator as Navigator&{standalone?:boolean}).standalone===true;
+        const onBubble=(event.target as Element).closest?.('.bubble');
+        edgeSwipeStart.current=activeScreen==='chat'&&isIphone&&standalone&&
+          t&&t.clientX<26&&!onBubble?{x:t.clientX,y:t.clientY}:null;
+      }} onTouchEnd={event=>{
+        const start=edgeSwipeStart.current,t=event.changedTouches[0];
+        edgeSwipeStart.current=null;
+        if(start&&t&&t.clientX-start.x>72&&Math.abs(t.clientY-start.y)<65)closeChat();
+      }} onTouchCancel={()=>{edgeSwipeStart.current=null;}}>
+      
 
       {restoringAccess ? <section className="join-panel"><p>Abriendo HAVANA NICE…</p></section>
        : !session&&readerRoute ? (
@@ -718,28 +735,19 @@ export default function App() {
         </section>
       ) : (
         <>
-          {searchOpen&&<div className="chat-search">
-            <input aria-label="Buscar en el chat" placeholder="Buscar mensajes…" value={searchQuery}
-              onChange={e=>{historyRequests.current.cancelSearch();setSearchQuery(e.target.value);setSearchResults(null);setSearching(false);}}
-              onKeyDown={e=>{if(e.key==='Enter')void runSearch();}}/>
-            <button type="button" disabled={searching||searchQuery.trim().length<2} onClick={()=>void runSearch()}>{searching?'…':'Buscar'}</button>
-            {searchResults&&<button type="button" onClick={()=>{historyRequests.current.cancelSearch();setSearchResults(null);setSearchQuery('');setSearching(false);}}>Cerrar</button>}
-          </div>}
           <ChatTimeline messages={messages} searchResults={searchResults}
             actorId={session.actorId} token={session.token}
+             onlineActorIds={onlineActorIds} connected={connection==='en vivo'}
             reactions={reactions} receipts={receipts}
             hasMore={hasMore} loadingOlder={loadingOlder}
             onLoadOlder={()=>void loadOlder()} onReply={replyToMessage}
             onMessageLongPress={showMessageMenu} onRetry={retryMessage}
             bottomRef={bottom}/>
           <PwaChatMessageMenu message={menuMessage} actorId={session.actorId}
-            connection={connection} reactions={reactions} canEdit={canEdit} canDelete={canDelete}
+            connection={connection} reactions={reactions}
             left={menuLeft} top={menuTop} width={menuWidth}
             onClose={()=>setMenuMessage(null)}
             onReact={(m,emoji)=>{react(m.seq,emoji);setMenuMessage(null);}}
-            onReply={replyToMessage}
-            onEdit={m=>{setMenuMessage(null);updateOwn(m);}}
-            onDelete={m=>{setMenuMessage(null);if(window.confirm('¿Borrar este mensaje para todos?'))updateOwn(m,true);}}
           />
           {error && <div className="inline-error" role="alert">{error}</div>}
           {connection !== 'en vivo' && <button className="reconnect" onClick={() => reconnect(session)}>Reintentar conexión</button>}
