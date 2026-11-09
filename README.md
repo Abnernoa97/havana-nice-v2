@@ -2,7 +2,7 @@
 
 **Aplicación autónoma del equipo HAVANA NICE.** Un repositorio, una rama `main`, una PWA instalable para iPhone, una app nativa React Native para Android y un único backend Cloudflare (Workers + D1 + Durable Objects + R2). **No es HAVANA CLOUD original**. Ni su código, datos ni despliegues deben tocarse.
 
-**Estado de referencia: 08/11/2026.** Versión actualmente publicada del Worker **v65** (`81a512bb-a383-4258-8f5b-6aacf831b9b5`) con 100 % del tráfico. La reorganización más reciente de ChatRoom está compilada y validada en `main`, **aún no desplegada** en el Worker. La APK disponible es **0.0.13** y el código Android posterior no constituye una actualización instalada. [Último paquete integral de pruebas de la reorganización: SUCCESS](https://github.com/Abnernoa97/havana-nice-v2/actions/runs/42444820118).
+**Estado de referencia: 08/11/2026.** Worker V2 **v66** (`87e6d28a-f1eb-43ed-974b-eb1884198533`) publicado al 100 % mediante despliegue controlado, con el refactor de ChatRoom integrado; v65 permanece como versión anterior disponible para reversión. APK Android firmada y publicada **0.0.17** (`versionCode 17`), con BOOK 3D PWA embebido en la sesión nativa. [CI de la APK: SUCCESS](https://github.com/Abnernoa97/havana-nice-v2/actions/runs/42529962866) y [CI de la PWA/BOOK: SUCCESS](https://github.com/Abnernoa97/havana-nice-v2/actions/runs/42529962685). **Pruebas físicas de actualización, BOOK y sesión en Android aún pendientes; no equivale a APK instalada**.
 
 ## Aplicaciones
 
@@ -12,7 +12,7 @@
 | HOME | `/visual.html` | Calendario, Repertorio y Familia, por código diferido |
 | Administrador | `/admin.html` | Sesión propia y gestión de módulos |
 | BOOK | `/book.html` | Visor editorial 3D autorizado desde WebView |
-| Android | `apps/android/` | Chat nativo + módulos nativos + BOOK WebView |
+| Android | `apps/android/` | `app/NativeApp.tsx` mantiene la única sesión y HOME nativos; BOOK 3D PWA va embebido en WebView (sin segundo login) |
 
 Las entradas web son cuatro documentos HTML; los módulos no necesitan documentos/URLs independientes para **cargar su JavaScript de forma independiente**. `React.lazy`/`Suspense` difiere Calendar, Repertoire, Family, BOOK y paneles Admin. No crear sesiones separadas en cada sección. Un mismo usuario aprobado por Admin inicia sesión una vez.
 

@@ -6,7 +6,7 @@
 
 - **Una sola rama `main`**, un solo repositorio V2. Sin parches temporales, duplicar rutas o dejar motores alternativos. Borrar lógica verdaderamente sustituida solo después de verificar referencias y equivalencia funcional.
 - **No tocar HAVANA CLOUD, PWA original, Drive original, cuentas ni producción ajena a V2.** No migrar datos del sistema anterior. V2 es autónoma.
-- **iPhone:** PWA instalable. **Android:** app React Native/Expo con Chat nativo; instalar futura APK acumulativa encima de la anterior. No generar APK por cada mejora. Android APK publicada **0.0.14** (versionCode 14) y firmada con el certificado compatible con 0.0.13; la instalación física encima de 0.0.13 **no se ha comprobado aún**.
+- **iPhone:** PWA instalable. **Android:** app React Native/Expo con Chat nativo; instalar futura APK acumulativa encima de la anterior. No generar APK por cada mejora. Android APK publicada **0.0.17** (`versionCode 17`), firmada y compatible con la versión anterior según CI; instalación física encima de 0.0.16 **aún pendiente**.
 - **Identidad:** Admin autoriza nombres; el músico ingresa una vez y su instalación queda vinculada a una sola sesión/propietario. Rechazar desconocidos y revocados. Hasta 10 músicos, lista inicial Orly, Andy, Jali, Rafa, Noa y Fer. El Admin tiene sesión y permisos propios; un solo dueño de sesión para todos los módulos, sin nuevos accesos secundarios.
 - **Módulos independientes:** Chat, Calendario, Repertorio, Familia, BOOK, Músicos y futura Multimedia. HOME como navegación central; datos, estados y componentes separados; compartir contratos, servicios y sesión, no duplicar implementación.
 - **Primero funcionamiento, sincronización, velocidad y depuración.** Después pintura/estética. Preservar lo visual que el usuario ya confirmó de BOOK/Calendario.
@@ -29,8 +29,8 @@ apps/
     src/styles/         → CSS modular
     public/sw.js        → caché de recursos públicos, nunca APIs ni medios privados
   android/
-    App.tsx             → sesión, Chat, navegación, conexiones nativas
-    features/           → chat/, calendar/, repertoire/, family/, home/, book/
+    App.tsx             → entrada Expo; app/NativeApp.tsx mantiene sesión, Chat y conexiones
+    features/           → chat/, calendar/, repertoire/, family/, musicians/, book/
     services/           → almacenamiento, realtime y subida nativos
 packages/shared/src/   → APIs, modelos y políticas comunes
 cloudflare/src/index.ts → ÚNICA entrada Worker, CORS/ruteo/identidad
@@ -61,7 +61,7 @@ tests/ + cloudflare/tests/ + scripts/ → reglas de seguridad y CI
 - **Chat reconexión (P2, bloque 2):** ambos controladores cancelan un handshake WebSocket que no abre en 9 s, liberan el temporizador al abrir/cerrar y reutilizan el reintento progresivo existente. Nunca crea segundo socket o dueño. Verificación en dispositivos pendiente.
 - **Chat historial / búsquedas (P2, bloque 1):** `chat-history.ts` concentra paginación, unión de reacciones y control de consultas superpuestas. Un solo `ChatHistoryRequestGate` por App invalida respuestas antiguas al cambiar sesión o texto y evita cargas duplicadas. La sesión, socket, D1, R2 y estado siguen en su dueño original; pendiente resto de la separación.
 - **Separación de presentación del menú Chat:** controles de reacción/respuesta/editar/borrar ahora en `features/chat/PwaChatMessageMenu.tsx` y `features/chat/NativeChatMessageMenu.tsx`; únicamente props y callbacks, sin credenciales ni sockets paralelos. Verificado con pruebas automáticas; **no** implica que todo el controlador esté ya dividido.
-- **Pendiente:** reducir gradualmente la longitud de `apps/android/App.tsx` (~935 líneas) y `apps/pwa/src/app/App.tsx` (~775 líneas) por funciones cohesionadas, con pruebas antes/después. **No mover socket y sesión a nuevos dueños sin prueba de equivalencia y recuperación offline.**
+- **Pendiente:** reducir gradualmente la longitud de `apps/android/app/NativeApp.tsx` (~947 líneas) y `apps/pwa/src/app/App.tsx` (~829 líneas) por funciones cohesionadas, con pruebas antes/después. **No mover socket y sesión a nuevos dueños sin prueba de equivalencia y recuperación offline.**
 
 ### Familia, BOOK, Repertorio y Multimedia
 
@@ -80,7 +80,7 @@ tests/ + cloudflare/tests/ + scripts/ → reglas de seguridad y CI
 | Cloudflare Pages | publica `main`; comprobar SHA/deploy tras cada cambio |
 | Worker **en vivo** | **v66** `87e6d28a-f1eb-43ed-974b-eb1884198533` al 100 %. Despliegue gradual (sin tráfico → 1 % → 10 % → 100 %); v65 `81a512bb-a383-4258-8f5b-6aacf831b9b5` sigue disponible para reversión. |
 | Worker **en código** | Refactor publicado a v66 desde el bundle canónico Wrangler `SHA-256 0f67b065b8232a9adb1902711eb8850771ba17b3363dbbcbb8b5c135f714d02d`, idéntico en CI; mantiene los siete bindings y el mismo DO. |
-| Android | APK **0.0.14** publicada [aquí](https://github.com/Abnernoa97/havana-nice-v2/releases/download/v2-android-current/HAVANA-NICE-V2-LATEST.apk); firmado y verificado certificado anterior, `versionCode` 13 → 14 y APK 0.0.13 preservada como PREVIOUS. Instalación física pendiente. |
+| Android | APK **0.0.17** publicada [aquí](https://github.com/Abnernoa97/havana-nice-v2/releases/download/v2-android-current/HAVANA-NICE-V2-LATEST.apk); firma anterior compatible y `versionCode` 17 validados en [CI 42529962866](https://github.com/Abnernoa97/havana-nice-v2/actions/runs/42529962866). APK 0.0.16 preservada como PREVIOUS; instalación física y BOOK 3D sin segundo login pendientes. |
 | Colas R2 | BOOK, Calendario y baja de músicos: **0** operaciones pendientes al control |
 | Fotos personales | Calendario 4 recuerdos (3 WebP), BOOK 7 originales (0 WebP), Familia 16 archivos al control |
 
@@ -97,6 +97,7 @@ tests/ + cloudflare/tests/ + scripts/ → reglas de seguridad y CI
 - [x] **A6 Prueba offline de fragmentos PWA:** caché de chunks previamente visitados, fallo explícito de recursos no descargados y sin almacenar APIs privadas. **No equivale a validación iPhone sin conexión**.
 - [x] **A7 Datos y borrados R2 auditados:** todas las colas consultadas en 0, límites compartidos vigentes; no ejecutar borrado innecesario.
 - [x] **A8 Documentación consolidada:** un plan vigente y continuidad breve; notas obsoletas no deben quedar como segundo estado contradictorio. Git conserva la trazabilidad de cambios antiguos.
+- [x] **A8b Estado operativo alineado (08/11):** README, continuidad y Plan Maestro reflejan Worker v66 desplegado y APK 0.0.17 firmada/publicada, **no instalada ni validada en Android físico**. No se tocó código, sesión, D1, R2 ni producción ajena.
 - [x] **C5 Músicos / HOME:** directorio privado funcional con nombres reales de integrantes activos, en PWA y Android; usa la autoridad D1 y eventos privados ya existentes de Familia, sin duplicar tabla, sesiones ni Worker. Perfiles ampliados aún pendientes.
 - [x] **C4 Repertorio:** panel Admin descarta resultados de consultas antiguas y detecta expiraciones HTTP 401 originadas por Calendario. Sin cambiar tablas ni listas de canciones.
 - [x] **C3 Familia / Multimedia:** recuperación de WebSocket atascado al cambiar de red en iPhone y Android mediante timeout compartido; pruebas de paridad añadidas. Sin cambiar subida R2.
