@@ -18,7 +18,7 @@ export default function NativeChatMediaQueuePreview({
  return (
 <View accessibilityLabel="Archivos para enviar">
                <Text style={styles.mediaHint}>{selectedMedia.length} de {CHAT_MEDIA_MAX_PER_SEND} archivos · Fotos y Video</Text>
-               <ScrollView style={{maxHeight:250}} nestedScrollEnabled keyboardShouldPersistTaps="handled">
+               <ScrollView style={{maxHeight:190}} nestedScrollEnabled keyboardShouldPersistTaps="handled">
                  {selectedMedia.map(item=><View key={item.id} style={styles.mediaPreview}>
                    {item.kind==='photo'
                      ?<Image source={{uri:item.uri}} style={styles.mediaThumb}/>
@@ -27,7 +27,7 @@ export default function NativeChatMediaQueuePreview({
                      <Text style={styles.mediaName} numberOfLines={1}>{item.name}</Text>
                      <Text style={styles.mediaHint}>{item.kind==='photo'?'Fotografía':'Video'} · {(item.sizeBytes/1048576).toFixed(1)} MB</Text>
                    </View>
-                   <Pressable accessibilityRole="button"
+                   <Pressable accessibilityRole="button" disabled={mediaUploading}
                      accessibilityLabel={'Quitar '+item.name}
                      onPress={()=>onRemove(item)}>
                      <Text style={styles.mediaClose}>✕</Text>

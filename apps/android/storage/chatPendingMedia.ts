@@ -55,7 +55,7 @@ export async function preserveNativePendingMedia(
  items:readonly PendingNativeChatMedia[]
 ):Promise<{items:PendingNativeChatMedia[];uncopied:boolean}>{
  const result:PendingNativeChatMedia[]=[];
- let copiedBytes=0;
+ let copiedBytes=items.filter(stagedFile).reduce((sum,item)=>sum+item.sizeBytes,0);
  let uncopied=false;
  for(const item of items){
    if(stagedFile(item)){result.push(item);continue;}
