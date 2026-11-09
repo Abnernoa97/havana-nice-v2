@@ -12,7 +12,6 @@ import {styles} from '../../styles/chat-styles';
 // persistent outbox, pagination, scroll lifecycle and authenticated session.
 type Props={
  messages:ChatMessage[];
- results:ChatMessage[]|null;
  session:ChatSession;
  onlineActorIds:ReadonlySet<string>;
  connected:boolean;
@@ -32,7 +31,7 @@ type Props={
  onRetry:(clientMessageId:string)=>void;
 };
 export default function NativeChatTimeline({
- messages,results,session,onlineActorIds,connected,reactions,receipts,hasMore,loadingOlder,
+ messages,session,onlineActorIds,connected,reactions,receipts,hasMore,loadingOlder,
  scrollRef,onContentSizeChange,onLayout,onScrollBeginDrag,onScroll,onScrollEndDrag,
  onLoadOlder,onReply,onMessageLongPress,onRetry,
 }:Props){
@@ -41,7 +40,7 @@ export default function NativeChatTimeline({
  const liveRenderData=useMemo(()=>({display,onlineActorIds,connected}),
    [display,onlineActorIds,connected]);
  const visibleMessages=useMemo(
-  ()=>(results??messages).filter(message=>!message.deletedAt),[results,messages]);
+  ()=>messages.filter(message=>!message.deletedAt),[messages]);
  return (
   <FlatList
    ref={scrollRef} data={visibleMessages}
@@ -63,9 +62,8 @@ export default function NativeChatTimeline({
    onMomentumScrollEnd={onScrollEndDrag}
    scrollEventThrottle={16}
    ListHeaderComponent={<>
-    {results===null&&hasMore?<Pressable style={styles.loadMore} disabled={loadingOlder}
+    {hasMore?<Pressable style={styles.loadMore} disabled={loadingOlder}
       onPress={()=>void onLoadOlder()}><Text style={styles.loadMoreText}>{loadingOlder?'Cargando…':'Cargar mensajes anteriores'}</Text></Pressable>:null}
-    {results!==null?<Text style={styles.searchCount}>{results.length} resultado(s)</Text>:null}
    </>}
    ListEmptyComponent={!messages.length
     ?<Text style={styles.empty}>¡Hola! Envía el primer mensaje. Aparecerá en los dos dispositivos.</Text>
