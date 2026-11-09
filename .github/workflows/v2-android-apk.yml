@@ -89,7 +89,7 @@ jobs:
           # preinstalled tool over downloading another copy during CDN outages.
           # Keep the generated wrapper as a guarded fallback.
           GRADLE_BIN=(./gradlew)
-          if command -v gradle >/dev/null && gradle --version | grep -Eq '^Gradle 9\\.[4-9]\\.'; then
+          if command -v gradle >/dev/null && gradle --version | grep -Eq '^Gradle 9[.][4-9][.]'; then
             echo 'Using installed Gradle instead of downloading wrapper distribution'
             GRADLE_BIN=(gradle)
           fi
