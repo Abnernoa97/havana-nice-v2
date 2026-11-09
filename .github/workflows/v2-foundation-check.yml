@@ -1,20 +1,12 @@
 name: HAVANA NICE V2 foundation check
 
+# Cost control: frequent development commits must not start a full end-to-end
+# suite every time. Cloudflare Pages remains independently deployed on push.
+# Run the unchanged full suite manually before a release or twice weekly.
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - 'apps/**'
-      - 'cloudflare/**'
-      - 'packages/**'
-      - 'scripts/**'
-      - 'tests/**'
-      - 'package.json'
-      - 'package-lock.json'
-      - 'tsconfig.base.json'
-      - '.github/workflows/v2-foundation-check.yml'
   workflow_dispatch:
+  schedule:
+    - cron: '0 15 * * 1,4'
 
 permissions:
   contents: read
