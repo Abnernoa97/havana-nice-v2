@@ -122,6 +122,7 @@ export default function App() {
   const appLifecycle = useRef(AppState.currentState);
   const connectionTimers=useRef(new ChatConnectionTimers());
   const resumeGate=useRef(new ChatResumeGate());
+  const startupGate=useRef(new ChatResumeGate());
   const retryAttempts = useRef(0);
   const disposed = useRef(false);
   const connectLatest = useRef<(next: ChatSession) => void>(() => {});
@@ -193,6 +194,7 @@ export default function App() {
 
   function revokeCurrentAccess() {
     resumeGate.current.invalidate();
+    startupGate.current.invalidate();
     clearSelectedMedia();
     connectionTimers.current.clearHandshake();
     historyRequests.current.reset();
@@ -506,9 +508,9 @@ export default function App() {
       if (disposed.current) return;
       if (activeSession.current) {restoredStorage.current=true;persistLocal();return;}
       if (!saved?.session || chatSessionExpired(saved.session)) return;
-      const restoration=resumeGate.current.begin();
+      const restoration=startupGate.current.begin();
       const access=await recoverChatAccess(saved.session,restoreNamedChatSession);
-      if(disposed.current||!resumeGate.current.isRequestCurrent(restoration)||
+      if(disposed.current||!startupGate.current.isRequestCurrent(restoration)||
          activeSession.current)return;
       if (access.state==='revoked') {
         await saveNativeLocalChat(null);
@@ -535,7 +537,7 @@ export default function App() {
         beforeEdit.current=null;
       }
       setName(approved.displayName);
-      connectLatest.current(approved);
+      if(appLifecycle.current==='active')connectLatest.current(approved);
     }).catch(() => {}).finally(() => {restoredStorage.current=true;setRestoringAccess(false);});
     void fetchBackendHealth()
       .then(value => { if (!disposed.current) setApiState(value.ok ? 'conectada' : 'error'); })
@@ -577,6 +579,7 @@ export default function App() {
     return () => {
       disposed.current = true;
       resumeGate.current.invalidate();
+      startupGate.current.invalidate();
       subscription.remove();
       connectionTimers.current.clearAll();
       socket.current?.close();
@@ -617,6 +620,7 @@ export default function App() {
   async function join() {
     if(!name.trim()||joining)return;
     resumeGate.current.invalidate();
+    startupGate.current.invalidate();
     setJoining(true);setError('');
     try{
       const next=await startNamedChatSession(name.trim());

@@ -15,24 +15,31 @@ const defaultClock:ChatTimerClock={
 export class ChatConnectionTimers {
  private retryTimer:ChatTimerHandle|null=null;
  private handshakeTimer:ChatTimerHandle|null=null;
+ private retryGeneration=0;
+ private handshakeGeneration=0;
  private readonly clock:ChatTimerClock;
  constructor(clock:ChatTimerClock=defaultClock){this.clock=clock;}
 
  get retryPending():boolean{return this.retryTimer!==null;}
 
  clearRetry():void{
+  this.retryGeneration++;
   if(this.retryTimer!==null)this.clock.cancel(this.retryTimer);
   this.retryTimer=null;
  }
  clearHandshake():void{
+  this.handshakeGeneration++;
   if(this.handshakeTimer!==null)this.clock.cancel(this.handshakeTimer);
   this.handshakeTimer=null;
  }
 
  scheduleRetry(attempt:number,reconnect:()=>void):boolean{
   if(this.retryTimer!==null)return false;
+  const generation=++this.retryGeneration;
   this.retryTimer=this.clock.schedule(()=>{
+   if(generation!==this.retryGeneration)return;
    this.retryTimer=null;
+   this.retryGeneration++;
    reconnect();
   },chatReconnectDelay(attempt));
   return true;
@@ -40,8 +47,11 @@ export class ChatConnectionTimers {
 
  watchHandshake(stillConnecting:()=>boolean,onStalled:()=>void):void{
   this.clearHandshake();
+  const generation=this.handshakeGeneration;
   this.handshakeTimer=this.clock.schedule(()=>{
+   if(generation!==this.handshakeGeneration)return;
    this.handshakeTimer=null;
+   this.handshakeGeneration++;
    if(stillConnecting())onStalled();
   },CHAT_WS_HANDSHAKE_TIMEOUT_MS);
  }

@@ -52,3 +52,26 @@ test('clearing both timers prevents stale retries on app background/unmount',()=
  assert.equal(timers.retryPending,false);
  assert.equal(called,0);
 });
+
+test('callbacks already queued before cancel cannot resurrect a previous socket',()=>{
+ const jobs=new Map();let id=0;
+ const clock={
+  schedule(callback,delay){const key=++id;jobs.set(key,{callback,delay});return key;},
+  cancel(key){/* emulate a callback that was already delivered to the event queue */},
+ };
+ const controller=new ChatConnectionTimers(clock);
+ let retried=0,stalled=0;
+ controller.scheduleRetry(1,()=>retried++);
+ controller.watchHandshake(()=>true,()=>stalled++);
+ const obsolete=[...jobs.values()].map(job=>job.callback);
+ controller.clearAll();
+ for(const callback of obsolete)callback();
+ assert.equal(retried,0);
+ assert.equal(stalled,0);
+ controller.scheduleRetry(1,()=>retried++);
+ controller.watchHandshake(()=>true,()=>stalled++);
+ const current=[...jobs.values()].slice(2).map(job=>job.callback);
+ for(const callback of current)callback();
+ assert.equal(retried,1);
+ assert.equal(stalled,1);
+});

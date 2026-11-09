@@ -27,12 +27,30 @@ test('both platforms guard success, failure, startup restoration and logout',()=
  for(const path of ['apps/pwa/src/app/App.tsx','apps/android/app/NativeApp.tsx']){
   const source=readFileSync(new URL('../'+path,import.meta.url),'utf8');
   assert.match(source,/resumeGate=useRef\(new ChatResumeGate\(\)\)/);
+  assert.match(source,/startupGate=useRef\(new ChatResumeGate\(\)\)/);
   assert.match(source,/const request=resumeGate\.current\.begin\(\)/);
   assert.match(source,/const validResponse=\(\)=>resumeGate\.current\.isCurrent\(/);
   assert.match(source,/if\(!validResponse\(\)\)return/);
   assert.match(source,/if\(validResponse\(\)\)connectLatest\.current\(/);
-  assert.match(source,/const restoration=resumeGate\.current\.begin\(\)/);
-  assert.match(source,/!resumeGate\.current\.isRequestCurrent\(restoration\)/);
+  assert.match(source,/const restoration=startupGate\.current\.begin\(\)/);
+  assert.match(source,/!startupGate\.current\.isRequestCurrent\(restoration\)/);
   assert.match(source,/resumeGate\.current\.invalidate\(\)/);
  }
+});
+
+test('initial recovery is not invalidated by an unrelated foreground check',()=>{
+ const startup=new ChatResumeGate(),resume=new ChatResumeGate();
+ const initial=startup.begin();
+ const foreground=resume.begin();
+ resume.invalidate();
+ assert.equal(startup.isRequestCurrent(initial),true);
+ assert.equal(resume.isRequestCurrent(foreground),false);
+ startup.invalidate();
+ assert.equal(startup.isRequestCurrent(initial),false);
+});
+test('restoration waits until the platform is foreground before opening a socket',()=>{
+ const pwa=readFileSync(new URL('../apps/pwa/src/app/App.tsx',import.meta.url),'utf8');
+ const native=readFileSync(new URL('../apps/android/app/NativeApp.tsx',import.meta.url),'utf8');
+ assert.match(pwa,/if\(document\.visibilityState==='visible'&&navigator\.onLine\)\s*connectLatest\.current\(approved\)/);
+ assert.match(native,/if\(appLifecycle\.current==='active'\)connectLatest\.current\(approved\)/);
 });

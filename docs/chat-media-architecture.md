@@ -161,3 +161,10 @@ mientras la app está en segundo plano, fuera de línea, revocada o con una
 nueva sesión. En ambos clientes, solo la última comprobación de identidad
 puede reconectar o revocar acceso. El socket permanece en su controlador
 original, sin modificar almacenamiento ni endpoints.
+
+Las validaciones al volver a primer plano y la recuperación inicial tienen
+controles de antigüedad separados: ocultar la app invalida los resultados de
+reconexión, **no** descarta la recuperación inicial de la sesión guardada.
+La conexión inicial se aplaza hasta que PWA esté visible y con red, o Android
+esté activa. Los temporizadores también invalidan callbacks ya cancelados,
+aunque el sistema entregue uno de ellos tardíamente.

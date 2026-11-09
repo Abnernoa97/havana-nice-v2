@@ -119,6 +119,7 @@ export default function App() {
   const ackTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
   const connectionTimers=useRef(new ChatConnectionTimers());
   const resumeGate=useRef(new ChatResumeGate());
+  const startupGate=useRef(new ChatResumeGate());
   const retryCount = useRef(0);
   const disposed = useRef(false);
   const bottom = useRef<HTMLDivElement | null>(null);
@@ -174,6 +175,7 @@ export default function App() {
 
   function revokeCurrentAccess() {
     resumeGate.current.invalidate();
+    startupGate.current.invalidate();
     clearSelectedMedia();
     connectionTimers.current.clearHandshake();
     historyRequests.current.reset();
@@ -445,9 +447,9 @@ export default function App() {
       if(disposed.current)return;
       if(activeSession.current){restoredStorage.current=true;persist();return;}
       if (!saved || !saved.session || chatSessionExpired(saved.session)) return;
-      const restoration=resumeGate.current.begin();
+      const restoration=startupGate.current.begin();
       const access=await recoverChatAccess(saved.session,restoreNamedChatSession);
-      if(disposed.current||!resumeGate.current.isRequestCurrent(restoration)||
+      if(disposed.current||!startupGate.current.isRequestCurrent(restoration)||
          activeSession.current)return;
       if(access.state==='revoked'){
         await saveLocalChat(null);
@@ -473,7 +475,8 @@ export default function App() {
         beforeEdit.current=null;
       }
       setName(approved.displayName);
-      connectLatest.current(approved);
+      if(document.visibilityState==='visible'&&navigator.onLine)
+        connectLatest.current(approved);
     }).catch(() => {}).finally(() => {restoredStorage.current=true;setRestoringAccess(false);});
     void fetchBackendHealth().then(data => {
       if (!disposed.current) setHealth(data);
@@ -515,6 +518,7 @@ export default function App() {
     return () => {
       disposed.current = true;
       resumeGate.current.invalidate();
+      startupGate.current.invalidate();
       document.removeEventListener('visibilitychange', resume);
       window.removeEventListener('online', resume);
       window.removeEventListener('offline', offline);
@@ -566,6 +570,7 @@ export default function App() {
   async function join(){
     if(!name.trim()||joining)return;
     resumeGate.current.invalidate();
+    startupGate.current.invalidate();
     setJoining(true);setError('');
     try{
       const next=await startNamedChatSession(name.trim());
