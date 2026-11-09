@@ -90,7 +90,7 @@ test('Chat context menus are independent render-only components, not another ses
  assert.match(webApp,/<PwaChatMessageMenu message=\{menuMessage\}/);
  assert.match(nativeApp,/<NativeChatMessageMenu message=\{menuMessage\}/);
  for(const src of [pwa,android]){
-  assert.match(src,/onReact\(message,emoji\)/);
+  assert.match(src,/onReact\(message,emoji(?:,|\))/);
    assert.doesNotMatch(src,/Responder|onReply|onDelete|onEdit/);
    assert.ok(src.includes("['👍','❤️','😂']"));
   assert.doesNotMatch(src,/new WebSocket|startNamedChatSession|restoreNamedChatSession|getChatSnapshot|AsyncStorage|localStorage|fetch\(/);
