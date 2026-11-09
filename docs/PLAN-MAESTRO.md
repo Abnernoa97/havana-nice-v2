@@ -154,6 +154,8 @@ tests/ + cloudflare/tests/ + scripts/ → reglas de seguridad y CI
 
 ## 6. BOOK y Recuerdos 3D · una sola entrada Android (09/11/2026)
 
+- [x] **Retorno de páginas 3D compartido (09/11):** bug reproducido en Chrome antes de corregirlo: `Página anterior` no cambiaba hoja. `page-flip@2.0.7` calcula `x=10` para `flipPrev` y, en un libro centrado con `disableFlipByClick:true`, la esquina queda fuera del libro. Solución en el **único** `BookReader.tsx`: enviar la esquina física `rect.left+10` / `rect.top+rect.height-2` al mismo controlador PageFlip. La prueba [42573769336 SUCCESS](https://github.com/Abnernoa97/havana-nice-v2/actions/runs/42573769336) verifica avance, retroceso hasta portada, swipe inverso, scroll vertical y una sola instancia en móvil/escritorio. Pages publicó `d4b866c` correctamente; **sin APK nueva**. QA en teléfono pendiente.
+
 - [x] **Localizado:** Cloudflare Pages redirige `/book.html` a `/book`. Las APK anteriores bloqueaban la redirección; corregido en 0.0.20. El ensayo público de HTML y JS pasó. [CI](https://github.com/Abnernoa97/havana-nice-v2/actions/runs/42566524470).
 - [x] **Prueba física 0.0.20:** la PWA ya ejecuta JavaScript, pero no recibe el contexto de sesión `injectedObjectJson()` de Android. Los datos no se borraron ni dejaron de existir.
 - [x] **Sustitución arquitectónica implementada en `main`:** un solo puente en memoria: página registra listener → emite `boot` → Android entrega contexto mediante `injectJavaScript`, comprobando origen y ruta → PWA valida el token existente y abre el único PageFlip. Se elimina dependencia del objeto inyectado y el bucle de 30 reintentos. Sin login adicional, token en URL o almacenamiento persistente.
