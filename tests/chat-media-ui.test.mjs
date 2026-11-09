@@ -187,8 +187,8 @@ test('PWA Chat Timeline stays presentation-only: one session, one history engine
  const controller=read('apps/pwa/src/app/App.tsx');
  const timeline=read('apps/pwa/src/features/chat/ChatTimeline.tsx');
  assert.match(controller,/<ChatTimeline messages=\{messages\}/);
- assert.match(controller,/onLoadOlder=\{\(\)=>void loadOlder\(\)\}/);
- assert.match(controller,/onMessageLongPress=\{showMessageMenu\}/);
+ assert.match(controller,/onLoadOlder=\{onTimelineLoadOlder\}/);
+ assert.match(controller,/onMessageLongPress=\{onTimelineLongPress\}/);
  assert.match(timeline,/onSwipeRight=\{\(\)=>onReply\(message\)\}/);
  assert.match(timeline,/onLongPress=\{anchor=>onMessageLongPress\(message,anchor\)\}/);
  assert.match(timeline,/display\.lastReadByOther/);
@@ -199,9 +199,9 @@ test('Native Chat timeline is presentation-only; original scroll ownership stays
  const controller=read('apps/android/app/NativeApp.tsx');
  const timeline=read('apps/android/features/chat/NativeChatTimeline.tsx');
  assert.match(controller,/import NativeChatTimeline from '\.\.\/features\/chat\/NativeChatTimeline'/);
- assert.match(controller,/<NativeChatTimeline[\s\S]*onContentSizeChange=\{/);
- assert.match(controller,/onScrollBeginDrag=\{\(\)=>\{/);
- assert.match(controller,/onScrollEndDrag=\{trackUserScroll\}/);
+ assert.match(controller,/<NativeChatTimeline[\s\S]*onContentSizeChange=\{onTimelineContentChange\}/);
+ assert.match(controller,/onScrollBeginDrag=\{onTimelineScrollBeginDrag\}/);
+ assert.match(controller,/onScrollEndDrag=\{onTimelineScrollEndDrag\}/);
  assert.match(timeline,/<FlatList/);
  assert.match(timeline,/data=\{visibleMessages\}/);
  assert.match(timeline,/keyExtractor=\{message=>message.senderId\+':'\+message.clientMessageId\}/);

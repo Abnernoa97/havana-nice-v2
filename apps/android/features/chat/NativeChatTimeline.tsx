@@ -1,4 +1,4 @@
-import React,{useMemo,type RefObject} from 'react';
+import React,{memo,useMemo,type RefObject} from 'react';
 import {FlatList,View,Text,Pressable,type NativeScrollEvent,type NativeSyntheticEvent} from 'react-native';
 import {
  buildChatDisplayIndex,messageDeliveryLabel,
@@ -30,7 +30,7 @@ type Props={
  onMessageLongPress:(message:ChatMessage,anchor:BubbleAnchor)=>void;
  onRetry:(clientMessageId:string)=>void;
 };
-export default function NativeChatTimeline({
+function NativeChatTimeline({
  messages,session,onlineActorIds,connected,reactions,receipts,hasMore,loadingOlder,
  scrollRef,onContentSizeChange,onLayout,onScrollBeginDrag,onScroll,onScrollEndDrag,
  onLoadOlder,onReply,onMessageLongPress,onRetry,
@@ -109,3 +109,6 @@ export default function NativeChatTimeline({
   />
  );
 }
+
+// A live typing indicator must not remount video surfaces in the FlatList.
+export default memo(NativeChatTimeline);

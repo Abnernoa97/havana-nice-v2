@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import {
   Alert, AppState, BackHandler, Keyboard, KeyboardAvoidingView, PanResponder, Platform, Pressable, SafeAreaView, FlatList,
   StatusBar, Text, TextInput, View, useWindowDimensions,
@@ -755,6 +755,43 @@ export default function App() {
     flushOutbox();
   }
 
+  // Stable props let the virtualized list ignore typing/composer re-renders.
+  // Real message, receipt and presence changes still update it immediately.
+  const timelineActions=useRef({
+    loadOlder,replyToMessage,showMessageMenu,retryOutgoing,trackUserScroll,
+  });
+  useLayoutEffect(()=>{
+    timelineActions.current={
+      loadOlder,replyToMessage,showMessageMenu,retryOutgoing,trackUserScroll,
+    };
+  });
+  const onTimelineLoadOlder=useCallback(()=>{void timelineActions.current.loadOlder();},[]);
+  const onTimelineReply=useCallback((message:ChatMessage)=>{
+    timelineActions.current.replyToMessage(message);
+  },[]);
+  const onTimelineLongPress=useCallback((message:ChatMessage,anchor:BubbleAnchor)=>{
+    timelineActions.current.showMessageMenu(message,anchor);
+  },[]);
+  const onTimelineRetry=useCallback((id:string)=>{
+    timelineActions.current.retryOutgoing(id);
+  },[]);
+  const onTimelineContentChange=useCallback(()=>{
+    if(initialHistoryPending.current)scheduleInitialBottom();
+    else if(autoScroll.current)scroll.current?.scrollToEnd({animated:false});
+  },[]);
+  const onTimelineScrollBeginDrag=useCallback(()=>{
+    userHasScrolled.current=true;
+    initialHistoryPending.current=false;
+    if(initialBottomTimer.current)clearTimeout(initialBottomTimer.current);
+    initialBottomTimer.current=null;
+  },[]);
+  const onTimelineScroll=useCallback((event:Parameters<typeof trackUserScroll>[0])=>{
+    if(userHasScrolled.current)timelineActions.current.trackUserScroll(event);
+  },[]);
+  const onTimelineScrollEndDrag=useCallback((event:Parameters<typeof trackUserScroll>[0])=>{
+    timelineActions.current.trackUserScroll(event);
+  },[]);
+
   // One message-action policy across native Android and the iPhone PWA.
   // Keep Android-specific StatusBar and keyboard viewport insets unchanged.
   const {width:menuWidth,top:menuTop,left:menuLeft}=getChatMenuState(
@@ -799,24 +836,13 @@ export default function App() {
                onlineActorIds={onlineActorIds} connected={connection==='en vivo'}
               reactions={reactions} receipts={receipts}
               hasMore={hasMore} loadingOlder={loadingOlder} scrollRef={scroll}
-              onContentSizeChange={()=>{
-                if(initialHistoryPending.current)scheduleInitialBottom();
-                else if(autoScroll.current)scroll.current?.scrollToEnd({animated:false});
-              }}
-              onLayout={()=>{
-                if(initialHistoryPending.current)scheduleInitialBottom();
-                else if(autoScroll.current)scroll.current?.scrollToEnd({animated:false});
-              }}
-              onScrollBeginDrag={()=>{
-                userHasScrolled.current=true;
-                initialHistoryPending.current=false;
-                if(initialBottomTimer.current)clearTimeout(initialBottomTimer.current);
-                initialBottomTimer.current=null;
-              }}
-              onScroll={event=>{if(userHasScrolled.current)trackUserScroll(event);}}
-              onScrollEndDrag={trackUserScroll}
-              onLoadOlder={()=>void loadOlder()} onReply={replyToMessage}
-              onMessageLongPress={showMessageMenu} onRetry={retryOutgoing}
+              onContentSizeChange={onTimelineContentChange}
+              onLayout={onTimelineContentChange}
+              onScrollBeginDrag={onTimelineScrollBeginDrag}
+              onScroll={onTimelineScroll}
+              onScrollEndDrag={onTimelineScrollEndDrag}
+              onLoadOlder={onTimelineLoadOlder} onReply={onTimelineReply}
+              onMessageLongPress={onTimelineLongPress} onRetry={onTimelineRetry}
             />
             <NativeChatMessageMenu message={menuMessage} actorId={session.actorId}
               connection={connection} reactions={reactions}

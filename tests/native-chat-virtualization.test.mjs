@@ -32,6 +32,6 @@ test('Virtual list preserves native video surfaces, old-page loading, deletes, r
  assert.match(controller,/const scroll = useRef<FlatList<ChatMessage> \| null>\(null\)/);
  assert.match(controller,/scroll\.current\?\.scrollToEnd\(\{animated:false\}\)/);
  assert.match(controller,/userHasScrolled\.current=true/);
- assert.match(controller,/onScrollEndDrag=\{trackUserScroll\}/);
+ assert.match(controller,/onScrollEndDrag=\{onTimelineScrollEndDrag\}/);
  assert.doesNotMatch(timeline,/new WebSocket|AsyncStorage|saveNativeLocalChat|uploadNativeChatFile/);
 });

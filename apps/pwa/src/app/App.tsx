@@ -742,6 +742,24 @@ export default function App() {
     flushOutbox();
   }
 
+  // Stable timeline actions: drafts, typing and composer gestures may update
+  // the controller without rebuilding every photo/video/message bubble.
+  // The latest handlers are committed before the next user interaction.
+  const timelineActions=useRef({loadOlder,replyToMessage,showMessageMenu,retryMessage});
+  useLayoutEffect(()=>{
+    timelineActions.current={loadOlder,replyToMessage,showMessageMenu,retryMessage};
+  });
+  const onTimelineLoadOlder=useCallback(()=>{void timelineActions.current.loadOlder();},[]);
+  const onTimelineReply=useCallback((message:ChatMessage)=>{
+    timelineActions.current.replyToMessage(message);
+  },[]);
+  const onTimelineLongPress=useCallback((message:ChatMessage,anchor:MessageAnchor)=>{
+    timelineActions.current.showMessageMenu(message,anchor);
+  },[]);
+  const onTimelineRetry=useCallback((id:string)=>{
+    timelineActions.current.retryMessage(id);
+  },[]);
+
   // Shared policy keeps edit/delete windows identical on iPhone and Android.
   // Browser visual viewport offsets still protect the keyboard and notch.
   const {width:menuWidth,top:menuTop,left:menuLeft}=getChatMenuState(
@@ -805,8 +823,8 @@ export default function App() {
              onlineActorIds={onlineActorIds} connected={connection==='en vivo'}
             reactions={reactions} receipts={receipts}
             hasMore={hasMore} loadingOlder={loadingOlder}
-            onLoadOlder={()=>void loadOlder()} onReply={replyToMessage}
-            onMessageLongPress={showMessageMenu} onRetry={retryMessage}
+            onLoadOlder={onTimelineLoadOlder} onReply={onTimelineReply}
+            onMessageLongPress={onTimelineLongPress} onRetry={onTimelineRetry}
             bottomRef={bottom}/>
           <PwaChatMessageMenu message={menuMessage} actorId={session.actorId}
             connection={connection} reactions={reactions}

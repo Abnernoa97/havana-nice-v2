@@ -1,4 +1,4 @@
-import {useMemo,type RefObject} from 'react';
+import {memo,useMemo,type RefObject} from 'react';
 import {
  buildChatDisplayIndex,messageDeliveryLabel,
  type ChatMessage,type ChatReaction,type ChatReadReceipt
@@ -24,7 +24,7 @@ type ChatTimelineProps={
  bottomRef:RefObject<HTMLDivElement|null>;
 };
 
-export default function ChatTimeline({
+function ChatTimeline({
  messages,actorId,onlineActorIds,connected,token,reactions,receipts,hasMore,loadingOlder,
  onLoadOlder,onReply,onMessageLongPress,onRetry,bottomRef,
 }:ChatTimelineProps){
@@ -69,3 +69,6 @@ export default function ChatTimeline({
           </section>
  );
 }
+
+// Prevent a keystroke from re-rendering the entire conversation history.
+export default memo(ChatTimeline);
