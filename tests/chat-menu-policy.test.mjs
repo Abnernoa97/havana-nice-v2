@@ -85,16 +85,16 @@ test('Chat context menus are independent render-only components, not another ses
  const nativeApp=readFileSync(new URL('../apps/android/app/NativeApp.tsx',import.meta.url),'utf8');
  assert.match(webApp,/import PwaChatMessageMenu from/);
  assert.match(nativeApp,/import NativeChatMessageMenu from/);
+  assert.ok(readFileSync(new URL('../apps/pwa/src/features/chat/SwipeMessage.tsx',import.meta.url),'utf8').includes('onSwipeRight()'));
+  assert.ok(readFileSync(new URL('../apps/android/features/chat/SwipeableBubble.tsx',import.meta.url),'utf8').includes('callbacks.current.onReply()'));
  assert.match(webApp,/<PwaChatMessageMenu message=\{menuMessage\}/);
  assert.match(nativeApp,/<NativeChatMessageMenu message=\{menuMessage\}/);
  for(const src of [pwa,android]){
   assert.match(src,/onReact\(message,emoji\)/);
-  assert.match(src,/onReply\(message\)/);
-  assert.match(src,/onDelete\(m\)/);
+   assert.doesNotMatch(src,/Responder|onReply|onDelete|onEdit/);
+   assert.ok(src.includes("['👍','❤️','😂']"));
   assert.doesNotMatch(src,/new WebSocket|startNamedChatSession|restoreNamedChatSession|getChatSnapshot|AsyncStorage|localStorage|fetch\(/);
  }
- assert.match(pwa,/¿Borrar este mensaje para todos\?/);
- assert.match(android,/Alert\.alert\('Borrar mensaje'/);
 });
 test('both frontends call the same helper, never duplicate message edit policy',()=>{
  const paths=['apps/pwa/src/app/App.tsx','apps/android/app/NativeApp.tsx'];
