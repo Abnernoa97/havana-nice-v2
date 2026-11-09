@@ -69,9 +69,38 @@ jobs:
       # The installed APK must be a standalone app: debug builds require Metro.
       - name: Build standalone release APK with embedded JS bundle
         working-directory: apps/android/android
+        shell: bash
         run: |
+          set -euo pipefail
+          # Expo prebuild generates the wrapper. Gradle's official direct CDN
+          # avoids services.gradle.org -> GitHub release redirects (504 observed).
+          node <<'NODE'
+          const fs=require('node:fs');
+          const file='gradle/wrapper/gradle-wrapper.properties';
+          const source=fs.readFileSync(file,'utf8');
+          if(!source.includes('services.gradle.org/distributions/'))
+            throw Error('Unexpected Gradle wrapper origin; inspect before changing');
+          fs.writeFileSync(file,source.replace(
+            'services.gradle.org/distributions/',
+            'downloads.gradle.org/distributions/'));
+          NODE
           chmod +x gradlew
-          ./gradlew --no-daemon --stacktrace assembleRelease
+          for attempt in 1 2 3; do
+            if ./gradlew --no-daemon --stacktrace assembleRelease 2>&1 | tee "/tmp/v2-gradle-attempt-${attempt}.log"; then
+              echo "Release APK compiled successfully (attempt ${attempt})"
+              exit 0
+            fi
+            if ! grep -Eiq 'HTTP response code: 50[234]|Received status code 50[234]|Gateway Time-out|Read timed out|Connection reset' "/tmp/v2-gradle-attempt-${attempt}.log"; then
+              echo 'Gradle failed for a non-network reason; do not retry a code failure'
+              exit 1
+            fi
+            if [ "${attempt}" -lt 3 ]; then
+              echo "Temporary Gradle dependency outage. Retry ${attempt}/3."
+              sleep "$((attempt*20))"
+            fi
+          done
+          echo 'Gradle downloads are still unavailable. Existing release unchanged.'
+          exit 1
 
       - name: Verify JS bundle is packaged and APK is signed
         shell: bash
