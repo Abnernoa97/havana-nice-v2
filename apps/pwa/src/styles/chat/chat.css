@@ -78,6 +78,28 @@ h1 span { font-weight:400; }
 .whatsapp-reactions button[aria-pressed="true"]{background:#e3eee5}
 .whatsapp-reactions button:disabled{opacity:.35}
 
+/* The shower is visual-only, cannot steal taps or message swipes, and is capped
+   by the shared particle policy for smooth iPad/iPhone/Android web rendering. */
+.message-menu-overlay{isolation:isolate;}
+.whatsapp-context{z-index:2;}
+.chat-reaction-shower{position:fixed;inset:0;z-index:1;pointer-events:none;overflow:hidden;}
+.chat-reaction-particle{position:absolute;display:block;line-height:1;pointer-events:none;
+  user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;
+  opacity:0;will-change:transform,opacity;animation:hn-reaction-float ease-out forwards;}
+.whatsapp-reactions button{touch-action:manipulation;-webkit-touch-callout:none;
+  user-select:none;-webkit-user-select:none;}
+.whatsapp-reactions button.burst-active{background:#e3eee5;transform:scale(1.1);}
+@keyframes hn-reaction-float{
+  0%{opacity:0;transform:translate3d(0,8px,0) scale(.72) rotate(-10deg);}
+  12%{opacity:1;}
+  76%{opacity:1;}
+  100%{opacity:0;transform:translate3d(var(--burst-dx),var(--burst-dy),0) scale(1.18) rotate(12deg);}
+}
+@media(prefers-reduced-motion:reduce){
+  .chat-reaction-particle{animation-duration:550ms!important;}
+}
+
+
 
 /* One WhatsApp-style dock: controls stay in a single row; popovers NEVER push messages. */
 .chat-app{position:relative}
