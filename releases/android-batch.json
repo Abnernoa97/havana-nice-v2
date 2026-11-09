@@ -1,7 +1,7 @@
 {
   "approved": true,
   "releaseMode": "explicit-batch",
-  "version": "0.0.18",
-  "versionCode": 18,
-  "notes": "BOOK 0.0.18 correctiva: Android WebView muestra un indicador nativo, espera prueba real del render de StPageFlip y ofrece recuperación/reintento ante pantalla vacía; PWA reintenta una lectura tardía del mismo objeto de sesión sin pedir otro login. Preservar firma de 0.0.17, instalación por actualización sin eliminar datos, sesiones, Chat, Calendario, Familia, D1, R2 ni Worker. Publicación de lote solicitada explícitamente por usuario 09/11/2026. QA física BOOK/Recuerdos pendiente."
+  "version": "0.0.19",
+  "versionCode": 19,
+  "notes": "APK 0.0.19 expresamente aprobada 09/11/2026: diagnostico de BOOK y Recuerdos Android con WebView visible, fases HTML/JavaScript/sesion/paginas y validacion de estado de render sin depender de URL de mensaje nativo. Misma sesion del cascaron Android, PWA y StPageFlip existente, sin autorizaciones extra, tokens en URL, segundo motor, ni cambios a Chat, Familia, Calendario, datos D1/R2, Worker o HAVANA CLOUD. Mantener firma compatible con 0.0.18, versionCode 19, actualizacion encima y 0.0.18 PREVIOUS. Prueba fisica de causa y funcionamiento pendiente."
 }
