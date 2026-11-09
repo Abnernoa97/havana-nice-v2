@@ -620,7 +620,7 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - name: Validate Expo 58.0.23 candidate in real generated Android project (no release)
+      - name: Validate aligned Expo 58.0.23/RN 0.88.1 native candidate (no release)
         shell: bash
         timeout-minutes: 35
         env:
@@ -628,7 +628,7 @@ jobs:
         run: |
           set -euo pipefail
           cp package-lock.json /tmp/hn-expo58-baseline-lock.json
-          npm install --save-exact --no-fund --no-audit --ignore-scripts -w @havana/android expo@58.0.23
+          npm install --save-exact --no-fund --no-audit --ignore-scripts -w @havana/android expo@58.0.23 react-native@0.88.1 expo-sqlite@58.0.15 expo-video@58.0.13
           npm ci
           node <<'NODE'
           const fs=require('node:fs');
