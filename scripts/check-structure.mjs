@@ -68,7 +68,7 @@ assert.match(nativeController,/startNamedChatSession/);
 assert.match(nativeController,/restoreNamedChatSession/);
 assert.match(nativeController,/from '\.\.\/storage\/chatStorage'/);
 assert.match(nativeController,/from '\.\.\/styles\/chat-styles'/);
-assert.match(nativeController,/useNativeKeyboardVisibility\(\)/);
+assert.match(nativeController,/useNativeKeyboardVisibility\(activeScreen==='chat'\)/);
 assert.match(readFileSync(join(rootDir,'apps/android/storage/chatStorage.ts'),'utf8'),
  /havana-v2-chat-local-v1/,'Never lose the installed Android session/drafts/outbox key');
 
