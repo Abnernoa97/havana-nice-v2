@@ -1,6 +1,6 @@
 import React,{useCallback,useEffect,useRef,useState} from 'react';
 import {
- Animated,Easing,Modal,Pressable,StyleSheet,Text,View,useWindowDimensions,
+ Animated,Easing,Modal,Pressable,Text,View,useWindowDimensions,
 } from 'react-native';
 import {
  makeChatReactionParticles,CHAT_REACTION_BURST_HOLD_MS,CHAT_REACTION_BURST_TICK_MS,
@@ -78,7 +78,7 @@ export default function NativeChatMessageMenu({message,actorId,connection,reacti
  return <Modal animationType="fade" transparent statusBarTranslucent visible={!!message}
       onRequestClose={onClose}>
    <Pressable style={styles.whatsappBackdrop} onPress={onClose}>
-     <View pointerEvents="none" style={StyleSheet.absoluteFillObject} accessible={false}>
+     <View pointerEvents="none" style={{position:'absolute',top:0,left:0,right:0,bottom:0}} accessible={false}>
        {particles.map(particle=><FloatingEmoji key={particle.id}
          particle={particle} onDone={removeParticle}/>)}
      </View>
