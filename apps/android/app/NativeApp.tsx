@@ -14,6 +14,7 @@ import { loadNativeLocalChat, saveNativeLocalChat } from '../storage/chatStorage
 import type {BubbleAnchor} from '../features/chat/SwipeableBubble';
 import NativeChatTimeline from '../features/chat/NativeChatTimeline';
 import NativeChatMessageMenu from '../features/chat/NativeChatMessageMenu';
+import NativeChatReactionShower,{type ReactionShowerBurst} from '../features/chat/NativeChatReactionShower';
 import NativeComposerIcon from '../features/chat/ChatComposerIcon';
 import NativeMemberHome from './NativeMemberHome';
 import {uploadNativeChatFile} from '../services/native-chat-r2-upload';
@@ -76,6 +77,10 @@ export default function App() {
   const [searching,setSearching] = useState(false);
   const [editing,setEditing] = useState<ChatMessage | null>(null);
   const [menuMessage,setMenuMessage] = useState<ChatMessage | null>(null);
+  const [reactionBurst,setReactionBurst]=useState<ReactionShowerBurst|null>(null);
+  const reactionBurstId=useRef(0);
+  const [draftFieldHeight,setDraftFieldHeight]=useState(42);
+  useEffect(()=>{if(!draft)setDraftFieldHeight(42);},[draft]);
   const [menuAnchor,setMenuAnchor] = useState<BubbleAnchor | null>(null);
   // Android system Back: unwind Chat or another member module before exiting.
   useEffect(()=>{
@@ -839,7 +844,10 @@ export default function App() {
               connection={connection} reactions={reactions}
               left={menuLeft} top={menuTop} width={menuWidth}
               onClose={()=>setMenuMessage(null)}
-              onReact={(m,emoji)=>{react(m.seq,emoji);setMenuMessage(null);}}
+              onReact={(m,emoji,origin)=>{
+                setReactionBurst({id:++reactionBurstId.current,emoji,...origin});
+                react(m.seq,emoji);setMenuMessage(null);
+              }}
             />
             {error ? <Text style={styles.errorBanner}>{error}</Text> : null}
             {connection !== 'en vivo' ? (
@@ -878,9 +886,17 @@ export default function App() {
                    style={styles.composerIcon} onPress={()=>{Keyboard.dismiss();setComposerPanel(v=>v==='emojis'?null:'emojis');}}>
                    <NativeComposerIcon name="emoji"/>
                  </Pressable>
-                 <TextInput accessibilityLabel="Escribir mensaje" style={styles.draft} value={draft}
+                 <TextInput accessibilityLabel="Escribir mensaje" style={[styles.draft,{height:draftFieldHeight}]} value={draft}
                    onChangeText={value=>{typeText(value);setComposerPanel(null);}}
                    editable={!savingEdit} maxLength={2000} multiline
+                   onContentSizeChange={event=>{
+                     const measured=Math.ceil(event.nativeEvent.contentSize.height);
+                     setDraftFieldHeight(old=>{
+                       const next=Math.max(42,Math.min(132,measured));
+                       return next===old?old:next;
+                     });
+                   }}
+                   scrollEnabled={draftFieldHeight>=132} textAlignVertical="top"
                    placeholder={connection==='en vivo'?'Mensaje':'Sin conexión: se enviará después…'}
                    placeholderTextColor="#85898a"/>
                  <Pressable accessibilityRole="button" accessibilityLabel="Adjuntar fotografía o video"
@@ -938,6 +954,7 @@ export default function App() {
       </KeyboardAvoidingView>
       {session&&activeScreen!=='chat'&&<NativeMemberHome token={session.token} displayName={session.displayName}
         active={activeScreen} onNavigate={navigateTo}/>}
+      {session&&activeScreen==='chat'&&<NativeChatReactionShower burst={reactionBurst}/>}
     </SafeAreaView>
   );
 }
