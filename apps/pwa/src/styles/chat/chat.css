@@ -59,6 +59,12 @@ h1 span { font-weight:400; }
 @media(max-width:380px){.chat-search{gap:4px;padding-inline:8px}.bubble{max-width:94%}}
 /* Messaging gestures: content-first bubbles, reply by swipe, context actions on hold */
 .bubble{position:relative;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;min-width:92px;}
+/* Protect long-press reactions from WebKit/Android text-selection handles. */
+.chat-messages .bubble,.chat-messages .bubble *{user-select:none!important;-webkit-user-select:none!important;-webkit-touch-callout:none!important;}
+/* Only members currently present in the shared live room receive green bubbles. */
+.bubble.online{background:#123D32;color:#fff;}
+.bubble.online .sender{color:#F6EEDD;}
+.bubble.online .reply-original{opacity:.8;}
 .bubble:focus-visible{outline:2px solid #98745b;outline-offset:3px}
 .reaction-counts{display:flex;align-items:center;justify-content:flex-end;gap:4px;margin-top:5px}
 .reaction-counts span{font-size:11px;line-height:1.3;border-radius:9px;padding:2px 6px;background:#e6e2d8;color:#38372f}
@@ -71,11 +77,6 @@ h1 span { font-weight:400; }
   line-height:1;padding:8px;min-width:46px;min-height:46px}
 .whatsapp-reactions button[aria-pressed="true"]{background:#e3eee5}
 .whatsapp-reactions button:disabled{opacity:.35}
-.whatsapp-actions{align-self:stretch;display:flex;align-items:center;justify-content:space-evenly;
-  min-height:55px;background:#fff;border-radius:15px;padding:0 4px;box-shadow:0 4px 20px #0002}
-.whatsapp-actions button{background:transparent;border:0;padding:14px 8px;font-size:14px;
-  white-space:nowrap;font-weight:600;color:#25251f;min-height:44px}
-.whatsapp-actions .whatsapp-delete{color:#b3261e}
 
 
 /* One WhatsApp-style dock: controls stay in a single row; popovers NEVER push messages. */
