@@ -20,6 +20,10 @@ test('Android opens the PWA 3D directly in its own shell with the existing login
  assert.match(n,/message.type!=='havana-v2-book-status'/);
  assert.match(n,/injectedJavaScriptObject=\{nativeContext\}/);
  assert.match(n,/source=\{\{uri:READER\}\}/);
+ assert.match(n,/const READER=ORIGIN\+'\/book';/);
+ assert.match(n,/url\.pathname==='\/book'/);
+ assert.doesNotMatch(n,/url\.pathname==='\/book\.html'/);
+ assert.match(n,/location\.pathname==="\/book"/);
  assert.match(n,/token,eventId:calendarEventId\|\|''/);
  assert.match(n,/onShouldStartLoadWithRequest=\{event=>trustedBookUrl\(event.url\)\}/);
  assert.match(n,/domStorageEnabled=\{false\}/);

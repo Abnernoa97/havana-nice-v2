@@ -7,16 +7,18 @@ import {WebView} from 'react-native-webview';
 // delivers the same session before React boot, without URLs, browser logins,
 // persistent web storage or async authorization handshake races.
 const ORIGIN='https://havana-nice-v2.pages.dev';
-const READER=ORIGIN+'/book.html';
+// Cloudflare Pages canonicalizes /book.html to /book. Navigate directly to
+// the canonical URL: WebView must never reject the redirect to its own reader.
+const READER=ORIGIN+'/book';
 type ReaderPhase='opening-page'|'html-loaded'|'script-started'|'session-received'|'pages-loading';
 const REFRESH_JS='(function(){if(location.origin==='+JSON.stringify(ORIGIN)+
- '&&location.pathname==="/book.html")window.dispatchEvent(new Event("havana-v2-book-refresh"));})();true;';
+ '&&location.pathname==="/book")window.dispatchEvent(new Event("havana-v2-book-refresh"));})();true;';
 
 function trustedBookUrl(raw:string):boolean{
  if(raw==='about:blank')return true;
  try{
   const url=new URL(raw);
-  return url.origin===ORIGIN&&url.pathname==='/book.html'&&!url.search&&!url.hash;
+  return url.origin===ORIGIN&&url.pathname==='/book'&&!url.search&&!url.hash;
  }catch{return false;}
 }
 

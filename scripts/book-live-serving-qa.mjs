@@ -7,9 +7,14 @@ const response=await fetch(base+'/book.html',{redirect:'follow',signal:AbortSign
 const html=await response.text();
 console.log('BOOK live document',JSON.stringify({status:response.status,finalPath:new URL(response.url).pathname,type:response.headers.get('content-type'),bytes:html.length}));
 assert.equal(response.status,200,'Real BOOK page must return HTTP 200');
-assert.equal(new URL(response.url).pathname,'/book.html','BOOK must not redirect to a login/SPA fallback');
+// Pages redirects .html to its extensionless canonical address.
+// A WebView locking navigation to /book.html would reject this hop.
+assert.equal(new URL(response.url).pathname,'/book','BOOK must resolve to the canonical /book route');
 assert.match(response.headers.get('content-type')||'',/text\/html/);
 assert.match(html,/id="book-root"/,'The deployed document must be the real BOOK shell');
+const direct=await fetch(base+'/book',{signal:AbortSignal.timeout(15000)});
+assert.equal(direct.status,200,'Android canonical /book must respond directly');
+assert.equal(new URL(direct.url).pathname,'/book','Canonical /book must not redirect');
 const asset=html.match(/<script\b[^>]*\bsrc="([^"]+\.js)"/i)?.[1];
 assert.ok(asset,'Deployed BOOK must contain an actual built JavaScript file, not the development .tsx source');
 const jsUrl=new URL(asset,base);
