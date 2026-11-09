@@ -72,3 +72,11 @@ test('Outgoing messages request the newest window even from an older page',()=>{
  assert.match(app,/<ChatTimeline messages=\{messages\} latestMessageRequest=\{latestMessageRequest\}/);
  assert.match(timeline,/setEndAnchorKey\(null\);\s*onReturnLatest\(\);\s*\},\[latestMessageRequest,onReturnLatest\]\)/);
 });
+
+test('Server pagination reveals the older page on the first request',()=>{
+ const timeline=readFileSync(new URL('../apps/pwa/src/features/chat/ChatTimeline.tsx',import.meta.url),'utf8');
+ assert.match(timeline,/else if\(hasMore\)\{/);
+ assert.match(timeline,/const overlap=windowed\.rows\[Math\.min\(windowed\.rows\.length-1,59\)\]/);
+ assert.match(timeline,/if\(overlap\)setEndAnchorKey\(chatWindowKey\(overlap\)\)/);
+ assert.match(timeline,/onLoadOlder\(\)/);
+});

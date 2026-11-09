@@ -70,7 +70,13 @@ function ChatTimeline({
    if(windowed.hasOlder){
      const nextEnd=previousChatWindowEnd(windowed.start,windowed.end);
      setEndAnchorKey(chatWindowKey(windowed.rows[nextEnd-windowed.start-1]));
-   }else if(hasMore)onLoadOlder();
+   }else if(hasMore){
+     // Pre-position on the oldest loaded rows. A server page then becomes
+     // immediately visible, rather than requiring a second "Ver anteriores" tap.
+     const overlap=windowed.rows[Math.min(windowed.rows.length-1,59)];
+     if(overlap)setEndAnchorKey(chatWindowKey(overlap));
+     onLoadOlder();
+   }
  };
  const showNext=()=>{
    onBrowseOlder();
