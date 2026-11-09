@@ -60,10 +60,13 @@ test('Opening Chat lands at the true bottom even after media sizes change',()=>{
   const css=read('apps/pwa/src/styles/chat/chat.css');
   assert.match(timeline,/className="chat-message-content"/);
   assert.match(css,/\.chat-message-content\{display:flex;/);
-  assert.match(pwa,/observer\.observe\(content\)/);
-  assert.match(pwa,/list\.scrollTop=Math\.max\(0,list\.scrollHeight-list\.clientHeight\)/);
-  assert.match(pwa,/else if\(userScrollGesture\.current\)stickToLatest\.current=false/);
-  assert.match(pwa,/observer\.observe\(list\)/);
+  const scroll=read('apps/pwa/src/features/chat/useChatScrollAnchor.ts');
+  assert.match(pwa,/useChatScrollAnchor\(\{/);
+  assert.match(scroll,/observer\.observe\(content\)/);
+  assert.match(scroll,/list\.scrollTop=Math\.max\(0,list\.scrollHeight-list\.clientHeight\)/);
+  assert.match(scroll,/else if\(userScrollGesture\.current\)stickToLatest\.current=false/);
+  assert.match(scroll,/observer\.observe\(list\)/);
+  assert.match(scroll,/if\(skipOlderRef\.current\)\{skipOlderRef\.current=false;return;\}/);
   assert.match(native,/initialBottomAttempts = useRef\(0\)/);
   assert.match(native,/if\(initialBottomAttempts\.current<10\)scheduleInitialBottom\(\)/);
   assert.match(native,/else if\(autoScroll\.current\)scroll\.current\?\.scrollToEnd\(\{animated:false\}\)/);

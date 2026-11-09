@@ -10,6 +10,7 @@ import {
 import { loadLocalChat, saveLocalChat } from '../services/local';
 import type {MessageAnchor} from '../features/chat/SwipeMessage';
 import ChatTimeline from '../features/chat/ChatTimeline';
+import {useChatScrollAnchor} from '../features/chat/useChatScrollAnchor';
 import PwaChatMessageMenu from '../features/chat/PwaChatMessageMenu';
 import {usePwaMediaSelection} from '../features/chat/usePwaMediaSelection';
 import PwaChatMediaQueuePreview from '../features/chat/PwaChatMediaQueuePreview';
@@ -565,90 +566,14 @@ export default function App() {
   },[draft]);
 
 
-  // Keep one socket, offline outbox and drafts alive behind HOME.
-  // Mount the message/media interface only while Chat is visible.
-  const chatWasVisible=useRef(false);
-  const stickToLatest=useRef(true);
-  const userScrollGesture=useRef(false);
-  const scrollChatToLatest=()=>{
-    const list=bottom.current?.closest('.chat-messages') as HTMLElement|null;
-    if(list)list.scrollTop=Math.max(0,list.scrollHeight-list.clientHeight);
-  };
-  useLayoutEffect(()=>{
-    if(!session||activeScreen!=='chat'){
-      chatWasVisible.current=false;
-      return;
-    }
-    if(!chatWasVisible.current){
-      chatWasVisible.current=true;
-      stickToLatest.current=true;
-      userScrollGesture.current=false;
-      scrollChatToLatest();
-      // Re-apply after the previously hidden room becomes measurable on Safari.
-      const frame=requestAnimationFrame(scrollChatToLatest);
-      return()=>cancelAnimationFrame(frame);
-    }
-  },[activeScreen,session?.token]);
-  useLayoutEffect(()=>{
-    if(activeScreen!=='chat')return;
-    if(scrollOlderOnce.current){scrollOlderOnce.current=false;return;}
-    if(stickToLatest.current)scrollChatToLatest();
-  },[messages.length,activeScreen]);
-  useEffect(()=>{
-    if(activeScreen!=='chat')return;
-    const list=bottom.current?.closest('.chat-messages') as HTMLElement|null;
-    const content=list?.querySelector('.chat-message-content');
-    if(!list||!content)return;
-    const gap=()=>list.scrollHeight-list.scrollTop-list.clientHeight;
-    const onScroll=()=>{
-      // A late-loading video must not look like a manual scroll upward.
-      if(gap()<=64)stickToLatest.current=true;
-      else if(userScrollGesture.current)stickToLatest.current=false;
-    };
-    const onTouchMove=()=>{userScrollGesture.current=true;};
-    const onTouchEnd=()=>{
-      requestAnimationFrame(()=>{userScrollGesture.current=false;});
-    };
-    const onWheel=()=>{
-      userScrollGesture.current=true;
-      requestAnimationFrame(()=>{
-        onScroll();
-        userScrollGesture.current=false;
-      });
-    };
-    const onKeyDown=(event:KeyboardEvent)=>{
-      if(['ArrowUp','ArrowDown','PageUp','PageDown','Home','End',' '].includes(event.key)){
-        userScrollGesture.current=true;
-        requestAnimationFrame(()=>{
-          onScroll();userScrollGesture.current=false;
-        });
-      }
-    };
-    list.addEventListener('scroll',onScroll,{passive:true});
-    list.addEventListener('touchmove',onTouchMove,{passive:true});
-    list.addEventListener('touchend',onTouchEnd,{passive:true});
-    list.addEventListener('touchcancel',onTouchEnd,{passive:true});
-    list.addEventListener('wheel',onWheel,{passive:true});
-    list.addEventListener('keydown',onKeyDown);
-    // The scrolling viewport stays the same size. Observe the ACTUAL content:
-    // photos, video metadata and multiline bubbles settle asynchronously.
-    const observer=new ResizeObserver(()=>{
-      if(stickToLatest.current)scrollChatToLatest();
-    });
-    observer.observe(content);
-    // Composer growth and mobile keyboard resize the scrolling viewport itself.
-    observer.observe(list);
-    if(stickToLatest.current)scrollChatToLatest();
-    return()=>{
-      observer.disconnect();
-      list.removeEventListener('scroll',onScroll);
-      list.removeEventListener('touchmove',onTouchMove);
-      list.removeEventListener('touchend',onTouchEnd);
-      list.removeEventListener('touchcancel',onTouchEnd);
-      list.removeEventListener('wheel',onWheel);
-      list.removeEventListener('keydown',onKeyDown);
-    };
-  },[activeScreen,session?.token]);
+  // The scroll lifecycle is isolated from the single Chat socket and outbox.
+  useChatScrollAnchor({
+    active:activeScreen==='chat'&&!!session,
+    sessionToken:session?.token,
+    messageCount:messages.length,
+    bottomRef:bottom,
+    skipOlderRef:scrollOlderOnce,
+  });
 
   function acceptApprovedSession(next:ChatSession){
     historyRequests.current.reset();setLoadingOlder(false);
