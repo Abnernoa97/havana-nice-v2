@@ -116,7 +116,7 @@ export default function BookReader({pages,edition='book',coverTitle}:{pages:Book
     width:410,height:580,size:'stretch',minWidth:220,maxWidth:520,
     minHeight:382,maxHeight:735,
     drawShadow:true,maxShadowOpacity:0.72,
-    flippingTime:780,usePortrait:true,autoSize:false,
+    flippingTime:650,usePortrait:true,autoSize:false,
     // Vertical gestures remain normal document scrolling; only deliberate
     // horizontal drags belong to the StPageFlip engine.
     showCover:false,mobileScrollSupport:true,swipeDistance:25,
@@ -269,7 +269,27 @@ export default function BookReader({pages,edition='book',coverTitle}:{pages:Book
   touchStart.current=null;
   if(!start||start.id!==event.pointerId||start.vertical||busyRef.current)return;
   if(start.dragging){
-   instance.current?.userStop(relativePoint(event.clientX,event.clientY));
+   const engine=instance.current;
+   if(!engine)return;
+   const dx=event.clientX-start.x;
+   const dy=event.clientY-start.y;
+   const stageWidth=event.currentTarget.getBoundingClientRect().width;
+   const enough=Math.abs(dx)>=Math.min(54,Math.max(38,stageWidth*.1));
+   const towardNext=start.x>event.currentTarget.getBoundingClientRect().left+stageWidth*.5&&dx<0;
+   const towardPrev=start.x<event.currentTarget.getBoundingClientRect().left+stageWidth*.5&&dx>0;
+   if(enough&&Math.abs(dx)>Math.abs(dy)*1.2&&(towardNext||towardPrev)){
+    // StPageFlip stopMove() completes only when its folded paper crosses
+    // the spine. On mobile, that spine can lie OUTSIDE the viewport, so a
+    // natural corner swipe springs back. Finish the existing fold across
+    // the spine before releasing it: one engine, one natural 3D curl,
+    // no delayed click, extra turn or DOM reconstruction.
+    const rect=engine.getBoundsRect();
+    const over=Math.max(14,Math.min(30,rect.pageWidth*.08));
+    const finishX=rect.left+rect.pageWidth+(towardNext?-over:over);
+    const finishY=relativePoint(event.clientX,event.clientY).y;
+    engine.userMove({x:finishX,y:finishY},true);
+   }
+   engine.userStop(relativePoint(event.clientX,event.clientY));
    return;
   }
   const dx=event.clientX-start.x;
@@ -340,7 +360,11 @@ export default function BookReader({pages,edition='book',coverTitle}:{pages:Book
    onTouchEndCapture={event=>event.stopPropagation()}
    onPointerDown={onPointerDown} onPointerMove={onPointerMove}
    onPointerUp={onPointerUp}
-   onPointerCancel={()=>{touchStart.current=null;}}>
+   onPointerCancel={event=>{
+    const start=touchStart.current;
+    touchStart.current=null;
+    if(start?.dragging)instance.current?.userStop(relativePoint(event.clientX,event.clientY));
+   }}>
    <div className={'hn-book-mount'+(turning?' hn-book-turning':'')+(page===0?' hn-book-closed':' hn-book-opened')} ref={mountRef}/>
   </div>:null}
   {mode==='scroll'?<div className="hn-book-scroll">{leaves}</div>:null}
