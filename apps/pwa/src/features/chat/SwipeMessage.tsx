@@ -53,6 +53,8 @@ export default function SwipeMessage({children,className,onSwipeRight,onLongPres
       onTouchStart={touchStart} onTouchMove={touchMove} onTouchEnd={touchEnd}
       onTouchCancel={()=>{clear();start.current=null;setShift(0);}}
       onContextMenu={menu} onKeyDown={keyboard}
+      onSelectStart={event=>event.preventDefault()}
+      onDragStart={event=>event.preventDefault()}
       aria-label="Mensaje. Desliza a la derecha para responder, mantén pulsado para opciones">
       {children}
     </article>;
