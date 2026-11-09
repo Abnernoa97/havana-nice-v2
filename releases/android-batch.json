@@ -1,7 +1,7 @@
 {
   "approved": true,
   "releaseMode": "explicit-batch",
-  "version": "0.0.19",
-  "versionCode": 19,
-  "notes": "APK 0.0.19 expresamente aprobada 09/11/2026: diagnostico de BOOK y Recuerdos Android con WebView visible, fases HTML/JavaScript/sesion/paginas y validacion de estado de render sin depender de URL de mensaje nativo. Misma sesion del cascaron Android, PWA y StPageFlip existente, sin autorizaciones extra, tokens en URL, segundo motor, ni cambios a Chat, Familia, Calendario, datos D1/R2, Worker o HAVANA CLOUD. Mantener firma compatible con 0.0.18, versionCode 19, actualizacion encima y 0.0.18 PREVIOUS. Prueba fisica de causa y funcionamiento pendiente."
+  "version": "0.0.20",
+  "versionCode": 20,
+  "notes": "Corrección estructural autorizada 09/11/2026: Cloudflare Pages transforma /book.html en /book; Android 0.0.19 bloqueaba esa ruta en onShouldStartLoadWithRequest, impidiendo arrancar BOOK y Recuerdos. 0.0.20 utiliza directamente ruta canónica https://havana-nice-v2.pages.dev/book; control de navegación y refresh coherentes; smoke test real de Cloudflare Pages verifica HTML, JS y ruta canónica. Mantiene una sola sesión nativa, mismos contratos, PageFlip 3D, Chat, Repertorio, Familia, Calendario, datos D1/R2 y Worker sin cambios. Certificado debe ser compatible con 0.0.19, actualizar encima sin borrar. Prueba final en dispositivo pendiente."
 }
