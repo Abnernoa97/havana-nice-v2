@@ -22,16 +22,16 @@ test('one retry policy preserves the original backoff, max 20 seconds',()=>{
  [1000,2000,4000,8000,16000,20000,20000,20000,20000]);
 });
 
-test('both clients recover stalled WebSocket handshakes through their existing reconnect owner',()=>{
- assert.equal(CHAT_WS_HANDSHAKE_TIMEOUT_MS,9000);
+test('shared timer owner handles handshake and retries without extra sockets',()=>{
  for(const path of ['apps/pwa/src/app/App.tsx','apps/android/app/NativeApp.tsx']){
   const source=readFileSync(new URL('../'+path,import.meta.url),'utf8');
-  assert.match(source,/connectionWatchdog=useRef/);
-  assert.match(source,/connectionWatchdog\.current=setTimeout\(/);
-  assert.match(source,/ws\.readyState===WebSocket\.OPEN/);
-  assert.match(source,/CHAT_WS_HANDSHAKE_TIMEOUT_MS/);
-  assert.match(source,/clearConnectionWatchdog\(\)/);
-  assert.match(source,/try\{ws\.close\(\);\}catch\{\}\s*retry\(\)/);
+  assert.match(source,/connectionTimers=useRef\(new ChatConnectionTimers\(\)\)/);
+  assert.match(source,/connectionTimers\.current\.watchHandshake\(/);
+  assert.match(source,/connectionTimers\.current\.scheduleRetry\((retryCount|retryAttempts)\.current,/);
+  assert.match(source,/connectionTimers\.current\.clearAll\(\)/);
+  assert.match(source,/ws\.readyState!==WebSocket\.OPEN/);
+  assert.match(source,/socket\.current = ws/);
+  assert.doesNotMatch(source,/connectionWatchdog=useRef|retryTimer=useRef/);
  }
 });
 test('PWA/Android use one expiry and retry policy without an extra socket',()=>{
@@ -39,7 +39,7 @@ test('PWA/Android use one expiry and retry policy without an extra socket',()=>{
   const s=readFileSync(new URL('../'+path,import.meta.url),'utf8');
   assert.match(s,/chatSessionExpired\(next\)/,path);
   assert.match(s,/chatSessionExpired\(saved\.session\)/,path);
-  assert.match(s,/chatReconnectDelay\((retryCount|retryAttempts)\.current\)/,path);
+  assert.match(s,/connectionTimers\.current\.scheduleRetry\((retryCount|retryAttempts)\.current,/,path);
   assert.doesNotMatch(s,/Math\.min\(20000.*retryCount|Math\.min\(20000.*retryAttempts/,path);
   assert.doesNotMatch(s,/Date\.parse\((next|saved\.session)\.expiresAt\)\s*<=\s*Date\.now\(\)/,path);
   assert.match(s,/socket\.current\s*=\s*ws/,path);
@@ -49,4 +49,5 @@ test('PWA/Android use one expiry and retry policy without an extra socket',()=>{
  assert.doesNotMatch(shared,/WebSocket|setTimeout|localStorage|AsyncStorage|fetch\(/);
  const exports=readFileSync(new URL('../packages/shared/src/index.ts',import.meta.url),'utf8');
  assert.match(exports,/export \{chatSessionExpired,chatReconnectDelay,CHAT_RECONNECT_MAX_DELAY_MS,CHAT_WS_HANDSHAKE_TIMEOUT_MS\} from '\.\/chat-connection'/);
+ assert.match(exports,/export \{ChatConnectionTimers\} from '\.\/chat-connection-timers'/);
 });
