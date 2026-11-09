@@ -6,14 +6,13 @@ import type {ChatMedia} from './chat-media-types';
 import {requestChatMediaUrl} from './chat-media-grant';
 
 export default function ChatPhotoViewer({
- media,token,open,onClose,
-}:{media:ChatMedia;token:string;open:boolean;onClose:()=>void}){
+ media,token,onClose,
+}:{media:ChatMedia;token:string;onClose:()=>void}){
  const [original,setOriginal]=useState('');
  const [error,setError]=useState('');
- const [loading,setLoading]=useState(false);
+ const [loading,setLoading]=useState(true);
 
  useEffect(()=>{
-   if(!open)return;
    let active=true;
    let objectUrl='';
    const controller=new AbortController();
@@ -34,16 +33,13 @@ export default function ChatPhotoViewer({
      active=false;controller.abort();
      if(objectUrl)URL.revokeObjectURL(objectUrl);
    };
- },[open,media.assetId,token]);
+ },[media.assetId,token]);
 
  useEffect(()=>{
-   if(!open)return;
    const key=(event:KeyboardEvent)=>{if(event.key==='Escape')onClose();};
    document.addEventListener('keydown',key);
    return()=>document.removeEventListener('keydown',key);
- },[open,onClose]);
-
- if(!open)return null;
+ },[onClose]);
  return createPortal(
    <div className="hn-photo-overlay" role="dialog" aria-modal="true"
      aria-label="Fotografía ampliada" onClick={onClose}>

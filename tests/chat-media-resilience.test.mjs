@@ -85,13 +85,14 @@ test('Photo chat uses sharp lightweight previews and unmodified fullscreen origi
  const grant=read('apps/pwa/src/features/chat/chat-media-grant.ts');
  const css=read('apps/pwa/src/styles/chat/chat.css');
  assert.match(web,/useChatMediaPreview\(media,token\)/);
- assert.match(web,/<ChatPhotoViewer media=\{media\}/);
+ assert.match(web,/photoOpen&&<ChatPhotoViewer media=\{media\}/);
  assert.match(hook,/fetchChatPhotoThumbnail\(signed,controller\.signal\)/);
  assert.match(hook,/IntersectionObserver/);
  assert.match(thumb,/CHAT_PREVIEW_LONG_EDGE=1440/);
  assert.match(thumb,/CHAT_PREVIEW_JPEG_QUALITY=\.92/);
  assert.match(thumb,/CHAT_PREVIEW_MAX_ACTIVE=2/);
  assert.match(thumb,/canvas\.toBlob/);
+ assert.match(thumb,/originalType==='image\/png'\?'image\/png':'image\/jpeg'/);
  assert.match(viewer,/requestChatMediaUrl\(media\.assetId,token,controller\.signal\)/);
  assert.match(viewer,/URL\.revokeObjectURL\(objectUrl\)/);
  assert.match(viewer,/original&&<img src=\{original\}/);

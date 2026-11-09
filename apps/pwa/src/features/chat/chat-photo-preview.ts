@@ -23,14 +23,16 @@ export function chatPreviewSize(width:number,height:number){
  };
 }
 
-function asJpeg(canvas:HTMLCanvasElement):Promise<Blob>{
+function encodePreview(canvas:HTMLCanvasElement,originalType:string):Promise<Blob>{
  return new Promise<Blob>((resolve,reject)=>{
+   // Keep PNG transparency and screenshot text crisp; photos remain JPEG.
+   const format=originalType==='image/png'?'image/png':'image/jpeg';
    canvas.toBlob(result=>result?resolve(result):reject(Error('No se pudo preparar la miniatura.')),
-     'image/jpeg',CHAT_PREVIEW_JPEG_QUALITY);
+     format,format==='image/jpeg'?CHAT_PREVIEW_JPEG_QUALITY:undefined);
  });
 }
 
-function drawOnCanvas(source:CanvasImageSource,width:number,height:number):Promise<Blob>{
+function drawOnCanvas(source:CanvasImageSource,width:number,height:number,originalType:string):Promise<Blob>{
  const size=chatPreviewSize(width,height);
  const canvas=document.createElement('canvas');
  canvas.width=size.width;canvas.height=size.height;
@@ -39,12 +41,12 @@ function drawOnCanvas(source:CanvasImageSource,width:number,height:number):Promi
  context.imageSmoothingEnabled=true;
  context.imageSmoothingQuality='high';
  context.drawImage(source,0,0,size.width,size.height);
- return asJpeg(canvas);
+ return encodePreview(canvas,originalType);
 }
 
 async function previewFromBitmap(original:Blob):Promise<Blob>{
  const bitmap=await createImageBitmap(original);
- try{return await drawOnCanvas(bitmap,bitmap.width,bitmap.height);}
+ try{return await drawOnCanvas(bitmap,bitmap.width,bitmap.height,original.type);}
  finally{bitmap.close();}
 }
 
@@ -57,7 +59,7 @@ async function previewFromImage(original:Blob):Promise<Blob>{
      element.onerror=()=>reject(Error('Imagen no compatible con este navegador.'));
      element.src=url;
    });
-   return await drawOnCanvas(image,image.naturalWidth,image.naturalHeight);
+   return await drawOnCanvas(image,image.naturalWidth,image.naturalHeight,original.type);
  }finally{URL.revokeObjectURL(url);}
 }
 

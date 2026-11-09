@@ -27,7 +27,7 @@ export default function ChatMediaView({media,token}:{media:ChatMedia;token:strin
           aria-label="Reproducir video enviado"/>
         :<div className="hn-media-loading" role="status">{error||'Cargando video…'}</div>}
    </div>
-   {media.kind==='photo'&&<ChatPhotoViewer media={media} token={token}
-     open={photoOpen} onClose={()=>setPhotoOpen(false)}/>}
+   {media.kind==='photo'&&photoOpen&&<ChatPhotoViewer media={media} token={token}
+     onClose={()=>setPhotoOpen(false)}/>}
  </>;
 }
