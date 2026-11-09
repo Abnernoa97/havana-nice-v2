@@ -81,6 +81,9 @@ export default function App() {
     field.style.height=Math.min(132,Math.max(46,field.scrollHeight))+'px';
   },[draft]);
   const [composerPanel,setComposerPanel]=useState<'attachments'|'emojis'|null>(null);
+  // Must be initialized before the picker hook receives it. On iOS Safari,
+  // referring to a later const crashes App render and produces a blank screen.
+  const mediaUploadBusy=useRef(false);
   const {selectedMedia,mediaError,setMediaError,mediaQueue,
     photosPicker,videoPicker,cameraPicker,
     removeSelectedMedia,confirmUploadedMedia,clearSelectedMedia,
@@ -91,7 +94,6 @@ export default function App() {
     });
   const [mediaReady,setMediaReady]=useState(false);
   const [mediaUploading,setMediaUploading]=useState(false);
-  const mediaUploadBusy=useRef(false);
   const [mediaProgress,setMediaProgress]=useState(0);
   const [connection, setConnection] = useState('desconectado');
   const [error, setError] = useState('');
