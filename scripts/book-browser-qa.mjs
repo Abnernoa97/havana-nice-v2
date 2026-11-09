@@ -19,14 +19,23 @@ const pages=Array.from({length:6},(_,i)=>({
  id:'book-qa-'+i,position:(i+1)*100,published:true,fit:'cover',
  url:'/api/book/media/'+String(i+1).repeat(32)
 }));
-const boot=[
+// Exercise the precise JS that the Android bridge injects, rather than a
+// handwritten fake success path. The origin is the isolated local test server.
+const bridgeTS=readFileSync('apps/android/features/book/book-bridge.ts','utf8');
+const bridgeJS=ts.transpileModule(bridgeTS,{
+ compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.ESNext}
+}).outputText;
+const {bookContextDeliveryScript}=await import('data:text/javascript;base64,'+
+ Buffer.from(bridgeJS).toString('base64'));
+function bootForOrigin(origin){
+ const delivery=bookContextDeliveryScript(
+  {token:'A'.repeat(64),eventId:'',title:''},origin,'/book.html');
+ return [
  'window.ReactNativeWebView={postMessage(message){',
  'const event=JSON.parse(message);',
  '(window.__bookStatus||(window.__bookStatus=[])).push(event);',
  'if(event.type==="havana-v2-book-phase"&&event.phase==="boot"){',
- 'setTimeout(()=>window.dispatchEvent(new CustomEvent("havana-v2-book-context",{detail:JSON.stringify({',
- 'token:"'+('A'.repeat(64))+'",eventId:"",title:""',
- '})})),0);',
+ 'setTimeout(()=>{'+delivery+'},0);',
  '}',
  '}};',
  'const originalFetch=window.fetch.bind(window);let refreshCount=0;',
@@ -37,7 +46,8 @@ const boot=[
  'pages:'+JSON.stringify(pages)+'.map(p=>({...p,url:p.url+"?grant="+refreshCount}))',
  '}),{status:200,headers:{"content-type":"application/json"}}));}',
  'return originalFetch(input,options);};'
-].join('\n');
+ ].join('\n');
+}
 // Compile the actual TypeScript optimizer into an isolated ESM test route.
 const optimizerSource=readFileSync('apps/pwa/src/features/book/book-image-optimizer.ts','utf8');
 const optimizerESM=ts.transpileModule(optimizerSource,{
@@ -193,7 +203,8 @@ try{
  await attach();
  await rpc('Page.enable');await rpc('Runtime.enable');
  await rpc('Fetch.enable',{patterns:[{urlPattern:'*api/book/media/*',requestStage:'Request'}]});
- await rpc('Page.addScriptToEvaluateOnNewDocument',{source:boot});
+ await rpc('Page.addScriptToEvaluateOnNewDocument',{
+  source:bootForOrigin('http://127.0.0.1:'+servePort)});
  for(const [width,height,label] of [[390,844,'phone'],[1024,800,'desktop']]){
   await rpc('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile:width<700});
   await rpc('Emulation.setTouchEmulationEnabled',{enabled:width<700,maxTouchPoints:1});
