@@ -29,26 +29,29 @@ export default function App() {
   const [activeScreen,setActiveScreen]=useState<MemberScreen>(()=>
     readChatReturnIntent(window.localStorage)?'chat':'home');
   const previousScreen=useRef<MemberScreen>('home');
+  // Reset stale Chat history on a normal launch; keep a real camera recovery.
+  useEffect(()=>{
+    if(activeScreen==='home'&&window.history.state?.hnChatNavigation)
+      window.history.replaceState({...window.history.state,hnChatNavigation:false},'',window.location.href);
+  },[]);
   const edgeSwipeStart=useRef<{x:number;y:number}|null>(null);
   const navigateTo=useCallback((target:MemberScreen)=>{
-    writeChatReturnIntent(window.localStorage,target==='chat');
     if(target!=='chat'){setComposerPanel(null);setMenuMessage(null);}
     if(target==='chat'&&activeScreen!=='chat'){
       previousScreen.current=activeScreen;
+      window.history.replaceState({...window.history.state,hnChatNavigation:false},'',window.location.href);
       window.history.pushState({...window.history.state,hnChatNavigation:true},'',window.location.href);
     }
     setActiveScreen(target);
   },[activeScreen]);
   const closeChat=()=>{
-    writeChatReturnIntent(window.localStorage,false);
     setMenuMessage(null);
     setComposerPanel(null);
+    setActiveScreen(previousScreen.current);
     if(window.history.state?.hnChatNavigation)window.history.back();
-    else setActiveScreen(previousScreen.current);
   };
   useEffect(()=>{
     const syncBack=()=>{
-      writeChatReturnIntent(window.localStorage,!!window.history.state?.hnChatNavigation);
       if(window.history.state?.hnChatNavigation)setActiveScreen('chat');
       else setActiveScreen(current=>current==='chat'?previousScreen.current:current);
     };
@@ -61,7 +64,7 @@ export default function App() {
     const sync=()=>{
       const route=parsePwaReaderHash(window.location.hash);
       setReaderRoute(route);
-      if(route){writeChatReturnIntent(window.localStorage,false);setActiveScreen('home');}
+      if(route)setActiveScreen('home');
     };
     window.addEventListener('hashchange',sync);
     return()=>window.removeEventListener('hashchange',sync);
@@ -91,6 +94,7 @@ export default function App() {
     usePwaMediaSelection({
       actorId:session?.actorId??null,uploadBusy:mediaUploadBusy,
       onCloseMenu:()=>setComposerPanel(null),
+      onCameraLaunch:()=>writeChatReturnIntent(window.localStorage,true),
     });
   const [mediaReady,setMediaReady]=useState(false);
   const [mediaUploading,setMediaUploading]=useState(false);
@@ -801,7 +805,11 @@ export default function App() {
             multiple onChange={e=>{chooseMedia('gallery','video',Array.from(e.currentTarget.files||[]));e.currentTarget.value='';}}/>
           <input className="chat-media-hidden-input" type="file" ref={cameraPicker}
             tabIndex={-1} aria-hidden="true" accept="image/*" capture="environment"
-            onChange={e=>{chooseMedia('camera','photo',Array.from(e.currentTarget.files||[]));e.currentTarget.value='';}}/>
+            onChange={e=>{
+              writeChatReturnIntent(window.localStorage,false);
+              chooseMedia('camera','photo',Array.from(e.currentTarget.files||[]));
+              e.currentTarget.value='';
+            }}/>
           {selectedMedia.length>0&&<PwaChatMediaQueuePreview
             selectedMedia={selectedMedia} mediaUploading={mediaUploading}
             mediaProgress={mediaProgress} mediaReady={mediaReady}
