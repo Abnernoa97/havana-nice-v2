@@ -1,7 +1,7 @@
 import { lazy, Suspense, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import {
   chatReactionPayload,chatTypingPayload,chatReadReceiptPayload,
-  fetchBackendHealth, getChatMediaAvailability, getChatSnapshot, getOlderChatMessages, getChatMenuState, getChatMessagePermissions, isWithinChatEditWindow, selectNextQueuedChatMessage, setOutgoingChatStatus, projectOutgoingChatStatus, CHAT_ACK_TIMEOUT_MS, newClientMessageId, uploadChatMediaBatch,
+  fetchBackendHealth, getChatMediaAvailability, getChatSnapshot, getOlderChatMessages, getChatMenuState, getChatMessagePermissions, isWithinChatEditWindow, setOutgoingChatStatus, projectOutgoingChatStatus, clearChatAckTimer, pauseChatOutbox, confirmChatOutgoingMessage, flushChatOutbox, newClientMessageId, uploadChatMediaBatch,
   openChatSocket, reconcileChatMessages, startNamedChatSession, restoreNamedChatSession, recoverChatAccess, chatSessionExpired, chatReconnectDelay, reconcileChatReadReceipt, removeChatReactionsForMessage, withoutRemovedChatMessages, ChatHistoryRequestGate, oldestConfirmedChatSeq, mergeOlderChatReactions, CHAT_WS_HANDSHAKE_TIMEOUT_MS, captureChatOfflineSnapshot, restoreChatOfflineOutbox,
   type BackendHealth, type ChatMessage, type ChatServerEvent, type ChatSession, type PwaReaderTarget, parsePwaReaderHash,
   HAVANA_V2_DEV_API_BASE_URL,
@@ -289,9 +289,7 @@ export default function App() {
     catch{setError('No se pudo borrar. Reintenta cuando vuelva Internet.');}
   }
   function clearAck(id: string) {
-    const t = ackTimers.current.get(id);
-    if (t) clearTimeout(t);
-    ackTimers.current.delete(id);
+    clearChatAckTimer(ackTimers.current,id);
   }
   function markOutgoing(id: string, state: 'queued' | 'sending' | 'error') {
     const original=setOutgoingChatStatus(outbox.current,id,state);
@@ -299,18 +297,12 @@ export default function App() {
     persist();
     setMessages(before=>projectOutgoingChatStatus(before,original,state));
   }
-
   function confirm(message: ChatMessage) {
-    if (!message.pending && message.senderId === activeSession.current?.actorId) {
-      outbox.current.delete(message.clientMessageId);
-      clearAck(message.clientMessageId);
-      persist();
-    }
+    if(confirmChatOutgoingMessage(message,activeSession.current?.actorId,
+      outbox.current,ackTimers.current))persist();
   }
   function pausePending() {
-    for (const timer of ackTimers.current.values()) clearTimeout(timer);
-    ackTimers.current.clear();
-    for (const id of outbox.current.keys()) markOutgoing(id, 'queued');
+    pauseChatOutbox(outbox.current,ackTimers.current,markOutgoing);
   }
   function clearRetry() {
     if (retryTimer.current) clearTimeout(retryTimer.current);
@@ -321,24 +313,7 @@ export default function App() {
     connectionWatchdog.current=null;
   }
   function flushOutbox() {
-    const ws = socket.current;
-    if (!ws || ws.readyState !== WebSocket.OPEN) return;
-    // One canonical ordering and ACK backpressure policy across both clients.
-    const item=selectNextQueuedChatMessage(outbox.current.values());
-    if(!item)return;
-    {
-      try {
-        ws.send(JSON.stringify({ type: 'chat.send', clientMessageId: item.clientMessageId, text: item.text, replyToSeq: item.replyToSeq || null }));
-        markOutgoing(item.clientMessageId, 'sending');
-        clearAck(item.clientMessageId);
-        ackTimers.current.set(item.clientMessageId, setTimeout(() => {
-          ackTimers.current.delete(item.clientMessageId);
-          markOutgoing(item.clientMessageId, 'error');
-        }, CHAT_ACK_TIMEOUT_MS));
-      } catch {
-        markOutgoing(item.clientMessageId, 'error');
-      }
-    }
+    flushChatOutbox(socket.current,outbox.current,ackTimers.current,markOutgoing);
   }
   function refresh(next: ChatSession) {
     const request=historyRequests.current.beginSnapshot();

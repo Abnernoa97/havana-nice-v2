@@ -5,7 +5,7 @@ import {
 } from 'react-native';
 import {
   chatReactionPayload,chatTypingPayload,chatReadReceiptPayload,
-  fetchBackendHealth, getChatMediaAvailability, getChatSnapshot, getOlderChatMessages, getChatMenuState, getChatMessagePermissions, isWithinChatEditWindow, selectNextQueuedChatMessage, setOutgoingChatStatus, projectOutgoingChatStatus, CHAT_ACK_TIMEOUT_MS, newClientMessageId, uploadChatMediaBatch,
+  fetchBackendHealth, getChatMediaAvailability, getChatSnapshot, getOlderChatMessages, getChatMenuState, getChatMessagePermissions, isWithinChatEditWindow, setOutgoingChatStatus, projectOutgoingChatStatus, clearChatAckTimer, pauseChatOutbox, confirmChatOutgoingMessage, flushChatOutbox, newClientMessageId, uploadChatMediaBatch,
   reconcileChatMessages, reconcileReactions, reconcileUpdatedMessage, reconcileDeletedMessage, reconcileChatSnapshot, startNamedChatSession, restoreNamedChatSession, recoverChatAccess, chatSessionExpired, chatReconnectDelay, reconcileChatReadReceipt, removeChatReactionsForMessage, withoutRemovedChatMessages, ChatHistoryRequestGate, oldestConfirmedChatSeq, mergeOlderChatReactions, CHAT_WS_HANDSHAKE_TIMEOUT_MS, captureChatOfflineSnapshot, restoreChatOfflineOutbox,
   type ChatMessage, type ChatServerEvent, type ChatSession, type ChatReaction, type ChatEmoji, type ChatReadReceipt,
   type MemberScreen,
@@ -311,56 +311,25 @@ export default function App() {
     catch{setError('No se pudo borrar. Reintenta cuando vuelva Internet.');}
   }
   function clearAck(id: string) {
-    const timer = acknowledgementTimers.current.get(id);
-    if (timer) clearTimeout(timer);
-    acknowledgementTimers.current.delete(id);
+    clearChatAckTimer(acknowledgementTimers.current,id);
   }
-
   function confirmMessage(message: ChatMessage) {
-    if (!message.pending && message.senderId === activeSession.current?.actorId) {
-      outbox.current.delete(message.clientMessageId);
-      clearAck(message.clientMessageId);
-      persistLocal();
-    }
+    if(confirmChatOutgoingMessage(message,activeSession.current?.actorId,
+      outbox.current,acknowledgementTimers.current))persistLocal();
   }
-
   function markOutgoing(id: string, state: 'queued' | 'sending' | 'error') {
     const original=setOutgoingChatStatus(outbox.current,id,state);
     if(!original)return;
     persistLocal();
     setMessages(before=>projectOutgoingChatStatus(before,original,state));
   }
-
   function pauseOutgoing() {
-    for (const timer of acknowledgementTimers.current.values()) clearTimeout(timer);
-    acknowledgementTimers.current.clear();
-    for (const id of outbox.current.keys()) markOutgoing(id, 'queued');
+    pauseChatOutbox(outbox.current,acknowledgementTimers.current,markOutgoing);
   }
-
-  // Each retry retains the original clientMessageId. D1 UNIQUE(sender_id, id)
-  // prevents duplicates if the server stored a message before connection loss.
+  // Same IDs, server ACK and manual retry policy as PWA.
   function flushOutbox() {
-    const ws = socket.current;
-    if (!ws || ws.readyState !== WebSocket.OPEN) return;
-    // One canonical ordering and ACK backpressure policy across both clients.
-    const item=selectNextQueuedChatMessage(outbox.current.values());
-    if(!item)return;
-    {
-      try {
-        ws.send(JSON.stringify({ type: 'chat.send', clientMessageId: item.clientMessageId, text: item.text, replyToSeq: item.replyToSeq || null }));
-        markOutgoing(item.clientMessageId, 'sending');
-        clearAck(item.clientMessageId);
-        const id = item.clientMessageId;
-        acknowledgementTimers.current.set(id, setTimeout(() => {
-          acknowledgementTimers.current.delete(id);
-          markOutgoing(id, 'error');
-        }, CHAT_ACK_TIMEOUT_MS));
-      } catch {
-        markOutgoing(item.clientMessageId, 'error');
-      }
-    }
+    flushChatOutbox(socket.current,outbox.current,acknowledgementTimers.current,markOutgoing);
   }
-
   function retryOutgoing(id: string) {
     if (!outbox.current.has(id)) return;
     clearAck(id);

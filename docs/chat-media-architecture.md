@@ -122,3 +122,11 @@ El transporte nativo `openNativeChatSocket` solo abre el handshake existente
 (`Authorization: Bearer`, subprotocolo `havana-v2`); el controlador Android
 conserva la titularidad del único socket, reintentos y manejo de eventos.
 La PWA sigue usando `openChatSocket`, sin alterar su autenticación.
+
+## Un solo ciclo para mensajes salientes y confirmaciones
+
+`chat-outbox.ts` conserva el orden y las transiciones puras. El módulo
+`chat-outbox-delivery.ts` ejecuta la única política de envío, temporizador ACK,
+confirmación, pausa y reintento manual compartida por PWA y Android. Los
+controladores siguen siendo propietarios de sus sockets, cola local y
+persistencia, sin nuevos registros, nuevos endpoints ni limpieza de datos.
