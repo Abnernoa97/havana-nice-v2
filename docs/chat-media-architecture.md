@@ -145,3 +145,11 @@ puras de mensajes y evita reglas duplicadas en `index.ts`. El WebSocket y los
 estados visuales permanecen en cada cliente, sin una segunda sesión.
 Una edición rechazada conserva ahora su mensaje de error visible en lugar
 de borrarlo en la misma actualización. No se modifica R2, D1 ni la APK.
+
+## Control único de temporizadores de conexión
+
+`ChatConnectionTimers` comparte solamente los temporizadores de reintento y
+de espera del handshake (9 segundos). No tiene acceso a tokens, WebSocket ni
+almacenamiento. Cada cliente mantiene su propio criterio de visibilidad/actividad
+y el único socket existente. Las pruebas usan un reloj inyectable para detectar
+reintentos duplicados y temporizadores que sobrevivan al cierre de la app.
