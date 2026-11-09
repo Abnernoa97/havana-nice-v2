@@ -38,6 +38,7 @@ test('Long press offers only emojis; swipe remains the only reply gesture',()=>{
   assert.match(read('apps/pwa/src/features/chat/SwipeMessage.tsx'),/onSwipeRight\(\)/);
   assert.match(read('apps/android/features/chat/SwipeableBubble.tsx'),/callbacks\.current\.onReply\(\)/);
   assert.match(read('apps/pwa/src/styles/chat/chat.css'),/\.chat-messages \.bubble \*\{user-select:none!important/);
+  assert.match(read('apps/pwa/src/features/chat/SwipeMessage.tsx'),/addEventListener\('selectstart',preventNativeSelection\)/);
 });
 
 test('Native OS back and iPhone edge swipe return within the authorized app',()=>{
