@@ -42,8 +42,12 @@ test('Expo SDK 58 maintenance update matches proven native Gradle candidate',()=
   assert.equal(lock.packages['node_modules/'+name].version,version,name);
  }
  const app=read('apps/android/app.json').expo;
- assert.equal(app.version,'0.0.21');
- assert.equal(app.android.versionCode,21,'do not publish new APK without explicit approval');
+ const batch=read('releases/android-batch.json');
+ assert.equal(app.android.package,'com.havananice.v2');
+ assert.equal(app.version,batch.version,'native package release must require an explicit versioned batch');
+ assert.equal(app.android.versionCode,batch.versionCode,'native versionCode must match explicit release');
+ assert.equal(batch.approved,true);
+ assert.equal(batch.releaseMode,'explicit-batch');
 });
 test('Android app and WebView versions stay pinned and compatible after native preflight',()=>{
  const android=read('apps/android/package.json');
