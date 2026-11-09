@@ -8,6 +8,7 @@ import {WebView} from 'react-native-webview';
 // persistent web storage or async authorization handshake races.
 const ORIGIN='https://havana-nice-v2.pages.dev';
 const READER=ORIGIN+'/book.html';
+type ReaderPhase='opening-page'|'html-loaded'|'script-started'|'session-received'|'pages-loading';
 const REFRESH_JS='(function(){if(location.origin==='+JSON.stringify(ORIGIN)+
  '&&location.pathname==="/book.html")window.dispatchEvent(new Event("havana-v2-book-refresh"));})();true;';
 
@@ -27,16 +28,28 @@ export default function NativeBook({token,refreshKey,onClose,calendarEventId,cal
  const [viewKey,setViewKey]=useState(0);
  const [failed,setFailed]=useState('');
  const [readerReady,setReaderReady]=useState(false);
+ const [readerPhase,setReaderPhase]=useState<ReaderPhase>('opening-page');
  const readerWatchdog=useRef<ReturnType<typeof setTimeout>|null>(null);
  const clearReaderWatchdog=()=>{
   if(readerWatchdog.current!==null)clearTimeout(readerWatchdog.current);
   readerWatchdog.current=null;
  };
+ const phaseRef=useRef<ReaderPhase>('opening-page');
+ const updatePhase=(next:ReaderPhase)=>{
+  phaseRef.current=next;
+  setReaderPhase(next);
+ };
  const armReaderWatchdog=()=>{
   clearReaderWatchdog();
   readerWatchdog.current=setTimeout(()=>{
    readerWatchdog.current=null;
-   setFailed('La revista no terminó de cargar. Comprueba la conexión y reintenta.');
+   setFailed(phaseRef.current==='opening-page'?
+    'La página de la revista no respondió. Reintenta.':
+    phaseRef.current==='html-loaded'?
+    'La página abrió, pero no arrancó el lector web. Reintenta.':
+    phaseRef.current==='script-started'?
+    'El lector web arrancó, pero no pudo recibir la sesión nativa. Reintenta.':
+    'El lector recibió la sesión, pero no terminó de dibujar las páginas. Reintenta.');
   },24000);
  };
  useEffect(()=>{
@@ -48,6 +61,12 @@ export default function NativeBook({token,refreshKey,onClose,calendarEventId,cal
    const value:unknown=JSON.parse(raw);
    if(!value||typeof value!=='object')return;
    const message=value as Record<string,unknown>;
+   if(message.type==='havana-v2-book-phase'){
+    if(message.phase==='boot')updatePhase('script-started');
+    else if(message.phase==='session')updatePhase('session-received');
+    else if(message.phase==='pages')updatePhase('pages-loading');
+    return;
+   }
    if(message.type!=='havana-v2-book-status')return;
    if(message.status==='ready'){
     clearReaderWatchdog();setReaderReady(true);setFailed('');
@@ -71,7 +90,11 @@ export default function NativeBook({token,refreshKey,onClose,calendarEventId,cal
   });
   return()=>sub.remove();
  },[]);
- const retry=()=>{clearReaderWatchdog();setReaderReady(false);setFailed('');setViewKey(n=>n+1);};
+ const retry=()=>{clearReaderWatchdog();setReaderReady(false);updatePhase('opening-page');setFailed('');setViewKey(n=>n+1);};
+ const loadingLabel=readerPhase==='opening-page'?'Conectando al lector…':
+  readerPhase==='html-loaded'?'Iniciando lector web…':
+  readerPhase==='script-started'?'Conectando sesión autorizada…':
+  'Preparando páginas de la revista…';
  return <Modal visible animationType="fade" onRequestClose={onClose}
   statusBarTranslucent presentationStyle="fullScreen">
   <View style={styles.root}>
@@ -91,10 +114,12 @@ export default function NativeBook({token,refreshKey,onClose,calendarEventId,cal
     allowsBackForwardNavigationGestures={false} pullToRefreshEnabled={false}
     startInLoadingState
     style={styles.web}
-    onLoadStart={()=>{setReaderReady(false);setFailed('');armReaderWatchdog();}}
-    onMessage={event=>{
-     if(trustedBookUrl(event.nativeEvent.url))onReaderStatus(event.nativeEvent.data);
-    }}
+    onLoadStart={()=>{setReaderReady(false);updatePhase('opening-page');setFailed('');armReaderWatchdog();}}
+    onLoadEnd={()=>{if(phaseRef.current==='opening-page')updatePhase('html-loaded');}}
+    // Navigation is already restricted to READER and frames are blocked by the
+    // book.html CSP. WebView message URLs differ across Android versions;
+    // validate the small status schema rather than silently dropping messages.
+    onMessage={event=>onReaderStatus(event.nativeEvent.data)}
     onError={()=>{clearReaderWatchdog();setFailed('No se pudo cargar el lector de HAVANA NICE.');}}
     onHttpError={event=>{
      if(event.nativeEvent.statusCode>=400&&event.nativeEvent.url===READER){
@@ -105,7 +130,7 @@ export default function NativeBook({token,refreshKey,onClose,calendarEventId,cal
    />
    {!readerReady&&!failed&&<View style={styles.loading} pointerEvents="none">
     <ActivityIndicator size="large" color="#315843"/>
-    <Text style={styles.loadingText}>Abriendo revista 3D…</Text>
+    <Text style={styles.loadingText}>{loadingLabel}</Text>
    </View>}
    {!!failed&&<View style={styles.failure} accessibilityRole="alert">
     <Text style={styles.failureText}>{failed}</Text>
@@ -124,11 +149,13 @@ const styles=StyleSheet.create({
  backText:{color:'#2c523c',fontSize:15,fontWeight:'700'},
  title:{flexShrink:1,fontSize:13,color:'#274632',letterSpacing:1.4,fontWeight:'800'},
  web:{flex:1,backgroundColor:'#f3eddf'},
- loading:{position:'absolute',top:90,bottom:0,left:0,right:0,alignItems:'center',
-  justifyContent:'center',gap:18,backgroundColor:'#f3eddf'},
- loadingText:{color:'#315843',fontSize:14,fontWeight:'600'},
- failure:{position:'absolute',top:90,bottom:0,left:0,right:0,padding:24,gap:16,
-  justifyContent:'center',backgroundColor:'#f3eddf',alignItems:'center'},
+ // Do NOT mask the embedded page. Its own error/reader must remain visible.
+ loading:{position:'absolute',top:88,left:12,right:12,alignItems:'center',
+  justifyContent:'center',flexDirection:'row',gap:10,padding:10,
+  backgroundColor:'#f3eddfed',borderRadius:10},
+ loadingText:{color:'#315843',fontSize:12,fontWeight:'600'},
+ failure:{position:'absolute',bottom:22,left:14,right:14,padding:18,gap:14,
+  justifyContent:'center',backgroundColor:'#fffaf2',borderRadius:12,alignItems:'center'},
  failureText:{color:'#863f34',fontSize:14,textAlign:'center',lineHeight:22},
  retry:{color:'#315843',fontSize:14,fontWeight:'800'}
 });

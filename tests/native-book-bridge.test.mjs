@@ -9,7 +9,12 @@ const event='781c1e49-216e-475b-8245-a4efb1b7250b';
 test('Android opens the PWA 3D directly in its own shell with the existing login',()=>{
  const n=read('apps/android/features/book/NativeBook.tsx');
  assert.match(n,/<WebView<object>/);
- assert.match(n,/onMessage=/);
+ assert.match(n,/onMessage=\{event=>onReaderStatus\(event.nativeEvent.data\)\}/);
+ assert.match(n,/onLoadEnd=/);
+ assert.match(n,/phaseRef.current==='script-started'/);
+ assert.doesNotMatch(n,/if\(trustedBookUrl\(event.nativeEvent.url\)\)/);
+ assert.match(n,/Do NOT mask the embedded page/);
+ assert.doesNotMatch(n,/loading:\{position:'absolute',top:90,bottom:0/);
  assert.match(n,/readerWatchdog/);
  assert.match(n,/ActivityIndicator/);
  assert.match(n,/message.type!=='havana-v2-book-status'/);
@@ -35,6 +40,10 @@ test('The embedded PWA uses the original PageFlip and initial native context, no
  assert.match(p,/attempts>=30/);
  assert.match(p,/\.hn-book-empty:not\(\[role\]\)/);
  assert.match(p,/reportReaderStatus\(state\)/);
+ assert.match(p,/reportReaderPhase\('boot'\)/);
+ assert.match(p,/reportReaderPhase\('session'\)/);
+ assert.match(p,/sendPhase\('pages'\)/);
+ assert.doesNotMatch(p,/JSON\.stringify\(\{[^}]*token[^}]*\}\)/);
  assert.match(p,/stf__block/);
  assert.match(h,/id="book-boot-status"/);
  assert.match(p,/JSON\.stringify\(\{type:'havana-v2-book-status',status\}\)/);
