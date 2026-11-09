@@ -12,6 +12,21 @@ const KEY='hn-v2-chat-media-draft-v1';
 const TTL=24*60*60*1000;
 const COPY_BUDGET=80*1024*1024;
 const PREFIX='hn-v2-chat-pending-';
+const ORPHAN_TTL=48*60*60*1000;
+let lastSweep=0;
+// Cleanup is narrowly limited to old staging files owned by this feature.
+function pruneExpiredNativeChatStaging(){
+ const now=Date.now();
+ if(now-lastSweep<24*60*60*1000)return;
+ lastSweep=now;
+ try{
+   for(const entry of Paths.document.list()){
+     if(!(entry instanceof File)||!entry.name.startsWith(PREFIX))continue;
+     const age=entry.modificationTime===null?0:now-entry.modificationTime;
+     if(age>ORPHAN_TTL)entry.delete();
+   }
+ }catch{/* Storage may be unavailable; never touch other directories. */}
+}
 
 function stagedFile(item:PendingNativeChatMedia):boolean{
  const root=Paths.document.uri.replace(/\/$/,'')+'/';
@@ -30,6 +45,7 @@ export async function storeNativePendingMedia(actorId:string,items:readonly Pend
  await Storage.setItem(KEY,JSON.stringify({actorId,updatedAt:Date.now(),items} satisfies Stored));
 }
 export async function loadNativePendingMedia(actorId:string):Promise<PendingNativeChatMedia[]>{
+ pruneExpiredNativeChatStaging();
  if(!actorId)return [];
  const raw=await Storage.getItem(KEY);
  if(!raw)return [];
