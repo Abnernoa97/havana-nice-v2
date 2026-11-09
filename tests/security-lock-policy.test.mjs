@@ -32,11 +32,24 @@ test('Expo PKI dependency is patched without changing SDK or native bridge',()=>
   assert.equal(range,'^1.4.0');
  }
 });
-test('Android app and WebView versions remain pinned and unchanged by Wrangler patch',()=>{
+test('Expo SDK 58 maintenance update matches proven native Gradle candidate',()=>{
  const android=read('apps/android/package.json');
  const lock=read('package-lock.json');
- assert.equal(android.dependencies.expo,'58.0.14');
- assert.equal(android.dependencies['react-native'],'0.88.0');
+ const expected={expo:'58.0.23','react-native':'0.88.1','expo-sqlite':'58.0.15','expo-video':'58.0.13','react-native-webview':'14.0.1'};
+ for(const [name,version] of Object.entries(expected)){
+  assert.equal(android.dependencies[name],version,name);
+  assert.equal(lock.packages['apps/android'].dependencies[name],version,name);
+  assert.equal(lock.packages['node_modules/'+name].version,version,name);
+ }
+ const app=read('apps/android/app.json').expo;
+ assert.equal(app.version,'0.0.21');
+ assert.equal(app.android.versionCode,21,'do not publish new APK without explicit approval');
+});
+test('Android app and WebView versions stay pinned and compatible after native preflight',()=>{
+ const android=read('apps/android/package.json');
+ const lock=read('package-lock.json');
+ assert.equal(android.dependencies.expo,'58.0.23');
+ assert.equal(android.dependencies['react-native'],'0.88.1');
  assert.equal(android.dependencies['react-native-webview'],'14.0.1');
  for(const dependency of ['expo','react-native','react-native-webview']){
   assert.equal(android.dependencies[dependency],lock.packages['apps/android'].dependencies[dependency]);
