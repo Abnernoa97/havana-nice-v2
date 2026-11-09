@@ -88,6 +88,10 @@ test('Photo chat uses sharp lightweight previews and unmodified fullscreen origi
  assert.match(web,/photoOpen&&<ChatPhotoViewer media=\{media\}/);
  assert.match(hook,/fetchChatPhotoThumbnail\(signed,controller\.signal\)/);
  assert.match(hook,/IntersectionObserver/);
+ assert.match(hook,/rootMargin:'320px'/);
+ assert.match(hook,/setVisible\(false\)/);
+ assert.match(hook,/clearTimeout\(releaseTimer\)/);
+ assert.match(hook,/URL\.revokeObjectURL\(previewUrl\)/);
  assert.match(thumb,/CHAT_PREVIEW_LONG_EDGE=1440/);
  assert.match(thumb,/CHAT_PREVIEW_JPEG_QUALITY=\.92/);
  assert.match(thumb,/CHAT_PREVIEW_MAX_ACTIVE=2/);
