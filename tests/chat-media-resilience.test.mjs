@@ -106,3 +106,12 @@ test('Busy upload cannot remove originals; failed sends keep their queue',()=>{
  assert.match(expo,/catch\(e\)\{\s*setMediaError\(/);
  assert.doesNotMatch(app,/mediaUploadBusy\.current=false;setMediaUploading\(false\);setSelectedMedia\(\[\]\)/);
 });
+
+test('PWA upload ref exists before media selection hook executes',()=>{
+ const app=read('apps/pwa/src/app/App.tsx');
+ const declaration=app.indexOf('const mediaUploadBusy=useRef(false)');
+ const picker=app.indexOf('usePwaMediaSelection({');
+ assert.equal(declaration>=0,true);
+ assert.equal(picker>declaration,true);
+ assert.equal(app.indexOf('const mediaUploadBusy=useRef(false)',declaration+1),-1);
+});
