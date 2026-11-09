@@ -262,6 +262,7 @@ test('Web/Admin originals are fully downloaded once before opening, without forc
 test('one real original-quality R2 uploader for Chat PWA with Familia fast multipart',()=>{
  const uploader=read('apps/pwa/src/services/chat-media-upload.ts');
  const member=read('apps/pwa/src/app/App.tsx');
+ const preview=read('apps/pwa/src/features/chat/PwaChatMediaQueuePreview.tsx');
  const backend=read('cloudflare/src/modules/chat/chat-media.js');
  assert.match(uploader,/!begin\.multipart/);
  assert.match(uploader,/5\*1024\*1024/);
@@ -271,7 +272,8 @@ test('one real original-quality R2 uploader for Chat PWA with Familia fast multi
  assert.match(uploader,/\/complete/);
  assert.match(uploader,/\/send/);
  assert.match(member,/mediaProgress/);
- assert.match(member,/progress aria-label="Progreso de subida"/);
+ assert.match(member,/<PwaChatMediaQueuePreview/);
+ assert.match(preview,/progress aria-label="Progreso de subida"/);
  assert.match(backend,/message_seq/);
  assert.doesNotMatch(uploader,/HAVANA_CLOUD|Supabase|Drive/);
 });
