@@ -215,38 +215,46 @@ test('Native Chat timeline is presentation-only; original scroll ownership stays
  assert.doesNotMatch(timeline,/new WebSocket|openChatSocket\(|startNamedChatSession\(|saveNativeLocalChat\(|uploadNativeChatFile\(/);
  assert.doesNotMatch(controller,/<SwipeableBubble|<NativeChatMediaView/);
 });
-test('Native photo uses a fully verified local cache and modal without a browser; video plays inline',()=>{
- const native=read('apps/android/features/chat/NativeChatMediaView.tsx');
- const cache=read('apps/android/storage/chatPhotoCache.ts');
- const packageManifest=JSON.parse(read('apps/android/package.json'));
- assert.equal(packageManifest.dependencies['expo-video'],'58.0.13');
- assert.match(native,/useVideoPlayer/);
- assert.match(native,/<VideoView player=\{player\} nativeControls/);
- assert.match(native,/surfaceType="surfaceView"/);
- assert.doesNotMatch(native,/surfaceType="textureView"/);
- assert.match(native,/useEvent\(player,'statusChange'/);
- assert.match(native,/onRetry=\{\(\)=>setVideoAttempt/);
- assert.match(cache,/File\.downloadFileAsync/);
- assert.match(cache,/finished\.size!==media\.sizeBytes/);
- assert.match(cache,/cached\.exists&&cached\.size===media\.sizeBytes/);
- assert.match(native,/<Modal visible=\{media\.kind==='photo'&&enlarged&&!!photo\}/);
- assert.doesNotMatch(native,/Linking\.openURL|media\.name\} ·|Reproducir video/);
- assert.match(native,/setPhoto\(cached\.uri\)/);
+test('Native photos and videos run in separate modules with preserved quality',()=>{
+  const media=read('apps/android/features/chat/NativeChatMediaView.tsx');
+  const photo=read('apps/android/features/chat/NativeChatPhoto.tsx');
+  const video=read('apps/android/features/chat/NativeChatVideo.tsx');
+  const grant=read('apps/android/features/chat/native-chat-media-grant.ts');
+  const cache=read('apps/android/storage/chatPhotoCache.ts');
+  const packageManifest=JSON.parse(read('apps/android/package.json'));
+  assert.equal(packageManifest.dependencies['expo-video'],'58.0.13');
+  assert.match(media,/<NativeChatPhoto media=\{media\}/);
+  assert.match(media,/<NativeChatVideo media=\{media\}/);
+  assert.match(photo,/cached\.exists&&cached\.size===media\.sizeBytes/);
+  assert.match(photo,/setPhoto\(uri\)/);
+  assert.match(photo,/<Modal visible=\{enlarged&&!!photo\}/);
+  assert.match(photo,/cacheWholePhoto\(media,signed\)/);
+  assert.match(video,/useVideoPlayer/);
+  assert.match(video,/<VideoView player=\{player\} nativeControls/);
+  assert.match(video,/surfaceType="surfaceView"/);
+  assert.doesNotMatch(video,/surfaceType="textureView"/);
+  assert.match(video,/useEvent\(player,'statusChange'/);
+  assert.match(video,/onRetry=\{\(\)=>setAttempt/);
+  assert.match(grant,/Authorization:'Bearer '\+token/);
+  assert.match(cache,/File\.downloadFileAsync/);
+  assert.match(cache,/finished\.size!==media\.sizeBytes/);
+  assert.doesNotMatch(media,/useVideoPlayer|cacheWholePhoto|Image\.getSize/);
 });
-test('Native photo-cache housekeeping touches only stale incomplete V2 transfers',()=>{
- const native=read('apps/android/features/chat/NativeChatMediaView.tsx');
- const cache=read('apps/android/storage/chatPhotoCache.ts');
- assert.match(cache,/PARTIAL_TRANSFER_TTL=24\*60\*60\*1000/);
- assert.match(cache,/function pruneAbandonedPhotoTransfers\(\)/);
- assert.match(cache,/Paths\.cache\.list\(\)/);
- assert.match(cache,/entry instanceof File/);
- assert.match(cache,/entry\.modificationTime/);
- assert.match(cache,/hn-v2-photo-transfer-/);
- assert.match(cache,/\.part\$/);
- assert.match(cache,/if\(now-lastPartialTransferSweep<PARTIAL_TRANSFER_TTL\)return/);
- assert.match(cache,/cached\.exists&&cached\.size===media\.sizeBytes/);
- assert.match(native,/from '\.\.\/\.\.\/storage\/chatPhotoCache'/);
- assert.doesNotMatch(cache,/Paths\.cache\.delete\(\)|hn-v2-chat-photo-.*\.delete\(/);
+
+test('Native photo cache housekeeping touches only abandoned V2 transfers',()=>{
+  const photo=read('apps/android/features/chat/NativeChatPhoto.tsx');
+  const cache=read('apps/android/storage/chatPhotoCache.ts');
+  assert.match(cache,/PARTIAL_TRANSFER_TTL=24\*60\*60\*1000/);
+  assert.match(cache,/function pruneAbandonedPhotoTransfers\(\)/);
+  assert.match(cache,/Paths\.cache\.list\(\)/);
+  assert.match(cache,/entry instanceof File/);
+  assert.match(cache,/entry\.modificationTime/);
+  assert.match(cache,/hn-v2-photo-transfer-/);
+  assert.match(cache,/\.part\$/);
+  assert.match(cache,/if\(now-lastPartialTransferSweep<PARTIAL_TRANSFER_TTL\)return/);
+  assert.match(cache,/cached\.exists&&cached\.size===media\.sizeBytes/);
+  assert.match(photo,/from '\.\.\/\.\.\/storage\/chatPhotoCache'/);
+  assert.doesNotMatch(cache,/Paths\.cache\.delete\(\)|hn-v2-chat-photo-.*\.delete\(/);
 });
 
 test('Web/Admin previews use a high-density thumbnail and original on tap',()=>{
