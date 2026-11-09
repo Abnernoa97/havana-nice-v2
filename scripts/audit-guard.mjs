@@ -231,6 +231,7 @@ absent(android,/typing \|\| `\$\{connection\}/,'Android header must only show co
 absent(pwa,/typing \|\| `\$\{connection\}/,'PWA header must only show connection state');
 // C04: online colors now reflect actual actor IDs and vanish when connection is stale.
 present(android,/setOnlineActorIds\(new Set\(item\.users\.map\(user=>user\.actorId\)\)\)/,
+  'Android must use actual online actor identities');
 present(pwa,/setOnlineActorIds\(new Set\(value\.users\.map\(user=>user\.actorId\)\)\)/,
   'PWA must use actual online actor identities');
 present(android,/initialHistoryPending = useRef\(true\)/,'Native chat must track initial bottom placement');
