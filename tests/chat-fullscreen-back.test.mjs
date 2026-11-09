@@ -63,7 +63,7 @@ test('Opening Chat lands at the true bottom even after media sizes change',()=>{
   assert.match(pwa,/observer\.observe\(content\)/);
   assert.match(pwa,/list\.scrollTop=Math\.max\(0,list\.scrollHeight-list\.clientHeight\)/);
   assert.match(pwa,/else if\(userScrollGesture\.current\)stickToLatest\.current=false/);
-  assert.doesNotMatch(pwa,/observer\.observe\(list\)/);
+  assert.match(pwa,/observer\.observe\(list\)/);
   assert.match(native,/initialBottomAttempts = useRef\(0\)/);
   assert.match(native,/if\(initialBottomAttempts\.current<10\)scheduleInitialBottom\(\)/);
   assert.match(native,/else if\(autoScroll\.current\)scroll\.current\?\.scrollToEnd\(\{animated:false\}\)/);
