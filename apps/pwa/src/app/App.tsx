@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useRef, useState } from 'react';
+import { lazy, Suspense, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import {
   chatReactionPayload,chatTypingPayload,chatReadReceiptPayload,
   fetchBackendHealth, getChatMediaAvailability, getChatSnapshot, getOlderChatMessages, searchChatMessages, getChatMenuState, getChatMessagePermissions, isWithinChatEditWindow, selectNextQueuedChatMessage, setOutgoingChatStatus, projectOutgoingChatStatus, CHAT_ACK_TIMEOUT_MS, newClientMessageId, uploadChatMediaBatch,
@@ -579,10 +579,46 @@ export default function App() {
   },[draft]);
 
 
-  useEffect(() => {
+  // Chat stays mounted behind HOME: every re-entry must reset its viewport to
+  // the newest message. Scroll the list itself, not the document or a smooth anchor.
+  const chatWasVisible=useRef(false);
+  const stickToLatest=useRef(true);
+  const scrollChatToLatest=()=>{
+    const list=bottom.current?.closest('.chat-messages') as HTMLElement|null;
+    if(list)list.scrollTop=list.scrollHeight;
+  };
+  useLayoutEffect(()=>{
+    if(!session||activeScreen!=='chat'){
+      chatWasVisible.current=false;
+      return;
+    }
+    if(!chatWasVisible.current){
+      chatWasVisible.current=true;
+      stickToLatest.current=true;
+      scrollChatToLatest();
+      requestAnimationFrame(scrollChatToLatest);
+    }
+  },[activeScreen,session?.token]);
+  useLayoutEffect(()=>{
+    if(activeScreen!=='chat')return;
     if(scrollOlderOnce.current){scrollOlderOnce.current=false;return;}
-    bottom.current?.scrollIntoView({ block: 'end', behavior: 'smooth' });
-  }, [messages.length]);
+    if(stickToLatest.current)scrollChatToLatest();
+  },[messages.length,activeScreen]);
+  useEffect(()=>{
+    if(activeScreen!=='chat')return;
+    const list=bottom.current?.closest('.chat-messages') as HTMLElement|null;
+    if(!list)return;
+    const onScroll=()=>{
+      stickToLatest.current=list.scrollHeight-list.scrollTop-list.clientHeight<100;
+    };
+    list.addEventListener('scroll',onScroll,{passive:true});
+    // Videos and images can resize after the message list first renders.
+    const observer=new ResizeObserver(()=>{
+      if(stickToLatest.current)scrollChatToLatest();
+    });
+    observer.observe(list);
+    return()=>{observer.disconnect();list.removeEventListener('scroll',onScroll);};
+  },[activeScreen,session?.token]);
 
   function acceptApprovedSession(next:ChatSession){
     historyRequests.current.reset();setLoadingOlder(false);setSearching(false);
