@@ -168,5 +168,7 @@ Versiones y pruebas anteriores se consultan en Git; no repetir una bitácora cro
 - [x] **Sin instrucciones de versiones obsoletas:** retiradas de este Plan Maestro las notas ejecutables de APK 0.0.14–0.0.16 y el puente `injectedJavaScriptObject` sustituido. La trazabilidad permanece en el historial Git.
 - [x] **Nueva protección de una línea:** la CI consulta directamente GitHub y falla si aparecen ramas adicionales a `main` o PR abiertos. Se conserva el mismo workflow, no se crea otro.
 - [ ] **Refactor profundo de Chat:** `apps/pwa/src/app/App.tsx` y `apps/android/app/NativeApp.tsx` siguen siendo controladores grandes; separar responsabilidades sólo con pruebas de sesión, reconexión y multimedia. No mover código por estética ni arriesgar datos.
+- [x] **Residuos de repositorio:** 210 archivos versionados al control, 112 archivos de fuente; ningún par de blobs idénticos duplicados y ningún APK, build, log o respaldo accidental versionado. Las 23 migraciones D1 son historia aplicada y se conservan.
+- [ ] **Dependencias npm:** `npm ci` del CI [42577287690](https://github.com/Abnernoa97/havana-nice-v2/actions/runs/42577287690) todavía informa 14 avisos (1 bajo, 9 moderados, 4 altos). Clasificar cuáles son de runtime y cuáles de desarrollo antes de actualizaciones; **prohibido `npm audit fix --force` sin pruebas de compatibilidad con Expo/Android/Cloudflare**.
 - [ ] **QA física de integración:** Recuerdos/Calendario, Chat, Repertorio y Familia entre Admin/PWA/Android. Aún no afirmar sincronización total.
 
