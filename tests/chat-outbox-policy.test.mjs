@@ -56,7 +56,7 @@ test('same optimistic state transition updates only pending bubbles from same se
 test('shared send and ACK lifecycle is the only source of timer/transport logic',()=>{
  for(const path of ['apps/pwa/src/app/App.tsx','apps/android/app/NativeApp.tsx']){
   const source=readFileSync(new URL('../'+path,import.meta.url),'utf8');
-  assert.match(source,/flushChatOutbox\(socket\.current,outbox\.current,(ackTimers|acknowledgementTimers)\.current,markOutgoing\)/);
+  assert.match(source,/flushChatOutbox\(socket\.current,outbox\.current,(ackTimers|acknowledgementTimers)\.current,markOutgoing,activeSession\.current\?\.actorId\)/);
   assert.match(source,/confirmChatOutgoingMessage\(message,activeSession\.current\?\.actorId/);
   assert.match(source,/pauseChatOutbox\(outbox\.current,(ackTimers|acknowledgementTimers)\.current,markOutgoing\)/);
   assert.match(source,/setOutgoingChatStatus\(outbox\.current,id,state\)/);
@@ -80,16 +80,16 @@ test('one send at a time, confirmation by original actor, and one ACK timer',()=
  const timers=new Map(),sent=[];
  const mark=(id,status)=>{setOutgoingChatStatus(outbox,id,status);};
  const socket={readyState:1,send(payload){sent.push(JSON.parse(payload));}};
- assert.equal(delivery.flushChatOutbox(socket,outbox,timers,mark,clock),true);
+ assert.equal(delivery.flushChatOutbox(socket,outbox,timers,mark,'member:fer',clock),true);
  assert.deepEqual(sent,[{type:'chat.send',clientMessageId:'a',text:'a',replyToSeq:null}]);
  assert.equal(tasks.size,1);
  assert.equal([...tasks.values()][0].ms,CHAT_ACK_TIMEOUT_MS);
- assert.equal(delivery.flushChatOutbox(socket,outbox,timers,mark,clock),false);
+ assert.equal(delivery.flushChatOutbox(socket,outbox,timers,mark,'member:fer',clock),false);
  assert.equal(delivery.confirmChatOutgoingMessage({...row('a',1000),pending:false},'member:noa',outbox,timers,clock),false);
  assert.equal(outbox.size,2);
  assert.equal(delivery.confirmChatOutgoingMessage({...row('a',1000),pending:false},'member:fer',outbox,timers,clock),true);
  assert.equal(outbox.size,1);assert.equal(tasks.size,0);
- assert.equal(delivery.flushChatOutbox(socket,outbox,timers,mark,clock),true);
+ assert.equal(delivery.flushChatOutbox(socket,outbox,timers,mark,'member:fer',clock),true);
  assert.equal(sent[1].clientMessageId,'b');
 });
 
@@ -103,19 +103,47 @@ test('timed-out sends only retry explicitly; pause and failed socket keep messag
  const timers=new Map(),states=[];
  const mark=(id,state)=>{states.push(state);setOutgoingChatStatus(outbox,id,state);};
  const socket={readyState:1,send(){}};
- assert.equal(delivery.flushChatOutbox({readyState:0,send(){}},outbox,timers,mark,clock),false);
- assert.equal(delivery.flushChatOutbox(socket,outbox,timers,mark,clock),true);
+ assert.equal(delivery.flushChatOutbox({readyState:0,send(){}},outbox,timers,mark,'member:fer',clock),false);
+ assert.equal(delivery.flushChatOutbox(socket,outbox,timers,mark,'member:fer',clock),true);
  tasks.get(timers.get('original'))();
  assert.equal(outbox.get('original').deliveryStatus,'error');
- assert.equal(delivery.flushChatOutbox(socket,outbox,timers,mark,clock),false);
+ assert.equal(delivery.flushChatOutbox(socket,outbox,timers,mark,'member:fer',clock),false);
  delivery.clearChatAckTimer(timers,'original',clock);
  mark('original','queued');
- assert.equal(delivery.flushChatOutbox(socket,outbox,timers,mark,clock),true);
+ assert.equal(delivery.flushChatOutbox(socket,outbox,timers,mark,'member:fer',clock),true);
  delivery.pauseChatOutbox(outbox,timers,mark,clock);
  assert.equal(outbox.get('original').clientMessageId,'original');
  assert.equal(outbox.get('original').deliveryStatus,'queued');
  assert.equal(tasks.size,0);assert.equal(timers.size,0);
- assert.equal(delivery.flushChatOutbox({readyState:1,send(){throw Error('offline');}},outbox,timers,mark,clock),false);
+ assert.equal(delivery.flushChatOutbox({readyState:1,send(){throw Error('offline');}},outbox,timers,mark,'member:fer',clock),false);
  assert.equal(outbox.get('original').deliveryStatus,'error');
  assert.equal(timers.size,0);
+});
+
+test('foreign pending messages cannot leave over the new actor connection',()=>{
+ const foreign=row('old-member-message',1000);
+ const outbox=new Map([[foreign.clientMessageId,foreign]]);
+ const timers=new Map();
+ const sent=[];
+ const socket={readyState:1,send(payload){sent.push(payload);}};
+ assert.equal(delivery.flushChatOutbox(socket,outbox,timers,()=>{},'member:noa'),false);
+ assert.equal(sent.length,0);
+ assert.equal(timers.size,0);
+ assert.equal(outbox.get(foreign.clientMessageId),foreign);
+});
+
+test('both clients clear old outbox and ACK timers before activating a new login',()=>{
+ for(const [path,timers] of [
+  ['apps/pwa/src/app/App.tsx','ackTimers'],
+  ['apps/android/app/NativeApp.tsx','acknowledgementTimers']
+ ]){
+  const src=readFileSync(new URL('../'+path,import.meta.url),'utf8');
+  const from=src.indexOf('function acceptApprovedSession(');
+  const to=src.indexOf('async function join(',from);
+  assert.ok(from>=0&&to>from);
+  const block=src.slice(from,to);
+  assert.match(block,/outbox\.current\.clear\(\)/);
+  assert.ok(block.includes('pauseChatOutbox(outbox.current,'+timers+'.current,markOutgoing)'));
+  assert.ok(block.indexOf('outbox.current.clear()')<block.indexOf('setSession(next)'));
+ }
 });

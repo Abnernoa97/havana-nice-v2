@@ -130,3 +130,8 @@ La PWA sigue usando `openChatSocket`, sin alterar su autenticación.
 confirmación, pausa y reintento manual compartida por PWA y Android. Los
 controladores siguen siendo propietarios de sus sockets, cola local y
 persistencia, sin nuevos registros, nuevos endpoints ni limpieza de datos.
+
+El envío ahora exige que `senderId` coincida con `actorId` de la sesión
+activa. Una autorización nueva vacía la cola anterior y cancela ACK pendientes
+en **ambas** plataformas. El rechazo ocurre antes de transmitir datos,
+sin eliminar historiales confirmados, caché, R2 ni borradores de otras secciones.

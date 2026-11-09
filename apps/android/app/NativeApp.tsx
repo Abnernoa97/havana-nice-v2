@@ -203,6 +203,7 @@ export default function App() {
     clearRetryTimer();
     activeSession.current = null;
     outbox.current.clear();
+    pauseChatOutbox(outbox.current,acknowledgementTimers.current,markOutgoing);
     editingSnapshot.current=null;
     beforeEdit.current=null;
     setEditing(null);
@@ -328,7 +329,7 @@ export default function App() {
   }
   // Same IDs, server ACK and manual retry policy as PWA.
   function flushOutbox() {
-    flushChatOutbox(socket.current,outbox.current,acknowledgementTimers.current,markOutgoing);
+    flushChatOutbox(socket.current,outbox.current,acknowledgementTimers.current,markOutgoing,activeSession.current?.actorId);
   }
   function retryOutgoing(id: string) {
     if (!outbox.current.has(id)) return;
@@ -622,6 +623,9 @@ export default function App() {
     setMessages([]);
     setReceipts([]);
     setHasMore(false);
+    // A new login must never deliver the previous actor's offline messages.
+    outbox.current.clear();
+    pauseChatOutbox(outbox.current,acknowledgementTimers.current,markOutgoing);
     setSession(next);
     activeSession.current=next;
     persistLocal();

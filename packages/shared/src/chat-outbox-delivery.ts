@@ -46,12 +46,13 @@ export function confirmChatOutgoingMessage(
 export function flushChatOutbox(
  socket:SendSocket|null,
  outbox:Map<string,ChatMessage>,timers:Map<string,ChatAckTimer>,
- onStatus:OnStatus,scheduler:ChatAckScheduler=systemScheduler,
+ onStatus:OnStatus,actorId:string|undefined,
+ scheduler:ChatAckScheduler=systemScheduler,
 ):boolean{
  // WebSocket.OPEN is 1 on both platforms.
  if(!socket||socket.readyState!==1)return false;
  const item=selectNextQueuedChatMessage(outbox.values());
- if(!item)return false;
+ if(!item||!actorId||item.senderId!==actorId)return false;
  const id=item.clientMessageId;
  try{
   socket.send(JSON.stringify({

@@ -184,6 +184,7 @@ export default function App() {
     clearRetry();
     activeSession.current = null;
     outbox.current.clear();
+    pauseChatOutbox(outbox.current,ackTimers.current,markOutgoing);
     editingSnapshot.current=null;
     beforeEdit.current=null;
     setEditing(null);
@@ -313,7 +314,7 @@ export default function App() {
     connectionWatchdog.current=null;
   }
   function flushOutbox() {
-    flushChatOutbox(socket.current,outbox.current,ackTimers.current,markOutgoing);
+    flushChatOutbox(socket.current,outbox.current,ackTimers.current,markOutgoing,activeSession.current?.actorId);
   }
   function refresh(next: ChatSession) {
     const request=historyRequests.current.beginSnapshot();
@@ -569,6 +570,7 @@ export default function App() {
     setReceipts([]);
     setHasMore(false);
     outbox.current.clear();
+    pauseChatOutbox(outbox.current,ackTimers.current,markOutgoing);
     setSession(next);
     activeSession.current=next;
     persist();
