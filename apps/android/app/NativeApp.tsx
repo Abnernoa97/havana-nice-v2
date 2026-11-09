@@ -113,6 +113,7 @@ export default function App() {
   const initialHistoryPending = useRef(true);
   const initialHistoryLoaded = useRef(false);
   const initialBottomTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const initialBottomAttempts = useRef(0);
   const userHasScrolled = useRef(false);
   const activeSession = useRef<ChatSession | null>(null);
   const appLifecycle = useRef(AppState.currentState);
@@ -143,21 +144,25 @@ export default function App() {
 
   function scheduleInitialBottom() {
     if (!initialHistoryPending.current || !initialHistoryLoaded.current || userHasScrolled.current) return;
+    // FlatList initially measures a virtualized subset of the history.
+    // Keep landing on the real last bubble as later cells are measured.
     scroll.current?.scrollToEnd({animated:false});
     if (initialBottomTimer.current) clearTimeout(initialBottomTimer.current);
     initialBottomTimer.current = setTimeout(() => {
       initialBottomTimer.current = null;
-      if (initialHistoryPending.current && !userHasScrolled.current) {
-        scroll.current?.scrollToEnd({animated:false});
-        initialHistoryPending.current = false;
-      }
-    }, 220);
+      if (!initialHistoryPending.current || userHasScrolled.current) return;
+      initialBottomAttempts.current+=1;
+      scroll.current?.scrollToEnd({animated:false});
+      if(initialBottomAttempts.current<10)scheduleInitialBottom();
+      else initialHistoryPending.current=false;
+    }, 120);
   }
   function beginFreshChatViewport() {
     if (initialBottomTimer.current) clearTimeout(initialBottomTimer.current);
     initialBottomTimer.current=null;
     initialHistoryPending.current=true;
     initialHistoryLoaded.current=false;
+    initialBottomAttempts.current=0;
     userHasScrolled.current=false;
     autoScroll.current=true;
   }
@@ -169,6 +174,7 @@ export default function App() {
     autoScroll.current=true;
     initialHistoryPending.current=true;
     initialHistoryLoaded.current=true;
+    initialBottomAttempts.current=0;
     scheduleInitialBottom();
     return()=>{
       if(initialBottomTimer.current)clearTimeout(initialBottomTimer.current);
@@ -828,7 +834,10 @@ export default function App() {
                 if(initialHistoryPending.current)scheduleInitialBottom();
                 else if(autoScroll.current)scroll.current?.scrollToEnd({animated:false});
               }}
-              onLayout={()=>{if(initialHistoryPending.current)scheduleInitialBottom();}}
+              onLayout={()=>{
+                if(initialHistoryPending.current)scheduleInitialBottom();
+                else if(autoScroll.current)scroll.current?.scrollToEnd({animated:false});
+              }}
               onScrollBeginDrag={()=>{
                 userHasScrolled.current=true;
                 initialHistoryPending.current=false;
