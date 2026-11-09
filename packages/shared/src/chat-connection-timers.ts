@@ -15,7 +15,8 @@ const defaultClock:ChatTimerClock={
 export class ChatConnectionTimers {
  private retryTimer:ChatTimerHandle|null=null;
  private handshakeTimer:ChatTimerHandle|null=null;
- constructor(private readonly clock:ChatTimerClock=defaultClock){}
+ private readonly clock:ChatTimerClock;
+ constructor(clock:ChatTimerClock=defaultClock){this.clock=clock;}
 
  get retryPending():boolean{return this.retryTimer!==null;}
 
