@@ -64,6 +64,8 @@ test('shared send and ACK lifecycle is the only source of timer/transport logic'
   assert.doesNotMatch(source,/selectNextQueuedChatMessage\(outbox\.current\.values\(\)\)/);
   assert.doesNotMatch(source,/(ackTimers|acknowledgementTimers)\.current\.set\(/);
  }
+ const source=readFileSync(new URL('../packages/shared/src/chat-outbox-delivery.ts',import.meta.url),'utf8');
+ assert.ok(source.includes("from './chat-outbox.ts'"),'Node and bundlers must resolve the same module');
  const exports=readFileSync(new URL('../packages/shared/src/index.ts',import.meta.url),'utf8');
  assert.match(exports,/export \{clearChatAckTimer,pauseChatOutbox,confirmChatOutgoingMessage,flushChatOutbox\} from '\.\/chat-outbox-delivery'/);
 });

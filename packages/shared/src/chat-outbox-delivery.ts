@@ -1,7 +1,7 @@
 // One delivery/ACK lifecycle shared by PWA and Android. Both apps retain
 // their original WebSocket, pending-message Map and timer Map.
 import type {ChatMessage} from './index';
-import {CHAT_ACK_TIMEOUT_MS,selectNextQueuedChatMessage,type ChatOutboxState} from './chat-outbox';
+import {CHAT_ACK_TIMEOUT_MS,selectNextQueuedChatMessage,type ChatOutboxState} from './chat-outbox.ts';
 
 export type ChatAckTimer=ReturnType<typeof setTimeout>;
 export type ChatAckScheduler={
