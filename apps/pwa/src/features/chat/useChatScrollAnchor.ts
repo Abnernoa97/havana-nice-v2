@@ -16,9 +16,11 @@ export function useChatScrollAnchor({
  const chatWasVisible=useRef(false);
  const stickToLatest=useRef(true);
  const userScrollGesture=useRef(false);
+ const explicitlyBrowsing=useRef(false);
  // Browsing an older window must never trigger automatic bottom snapping.
- const pauseFollow=useCallback(()=>{stickToLatest.current=false;},[]);
+ const pauseFollow=useCallback(()=>{explicitlyBrowsing.current=true;stickToLatest.current=false;},[]);
  const resumeLatest=useCallback(()=>{
+   explicitlyBrowsing.current=false;
    stickToLatest.current=true;
    requestAnimationFrame(()=>{
      const list=bottomRef.current?.closest('.chat-messages') as HTMLElement|null;
@@ -38,6 +40,7 @@ export function useChatScrollAnchor({
    if(!chatWasVisible.current){
      chatWasVisible.current=true;
      stickToLatest.current=true;
+     explicitlyBrowsing.current=false;
      userScrollGesture.current=false;
      scrollChatToLatest();
      // Safari may report a hidden room's previous dimensions on first paint.
@@ -60,6 +63,7 @@ export function useChatScrollAnchor({
    if(!list||!content)return;
    const gap=()=>list.scrollHeight-list.scrollTop-list.clientHeight;
    const onScroll=()=>{
+     if(explicitlyBrowsing.current)return;
      if(gap()<=64)stickToLatest.current=true;
      else if(userScrollGesture.current)stickToLatest.current=false;
    };
