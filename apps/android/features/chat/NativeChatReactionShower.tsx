@@ -9,8 +9,6 @@ import {
 export type ReactionShowerBurst={
  id:number;emoji:ChatEmoji;x:number;y:number;
 };
-const WAVES=9;
-const WAVE_GAP_MS=95;
 
 const FloatingEmoji=React.memo(function FloatingEmoji({particle,onDone}:{
  particle:ChatReactionParticle;onDone:(id:number)=>void;
@@ -62,7 +60,7 @@ export default function NativeChatReactionShower({burst}:{
      setParticles(before=>[...before,...next].slice(-CHAT_REACTION_BURST_MAX_PARTICLES));
    };
    emit();
-   for(let wave=1;wave<WAVES;wave++)timers.current.push(setTimeout(emit,wave*WAVE_GAP_MS));
+   for(let wave=1;wave<CHAT_REACTION_BURST_WAVES;wave++)timers.current.push(setTimeout(emit,wave*CHAT_REACTION_BURST_WAVE_GAP_MS));
    return clearTimers;
  },[burst,width,height]);
  if(!particles.length)return null;
