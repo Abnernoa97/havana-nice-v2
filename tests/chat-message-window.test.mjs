@@ -103,7 +103,9 @@ test('Scrolling across loaded history windows is automatic only for real user ge
 test('Bounded window keeps the scroll anchor when entering the newest range',()=>{
  const timeline=readFileSync(new URL('../apps/pwa/src/features/chat/ChatTimeline.tsx',import.meta.url),'utf8');
  assert.match(timeline,/onScroll=\{handleWindowScroll\}/);
- assert.match(timeline,/onTouchMove=\{markGesture\}/);
+ assert.match(timeline,/onTouchMove=\{markTouchMove\}/);
+ assert.match(timeline,/const direction=observedDirection===gestureDirection\.current\?observedDirection:0/);
+ assert.match(timeline,/onWheel=\{markWheel\}/);
  assert.match(timeline,/nextWindowAllowedAt\.current=now\+420/);
  assert.match(timeline,/if\(nextMessage\)setEndAnchorKey\(chatWindowKey\(nextMessage\)\)/);
  assert.doesNotMatch(timeline,/if\(nextEnd===windowed\.total\)\{setEndAnchorKey\(null\);onReturnLatest\(\);\}/);

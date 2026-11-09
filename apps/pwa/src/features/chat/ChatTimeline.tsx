@@ -1,4 +1,4 @@
-import {memo,useLayoutEffect,useMemo,useRef,useState,type RefObject,type UIEvent,type KeyboardEvent} from 'react';
+import {memo,useLayoutEffect,useMemo,useRef,useState,type RefObject,type UIEvent,type KeyboardEvent,type TouchEvent,type WheelEvent} from 'react';
 import {
  buildChatDisplayIndex,messageDeliveryLabel,
  type ChatMessage,type ChatReaction,type ChatReadReceipt
@@ -40,6 +40,8 @@ function ChatTimeline({
  const pendingPosition=useRef<{key:string;offset:number}|null>(null);
  const lastScrollTop=useRef(0);
  const recentGesture=useRef(0);
+ const gestureDirection=useRef<-1|0|1>(0);
+ const lastTouchY=useRef<number|null>(null);
  const nextWindowAllowedAt=useRef(0);
  // Preserve the same on-screen message when the bounded view moves backward,
  // including after asynchronous server pagination prepends older messages.
@@ -97,16 +99,37 @@ function ChatTimeline({
  };
  // Edge-triggered window rotation uses the user's actual touch/wheel/keyboard
  // scrolling, never a programmatic scroll adjustment or late media layout.
- const markGesture=()=>{recentGesture.current=Date.now();};
+ const markTouchStart=(event:TouchEvent<HTMLElement>)=>{
+   recentGesture.current=Date.now();
+   gestureDirection.current=0;
+   lastTouchY.current=event.touches[0]?.clientY??null;
+ };
+ const markTouchMove=(event:TouchEvent<HTMLElement>)=>{
+   const y=event.touches[0]?.clientY;
+   if(y===undefined)return;
+   recentGesture.current=Date.now();
+   if(lastTouchY.current!==null&&Math.abs(y-lastTouchY.current)>1){
+     gestureDirection.current=y<lastTouchY.current?1:-1;
+   }
+   lastTouchY.current=y;
+ };
+ const markTouchEnd=()=>{recentGesture.current=Date.now();lastTouchY.current=null;};
+ const markWheel=(event:WheelEvent<HTMLElement>)=>{
+   recentGesture.current=Date.now();
+   if(event.deltaY!==0)gestureDirection.current=event.deltaY>0?1:-1;
+ };
  const handleWindowScroll=(event:UIEvent<HTMLElement>)=>{
    const list=event.currentTarget;
    const top=list.scrollTop;
    const delta=top-lastScrollTop.current;
    lastScrollTop.current=top;
    const now=Date.now();
+   // Ignore anchor restoration and async media reflow, even during momentum.
+   const observedDirection=Math.abs(delta)>1?(delta>0?1:-1):0;
+   const direction=observedDirection===gestureDirection.current?observedDirection:0;
    const action=chatWindowEdgeAction({
      scrollTop:top,scrollHeight:list.scrollHeight,clientHeight:list.clientHeight,
-     direction:Math.abs(delta)>1?(delta>0?1:-1):0,
+     direction,
      recentGesture:now-recentGesture.current<900,
      transitionBlocked:now<nextWindowAllowedAt.current,
      hasOlder:windowed.hasOlder||hasMore,
@@ -121,7 +144,10 @@ function ChatTimeline({
    else jumpLatest();
  };
  const handleWindowKeyDown=(event:KeyboardEvent<HTMLElement>)=>{
-   if(['ArrowUp','ArrowDown','PageUp','PageDown','Home','End',' '].includes(event.key))markGesture();
+   if(['ArrowUp','PageUp','Home'].includes(event.key))gestureDirection.current=-1;
+   else if(['ArrowDown','PageDown','End',' '].includes(event.key))gestureDirection.current=1;
+   else return;
+   recentGesture.current=Date.now();
  };
  // An outgoing message from the middle of history behaves like WhatsApp:
  // jump back to the latest bubble, rather than hiding the new sent message.
@@ -133,9 +159,9 @@ function ChatTimeline({
  },[latestMessageRequest,onReturnLatest]);
  return (
           <section className="chat-messages" aria-label="Mensajes"
-            onScroll={handleWindowScroll} onTouchStart={markGesture}
-            onTouchMove={markGesture} onTouchEnd={markGesture}
-            onWheel={markGesture} onKeyDown={handleWindowKeyDown}>
+            onScroll={handleWindowScroll} onTouchStart={markTouchStart}
+            onTouchMove={markTouchMove} onTouchEnd={markTouchEnd}
+            onWheel={markWheel} onKeyDown={handleWindowKeyDown}>
             <div className="chat-message-content">
             {(windowed.hasOlder||hasMore)&&<button type="button" className="load-older"
               disabled={loadingOlder} onClick={showOlder}>
