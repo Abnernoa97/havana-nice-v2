@@ -56,8 +56,13 @@ export default function App() {
   const [draft, setDraft] = useState('');
   const [composerPanel,setComposerPanel]=useState<'attachments'|'emojis'|null>(null);
   const mediaUploadBusy=useRef(false);
-  const {selectedMedia,setSelectedMedia,mediaError,setMediaError,mediaPicking,chooseNativeMedia}=
-    useNativeMediaSelection({uploadBusy:mediaUploadBusy,onCloseMenu:()=>setComposerPanel(null)});
+  const {selectedMedia,mediaError,setMediaError,mediaPicking,
+    confirmUploadedMedia,removeSelectedMedia,clearSelectedMedia,chooseNativeMedia}=
+    useNativeMediaSelection({
+      actorId:session?.actorId??null,
+      uploadBusy:mediaUploadBusy,onCloseMenu:()=>setComposerPanel(null),
+      onRecovered:()=>setActiveScreen('chat'),
+    });
   const [mediaReady,setMediaReady]=useState(false);
   const [mediaUploading,setMediaUploading]=useState(false);
   const [mediaProgress,setMediaProgress]=useState(0);
@@ -186,6 +191,7 @@ export default function App() {
   }
 
   function revokeCurrentAccess() {
+    clearSelectedMedia();
     clearConnectionWatchdog();
     historyRequests.current.reset();
     setLoadingOlder(false);
@@ -699,7 +705,7 @@ export default function App() {
         progress:setMediaProgress,
         confirmed:item=>{
           // Only confirmed originals leave the queue; errors remain retryable.
-          setSelectedMedia(before=>before.filter(x=>x.id!==item.id));
+          confirmUploadedMedia(item.id);
           syncMessages(session);
         },
       });
@@ -877,10 +883,7 @@ export default function App() {
              {selectedMedia.length>0&&<NativeChatMediaQueuePreview
                selectedMedia={selectedMedia} mediaUploading={mediaUploading}
                mediaProgress={mediaProgress} mediaReady={mediaReady}
-               onRemove={item=>{
-                 const remaining=selectedMedia.filter(x=>x.id!==item.id);
-                 setSelectedMedia(remaining);setMediaError('');
-               }}
+               onRemove={item=>removeSelectedMedia(item.id)}
              />}
               {!!mediaError&&<Text style={styles.mediaError}>{mediaError}</Text>}
              <View style={styles.composer}>
