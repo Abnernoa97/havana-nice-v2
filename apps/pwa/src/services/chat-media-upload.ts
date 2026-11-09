@@ -33,10 +33,14 @@ function putBlob(token:string,url:string,blob:Blob,onProgress:(value:number)=>vo
 }
 export async function uploadChatFile(
  session:ChatSession,file:File,kind:'photo'|'video',
- onProgress:(loaded:number,total:number)=>void
+ onProgress:(loaded:number,total:number)=>void,stableId?:string
 ):Promise<{id:string;seq:number}>{
- let id=savedIds.get(file);
+ // Idempotent across iOS camera restarts: the queued item owns its R2 ID.
+ // WeakMap remains a safe fallback for older direct-upload callers.
+ let id=stableId??savedIds.get(file);
  if(!id){id=crypto.randomUUID();savedIds.set(file,id);}
+ if(!/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id))
+  throw Error('Identificador de transferencia inválido.');
  const base=API+'/api/chat/media/';
  const begin=await json(base+'start',session.token,'POST',{
   id,kind,mimeType:file.type.toLowerCase(),sizeBytes:file.size,name:file.name

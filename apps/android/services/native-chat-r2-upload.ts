@@ -56,7 +56,10 @@ export async function uploadNativeChatFile(session:ChatSession,picked:NativeFile
  const file=new File(picked.uri);
  if(!file.exists||file.size!==picked.sizeBytes||file.size<=0)
   throw Error('El original ya no está disponible. Selecciónalo de nuevo.');
- const id=ids.get(picked.id)||uuid();
+ // Use the durable queue ID whenever it is a UUID so retry after MainActivity
+ // destruction cannot accidentally publish the same photo twice.
+ const stable=/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(picked.id);
+ const id=stable?picked.id:(ids.get(picked.id)||uuid());
  ids.set(picked.id,id);
  const base=API+'/api/chat/media/'+id;
  const started=await request<Start>(API+'/api/chat/media/start',session.token,'POST',{

@@ -139,7 +139,7 @@ export default function App() {
       const {uploadChatFile}=await import('../services/chat-media-upload');
       await uploadChatMediaBatch([...mediaQueue.current],{
         sizeOf:item=>item.file.size,
-        upload:(item,onSent)=>uploadChatFile(session,item.file,item.selection.kind,onSent),
+        upload:(item,onSent)=>uploadChatFile(session,item.file,item.selection.kind,onSent,item.id),
         progress:setMediaProgress,
         confirmed:item=>confirmUploadedMedia(item.id),
       });

@@ -12,7 +12,10 @@ import {
 } from '../../storage/chatPendingMedia';
 
 export type NativeQueuedMedia=ChatMediaSelection&{id:string};
-const newMediaSelectionId=()=>String(Date.now())+'-'+Math.random().toString(36).slice(2);
+const newMediaSelectionId=()=> 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,letter=>{
+ const random=Math.floor(Math.random()*16);
+ return (letter==='x'?random:(random&3|8)).toString(16);
+});
 
 export function useNativeMediaSelection({
  actorId,uploadBusy,onCloseMenu,onRecovered,
