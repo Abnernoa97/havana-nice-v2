@@ -6,7 +6,7 @@
 
 - **Una sola rama `main`**, un solo repositorio V2. Sin parches temporales, duplicar rutas o dejar motores alternativos. Borrar lógica verdaderamente sustituida solo después de verificar referencias y equivalencia funcional.
 - **No tocar HAVANA CLOUD, PWA original, Drive original, cuentas ni producción ajena a V2.** No migrar datos del sistema anterior. V2 es autónoma.
-- **iPhone:** PWA instalable. **Android:** app React Native/Expo con Chat nativo; instalar futura APK acumulativa encima de la anterior. No generar APK por cada mejora. Android APK publicada **0.0.20** (`versionCode 20`), firmada y compatible con 0.0.19 según CI; instalación física encima de 0.0.19 **aún pendiente**.
+- **iPhone:** PWA instalable. **Android:** app React Native/Expo con Chat nativo; instalar futura APK acumulativa encima de la anterior. No generar APK por cada mejora. Android APK publicada **0.0.21** (`versionCode 21`), firmada y compatible con 0.0.20 según CI; instalación física encima de 0.0.20 **aún pendiente**.
 - **Identidad:** Admin autoriza nombres; el músico ingresa una vez y su instalación queda vinculada a una sola sesión/propietario. Rechazar desconocidos y revocados. Hasta 10 músicos, lista inicial Orly, Andy, Jali, Rafa, Noa y Fer. El Admin tiene sesión y permisos propios; un solo dueño de sesión para todos los módulos, sin nuevos accesos secundarios.
 - **Módulos independientes:** Chat, Calendario, Repertorio, Familia, BOOK, Músicos y futura Multimedia. HOME como navegación central; datos, estados y componentes separados; compartir contratos, servicios y sesión, no duplicar implementación.
 - **Primero funcionamiento, sincronización, velocidad y depuración.** Después pintura/estética. Preservar lo visual que el usuario ya confirmó de BOOK/Calendario.
@@ -80,7 +80,7 @@ tests/ + cloudflare/tests/ + scripts/ → reglas de seguridad y CI
 | Cloudflare Pages | publica `main`; comprobar SHA/deploy tras cada cambio |
 | Worker **en vivo** | **v66** `87e6d28a-f1eb-43ed-974b-eb1884198533` al 100 %. Despliegue gradual (sin tráfico → 1 % → 10 % → 100 %); v65 `81a512bb-a383-4258-8f5b-6aacf831b9b5` sigue disponible para reversión. |
 | Worker **en código** | Refactor publicado a v66 desde el bundle canónico Wrangler `SHA-256 0f67b065b8232a9adb1902711eb8850771ba17b3363dbbcbb8b5c135f714d02d`, idéntico en CI; mantiene los siete bindings y el mismo DO. |
-| Android | APK **0.0.20** publicada [aquí](https://github.com/Abnernoa97/havana-nice-v2/releases/download/v2-android-current/HAVANA-NICE-V2-LATEST.apk); firma 0.0.19 compatible, JS integrado, `versionCode` 20 y descarga estable verificados en [CI 42567955267](https://github.com/Abnernoa97/havana-nice-v2/actions/runs/42567955267). APK 0.0.19 preservada como PREVIOUS; BOOK/Recuerdos en Android físico pendientes. |
+| Android | APK **0.0.21** publicada [aquí](https://github.com/Abnernoa97/havana-nice-v2/releases/download/v2-android-current/HAVANA-NICE-V2-LATEST.apk); firma 0.0.20 compatible, JS integrado, `versionCode` 21 y descarga estable verificados en [CI 42571102335](https://github.com/Abnernoa97/havana-nice-v2/actions/runs/42571102335). APK 0.0.20 preservada como PREVIOUS; BOOK/Recuerdos en Android físico pendientes. |
 | Colas R2 | BOOK, Calendario y baja de músicos: **0** operaciones pendientes al control |
 | Fotos personales | Calendario 4 recuerdos (3 WebP), BOOK 7 originales (0 WebP), Familia 16 archivos al control |
 
@@ -97,7 +97,7 @@ tests/ + cloudflare/tests/ + scripts/ → reglas de seguridad y CI
 - [x] **A6 Prueba offline de fragmentos PWA:** caché de chunks previamente visitados, fallo explícito de recursos no descargados y sin almacenar APIs privadas. **No equivale a validación iPhone sin conexión**.
 - [x] **A7 Datos y borrados R2 auditados:** todas las colas consultadas en 0, límites compartidos vigentes; no ejecutar borrado innecesario.
 - [x] **A8 Documentación consolidada:** un plan vigente y continuidad breve; notas obsoletas no deben quedar como segundo estado contradictorio. Git conserva la trazabilidad de cambios antiguos.
-- [x] **A8b Estado operativo alineado (08/11):** README, continuidad y Plan Maestro reflejan Worker v66 desplegado y APK 0.0.17 firmada/publicada, **no instalada ni validada en Android físico**. No se tocó código, sesión, D1, R2 ni producción ajena.
+- [x] **A8b Estado operativo alineado (09/11):** README, continuidad y Plan Maestro reflejan Worker v66 desplegado y APK 0.0.21 firmada/publicada, **sin QA física de BOOK/Recuerdos aún**. No se tocó código, sesión, D1, R2 ni producción ajena.
 - [x] **C5 Músicos / HOME:** directorio privado funcional con nombres reales de integrantes activos, en PWA y Android; usa la autoridad D1 y eventos privados ya existentes de Familia, sin duplicar tabla, sesiones ni Worker. Perfiles ampliados aún pendientes.
 - [x] **C4 Repertorio:** panel Admin descarta resultados de consultas antiguas y detecta expiraciones HTTP 401 originadas por Calendario. Sin cambiar tablas ni listas de canciones.
 - [x] **C3 Familia / Multimedia:** recuperación de WebSocket atascado al cambiar de red en iPhone y Android mediante timeout compartido; pruebas de paridad añadidas. Sin cambiar subida R2.
@@ -132,7 +132,7 @@ tests/ + cloudflare/tests/ + scripts/ → reglas de seguridad y CI
 
 ## 4.1. Matriz de aceptación física antes de declarar sincronización 100 %
 
-- [ ] **Instalación/QA:** actualizar Android 0.0.19 a **0.0.20** encima, sin desinstalar; comprobar Chat, sesión, Familia y BOOK/Recuerdos 3D integrados. Certificado/JS del lote **verificados** en GitHub Actions; UX física por confirmar.
+- [ ] **Instalación/QA:** actualizar Android 0.0.20 a **0.0.21** encima, sin desinstalar; comprobar Chat, sesión, Familia y BOOK/Recuerdos 3D integrados. Certificado/JS del lote **verificados** en GitHub Actions; UX física por confirmar.
 - [ ] **Calendario Admin ↔ PWA ↔ Android:** crear/editar fecha real de prueba, cambiar destinatarios y eliminar únicamente esa fecha de prueba; observar notificación instantánea y que un músico desasignado deja de verla.
 - [ ] **Repertorio:** editar catálogo y lista por fecha desde Admin; comprobar actualización en ambos clientes y que quitar fecha invalida su lista.
 - [ ] **Chat:** texto, respuestas, reacciones, borrado definitivo, cinco fotos/videos combinados y reconexión al perder/recuperar red; corroborar que nada reaparece tras borrado.
@@ -158,6 +158,7 @@ tests/ + cloudflare/tests/ + scripts/ → reglas de seguridad y CI
 - [x] **Prueba física 0.0.20:** la PWA ya ejecuta JavaScript, pero no recibe el contexto de sesión `injectedObjectJson()` de Android. Los datos no se borraron ni dejaron de existir.
 - [x] **Sustitución arquitectónica implementada en `main`:** un solo puente en memoria: página registra listener → emite `boot` → Android entrega contexto mediante `injectJavaScript`, comprobando origen y ruta → PWA valida el token existente y abre el único PageFlip. Se elimina dependencia del objeto inyectado y el bucle de 30 reintentos. Sin login adicional, token en URL o almacenamiento persistente.
 - [x] **CI completa 0.0.21:** TypeScript, permisos, Android/PWA, PageFlip Chrome con el mismo JS nativo de entrega de sesión, rutas privadas, Worker dry-run, PWA y export nativo: [42570903423 SUCCESS](https://github.com/Abnernoa97/havana-nice-v2/actions/runs/42570903423).
-- [ ] **Entrega pendiente:** firma y publicación de APK correctiva 0.0.21, instalación sobre 0.0.20 y QA física de BOOK/Recuerdos. No marcar funcionamiento real sin fotografía de páginas abiertas en Android. Chat, Repertorio, Familia, Calendario, Worker, D1 y R2 intocables.
+- [x] **Entrega Android 0.0.21 publicada:** `versionCode 21`, JS integrado, firma anterior compatible, enlace estable verificado y 0.0.20 preservada como PREVIOUS: [APK SUCCESS 42571102335](https://github.com/Abnernoa97/havana-nice-v2/actions/runs/42571102335), [CI general SUCCESS 42571102501](https://github.com/Abnernoa97/havana-nice-v2/actions/runs/42571102501).
+- [ ] **QA física Android 0.0.21:** instalar encima de 0.0.20, verificar páginas BOOK y Recuerdos, regreso y sesión. No marcar funcionamiento real sin evidencia en teléfono. Chat, Repertorio, Familia, Calendario, Worker, D1 y R2 intocables.
 
 Versiones y pruebas anteriores se consultan en Git; no repetir una bitácora cronológica en el Plan Maestro.
