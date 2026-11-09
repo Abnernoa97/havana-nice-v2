@@ -6,7 +6,7 @@ import {
 import {
   chatReactionPayload,chatTypingPayload,chatReadReceiptPayload,
   fetchBackendHealth, getChatMediaAvailability, getChatSnapshot, getOlderChatMessages, getChatMenuState, getChatMessagePermissions, isWithinChatEditWindow, setOutgoingChatStatus, projectOutgoingChatStatus, clearChatAckTimer, pauseChatOutbox, confirmChatOutgoingMessage, flushChatOutbox, newClientMessageId, uploadChatMediaBatch,
-  reconcileChatMessages, reconcileReactions, reconcileUpdatedMessage, reconcileDeletedMessage, reconcileChatSnapshot, startNamedChatSession, restoreNamedChatSession, recoverChatAccess, chatSessionExpired, chatReconnectDelay, reconcileChatReadReceipt, removeChatReactionsForMessage, withoutRemovedChatMessages, ChatHistoryRequestGate, oldestConfirmedChatSeq, mergeOlderChatReactions, CHAT_WS_HANDSHAKE_TIMEOUT_MS, captureChatOfflineSnapshot, restoreChatOfflineOutbox,
+  reconcileChatMessages, reconcileChatSnapshot, applyChatIncomingEvent, startNamedChatSession, restoreNamedChatSession, recoverChatAccess, chatSessionExpired, chatReconnectDelay, withoutRemovedChatMessages, ChatHistoryRequestGate, oldestConfirmedChatSeq, mergeOlderChatReactions, CHAT_WS_HANDSHAKE_TIMEOUT_MS, captureChatOfflineSnapshot, restoreChatOfflineOutbox,
   type ChatMessage, type ChatServerEvent, type ChatSession, type ChatReaction, type ChatEmoji, type ChatReadReceipt,
   type MemberScreen,
 } from '@havana/shared';
@@ -449,53 +449,38 @@ export default function App() {
       if (disposed.current || socket.current !== ws) return;
       try {
         const item = JSON.parse(String(event.data)) as ChatServerEvent;
-        if (item.type === 'chat.ready') {
-          setOnlineActorIds(new Set((item.users??[]).map(user=>user.actorId)));
-        } else if (item.type === 'chat.presence') {
-          setOnlineActorIds(new Set(item.users.map(user=>user.actorId)));
-        } else if (item.type === 'chat.typing') {
-          if (item.actorId !== next.actorId) {
-            setTyping(item.active ? item.senderName + ' está escribiendo…' : '');
-            if (typingTimer.current) clearTimeout(typingTimer.current);
-            if (item.active) typingTimer.current = setTimeout(() => setTyping(''), 4300);
-          }
-        } else if (item.type === 'chat.updated') {
-          if(item.message.deletedAt)removedSeq.current.add(item.message.seq);
-          setMessages(before=>item.message.deletedAt?
-            reconcileDeletedMessage(before,item.message.seq):reconcileUpdatedMessage(before,item.message));
-          // Only finish the editor after receiving the server's confirmed update.
-          if(editPending.current?.seq===item.message.seq){
-            if(!item.message.deletedAt && item.message.text===editPending.current.text)
-              finishEditing();
-            else abandonPendingEdit('La edición no coincidió con el servidor. Revisa el mensaje antes de reintentar.');
-          }
-          if(item.message.deletedAt){
-            setReactions(before=>removeChatReactionsForMessage(before,item.message.seq));
-            setMenuMessage(current=>current?.seq===item.message.seq?null:current);
-          }
-          setError('');
-        } else if (item.type === 'chat.deleted') {
-          removedSeq.current.add(item.seq);
-          setMessages(before=>reconcileDeletedMessage(before,item.seq));
-          setReactions(before=>removeChatReactionsForMessage(before,item.seq));
-          setReplyTo(current=>current?.seq===item.seq?null:current);
-          setMenuMessage(current=>current?.seq===item.seq?null:current);
-          setEditing(current=>current?.seq===item.seq?null:current);
-        } else if (item.type === 'chat.read') {
-          setReceipts(before=>reconcileChatReadReceipt(before,item));
-        } else if (item.type === 'chat.reaction') {
-          if(!removedSeq.current.has(item.messageSeq))setReactions(before => reconcileReactions(before, item));
-        } else if (item.type === 'chat.message') {
-          confirmMessage(item.message);
-          setMessages(before => removedSeq.current.has(item.message.seq)?before:reconcileChatMessages(before, [item.message]));
-          sendReadReceipt(item.message.seq);
-          flushOutbox();
-        } else if (item.type === 'chat.revoked') {
-          revokeCurrentAccess();
-        } else if (item.type === 'chat.error') {
-          abandonPendingEdit(item.error);
-          setError(item.error);
-        }
+        applyChatIncomingEvent(item,{
+          actorId:next.actorId,
+          removedSeq:removedSeq.current,
+          setOnlineActorIds,
+          setTyping:(label,active)=>{
+            setTyping(label);
+            if(typingTimer.current)clearTimeout(typingTimer.current);
+            if(active)typingTimer.current=setTimeout(()=>setTyping(''),4300);
+          },
+          setMessages,setReactions,setReceipts,
+          onUpdated:message=>{
+            if(editPending.current?.seq===message.seq){
+              if(!message.deletedAt&&message.text===editPending.current.text)finishEditing();
+              else {
+                abandonPendingEdit('La edición no coincidió con el servidor. Revisa el mensaje antes de reintentar.');
+                return true;
+              }
+            }
+            return false;
+          },
+          onUpdatedRemoved:seq=>setMenuMessage(current=>current?.seq===seq?null:current),
+          onUpdatedSuccess:()=>setError(''),
+          onDeleted:seq=>{
+            setReplyTo(current=>current?.seq===seq?null:current);
+            setMenuMessage(current=>current?.seq===seq?null:current);
+            setEditing(current=>current?.seq===seq?null:current);
+          },
+          onConfirmed:confirmMessage,
+          onMessageReceived:seq=>{sendReadReceipt(seq);flushOutbox();},
+          onRevoked:revokeCurrentAccess,
+          onError:reason=>{abandonPendingEdit(reason);setError(reason);},
+        });
       } catch {
         setError('Evento no válido');
       }

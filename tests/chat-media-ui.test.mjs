@@ -31,13 +31,14 @@ test('Android native and iPhone PWA share the same Chat decisions, not alternate
  const android=read('apps/android/app/NativeApp.tsx')+'\n'+read('apps/android/features/chat/NativeChatTimeline.tsx')+'\n'+read('apps/android/features/chat/useNativeMediaSelection.ts');
  // ChatTimeline is presentation-only, but owns the shared delivery-label rendering.
  const pwa=read('apps/pwa/src/app/App.tsx')+'\n'+read('apps/pwa/src/features/chat/ChatTimeline.tsx')+'\n'+read('apps/pwa/src/features/chat/usePwaMediaSelection.ts');
+ const sharedEvents=read('packages/shared/src/chat-events.ts');
  const common=[
   'restoreNamedChatSession','getChatSnapshot','reconcileChatSnapshot',
   'reconcileUpdatedMessage','reconcileDeletedMessage','reconcileReactions',
   'messageDeliveryLabel','newClientMessageId','validateChatMediaSelection',
   'CHAT_MEDIA_MAX_PER_SEND','getChatMediaAvailability(session)'
  ];
- for(const [label,src] of [['Android',android],['PWA',pwa]]){
+ for(const [label,src] of [['Android',android+sharedEvents],['PWA',pwa+sharedEvents]]){
   for(const symbol of common)assert.ok(src.includes(symbol),label+' missing canonical '+symbol);
   assert.match(src,/function sendSelectedMedia\(\)\{|async function sendSelectedMedia\(\)\{/);
   if(label==='PWA')assert.match(src,/uploadChatFile\(session,item\.file,item\.selection\.kind/);

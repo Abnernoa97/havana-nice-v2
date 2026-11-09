@@ -2,10 +2,10 @@ import { lazy, Suspense, useCallback, useEffect, useLayoutEffect, useRef, useSta
 import {
   chatReactionPayload,chatTypingPayload,chatReadReceiptPayload,
   fetchBackendHealth, getChatMediaAvailability, getChatSnapshot, getOlderChatMessages, getChatMenuState, getChatMessagePermissions, isWithinChatEditWindow, setOutgoingChatStatus, projectOutgoingChatStatus, clearChatAckTimer, pauseChatOutbox, confirmChatOutgoingMessage, flushChatOutbox, newClientMessageId, uploadChatMediaBatch,
-  openChatSocket, reconcileChatMessages, startNamedChatSession, restoreNamedChatSession, recoverChatAccess, chatSessionExpired, chatReconnectDelay, reconcileChatReadReceipt, removeChatReactionsForMessage, withoutRemovedChatMessages, ChatHistoryRequestGate, oldestConfirmedChatSeq, mergeOlderChatReactions, CHAT_WS_HANDSHAKE_TIMEOUT_MS, captureChatOfflineSnapshot, restoreChatOfflineOutbox,
+  openChatSocket, reconcileChatMessages, startNamedChatSession, restoreNamedChatSession, recoverChatAccess, chatSessionExpired, chatReconnectDelay, withoutRemovedChatMessages, ChatHistoryRequestGate, oldestConfirmedChatSeq, mergeOlderChatReactions, CHAT_WS_HANDSHAKE_TIMEOUT_MS, captureChatOfflineSnapshot, restoreChatOfflineOutbox,
   type BackendHealth, type ChatMessage, type ChatServerEvent, type ChatSession, type PwaReaderTarget, parsePwaReaderHash,
   HAVANA_V2_DEV_API_BASE_URL,
-  reconcileReactions, reconcileUpdatedMessage, reconcileDeletedMessage, reconcileChatSnapshot, type ChatReaction, type ChatEmoji, type ChatReadReceipt, type MemberScreen,
+  reconcileChatSnapshot, applyChatIncomingEvent, type ChatReaction, type ChatEmoji, type ChatReadReceipt, type MemberScreen,
 } from '@havana/shared';
 import { loadLocalChat, saveLocalChat } from '../services/local';
 import type {MessageAnchor} from '../features/chat/SwipeMessage';
@@ -394,53 +394,38 @@ export default function App() {
       if (disposed.current || socket.current !== ws) return;
       try {
         const value = JSON.parse(String(event.data)) as ChatServerEvent;
-        if (value.type === 'chat.ready') {
-          setOnlineActorIds(new Set((value.users??[]).map(user=>user.actorId)));
-        } else if (value.type === 'chat.presence') {
-          setOnlineActorIds(new Set(value.users.map(user=>user.actorId)));
-        } else if (value.type === 'chat.typing') {
-          if (value.actorId !== next.actorId) {
-            setTyping(value.active ? `${value.senderName} está escribiendo…` : '');
-            if (typingTimer.current) clearTimeout(typingTimer.current);
-            if (value.active) typingTimer.current = setTimeout(() => setTyping(''), 4200);
-          }
-        } else if (value.type === 'chat.updated') {
-          if(value.message.deletedAt)removedSeq.current.add(value.message.seq);
-          setMessages(before=>value.message.deletedAt?
-            reconcileDeletedMessage(before,value.message.seq):reconcileUpdatedMessage(before,value.message));
-          // Only finish the editor after receiving the server's confirmed update.
-          if(editPending.current?.seq===value.message.seq){
-            if(!value.message.deletedAt && value.message.text===editPending.current.text)
-              finishEditing();
-            else abandonPendingEdit('La edición no coincidió con el servidor. Revisa el mensaje antes de reintentar.');
-          }
-          if(value.message.deletedAt){
-            setReactions(before=>removeChatReactionsForMessage(before,value.message.seq));
-            setMenuMessage(current=>current?.seq===value.message.seq?null:current);
-          }
-          setError('');
-        } else if (value.type === 'chat.deleted') {
-          removedSeq.current.add(value.seq);
-          setMessages(before=>reconcileDeletedMessage(before,value.seq));
-          setReactions(before=>removeChatReactionsForMessage(before,value.seq));
-          setReplyTo(current=>current?.seq===value.seq?null:current);
-          setMenuMessage(current=>current?.seq===value.seq?null:current);
-          setEditing(current=>current?.seq===value.seq?null:current);
-        } else if (value.type === 'chat.read') {
-          setReceipts(before=>reconcileChatReadReceipt(before,value));
-        } else if (value.type === 'chat.reaction') {
-          if(!removedSeq.current.has(value.messageSeq))setReactions(before => reconcileReactions(before, value));
-        } else if (value.type === 'chat.message') {
-          confirm(value.message);
-          setMessages(before => removedSeq.current.has(value.message.seq)?before:reconcileChatMessages(before, [value.message]));
-          sendReadReceipt(value.message.seq);
-          flushOutbox();
-        } else if (value.type === 'chat.revoked') {
-          revokeCurrentAccess();
-        } else if (value.type === 'chat.error') {
-          abandonPendingEdit(value.error);
-          setError(value.error);
-        }
+        applyChatIncomingEvent(value,{
+          actorId:next.actorId,
+          removedSeq:removedSeq.current,
+          setOnlineActorIds,
+          setTyping:(label,active)=>{
+            setTyping(label);
+            if(typingTimer.current)clearTimeout(typingTimer.current);
+            if(active)typingTimer.current=setTimeout(()=>setTyping(''),4200);
+          },
+          setMessages,setReactions,setReceipts,
+          onUpdated:message=>{
+            if(editPending.current?.seq===message.seq){
+              if(!message.deletedAt&&message.text===editPending.current.text)finishEditing();
+              else {
+                abandonPendingEdit('La edición no coincidió con el servidor. Revisa el mensaje antes de reintentar.');
+                return true;
+              }
+            }
+            return false;
+          },
+          onUpdatedRemoved:seq=>setMenuMessage(current=>current?.seq===seq?null:current),
+          onUpdatedSuccess:()=>setError(''),
+          onDeleted:seq=>{
+            setReplyTo(current=>current?.seq===seq?null:current);
+            setMenuMessage(current=>current?.seq===seq?null:current);
+            setEditing(current=>current?.seq===seq?null:current);
+          },
+          onConfirmed:confirm,
+          onMessageReceived:seq=>{sendReadReceipt(seq);flushOutbox();},
+          onRevoked:revokeCurrentAccess,
+          onError:reason=>{abandonPendingEdit(reason);setError(reason);},
+        });
       } catch {
         setError('Evento inválido');
       }

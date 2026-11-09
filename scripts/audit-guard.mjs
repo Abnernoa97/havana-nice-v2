@@ -229,11 +229,12 @@ present(pwa,/className="chat-typing-indicator"/,'PWA typing indicator must appea
 present(pwaStyles,/\.chat-typing-indicator\{/,'PWA styling for the typing indicator');
 absent(android,/typing \|\| `\$\{connection\}/,'Android header must only show connection state');
 absent(pwa,/typing \|\| `\$\{connection\}/,'PWA header must only show connection state');
-// C04: online colors now reflect actual actor IDs and vanish when connection is stale.
-present(android,/setOnlineActorIds\(new Set\(item\.users\.map\(user=>user\.actorId\)\)\)/,
-  'Android must use actual online actor identities');
-present(pwa,/setOnlineActorIds\(new Set\(value\.users\.map\(user=>user\.actorId\)\)\)/,
-  'PWA must use actual online actor identities');
+// One incoming event policy handles presence identity for both platforms.
+const chatIncoming=read('packages/shared/src/chat-incoming.ts');
+present(chatIncoming,/new Set\(\(value\.users\?\?\[\]\)\.map\(user=>user\.actorId\)\)/,
+  'Chat presence must use real actor IDs');
+present(android,/applyChatIncomingEvent\(item,\{/,'Native must use shared incoming event router');
+present(pwa,/applyChatIncomingEvent\(value,\{/,'PWA must use shared incoming event router');
 present(android,/initialHistoryPending = useRef\(true\)/,'Native chat must track initial bottom placement');
 present(android,/requestAnimationFrame\(scheduleInitialBottom\)/,'Native chat must wait for initial snapshot layout');
 present(android,/scrollToEnd\(\{animated:false\}\)/,'Native chat must avoid animated initial scrolling');
@@ -282,8 +283,7 @@ present(chatRoom,/deleteChatMessageRecord\(this.env,input.seq\)/,'Musicians must
 present(remove,/DELETE FROM chat_messages WHERE seq=\?/,'Deleting a message must remove its D1 record');
 present(remove,/UPDATE chat_messages SET reply_to_seq=NULL/,'Keep replies while detaching removed originals');
 present(chatRoom,/chat.deleted/,'Chat must broadcast disappearance to clients');
-present(pwa,/reconcileDeletedMessage/,'iPhone Chat must remove bubbles');
-present(android,/reconcileDeletedMessage/,'Android Chat must remove bubbles');
+present(chatIncoming,/reconcileDeletedMessage/,'Shared incoming Chat must remove deleted bubbles');
 absent(pwa,/Cerrar reacciones|>＋<\/button>/,'Remove inert extra-reaction button in PWA');
 present(pwaStyles,/\.whatsapp-context\{position:absolute;/,
   'PWA menu must be anchored instead of centered');

@@ -40,7 +40,7 @@ test('deleted messages cannot return through stale pages or socket reconciliatio
  assert.equal(rows.length,3,'input remains untouched');
  for(const path of ['apps/pwa/src/app/App.tsx','apps/android/app/NativeApp.tsx']){
   const src=readFileSync(new URL('../'+path,import.meta.url),'utf8');
-  assert.match(src,/removedSeq\.current\.add\((value|item)\.seq\)/,path);
+  assert.match(src,/applyChatIncomingEvent\((value|item),\{/,path);
   assert.match(src,/withoutRemovedChatMessages\(history,removedSeq\.current\)/,path);
   assert.match(src,/withoutRemovedChatMessages\(data\.messages,removedSeq\.current\)/,path);
   assert.doesNotMatch(src,/searchChatMessages|searchHistory|runSearch|setSearchResults|setResults\(/,path);
@@ -49,15 +49,18 @@ test('deleted messages cannot return through stale pages or socket reconciliatio
  const android=readFileSync(new URL('../apps/android/app/NativeApp.tsx',import.meta.url),'utf8');
  assert.match(android,/reconcileChatMessages\(before,withoutRemovedChatMessages\(data\.messages,removedSeq\.current\)\)/);
 });
-test('PWA and native Chat event handlers call only the canonical projections',()=>{
+test('PWA and native Chat use one incoming event dispatcher and canonical projections',()=>{
  for(const path of ['apps/pwa/src/app/App.tsx','apps/android/app/NativeApp.tsx']){
-  const src=readFileSync(new URL('../'+path,import.meta.url),'utf8');
-  assert.match(src,/reconcileChatReadReceipt\(before,(value|item)\)/);
-  assert.match(src,/removeChatReactionsForMessage\(before,(value|item)\.message\.seq\)/);
-  assert.match(src,/removeChatReactionsForMessage\(before,(value|item)\.seq\)/);
-  assert.doesNotMatch(src,/setReceipts\(before=>\s*\[\.\.\.before\.filter/);
-  assert.doesNotMatch(src,/setReactions\(before=>before\.filter\(r=>r\.messageSeq!==/);
+  const source=readFileSync(new URL('../'+path,import.meta.url),'utf8');
+  assert.match(source,/applyChatIncomingEvent\((value|item),\{/);
+  assert.doesNotMatch(source,/reconcileChatReadReceipt\(before,(value|item)\)/);
  }
+ const incoming=readFileSync(new URL('../packages/shared/src/chat-incoming.ts',import.meta.url),'utf8');
+ assert.match(incoming,/reconcileChatReadReceipt\(before,value\)/);
+ assert.match(incoming,/removeChatReactionsForMessage\(before,message\.seq\)/);
+ assert.match(incoming,/removeChatReactionsForMessage\(before,value\.seq\)/);
+ assert.match(incoming,/reconcileUpdatedMessage\(before,message\)/);
+ assert.match(incoming,/reconcileDeletedMessage\(before,value\.seq\)/);
  const index=readFileSync(new URL('../packages/shared/src/index.ts',import.meta.url),'utf8');
- assert.match(index,/export \{reconcileChatReadReceipt,removeChatReactionsForMessage\} from '\.\/chat-events'/);
+ assert.match(index,/export \{applyChatIncomingEvent\} from '\.\/chat-incoming'/);
 });

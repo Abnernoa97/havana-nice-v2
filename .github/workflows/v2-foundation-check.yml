@@ -179,7 +179,7 @@ jobs:
         run: node --experimental-strip-types --test tests/chat-connection-policy.test.mjs tests/chat-presence-policy.test.mjs
 
       - name: Verify single shared Chat event receipt and reaction reconciliation
-        run: node --experimental-strip-types --test tests/chat-events-policy.test.mjs
+        run: node --experimental-strip-types --test tests/chat-events-policy.test.mjs tests/chat-incoming-policy.test.mjs
 
       - name: Verify one Chat history pagination and request gate across both clients
         run: node --experimental-strip-types --test tests/chat-history-policy.test.mjs

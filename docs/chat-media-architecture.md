@@ -135,3 +135,13 @@ El envío ahora exige que `senderId` coincida con `actorId` de la sesión
 activa. Una autorización nueva vacía la cola anterior y cancela ACK pendientes
 en **ambas** plataformas. El rechazo ocurre antes de transmitir datos,
 sin eliminar historiales confirmados, caché, R2 ni borradores de otras secciones.
+
+## Eventos entrantes — fuente de verdad
+
+`chat-incoming.ts` es el único controlador de decisiones sobre eventos
+`chat.ready`, presencia, escritura, edición, borrado, lectura, reacciones,
+mensajes, revocación y errores. `chat-events.ts` concentra las proyecciones
+puras de mensajes y evita reglas duplicadas en `index.ts`. El WebSocket y los
+estados visuales permanecen en cada cliente, sin una segunda sesión.
+Una edición rechazada conserva ahora su mensaje de error visible en lugar
+de borrarlo en la misma actualización. No se modifica R2, D1 ni la APK.
