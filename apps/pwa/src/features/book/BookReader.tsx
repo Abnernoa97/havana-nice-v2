@@ -16,6 +16,8 @@ type BookEngine={
  updateFromHtml:(pages:NodeListOf<HTMLElement>|HTMLElement[])=>void;
  loadFromHTML:(pages:NodeListOf<HTMLElement>|HTMLElement[])=>void;
  getCurrentPageIndex:()=>number;
+ getBoundsRect:()=>{left:number;top:number;pageWidth:number;height:number};
+ getFlipController:()=>{flip:(point:{x:number;y:number})=>void};
  getPageCollection:()=>{getCurrentSpreadIndex:()=>number;getSpreadIndexByPage:(i:number)=>number};
  on:(event:string,listener:(event:FlipEvent)=>void)=>void;
 };
@@ -217,7 +219,14 @@ export default function BookReader({pages,edition='book',coverTitle}:{pages:Book
   const spread=engine.getPageCollection().getCurrentSpreadIndex();
   const last=engine.getPageCollection().getSpreadIndexByPage(count-1);
   if(direction==='next'&&spread<last)engine.flipNext('bottom');
-  else if(direction==='prev'&&spread>0)engine.flipPrev('bottom');
+  else if(direction==='prev'&&spread>0){
+   // page-flip 2.0.7 hardcodes x=10 in flipPrev(), which is outside
+   // the book's left corner when its viewport is centered. With
+   // disableFlipByClick:true the library silently discards that turn.
+   // Use the *same engine* and its real rectangle for the previous curl.
+   const rect=engine.getBoundsRect();
+   engine.getFlipController().flip({x:rect.left+10,y:rect.top+rect.height-2});
+  }
  },[count]);
  // StPageFlip delays normal touch taps by 250 ms, so a quick tap can be
  // silently ignored. Give every intentional tap one deterministic turn.
