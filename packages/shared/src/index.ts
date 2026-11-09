@@ -218,6 +218,7 @@ export type {ChatAccessRecovery} from './chat-session-recovery';
 // Preserve one offline-capable Chat session expiry and reconnect backoff policy.
 export {chatSessionExpired,chatReconnectDelay,CHAT_RECONNECT_MAX_DELAY_MS,CHAT_WS_HANDSHAKE_TIMEOUT_MS} from './chat-connection';
 export {ChatConnectionTimers} from './chat-connection-timers';
+export {ChatResumeGate} from './chat-resume-gate';
 
 // Both Chat WebSocket event handlers use these exact reconciliation projections.
 export {reconcileChatReadReceipt,removeChatReactionsForMessage} from './chat-events';

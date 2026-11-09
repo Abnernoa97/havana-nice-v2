@@ -153,3 +153,11 @@ de espera del handshake (9 segundos). No tiene acceso a tokens, WebSocket ni
 almacenamiento. Cada cliente mantiene su propio criterio de visibilidad/actividad
 y el único socket existente. Las pruebas usan un reloj inyectable para detectar
 reintentos duplicados y temporizadores que sobrevivan al cierre de la app.
+
+## Validaciones tardías al volver de segundo plano
+
+`ChatResumeGate` descarta respuestas de restauración antiguas o terminadas
+mientras la app está en segundo plano, fuera de línea, revocada o con una
+nueva sesión. En ambos clientes, solo la última comprobación de identidad
+puede reconectar o revocar acceso. El socket permanece en su controlador
+original, sin modificar almacenamiento ni endpoints.

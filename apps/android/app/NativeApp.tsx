@@ -6,7 +6,7 @@ import {
 import {
   chatReactionPayload,chatTypingPayload,chatReadReceiptPayload,
   fetchBackendHealth, getChatMediaAvailability, getChatSnapshot, getOlderChatMessages, getChatMenuState, getChatMessagePermissions, isWithinChatEditWindow, setOutgoingChatStatus, projectOutgoingChatStatus, clearChatAckTimer, pauseChatOutbox, confirmChatOutgoingMessage, flushChatOutbox, newClientMessageId, uploadChatMediaBatch,
-  reconcileChatMessages, reconcileChatSnapshot, applyChatIncomingEvent, startNamedChatSession, restoreNamedChatSession, recoverChatAccess, chatSessionExpired, ChatConnectionTimers, withoutRemovedChatMessages, ChatHistoryRequestGate, oldestConfirmedChatSeq, mergeOlderChatReactions, captureChatOfflineSnapshot, restoreChatOfflineOutbox,
+  reconcileChatMessages, reconcileChatSnapshot, applyChatIncomingEvent, startNamedChatSession, restoreNamedChatSession, recoverChatAccess, chatSessionExpired, ChatConnectionTimers, ChatResumeGate, withoutRemovedChatMessages, ChatHistoryRequestGate, oldestConfirmedChatSeq, mergeOlderChatReactions, captureChatOfflineSnapshot, restoreChatOfflineOutbox,
   type ChatMessage, type ChatServerEvent, type ChatSession, type ChatReaction, type ChatEmoji, type ChatReadReceipt,
   type MemberScreen,
 } from '@havana/shared';
@@ -121,6 +121,7 @@ export default function App() {
   const activeSession = useRef<ChatSession | null>(null);
   const appLifecycle = useRef(AppState.currentState);
   const connectionTimers=useRef(new ChatConnectionTimers());
+  const resumeGate=useRef(new ChatResumeGate());
   const retryAttempts = useRef(0);
   const disposed = useRef(false);
   const connectLatest = useRef<(next: ChatSession) => void>(() => {});
@@ -191,6 +192,7 @@ export default function App() {
   }
 
   function revokeCurrentAccess() {
+    resumeGate.current.invalidate();
     clearSelectedMedia();
     connectionTimers.current.clearHandshake();
     historyRequests.current.reset();
@@ -369,6 +371,7 @@ export default function App() {
   // Do not put secrets in the URL or Sec-WebSocket-Protocol.
   function connect(next: ChatSession) {
     if (disposed.current) return;
+    resumeGate.current.invalidate();
     activeSession.current = next;
     persistLocal();
     if (chatSessionExpired(next)) {
@@ -503,8 +506,10 @@ export default function App() {
       if (disposed.current) return;
       if (activeSession.current) {restoredStorage.current=true;persistLocal();return;}
       if (!saved?.session || chatSessionExpired(saved.session)) return;
+      const restoration=resumeGate.current.begin();
       const access=await recoverChatAccess(saved.session,restoreNamedChatSession);
-      if (disposed.current) return;
+      if(disposed.current||!resumeGate.current.isRequestCurrent(restoration)||
+         activeSession.current)return;
       if (access.state==='revoked') {
         await saveNativeLocalChat(null);
         setName('');
@@ -538,19 +543,24 @@ export default function App() {
 
     const subscription = AppState.addEventListener('change', state => {
       appLifecycle.current = state;
+      if(state!=='active')resumeGate.current.invalidate();
       const currentSession = activeSession.current;
       if (state === 'active' && currentSession) {
         beginFreshChatViewport();
+        const request=resumeGate.current.begin();
+        const validResponse=()=>resumeGate.current.isCurrent(
+          request,currentSession.token,activeSession.current?.token,
+          !disposed.current&&appLifecycle.current==='active'
+        );
         void restoreNamedChatSession(currentSession).then(valid => {
-          if (disposed.current || activeSession.current?.token !== currentSession.token) return;
+          if(!validResponse())return;
           if (!valid) {revokeCurrentAccess();return;}
           const ws = socket.current;
           if (!ws || ws.readyState !== WebSocket.OPEN) connectLatest.current(valid);
           else syncLatest.current();
         }).catch(() => {
           // Without a network connection, preserve the existing local session.
-          if (activeSession.current?.token === currentSession.token)
-            connectLatest.current(currentSession);
+          if(validResponse())connectLatest.current(currentSession);
         });
       } else if (state === 'background') {
         connectionTimers.current.clearHandshake();
@@ -566,6 +576,7 @@ export default function App() {
 
     return () => {
       disposed.current = true;
+      resumeGate.current.invalidate();
       subscription.remove();
       connectionTimers.current.clearAll();
       socket.current?.close();
@@ -605,6 +616,7 @@ export default function App() {
   }
   async function join() {
     if(!name.trim()||joining)return;
+    resumeGate.current.invalidate();
     setJoining(true);setError('');
     try{
       const next=await startNamedChatSession(name.trim());

@@ -2,7 +2,7 @@ import { lazy, Suspense, useCallback, useEffect, useLayoutEffect, useRef, useSta
 import {
   chatReactionPayload,chatTypingPayload,chatReadReceiptPayload,
   fetchBackendHealth, getChatMediaAvailability, getChatSnapshot, getOlderChatMessages, getChatMenuState, getChatMessagePermissions, isWithinChatEditWindow, setOutgoingChatStatus, projectOutgoingChatStatus, clearChatAckTimer, pauseChatOutbox, confirmChatOutgoingMessage, flushChatOutbox, newClientMessageId, uploadChatMediaBatch,
-  openChatSocket, reconcileChatMessages, startNamedChatSession, restoreNamedChatSession, recoverChatAccess, chatSessionExpired, ChatConnectionTimers, withoutRemovedChatMessages, ChatHistoryRequestGate, oldestConfirmedChatSeq, mergeOlderChatReactions, captureChatOfflineSnapshot, restoreChatOfflineOutbox,
+  openChatSocket, reconcileChatMessages, startNamedChatSession, restoreNamedChatSession, recoverChatAccess, chatSessionExpired, ChatConnectionTimers, ChatResumeGate, withoutRemovedChatMessages, ChatHistoryRequestGate, oldestConfirmedChatSeq, mergeOlderChatReactions, captureChatOfflineSnapshot, restoreChatOfflineOutbox,
   type BackendHealth, type ChatMessage, type ChatServerEvent, type ChatSession, type PwaReaderTarget, parsePwaReaderHash,
   HAVANA_V2_DEV_API_BASE_URL,
   reconcileChatSnapshot, applyChatIncomingEvent, type ChatReaction, type ChatEmoji, type ChatReadReceipt, type MemberScreen,
@@ -118,6 +118,7 @@ export default function App() {
   const outbox = useRef<Map<string, ChatMessage>>(new Map());
   const ackTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
   const connectionTimers=useRef(new ChatConnectionTimers());
+  const resumeGate=useRef(new ChatResumeGate());
   const retryCount = useRef(0);
   const disposed = useRef(false);
   const bottom = useRef<HTMLDivElement | null>(null);
@@ -172,6 +173,7 @@ export default function App() {
   const refreshLatest = useRef<() => void>(() => {});
 
   function revokeCurrentAccess() {
+    resumeGate.current.invalidate();
     clearSelectedMedia();
     connectionTimers.current.clearHandshake();
     historyRequests.current.reset();
@@ -328,6 +330,7 @@ export default function App() {
   }
   function reconnect(next: ChatSession) {
     if (disposed.current) return;
+    resumeGate.current.invalidate();
     if (chatSessionExpired(next)) {
       connectionTimers.current.clearHandshake();
       connectionTimers.current.clearRetry();
@@ -442,8 +445,10 @@ export default function App() {
       if(disposed.current)return;
       if(activeSession.current){restoredStorage.current=true;persist();return;}
       if (!saved || !saved.session || chatSessionExpired(saved.session)) return;
+      const restoration=resumeGate.current.begin();
       const access=await recoverChatAccess(saved.session,restoreNamedChatSession);
-      if(disposed.current)return;
+      if(disposed.current||!resumeGate.current.isRequestCurrent(restoration)||
+         activeSession.current)return;
       if(access.state==='revoked'){
         await saveLocalChat(null);
         setName('');
@@ -474,21 +479,28 @@ export default function App() {
       if (!disposed.current) setHealth(data);
     }).catch(() => { if (!disposed.current) setError('No se pudo conectar a la API'); });
     const resume = () => {
-      if(document.visibilityState==='hidden'){persist();return;}
+      if(document.visibilityState==='hidden'){
+        resumeGate.current.invalidate();persist();return;
+      }
       const next = activeSession.current;
       if (!next || document.visibilityState !== 'visible') return;
+      const request=resumeGate.current.begin();
+      const validResponse=()=>resumeGate.current.isCurrent(
+        request,next.token,activeSession.current?.token,
+        !disposed.current&&document.visibilityState==='visible'&&navigator.onLine
+      );
       void restoreNamedChatSession(next).then(valid => {
-        if(disposed.current || activeSession.current?.token !== next.token)return;
+        if(!validResponse())return;
         if(!valid){revokeCurrentAccess();return;}
         if(!socket.current || socket.current.readyState !== WebSocket.OPEN)
           connectLatest.current(valid);
         else refreshLatest.current();
       }).catch(() => {
-        if(activeSession.current?.token===next.token && navigator.onLine)
-          connectLatest.current(next);
+        if(validResponse())connectLatest.current(next);
       });
     };
     const offline = () => {
+      resumeGate.current.invalidate();
       connectionTimers.current.clearHandshake();
       pausePending();
       setConnection('sin conexión');
@@ -502,6 +514,7 @@ export default function App() {
     window.addEventListener('offline', offline);
     return () => {
       disposed.current = true;
+      resumeGate.current.invalidate();
       document.removeEventListener('visibilitychange', resume);
       window.removeEventListener('online', resume);
       window.removeEventListener('offline', offline);
@@ -552,6 +565,7 @@ export default function App() {
   // The only login: Administrator-created name, one server-linked session.
   async function join(){
     if(!name.trim()||joining)return;
+    resumeGate.current.invalidate();
     setJoining(true);setError('');
     try{
       const next=await startNamedChatSession(name.trim());
