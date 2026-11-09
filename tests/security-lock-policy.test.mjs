@@ -21,6 +21,17 @@ test('Cloudflare security patch is pinned in both manifest and lock with no deta
  assert.ok(lock.packages['node_modules/wrangler'].dev);
  assert.ok(lock.packages['node_modules/undici'].dev);
 });
+test('Expo PKI dependency is patched without changing SDK or native bridge',()=>{
+ const lock=read('package-lock.json');
+ const forge=lock.packages['node_modules/node-forge'];
+ assert.equal(forge.version,'1.4.3');
+ assert.equal(forge.resolved,'https://registry.npmjs.org/node-forge/-/node-forge-1.4.3.tgz');
+ assert.match(forge.integrity,/^sha512-/);
+ for(const dependency of ['@expo/cli','@expo/code-signing-certificates']){
+  const range=lock.packages['node_modules/'+dependency].dependencies['node-forge'];
+  assert.equal(range,'^1.4.0');
+ }
+});
 test('Android app and WebView versions remain pinned and unchanged by Wrangler patch',()=>{
  const android=read('apps/android/package.json');
  const lock=read('package-lock.json');
