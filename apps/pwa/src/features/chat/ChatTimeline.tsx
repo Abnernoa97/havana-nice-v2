@@ -9,7 +9,6 @@ import ChatMediaView from './ChatMediaView';
 // Presentation only. Authentication, WebSocket, history and offline outbox stay in App.tsx.
 type ChatTimelineProps={
  messages:ChatMessage[];
- searchResults:ChatMessage[]|null;
  actorId:string;
  onlineActorIds:ReadonlySet<string>;
  connected:boolean;
@@ -26,7 +25,7 @@ type ChatTimelineProps={
 };
 
 export default function ChatTimeline({
- messages,searchResults,actorId,onlineActorIds,connected,token,reactions,receipts,hasMore,loadingOlder,
+ messages,actorId,onlineActorIds,connected,token,reactions,receipts,hasMore,loadingOlder,
  onLoadOlder,onReply,onMessageLongPress,onRetry,bottomRef,
 }:ChatTimelineProps){
  const display=useMemo(()=>buildChatDisplayIndex(messages,reactions,receipts,actorId),
@@ -34,11 +33,10 @@ export default function ChatTimeline({
  return (
           <section className="chat-messages" aria-label="Mensajes">
             <div className="chat-message-content">
-            {searchResults===null&&hasMore&&<button type="button" className="load-older" disabled={loadingOlder}
+            {hasMore&&<button type="button" className="load-older" disabled={loadingOlder}
               onClick={()=>void onLoadOlder()}>{loadingOlder?'Cargando…':'Cargar mensajes anteriores'}</button>}
-            {searchResults!==null&&<p className="search-count">{searchResults.length} resultado(s) en historial</p>}
             {messages.length === 0 && <p className="empty-chat">¡Hola! Escribe el primer mensaje.</p>}
-            {(searchResults??messages).filter(message=>!message.deletedAt).map(message => {
+            {messages.filter(message=>!message.deletedAt).map(message => {
               const mine = message.senderId === actorId;
               const badges=display.reactionBadges.get(message.seq)??[];
               return <SwipeMessage className={`bubble ${mine?'mine':'theirs'}${connected&&onlineActorIds.has(message.senderId)?' online':''}`}
