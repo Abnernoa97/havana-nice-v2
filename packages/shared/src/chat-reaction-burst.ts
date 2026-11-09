@@ -1,8 +1,8 @@
 import type {ChatEmoji} from './index';
 
 // Visual-only effects. One short tap still produces just one ordinary reaction.
-export const CHAT_REACTION_BURST_HOLD_MS=420;
-export const CHAT_REACTION_BURST_TICK_MS=160;
+export const CHAT_REACTION_BURST_WAVES=9;
+export const CHAT_REACTION_BURST_WAVE_GAP_MS=95;
 export const CHAT_REACTION_BURST_PER_TICK=3;
 export const CHAT_REACTION_BURST_MAX_PARTICLES=48;
 
