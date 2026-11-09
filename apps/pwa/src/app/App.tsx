@@ -88,6 +88,7 @@ export default function App() {
   const [error, setError] = useState('');
   const [joining, setJoining] = useState(false);
   const [replyTo, setReplyTo] = useState<ChatMessage | null>(null);
+  const [latestMessageRequest,setLatestMessageRequest]=useState(0);
   const [reactions, setReactions] = useState<ChatReaction[]>([]);
   const [onlineActorIds,setOnlineActorIds]=useState<ReadonlySet<string>>(()=>new Set());
   const [typing, setTyping] = useState('');
@@ -644,6 +645,7 @@ export default function App() {
     persist();
     setReplyTo(null);
     setMessages(before => reconcileChatMessages(before, [message]));
+    setLatestMessageRequest(n=>n+1);
     setDraft('');
     flushOutbox();
   }
@@ -743,7 +745,7 @@ export default function App() {
         </section>
       ) : (
         <>
-          <ChatTimeline messages={messages}
+          <ChatTimeline messages={messages} latestMessageRequest={latestMessageRequest}
             actorId={session.actorId} token={session.token}
              onlineActorIds={onlineActorIds} connected={connection==='en vivo'}
             reactions={reactions} receipts={receipts}

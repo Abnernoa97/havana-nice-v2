@@ -63,3 +63,12 @@ test('Deleted rows stay hidden, empty histories are safe and orphan anchors reco
  const afterDelete=selectChatMessageWindow(rows,'unknown-id');
  assert.deepEqual(afterDelete.rows,shown.rows);
 });
+
+test('Outgoing messages request the newest window even from an older page',()=>{
+ const {readFileSync}=await import('node:fs');
+ const app=readFileSync(new URL('../apps/pwa/src/app/App.tsx',import.meta.url),'utf8');
+ const timeline=readFileSync(new URL('../apps/pwa/src/features/chat/ChatTimeline.tsx',import.meta.url),'utf8');
+ assert.match(app,/setLatestMessageRequest\(n=>n\+1\)/);
+ assert.match(app,/<ChatTimeline messages=\{messages\} latestMessageRequest=\{latestMessageRequest\}/);
+ assert.match(timeline,/setEndAnchorKey\(null\);\s*onReturnLatest\(\);\s*\},\[latestMessageRequest,onReturnLatest\]\)/);
+});

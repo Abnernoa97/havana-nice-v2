@@ -10,6 +10,7 @@ import {chatWindowKey,selectChatMessageWindow,previousChatWindowEnd,nextChatWind
 // Presentation only. Authentication, WebSocket, history and offline outbox stay in App.tsx.
 type ChatTimelineProps={
  messages:ChatMessage[];
+ latestMessageRequest:number;
  actorId:string;
  onlineActorIds:ReadonlySet<string>;
  connected:boolean;
@@ -28,7 +29,7 @@ type ChatTimelineProps={
 };
 
 function ChatTimeline({
- messages,actorId,onlineActorIds,connected,token,reactions,receipts,hasMore,loadingOlder,
+ messages,latestMessageRequest,actorId,onlineActorIds,connected,token,reactions,receipts,hasMore,loadingOlder,
  onLoadOlder,onBrowseOlder,onReturnLatest,onReply,onMessageLongPress,onRetry,bottomRef,
 }:ChatTimelineProps){
  const display=useMemo(()=>buildChatDisplayIndex(messages,reactions,receipts,actorId),
@@ -86,6 +87,14 @@ function ChatTimeline({
    setEndAnchorKey(null);
    onReturnLatest();
  };
+ // An outgoing message from the middle of history behaves like WhatsApp:
+ // jump back to the latest bubble, rather than hiding the new sent message.
+ useLayoutEffect(()=>{
+   if(latestMessageRequest===0)return;
+   pendingPosition.current=null;
+   setEndAnchorKey(null);
+   onReturnLatest();
+ },[latestMessageRequest,onReturnLatest]);
  return (
           <section className="chat-messages" aria-label="Mensajes">
             <div className="chat-message-content">
