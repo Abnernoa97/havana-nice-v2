@@ -36,7 +36,7 @@ export default function VisualApp({displayName,active,onNavigate,preview=false,t
   const tabs=MEMBER_MODULES;
   return <div className="visual-shell">
     <header className="visual-header">
-      <div><div className="visual-brand">HAVANA NICE</div><div className="visual-subtitle">ESPACIO DEL EQUIPO · V2</div></div>
+      <div><div className="visual-brand">HAVANA NICE</div><div className="visual-subtitle">ESPACIO DEL EQUIPO</div></div>
       <span className="visual-preview">{preview?'Vista preliminar':displayName||'Mi espacio'}</span>
     </header>
     <div className="visual-layout">
@@ -57,22 +57,26 @@ export default function VisualApp({displayName,active,onNavigate,preview=false,t
       <main className="visual-content" id="visual-content">
         {screen==='home'?<>
           <div className="visual-section-header">
-            <span className="visual-overline">HAVANA NICE / HOME</span>
+            <span className="visual-overline">HAVANA NICE / EQUIPO</span>
             <h1>Inicio</h1>
-            <p className="visual-intro">Accede a las herramientas del equipo.</p>
+            <p className="visual-intro">Todo lo que necesitas, en un solo espacio.</p>
           </div>
           <div className="visual-welcome">
-            <div><span className="visual-overline">ACCESO AUTORIZADO</span>
-              <h2>{preview?'Espacio de trabajo':`Bienvenido, ${displayName||'integrante'}.`}</h2>
-              <p>Tu equipo y tus próximos eventos, en un solo lugar.</p></div>
+            <div><span className="visual-overline">TU ESPACIO PRIVADO</span>
+              <h2>{preview?'Espacio de trabajo':`Hola, ${displayName||'integrante'}.`}</h2>
+              <p>Eventos, repertorio y archivos del equipo. Todo aquí.</p></div>
             <span className="visual-mark" aria-hidden="true">HN</span>
           </div>
           <div className="visual-grid">
             {tabs.map(item=><button key={item.id} className="visual-tile" type="button"
               disabled={preview&&item.id==='chat'} onClick={()=>navigate(item.id)}>
-              <span className="visual-overline">{item.glyph} · {item.ready?'DISPONIBLE':'EN PREPARACIÓN'}</span>
+              <span className="visual-tile-top">
+                <span className="visual-tile-icon" aria-hidden="true">{item.glyph}</span>
+                <span className="visual-tile-status">{item.ready?'DISPONIBLE':'EN PREPARACIÓN'}</span>
+              </span>
               <strong>{item.label}</strong>
               <span>{item.description}</span>
+              <span className="visual-tile-open" aria-hidden="true">Abrir ›</span>
             </button>)}
           </div>
         </>:<>
