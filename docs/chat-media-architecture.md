@@ -181,3 +181,8 @@ por la ruta habitual. El `blob:` temporal se revoca al salir de la vista.
 En Android una fotografía ya verificada en caché se pinta antes de terminar
 `Image.getSize`; su relación de aspecto se ajusta sin descargar de nuevo.
 No se tocaron videos, R2, datos de D1, ni las fotografías originales.
+
+Las fotos enviadas desde la PWA generan su miniatura en paralelo a la
+subida, directamente desde el archivo local, sin pedir una descarga posterior
+del original a R2. La generación es no bloqueante y su error nunca puede
+interrumpir la subida. No cambia el flujo de videos ni el original enviado.

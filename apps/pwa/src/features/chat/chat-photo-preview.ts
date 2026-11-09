@@ -63,29 +63,34 @@ async function previewFromImage(original:Blob):Promise<Blob>{
  }finally{URL.revokeObjectURL(url);}
 }
 
-export async function fetchChatPhotoThumbnail(
- url:string,signal:AbortSignal,
-):Promise<Blob>{
- return withPreviewSlot(async()=>{
-   if(signal.aborted)throw Error('Descarga cancelada.');
-   const response=await fetch(url,{cache:'no-store',signal});
-   if(!response.ok)throw Error('Fotografía no disponible.');
-   const original=await response.blob();
-   if(signal.aborted)throw Error('Descarga cancelada.');
-   if(original.type&&!original.type.startsWith('image/'))
-     throw Error('Formato de imagen no disponible.');
-   try{
-     if(typeof createImageBitmap==='function'){
-       const preview=await previewFromBitmap(original);
-       if(signal.aborted)throw Error('Descarga cancelada.');
-       return preview;
-     }
-   }catch(error){
-     if(signal.aborted)throw error;
-     // Safari/HEIC can decode through HTMLImageElement but not ImageBitmap.
-   }
-   const preview=await previewFromImage(original);
-   if(signal.aborted)throw Error('Descarga cancelada.');
+// Generate the sender's cover directly from their local File during upload.
+async function renderChatPhotoThumbnail(original:Blob,signal?:AbortSignal):Promise<Blob>{
+ if(signal?.aborted)throw Error('Descarga cancelada.');
+ if(original.type&&!original.type.startsWith('image/'))
+  throw Error('Formato de imagen no disponible.');
+ try{
+  if(typeof createImageBitmap==='function'){
+   const preview=await previewFromBitmap(original);
+   if(signal?.aborted)throw Error('Descarga cancelada.');
    return preview;
+  }
+ }catch(error){
+  if(signal?.aborted)throw error;
+  // Safari/HEIC fallback uses HTMLImageElement.
+ }
+ const preview=await previewFromImage(original);
+ if(signal?.aborted)throw Error('Descarga cancelada.');
+ return preview;
+}
+export function createChatPhotoThumbnail(original:Blob,signal?:AbortSignal):Promise<Blob>{
+ return withPreviewSlot(()=>renderChatPhotoThumbnail(original,signal));
+}
+export async function fetchChatPhotoThumbnail(url:string,signal:AbortSignal):Promise<Blob>{
+ return withPreviewSlot(async()=>{
+  if(signal.aborted)throw Error('Descarga cancelada.');
+  const response=await fetch(url,{cache:'no-store',signal});
+  if(!response.ok)throw Error('Fotografía no disponible.');
+  const original=await response.blob();
+  return renderChatPhotoThumbnail(original,signal);
  });
 }

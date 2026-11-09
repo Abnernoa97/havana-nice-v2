@@ -157,3 +157,12 @@ test('PWA keeps a private, bounded preview cache and never stores signed grants'
  assert.match(cache,/CHAT_PREVIEW_TTL_MS=14\*24\*60\*60\*1000/);
  assert.doesNotMatch(cache,/localStorage|sessionStorage|remoteUrl|grantUrl/);
 });
+
+test('a PWA sender reuses its local photo without changing video or R2 transport',()=>{
+ const src=read('apps/pwa/src/app/App.tsx');
+ assert.match(src,/if\(item\.selection\.kind==='photo'\)/);
+ assert.match(src,/createChatPhotoThumbnail\(item\.file\)/);
+ assert.match(src,/storeChatPhotoPreview\(session\.token,/);
+ assert.match(src,/return uploadChatFile\(session,item\.file,item\.selection\.kind,onSent,item\.id\)/);
+ assert.doesNotMatch(src,/uploadChatFile\(session,thumb/);
+});

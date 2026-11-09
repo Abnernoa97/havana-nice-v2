@@ -142,9 +142,20 @@ export default function App() {
     try{
       // R2 upload code is downloaded only if the musician actually sends files.
       const {uploadChatFile}=await import('../services/chat-media-upload');
+      const {createChatPhotoThumbnail}=await import('../features/chat/chat-photo-preview');
+      const {storeChatPhotoPreview}=await import('../features/chat/chat-photo-thumbnail-cache');
       await uploadChatMediaBatch([...mediaQueue.current],{
         sizeOf:item=>item.file.size,
-        upload:(item,onSent)=>uploadChatFile(session,item.file,item.selection.kind,onSent,item.id),
+        upload:(item,onSent)=>{
+          if(item.selection.kind==='photo'){
+            // Prepare sender's cover locally while the original uploads.
+            void createChatPhotoThumbnail(item.file).then(thumb=>
+              storeChatPhotoPreview(session.token,
+                {assetId:item.id,sizeBytes:item.file.size},thumb)
+            ).catch(()=>{});
+          }
+          return uploadChatFile(session,item.file,item.selection.kind,onSent,item.id);
+        },
         progress:setMediaProgress,
         confirmed:item=>confirmUploadedMedia(item.id),
       });
