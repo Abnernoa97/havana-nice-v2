@@ -72,27 +72,28 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          # Expo prebuild generates the wrapper. Gradle's official direct CDN
-          # avoids services.gradle.org -> GitHub release redirects (504 observed).
-          node <<'NODE'
-          const fs=require('node:fs');
-          const file='gradle/wrapper/gradle-wrapper.properties';
-          const source=fs.readFileSync(file,'utf8');
-          if(!source.includes('services.gradle.org/distributions/'))
-            throw Error('Unexpected Gradle wrapper origin; inspect before changing');
-          fs.writeFileSync(file,source.replace(
-            'services.gradle.org/distributions/',
-            'downloads.gradle.org/distributions/'));
-          NODE
-          chmod +x gradlew
-          # GitHub's Ubuntu 26 runner ships Gradle 9.x. Prefer this official
-          # preinstalled tool over downloading another copy during CDN outages.
-          # Keep the generated wrapper as a guarded fallback.
-          GRADLE_BIN=(./gradlew)
-          if command -v gradle >/dev/null && gradle --version | grep -Eq '^Gradle 9[.][4-9][.]'; then
-            echo 'Using installed Gradle instead of downloading wrapper distribution'
-            GRADLE_BIN=(gradle)
-          fi
+          # Use the EXACT Gradle distribution declared by Expo 58 (9.4.1).
+          # Upstream 504s currently prevent the wrapper from downloading it.
+          # Fetch from a static mirror only with the independent official SHA-256
+          # published at https://gradle.org/release-checksums/ .
+          GRADLE_ZIP="$RUNNER_TEMP/gradle-9.4.1-bin.zip"
+          GRADLE_SHA="2ab2958f2a1e51120c326cad6f385153bb11ee93b3c216c5fccebfdfbb7ec6cb"
+          for mirror in \
+            "https://mirrors.aliyun.com/github/releases/gradle/gradle-distributions/v9.4.1/gradle-9.4.1-bin.zip" \
+            "https://vie.at.distfiles.macports.org/gradle/gradle-9.4.1-bin.zip"; do
+            rm -f "$GRADLE_ZIP"
+            if curl --fail --location --silent --show-error --retry 2 \
+              --connect-timeout 15 --max-time 180 --output "$GRADLE_ZIP" "$mirror" &&
+              echo "$GRADLE_SHA  $GRADLE_ZIP" | sha256sum -c -; then
+              echo "Verified exact Gradle 9.4.1 distribution SHA-256"
+              break
+            fi
+          done
+          echo "$GRADLE_SHA  $GRADLE_ZIP" | sha256sum -c -
+          unzip -q "$GRADLE_ZIP" -d "$RUNNER_TEMP"
+          GRADLE_BIN=("$RUNNER_TEMP/gradle-9.4.1/bin/gradle")
+          test -x "${GRADLE_BIN[0]}"
+          "${GRADLE_BIN[@]}" --version
           for attempt in 1 2 3; do
             if "${GRADLE_BIN[@]}" --no-daemon --stacktrace assembleRelease 2>&1 | tee "/tmp/v2-gradle-attempt-${attempt}.log"; then
               echo "Release APK compiled successfully (attempt ${attempt})"
