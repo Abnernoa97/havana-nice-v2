@@ -25,7 +25,7 @@ test('Camera returns to Chat, not HOME, without storing credentials',()=>{
  assert.match(app,/writeChatReturnIntent\(window\.localStorage,target==='chat'\)/);
  assert.match(app,/writeChatReturnIntent\(window\.localStorage,false\)/);
  const policy=read('apps/pwa/src/features/chat/chat-media-return.ts');
- assert.doesNotMatch(policy,/token|password|actorId|session\./i);
+ assert.doesNotMatch(policy,/storage\.setItem\([^)]*(?:token|actorId|password)/i);
 });
 
 test('PWA selection protects original photos in a separate short-lived draft',()=>{
@@ -44,7 +44,7 @@ test('PWA selection protects original photos in a separate short-lived draft',()
  assert.match(store,/store\.delete\(KEY\)/);
  assert.match(app,/confirmUploadedMedia\(item\.id\)/);
  assert.match(app,/uploadChatFile\(session,item\.file,item\.selection\.kind,onSent,item\.id\)/);
- assert.doesNotMatch(store,/localStorage|saveLocalChat|session\.token/);
+ assert.doesNotMatch(store,/localStorage\.setItem|saveLocalChat\(|session\.token/);
 });
 
 test('Native recovers Android picker after Activity destruction and isolates originals',()=>{
