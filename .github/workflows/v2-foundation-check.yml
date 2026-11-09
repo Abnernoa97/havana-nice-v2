@@ -81,6 +81,27 @@ jobs:
           fi
           node scripts/report-npm-audit.mjs /tmp/havana-v2-npm-audit.json
 
+      - name: Preview one Wrangler security patch lock delta (temporary read-only)
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp package-lock.json /tmp/havana-lock-before.json
+          npm install --package-lock-only --ignore-scripts --no-audit --no-fund -w @havana/cloudflare --save-dev --save-exact wrangler@4.158.0
+          node -e '
+            const fs=require("node:fs");
+            const prior=JSON.parse(fs.readFileSync("/tmp/havana-lock-before.json","utf8"));
+            const candidate=JSON.parse(fs.readFileSync("package-lock.json","utf8"));
+            const changes=[];
+            const keys=new Set([...Object.keys(prior.packages),...Object.keys(candidate.packages)]);
+            for(const key of keys){
+              const before=prior.packages[key], after=candidate.packages[key];
+              if(JSON.stringify(before)!==JSON.stringify(after))changes.push([key,after??null]);
+            }
+            console.log("HN_SECURITY_LOCK_PATCH="+JSON.stringify({changes,oldCount:Object.keys(prior.packages).length,
+              newCount:Object.keys(candidate.packages).length,candidateWrangler:candidate.packages["node_modules/wrangler"]?.version}));
+          '
+          git restore -- package-lock.json cloudflare/package.json
+
       - name: Typecheck all workspaces
         run: npm run typecheck
 
