@@ -41,8 +41,8 @@ test('Existing PWA login remains canonical and HOME only mounts after authentica
  assert.match(source,/restoreNamedChatSession/);
  assert.match(source,/session&&activeScreen!=='chat'&&<Suspense/);
  assert.match(source,/<VisualApp displayName=/);
- assert.match(source,/member-chat-hidden/);
- assert.match(read('apps/pwa/src/styles/chat/chat.css'),/\.member-chat-hidden\{display:none\}/);
+ assert.match(source,/\(!session\|\|activeScreen==='chat'\)&&<div className="member-chat-visible"/);
+ assert.doesNotMatch(source,/member-chat-hidden/);
  assert.match(read('apps/pwa/src/app/main.tsx'),/import '\.\.\/styles\/home\/home\.css'/);
  assert.doesNotMatch(read('apps/pwa/src/app/VisualApp.tsx'),/startNamedChatSession|restoreNamedChatSession|localStorage|indexedDB|adminLogin|\/api\/chat\/session/);
 });
