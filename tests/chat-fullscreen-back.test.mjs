@@ -73,3 +73,14 @@ test('Opening Chat lands at the true bottom even after media sizes change',()=>{
   assert.match(native,/else if\(autoScroll\.current\)scroll\.current\?\.scrollToEnd\(\{animated:false\}\)/);
   assert.match(native,/onScrollBeginDrag=\{onTimelineScrollBeginDrag\}/);
 });
+
+test('Home remains reachable after Chat and old browser history is neutralized',()=>{
+ const pwa=read('apps/pwa/src/app/App.tsx');
+ const picker=read('apps/pwa/src/features/chat/usePwaMediaSelection.ts');
+ const policy=read('apps/pwa/src/features/chat/chat-media-return.ts');
+ assert.match(pwa,/window\.history\.replaceState\(\{\.\.\.window\.history\.state,hnChatNavigation:false\}/);
+ assert.match(pwa,/setActiveScreen\(previousScreen\.current\);\s*if\(window\.history\.state\?\.hnChatNavigation\)window\.history\.back\(\)/);
+ assert.match(picker,/onCameraLaunch\(\)/);
+ assert.match(policy,/storage\.removeItem\(KEY\);\s*const item=JSON\.parse\(raw\)/);
+ assert.doesNotMatch(pwa,/writeChatReturnIntent\(window\.localStorage,target==='chat'\)/);
+});

@@ -6,7 +6,7 @@ import {readChatReturnIntent,writeChatReturnIntent,CHAT_RETURN_MAX_AGE_MS} from
 
 const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
 
-test('Camera returns to Chat, not HOME, without storing credentials',()=>{
+test('Home launch is default; an actual camera return is restored once',()=>{
  const values=new Map();
  const storage={
    getItem:key=>values.get(key)??null,
@@ -14,20 +14,28 @@ test('Camera returns to Chat, not HOME, without storing credentials',()=>{
    removeItem:key=>{values.delete(key);},
  };
  assert.equal(readChatReturnIntent(storage,100),false);
+ storage.setItem('hn-v2-chat-return-v1',JSON.stringify({at:100}));
+ assert.equal(readChatReturnIntent(storage,101),false);
+ assert.equal(storage.getItem('hn-v2-chat-return-v1'),null);
  writeChatReturnIntent(storage,true,100);
  assert.equal(readChatReturnIntent(storage,101),true);
+ assert.equal(readChatReturnIntent(storage,102),false);
+ writeChatReturnIntent(storage,true,100);
  assert.equal(readChatReturnIntent(storage,100+CHAT_RETURN_MAX_AGE_MS+1),false);
  writeChatReturnIntent(storage,true,1000);
  writeChatReturnIntent(storage,false);
  assert.equal(readChatReturnIntent(storage,1001),false);
  const app=read('apps/pwa/src/app/App.tsx');
- assert.match(app,/readChatReturnIntent\(window\.localStorage\)\?'chat':'home'/);
- assert.match(app,/writeChatReturnIntent\(window\.localStorage,target==='chat'\)/);
- assert.match(app,/writeChatReturnIntent\(window\.localStorage,false\)/);
+ const picker=read('apps/pwa/src/features/chat/usePwaMediaSelection.ts');
  const policy=read('apps/pwa/src/features/chat/chat-media-return.ts');
+ assert.match(app,/readChatReturnIntent\(window\.localStorage\)\?'chat':'home'/);
+ assert.match(app,/onCameraLaunch:\(\)=>writeChatReturnIntent\(window\.localStorage,true\)/);
+ assert.match(picker,/onCameraLaunch\(\);\s*picker\.click\(\)/);
+ assert.match(app,/writeChatReturnIntent\(window\.localStorage,false\);\s*chooseMedia\('camera','photo'/);
+ assert.match(policy,/purpose==='camera'/);
+ assert.doesNotMatch(app,/writeChatReturnIntent\(window\.localStorage,target==='chat'\)/);
  assert.doesNotMatch(policy,/storage\.setItem\([^)]*(?:token|actorId|password)/i);
 });
-
 test('PWA selection protects original photos in a separate short-lived draft',()=>{
  const picker=read('apps/pwa/src/features/chat/usePwaMediaSelection.ts');
  const store=read('apps/pwa/src/features/chat/chat-media-draft.ts');
