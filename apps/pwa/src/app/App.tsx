@@ -81,10 +81,14 @@ export default function App() {
     field.style.height=Math.min(132,Math.max(46,field.scrollHeight))+'px';
   },[draft]);
   const [composerPanel,setComposerPanel]=useState<'attachments'|'emojis'|null>(null);
-  const {selectedMedia,setSelectedMedia,mediaError,setMediaError,mediaQueue,
+  const {selectedMedia,mediaError,setMediaError,mediaQueue,
     photosPicker,videoPicker,cameraPicker,
-    removeSelectedMedia,openGalleryMedia,openCamera,chooseMedia}=
-    usePwaMediaSelection({onCloseMenu:()=>setComposerPanel(null)});
+    removeSelectedMedia,confirmUploadedMedia,clearSelectedMedia,
+    openGalleryMedia,openCamera,chooseMedia}=
+    usePwaMediaSelection({
+      actorId:session?.actorId??null,uploadBusy:mediaUploadBusy,
+      onCloseMenu:()=>setComposerPanel(null),
+    });
   const [mediaReady,setMediaReady]=useState(false);
   const [mediaUploading,setMediaUploading]=useState(false);
   const mediaUploadBusy=useRef(false);
@@ -137,11 +141,7 @@ export default function App() {
         sizeOf:item=>item.file.size,
         upload:(item,onSent)=>uploadChatFile(session,item.file,item.selection.kind,onSent),
         progress:setMediaProgress,
-        confirmed:item=>{
-          URL.revokeObjectURL(item.selection.uri);
-          mediaQueue.current=mediaQueue.current.filter(x=>x.id!==item.id);
-          setSelectedMedia([...mediaQueue.current]);
-        },
+        confirmed:item=>confirmUploadedMedia(item.id),
       });
       // The server broadcasts only confirmed media messages in the existing ChatRoom.
       if(activeSession.current)refreshLatest.current();
@@ -170,6 +170,7 @@ export default function App() {
 
   function revokeCurrentAccess() {
     writeChatReturnIntent(window.localStorage,false);
+    clearSelectedMedia();
     clearConnectionWatchdog();
     historyRequests.current.reset();
     setLoadingOlder(false);
@@ -818,11 +819,12 @@ export default function App() {
                 placeholder={connection==='en vivo'?'Mensaje':'Sin conexión: se enviará después…'}/>
               <button type="button" className="chat-icon-button" aria-label="Adjuntar fotografía o video"
                 aria-expanded={composerPanel==='attachments'}
+                disabled={mediaUploading}
                 onClick={()=>setComposerPanel(p=>p==='attachments'?null:'attachments')}>
                 <ComposerIcon name="clip" size={25}/>
               </button>
               <button type="button" className="chat-icon-button" aria-label="Abrir cámara"
-                onClick={openCamera}>
+                disabled={mediaUploading} onClick={openCamera}>
                 <ComposerIcon name="camera" size={25}/>
               </button>
             </div>
