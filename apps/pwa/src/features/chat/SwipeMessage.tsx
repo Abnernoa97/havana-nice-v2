@@ -18,6 +18,7 @@ export default function SwipeMessage({children,className,messageKey,onSwipeRight
   const elementRef=useRef<HTMLElement|null>(null);
   const timer=useRef<ReturnType<typeof setTimeout>|null>(null);
   const [shift,setShift]=useState(0);
+  const axis=useRef<'undecided'|'vertical'|'horizontal'>('undecided');
   useEffect(()=>{
     const node=elementRef.current;
     if(!node)return;
@@ -33,21 +34,40 @@ export default function SwipeMessage({children,className,messageKey,onSwipeRight
   };
   const touchStart=(event:TouchEvent<HTMLElement>)=>{
     const t=event.touches[0];if(!t)return;
-    clear();start.current={x:t.clientX,y:t.clientY};
+    clear();start.current={x:t.clientX,y:t.clientY};axis.current='undecided';
     timer.current=setTimeout(()=>{timer.current=null;start.current=null;setShift(0);openMenu();},550);
   };
   const touchMove=(event:TouchEvent<HTMLElement>)=>{
     const current=start.current,t=event.touches[0];if(!current||!t)return;
     const dx=t.clientX-current.x,dy=t.clientY-current.y;
     if(Math.abs(dx)>12||Math.abs(dy)>12)clear();
-    setShift(dx>0 && dx>Math.abs(dy)*1.2?Math.min(78,dx):0);
+    if(axis.current==='undecided'){
+      if(Math.abs(dy)>10&&Math.abs(dy)>Math.abs(dx)*.8)
+        axis.current='vertical';
+      else if(dx>12&&dx>Math.abs(dy)*1.4)
+        axis.current='horizontal';
+    }
+    if(axis.current==='horizontal'&&Math.abs(dy)>Math.abs(dx)*1.4)
+      axis.current='vertical';
+    // A vertical iOS scroll must not rerender the bubble on every touch event.
+    if(axis.current==='vertical'){
+      if(shift!==0)setShift(0);
+      return;
+    }
+    if(axis.current==='horizontal')
+      setShift(previous=>{
+        const value=Math.min(78,Math.max(0,dx));
+        return previous===value?previous:value;
+      });
   };
   const touchEnd=(event:TouchEvent<HTMLElement>)=>{
     const current=start.current,t=event.changedTouches[0];
     clear();start.current=null;setShift(0);
     if(current&&t){const dx=t.clientX-current.x,dy=t.clientY-current.y;
-      if(dx>60&&dx>Math.abs(dy)*1.2)onSwipeRight();
+      if(axis.current==='horizontal'&&dx>60&&dx>Math.abs(dy)*1.2)
+        onSwipeRight();
     }
+    axis.current='undecided';
   };
   const menu=(event:MouseEvent<HTMLElement>)=>{event.preventDefault();clear();openMenu();};
   const keyboard=(event:KeyboardEvent<HTMLElement>)=>{
@@ -60,7 +80,7 @@ export default function SwipeMessage({children,className,messageKey,onSwipeRight
       style={{touchAction:'pan-y',transform:shift?'translateX('+shift+'px)':undefined,
         transition:shift?'none':'transform 130ms ease'}}
       onTouchStart={touchStart} onTouchMove={touchMove} onTouchEnd={touchEnd}
-      onTouchCancel={()=>{clear();start.current=null;setShift(0);}}
+      onTouchCancel={()=>{clear();start.current=null;axis.current='undecided';setShift(0);}}
       onContextMenu={menu} onKeyDown={keyboard}
       onDragStart={event=>event.preventDefault()}
       aria-label="Mensaje. Desliza a la derecha para responder, mantén pulsado para opciones">

@@ -119,12 +119,14 @@ function ChatTimeline({
        loadingOlder,
        readingHistory:endAnchorKey!==null,
      });
-     if(!action)return;
-     // One window change per gesture. Later layout/anchor corrections are ignored.
-     nextWindowAllowedAt.current=now+550;
+     // Even without a page transition, reset stale gesture direction:
+     // images resizing later must not trigger another window rotation.
      gestureDirection.current=0;
      pendingDirection.current=0;
      recentGesture.current=0;
+     if(!action)return;
+     // One window change per gesture. Later layout/anchor corrections are ignored.
+     nextWindowAllowedAt.current=now+550;
      if(action==='older')showOlder();
      else if(action==='newer')showNext();
      else jumpLatest();

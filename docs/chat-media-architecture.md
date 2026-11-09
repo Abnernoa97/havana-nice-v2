@@ -197,3 +197,15 @@ iOS. El seguimiento al último mensaje queda suspendido durante el gesto
 y el momentum; el `ResizeObserver` no lucha contra el usuario cuando cargan
 fotos o videos. El desplazamiento a lo último sigue disponible por acción
 explícita o cuando el usuario realmente llega al fondo.
+
+## iPhone · Multimedia y gestos del chat
+
+Las fotografías ocupan un marco estable cuadrado, con `object-fit: contain`
+para no recortar su contenido. Los videos ocupan un marco 16:9 y solicitan
+autorización y reproductor solo cuando se toca su carátula; al salir de la
+vista, su reproductor se libera. No se tocan originales R2 ni videos guardados.
+
+`SwipeMessage` identifica si el gesto empezó vertical u horizontal. El
+desplazamiento vertical no actualiza la posición React de la burbuja en cada
+movimiento. `ChatTimeline` descarta cualquier dirección residual al
+estabilizarse el movimiento, incluso si no cambia de página.

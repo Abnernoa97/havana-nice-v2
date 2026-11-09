@@ -135,3 +135,13 @@ test('iPhone rubber band offsets never rotate a history window',()=>{
  assert.equal(chatWindowEdgeAction({...normal,scrollTop:45,direction:-1}),'older');
  assert.equal(chatWindowEdgeAction({...normal,scrollTop:10255,direction:1}),'newer');
 });
+
+test('vertical touch scroll does not animate bubbles or reuse a stale page gesture',()=>{
+ const swipe=readFileSync(new URL('../apps/pwa/src/features/chat/SwipeMessage.tsx',import.meta.url),'utf8');
+ const timeline=readFileSync(new URL('../apps/pwa/src/features/chat/ChatTimeline.tsx',import.meta.url),'utf8');
+ assert.match(swipe,/axis=useRef<'undecided'\|'vertical'\|'horizontal'>/);
+ assert.match(swipe,/if\(axis\.current==='vertical'\)\{/);
+ assert.match(swipe,/if\(axis\.current==='horizontal'\)/);
+ assert.match(swipe,/if\(axis\.current==='horizontal'&&dx>60/);
+ assert.match(timeline,/recentGesture\.current=0;\s*if\(!action\)return/);
+});
