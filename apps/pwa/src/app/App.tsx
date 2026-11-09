@@ -11,6 +11,7 @@ import { loadLocalChat, saveLocalChat } from '../services/local';
 import type {MessageAnchor} from '../features/chat/SwipeMessage';
 import ChatTimeline from '../features/chat/ChatTimeline';
 import {useChatScrollAnchor} from '../features/chat/useChatScrollAnchor';
+import {readChatReturnIntent,writeChatReturnIntent} from '../features/chat/chat-media-return';
 import PwaChatMessageMenu from '../features/chat/PwaChatMessageMenu';
 import {usePwaMediaSelection} from '../features/chat/usePwaMediaSelection';
 import PwaChatMediaQueuePreview from '../features/chat/PwaChatMediaQueuePreview';
@@ -25,10 +26,12 @@ export default function App() {
   const [name, setName] = useState('');
   const [session, setSession] = useState<ChatSession | null>(null);
   // Existing approved ChatSession is the APP access; HOME adds no login or storage.
-  const [activeScreen,setActiveScreen]=useState<MemberScreen>('home');
+  const [activeScreen,setActiveScreen]=useState<MemberScreen>(()=>
+    readChatReturnIntent(window.localStorage)?'chat':'home');
   const previousScreen=useRef<MemberScreen>('home');
   const edgeSwipeStart=useRef<{x:number;y:number}|null>(null);
   const navigateTo=useCallback((target:MemberScreen)=>{
+    writeChatReturnIntent(window.localStorage,target==='chat');
     if(target!=='chat'){setComposerPanel(null);setMenuMessage(null);}
     if(target==='chat'&&activeScreen!=='chat'){
       previousScreen.current=activeScreen;
@@ -37,6 +40,7 @@ export default function App() {
     setActiveScreen(target);
   },[activeScreen]);
   const closeChat=()=>{
+    writeChatReturnIntent(window.localStorage,false);
     setMenuMessage(null);
     setComposerPanel(null);
     if(window.history.state?.hnChatNavigation)window.history.back();
@@ -44,6 +48,7 @@ export default function App() {
   };
   useEffect(()=>{
     const syncBack=()=>{
+      writeChatReturnIntent(window.localStorage,!!window.history.state?.hnChatNavigation);
       if(window.history.state?.hnChatNavigation)setActiveScreen('chat');
       else setActiveScreen(current=>current==='chat'?previousScreen.current:current);
     };
@@ -56,7 +61,7 @@ export default function App() {
     const sync=()=>{
       const route=parsePwaReaderHash(window.location.hash);
       setReaderRoute(route);
-      if(route)setActiveScreen('home');
+      if(route){writeChatReturnIntent(window.localStorage,false);setActiveScreen('home');}
     };
     window.addEventListener('hashchange',sync);
     return()=>window.removeEventListener('hashchange',sync);
@@ -164,6 +169,7 @@ export default function App() {
   const refreshLatest = useRef<() => void>(() => {});
 
   function revokeCurrentAccess() {
+    writeChatReturnIntent(window.localStorage,false);
     clearConnectionWatchdog();
     historyRequests.current.reset();
     setLoadingOlder(false);
