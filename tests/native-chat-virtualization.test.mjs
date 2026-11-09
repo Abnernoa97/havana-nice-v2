@@ -7,7 +7,7 @@ test('Native Chat virtualizes messages instead of creating the complete history 
  assert.match(timeline,/import \{FlatList,/);
  assert.match(timeline,/<FlatList/);
  assert.match(timeline,/data=\{visibleMessages\}/);
- assert.match(timeline,/useMemo\(\s*\(\)=>\(results\?\?messages\)\.filter\(message=>!message\.deletedAt\)/);
+ assert.match(timeline,/useMemo\(\s*\(\)=>messages\.filter\(message=>!message\.deletedAt\)/);
  assert.match(timeline,/keyExtractor=\{message=>message.senderId\+':'\+message.clientMessageId\}/);
  assert.match(timeline,/initialNumToRender=\{10\}/);
  assert.match(timeline,/maxToRenderPerBatch=\{8\}/);
