@@ -214,7 +214,7 @@ jobs:
         run: node --test tests/chat-media-ui.test.mjs
 
       - name: Protect one authorized HOME and native Chat navigation
-        run: node --test tests/member-home-navigation.test.mjs
+        run: node --test tests/member-home-navigation.test.mjs tests/home-visual-identity.test.mjs
 
       - name: Guard Android/PWA functional parity without shipping a new APK
         run: node --test tests/android-pwa-parity.test.mjs

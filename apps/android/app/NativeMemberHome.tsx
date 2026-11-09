@@ -19,20 +19,20 @@ export default function NativeMemberHome({displayName,token,active,onNavigate}:P
   const content=<>
     <View style={styles.top}>
       <Text style={styles.brand}>HAVANA NICE</Text>
-      <Text style={styles.subheading}>ESPACIO DEL EQUIPO · V2</Text>
+      <Text style={styles.subheading}>ESPACIO DEL EQUIPO</Text>
     </View>
     {active==='home'?<>
-      <Text style={styles.eyebrow}>ACCESO AUTORIZADO</Text>
+      <Text style={styles.eyebrow}>TU ESPACIO PRIVADO</Text>
       <Text style={styles.title}>Inicio</Text>
-      <Text style={styles.greeting}>Bienvenido, {displayName}.</Text>
-      <Text style={styles.lead}>Todo el equipo en un solo lugar.</Text>
+      <Text style={styles.greeting}>Hola, {displayName}.</Text>
+      <Text style={styles.lead}>Eventos, repertorio y archivos. Todo aquí.</Text>
       <View style={styles.modules}>
         {MEMBER_MODULES.map(module=><Pressable key={module.id}
           style={styles.tile} accessibilityRole="button"
           accessibilityLabel={'Abrir '+module.label}
           onPress={()=>onNavigate(module.id)}>
           <View style={styles.tileHead}>
-            <Text style={styles.symbol}>{module.glyph}</Text>
+            <Text style={styles.symbol} accessibilityElementsHidden>{module.glyph}</Text>
             <Text style={styles.tileTitle}>{module.label}</Text>
           </View>
           <Text style={styles.tileBody}>{module.description}</Text>
@@ -76,35 +76,36 @@ export default function NativeMemberHome({displayName,token,active,onNavigate}:P
  </View>;
 }
 const styles=StyleSheet.create({
-  screen:{flex:1,backgroundColor:'#F3EDDF'},
+  screen:{flex:1,backgroundColor:'#F7F4ED'},
   root:{flex:1},
-  bottomNav:{flexDirection:'row',justifyContent:'space-around',backgroundColor:'#fffaf2',borderTopWidth:1,borderColor:'#ddd2c2',paddingVertical:8},
-  bottomTab:{flex:1,alignItems:'center',borderRadius:9,paddingVertical:5,marginHorizontal:2},
-  activeTab:{backgroundColor:'#eee5d8'},
-  bottomGlyph:{fontSize:21,color:'#8b8175'},
-  bottomLabel:{fontSize:10,color:'#8b8175'},
-  activeLabel:{fontWeight:'800',color:'#272923'},
+  bottomNav:{flexDirection:'row',justifyContent:'space-around',backgroundColor:'#FFFCF7',borderTopWidth:1,borderColor:'#E4DDD1',paddingVertical:8},
+  bottomTab:{flex:1,alignItems:'center',borderRadius:11,paddingVertical:6,marginHorizontal:2},
+  activeTab:{backgroundColor:'#E7EEE6'},
+  bottomGlyph:{fontSize:21,color:'#708077'},
+  bottomLabel:{fontSize:10,color:'#708077'},
+  activeLabel:{fontWeight:'800',color:'#133B30'},
   content:{padding:24,paddingBottom:55},
   familyViewport:{flex:1,minHeight:0,paddingBottom:0},
-  top:{paddingTop:14,paddingBottom:25,borderBottomWidth:1,borderBottomColor:'#d8cdbc',marginBottom:25},
-  brand:{fontSize:13,fontWeight:'800',letterSpacing:3.1,color:'#24251f'},
-  subheading:{fontSize:10,letterSpacing:1.5,color:'#766b61',marginTop:7},
-  eyebrow:{fontSize:10,letterSpacing:1.5,color:'#927456',fontWeight:'700'},
-  title:{fontSize:39,fontWeight:'700',marginTop:7,color:'#24251f'},
-  greeting:{fontSize:17,fontWeight:'600',marginTop:18,color:'#24251f'},
-  lead:{fontSize:14,lineHeight:21,color:'#726a5f',marginTop:7,marginBottom:20},
-  modules:{flexDirection:'column',gap:9},
-  tile:{width:'100%',minHeight:90,backgroundColor:'#fffaf2',borderRadius:17,
-    paddingVertical:14,paddingHorizontal:19,borderWidth:1,borderColor:'#d9cdbd',justifyContent:'space-between'},
-  tileHead:{gap:7},
-  symbol:{fontSize:24,color:'#5b6756'},
-  tileTitle:{fontSize:17,fontWeight:'700',color:'#24251f'},
-  tileBody:{fontSize:11,lineHeight:17,color:'#786e61',marginTop:8},
-  tileState:{fontSize:10,color:'#85796a',marginTop:12},
+  top:{backgroundColor:'#0D2A23',paddingTop:20,paddingBottom:20,paddingHorizontal:20,borderRadius:18,marginTop:12,marginBottom:26,borderWidth:1,borderColor:'#345345'},
+  brand:{fontFamily:'serif',fontSize:16,fontWeight:'700',letterSpacing:2.2,color:'#DBC59A'},
+  subheading:{fontSize:10,letterSpacing:1.5,color:'#D3DED5',marginTop:8},
+  eyebrow:{fontSize:10,letterSpacing:1.7,color:'#84683F',fontWeight:'700'},
+  title:{fontSize:39,fontWeight:'700',marginTop:7,color:'#1B332B'},
+  greeting:{fontSize:19,fontWeight:'700',marginTop:18,color:'#1B332B'},
+  lead:{fontSize:14,lineHeight:21,color:'#657269',marginTop:8,marginBottom:23},
+  modules:{flexDirection:'column',gap:11},
+  tile:{width:'100%',minHeight:102,backgroundColor:'#FFFCF7',borderRadius:18,
+    paddingVertical:17,paddingHorizontal:19,borderWidth:1,borderColor:'#E4DDD1',justifyContent:'space-between'},
+  tileHead:{gap:10,flexDirection:'row',alignItems:'center'},
+  symbol:{fontSize:22,color:'#133B30',backgroundColor:'#E7EEE6',overflow:'hidden',borderRadius:11,
+    textAlign:'center',textAlignVertical:'center',width:38,height:38},
+  tileTitle:{fontSize:17,fontWeight:'700',color:'#1B332B'},
+  tileBody:{fontSize:12,lineHeight:18,color:'#657269',marginTop:10},
+  tileState:{fontSize:10,color:'#84683F',fontWeight:'700',letterSpacing:.6,marginTop:12},
   back:{paddingVertical:9,alignSelf:'flex-start',marginBottom:10},
-  backLabel:{fontSize:15,fontWeight:'700',color:'#7c5e44'},
-  pending:{borderWidth:1,borderColor:'#d4c5b4',borderRadius:17,backgroundColor:'#fffaf2',
+  backLabel:{fontSize:15,fontWeight:'700',color:'#133B30'},
+  pending:{borderWidth:1,borderColor:'#E4DDD1',borderRadius:17,backgroundColor:'#FFFCF7',
     marginTop:24,padding:22,minHeight:150,justifyContent:'center'},
-  pendingTitle:{fontSize:19,fontWeight:'700',color:'#24251f'},
-  pendingDescription:{fontSize:13,lineHeight:20,color:'#786e61',marginTop:9},
+  pendingTitle:{fontSize:19,fontWeight:'700',color:'#1B332B'},
+  pendingDescription:{fontSize:13,lineHeight:20,color:'#657269',marginTop:9},
 });
