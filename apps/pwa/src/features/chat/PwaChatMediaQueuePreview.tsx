@@ -21,7 +21,8 @@ export default function PwaChatMediaQueuePreview({selectedMedia,mediaUploading,m
                 <strong>{item.selection.name}</strong>
                 <small>{item.selection.kind==='photo'?'Fotografía':'Video'} · {(item.selection.sizeBytes/1048576).toFixed(1)} MB</small>
               </div>
-              <button type="button" aria-label={'Quitar '+item.selection.name} onClick={()=>onRemove(item.id)}>✕</button>
+              <button type="button" disabled={mediaUploading} aria-label={'Quitar '+item.selection.name}
+                onClick={()=>onRemove(item.id)}>✕</button>
             </div>)}
             <small>{mediaUploading?'Subiendo originales a R2 · '+mediaProgress+' %':
               mediaReady?'Originales listos para enviar':'Almacenamiento de archivos aún no configurado.'}</small>

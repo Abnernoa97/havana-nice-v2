@@ -249,12 +249,18 @@ test('Native photo-cache housekeeping touches only stale incomplete V2 transfers
  assert.doesNotMatch(cache,/Paths\.cache\.delete\(\)|hn-v2-chat-photo-.*\.delete\(/);
 });
 
-test('Web/Admin originals are fully downloaded once before opening, without forced gray letterboxes',()=>{
+test('Web/Admin previews use bounded thumbnails, originals only on tap',()=>{
  const web=read('apps/pwa/src/features/chat/ChatMediaView.tsx');
+ const thumb=read('apps/pwa/src/features/chat/chat-photo-preview.ts');
  const css=read('apps/pwa/src/styles/chat/chat.css');
- assert.match(web,/await image\.blob\(\)/);
+ assert.match(web,/fetchChatPhotoThumbnail\(signed,controller\.signal\)/);
+ assert.match(web,/const openFull=\(\)=>\{/);
+ assert.match(web,/const blob=await response\.blob\(\)/);
  assert.match(web,/URL\.createObjectURL\(blob\)/);
- assert.match(web,/<img src=\{ready\} alt="Fotografía ampliada"/);
+ assert.match(web,/<img src=\{fullPhoto\|\|preview\}/);
+ assert.match(thumb,/const MAX_ACTIVE=2/);
+ assert.match(thumb,/const MAX_EDGE=420/);
+ assert.match(thumb,/canvas\.toBlob/);
  assert.doesNotMatch(css,/\.hn-chat-photo\{[^}]*max-height:/);
  assert.doesNotMatch(css,/\.hn-chat-video\{[^}]*aspect-ratio:4\/5/);
 });

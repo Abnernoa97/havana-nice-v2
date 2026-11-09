@@ -38,7 +38,7 @@ async function transaction<T>(mode:IDBTransactionMode,action:(store:IDBObjectSto
  try{
    return await new Promise<T>((resolve,reject)=>{
      const tx=db.transaction(STORE,mode);
-     let result:T;
+     let result!:T;
      tx.oncomplete=()=>resolve(result);
      tx.onerror=()=>reject(tx.error||Error('Almacenamiento temporal no disponible.'));
      tx.onabort=()=>reject(tx.error||Error('Guardado interrumpido.'));

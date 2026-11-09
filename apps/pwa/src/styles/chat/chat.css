@@ -122,7 +122,8 @@ h1 span { font-weight:400; }
 .chat-composer .chat-action-circle{flex:0 0 51px;width:51px;height:51px;padding:0;
   display:grid;place-items:center;border-radius:50%;background:#222420;color:#fff;border:0}
 .chat-composer .chat-action-circle:disabled{opacity:.4}
-.chat-media-hidden-input{display:none!important}
+.chat-media-hidden-input{position:fixed!important;left:-100vw!important;top:0!important;width:1px!important;
+ height:1px!important;opacity:0!important;pointer-events:none!important}
 .chat-panel-dismiss{position:fixed;inset:0;background:transparent;z-index:10}
 .chat-attachments-popover,.chat-emojis-popover{position:absolute;bottom:76px;left:15px;
   z-index:11;background:#fff;border:1px solid #e9e3da;border-radius:20px;
