@@ -219,7 +219,7 @@ test('Native photo uses a fully verified local cache and modal without a browser
  const native=read('apps/android/features/chat/NativeChatMediaView.tsx');
  const cache=read('apps/android/storage/chatPhotoCache.ts');
  const packageManifest=JSON.parse(read('apps/android/package.json'));
- assert.equal(packageManifest.dependencies['expo-video'],'58.0.12');
+ assert.equal(packageManifest.dependencies['expo-video'],'58.0.13');
  assert.match(native,/useVideoPlayer/);
  assert.match(native,/<VideoView player=\{player\} nativeControls/);
  assert.match(native,/surfaceType="surfaceView"/);
