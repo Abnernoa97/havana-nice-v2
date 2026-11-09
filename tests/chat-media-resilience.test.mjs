@@ -77,16 +77,26 @@ test('Retry keeps exactly one media message ID across app restart',()=>{
  }
 });
 
-test('Photo timeline uses bounded previews, with original fetched only on tap',()=>{
+test('Photo chat uses sharp lightweight previews and unmodified fullscreen originals',()=>{
  const web=read('apps/pwa/src/features/chat/ChatMediaView.tsx');
+ const hook=read('apps/pwa/src/features/chat/useChatMediaPreview.ts');
  const thumb=read('apps/pwa/src/features/chat/chat-photo-preview.ts');
+ const viewer=read('apps/pwa/src/features/chat/ChatPhotoViewer.tsx');
+ const grant=read('apps/pwa/src/features/chat/chat-media-grant.ts');
  const css=read('apps/pwa/src/styles/chat/chat.css');
- assert.match(web,/const openFull=\(\)=>/);
- assert.match(web,/fetchChatPhotoThumbnail\(signed,controller\.signal\)/);
- assert.match(thumb,/const MAX_ACTIVE=2/);
- assert.match(thumb,/const MAX_EDGE=420/);
+ assert.match(web,/useChatMediaPreview\(media,token\)/);
+ assert.match(web,/<ChatPhotoViewer media=\{media\}/);
+ assert.match(hook,/fetchChatPhotoThumbnail\(signed,controller\.signal\)/);
+ assert.match(hook,/IntersectionObserver/);
+ assert.match(thumb,/CHAT_PREVIEW_LONG_EDGE=1440/);
+ assert.match(thumb,/CHAT_PREVIEW_JPEG_QUALITY=\.92/);
+ assert.match(thumb,/CHAT_PREVIEW_MAX_ACTIVE=2/);
  assert.match(thumb,/canvas\.toBlob/);
- assert.match(web,/fullController\.current\?\.abort\(\)/);
+ assert.match(viewer,/requestChatMediaUrl\(media\.assetId,token,controller\.signal\)/);
+ assert.match(viewer,/URL\.revokeObjectURL\(objectUrl\)/);
+ assert.match(viewer,/original&&<img src=\{original\}/);
+ assert.doesNotMatch(viewer,/src=\{original\|\|preview\}/);
+ assert.match(grant,/Authorization:'Bearer '\+token/);
  assert.match(css,/\.chat-media-queue-items\{max-height:190px/);
  assert.doesNotMatch(css,/\.chat-media-hidden-input\{display:none/);
 });

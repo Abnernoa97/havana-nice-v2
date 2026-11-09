@@ -1,0 +1,60 @@
+// One purpose: open the unmodified private original after a deliberate tap.
+// The inline thumbnail is never stretched to fullscreen while it downloads.
+import {useEffect,useState} from 'react';
+import {createPortal} from 'react-dom';
+import type {ChatMedia} from './chat-media-types';
+import {requestChatMediaUrl} from './chat-media-grant';
+
+export default function ChatPhotoViewer({
+ media,token,open,onClose,
+}:{media:ChatMedia;token:string;open:boolean;onClose:()=>void}){
+ const [original,setOriginal]=useState('');
+ const [error,setError]=useState('');
+ const [loading,setLoading]=useState(false);
+
+ useEffect(()=>{
+   if(!open)return;
+   let active=true;
+   let objectUrl='';
+   const controller=new AbortController();
+   setOriginal('');setError('');setLoading(true);
+   void (async()=>{
+     const signed=await requestChatMediaUrl(media.assetId,token,controller.signal);
+     const response=await fetch(signed,{cache:'no-store',signal:controller.signal});
+     if(!response.ok)throw Error('Original no disponible.');
+     const blob=await response.blob();
+     if(!active||controller.signal.aborted)return;
+     objectUrl=URL.createObjectURL(blob);
+     setOriginal(objectUrl);
+   })().catch(()=>{
+     if(active&&!controller.signal.aborted)
+       setError('No se pudo abrir el original. Cierra e inténtalo de nuevo.');
+   }).finally(()=>{if(active&&!controller.signal.aborted)setLoading(false);});
+   return()=>{
+     active=false;controller.abort();
+     if(objectUrl)URL.revokeObjectURL(objectUrl);
+   };
+ },[open,media.assetId,token]);
+
+ useEffect(()=>{
+   if(!open)return;
+   const key=(event:KeyboardEvent)=>{if(event.key==='Escape')onClose();};
+   document.addEventListener('keydown',key);
+   return()=>document.removeEventListener('keydown',key);
+ },[open,onClose]);
+
+ if(!open)return null;
+ return createPortal(
+   <div className="hn-photo-overlay" role="dialog" aria-modal="true"
+     aria-label="Fotografía ampliada" onClick={onClose}>
+     <button type="button" className="hn-photo-close" aria-label="Cerrar fotografía"
+       onClick={onClose}>×</button>
+     {original&&<img src={original} alt="Fotografía original" className="hn-photo-full"
+       onClick={event=>event.stopPropagation()}/>}
+     {!original&&(loading||error)&&<div role={error?'alert':'status'}
+       className="hn-photo-loading" onClick={event=>event.stopPropagation()}>
+       {error||'Cargando fotografía original…'}
+     </div>}
+   </div>,document.body
+ );
+}

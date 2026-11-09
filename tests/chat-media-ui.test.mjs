@@ -249,17 +249,19 @@ test('Native photo-cache housekeeping touches only stale incomplete V2 transfers
  assert.doesNotMatch(cache,/Paths\.cache\.delete\(\)|hn-v2-chat-photo-.*\.delete\(/);
 });
 
-test('Web/Admin previews use bounded thumbnails, originals only on tap',()=>{
+test('Web/Admin previews use a high-density thumbnail and original on tap',()=>{
  const web=read('apps/pwa/src/features/chat/ChatMediaView.tsx');
  const thumb=read('apps/pwa/src/features/chat/chat-photo-preview.ts');
+ const viewer=read('apps/pwa/src/features/chat/ChatPhotoViewer.tsx');
  const css=read('apps/pwa/src/styles/chat/chat.css');
- assert.match(web,/fetchChatPhotoThumbnail\(signed,controller\.signal\)/);
- assert.match(web,/const openFull=\(\)=>\{/);
- assert.match(web,/const blob=await response\.blob\(\)/);
- assert.match(web,/URL\.createObjectURL\(blob\)/);
- assert.match(web,/<img src=\{fullPhoto\|\|preview\}/);
- assert.match(thumb,/const MAX_ACTIVE=2/);
- assert.match(thumb,/const MAX_EDGE=420/);
+ assert.match(web,/useChatMediaPreview\(media,token\)/);
+ assert.match(web,/className="hn-chat-photo"/);
+ assert.match(web,/<ChatPhotoViewer media=\{media\}/);
+ assert.match(viewer,/const blob=await response\.blob\(\)/);
+ assert.match(viewer,/URL\.createObjectURL\(blob\)/);
+ assert.match(viewer,/<img src=\{original\}/);
+ assert.match(thumb,/CHAT_PREVIEW_LONG_EDGE=1440/);
+ assert.match(thumb,/CHAT_PREVIEW_JPEG_QUALITY=\.92/);
  assert.match(thumb,/canvas\.toBlob/);
  assert.doesNotMatch(css,/\.hn-chat-photo\{[^}]*max-height:/);
  assert.doesNotMatch(css,/\.hn-chat-video\{[^}]*aspect-ratio:4\/5/);

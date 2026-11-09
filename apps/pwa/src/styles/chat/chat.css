@@ -163,6 +163,8 @@ h1 span { font-weight:400; }
 .hn-photo-overlay{position:fixed;inset:0;z-index:3000;background:#101010;display:flex;align-items:center;justify-content:center;padding:0}
 .hn-photo-full{display:block;width:100%;height:100%;max-width:100vw;max-height:100dvh;object-fit:contain;object-position:center}
 .hn-photo-close{position:absolute;top:max(env(safe-area-inset-top),14px);right:12px;z-index:2;border:0;border-radius:50%;width:44px;height:44px;font-size:32px;color:white;background:#0009;line-height:1}
+.hn-photo-loading{color:#fff;font-size:14px;text-align:center;max-width:90vw;padding:18px 22px;
+ background:#242424;border-radius:12px}
 .bubble:has(.hn-chat-media){width:min(86%,390px)}
 .a-chat-bubble:has(.hn-chat-media){min-width:0;max-width:100%}
 @media(max-width:380px){.bubble:has(.hn-chat-media){width:min(94%,390px)}}
