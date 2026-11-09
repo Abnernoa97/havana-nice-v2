@@ -52,3 +52,20 @@ test('Native OS back and iPhone edge swipe return within the authorized app',()=
   assert.match(native,/setActiveScreen\(previousScreen\.current\)/);
   for(const src of [pwa,native]) assert.doesNotMatch(src,/removeNativeLocalChat\(|deleteDatabase\(|clearApplicationData\(/);
 });
+
+test('Opening Chat lands at the true bottom even after media sizes change',()=>{
+  const pwa=read('apps/pwa/src/app/App.tsx');
+  const native=read('apps/android/app/NativeApp.tsx');
+  const timeline=read('apps/pwa/src/features/chat/ChatTimeline.tsx');
+  const css=read('apps/pwa/src/styles/chat/chat.css');
+  assert.match(timeline,/className="chat-message-content"/);
+  assert.match(css,/\.chat-message-content\{display:flex;/);
+  assert.match(pwa,/observer\.observe\(content\)/);
+  assert.match(pwa,/list\.scrollTop=Math\.max\(0,list\.scrollHeight-list\.clientHeight\)/);
+  assert.match(pwa,/else if\(userScrollGesture\.current\)stickToLatest\.current=false/);
+  assert.doesNotMatch(pwa,/observer\.observe\(list\)/);
+  assert.match(native,/initialBottomAttempts = useRef\(0\)/);
+  assert.match(native,/if\(initialBottomAttempts\.current<10\)scheduleInitialBottom\(\)/);
+  assert.match(native,/else if\(autoScroll\.current\)scroll\.current\?\.scrollToEnd\(\{animated:false\}\)/);
+  assert.match(native,/onScrollBeginDrag=\{\(\)=>\{/);
+});
