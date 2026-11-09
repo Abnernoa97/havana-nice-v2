@@ -65,20 +65,6 @@ export interface ChatReaction { messageSeq: number; actorId: string; emoji: Chat
 export interface ChatReadReceipt { actorId: string;displayName:string;seq:number }
 export interface ChatSnapshot { messages: ChatMessage[]; reactions: ChatReaction[]; receipts:ChatReadReceipt[]; hasMore: boolean }
 
-export function reconcileUpdatedMessage(before: ChatMessage[], updated:ChatMessage):ChatMessage[] {
-  return before.map(item => item.seq === updated.seq && updated.seq > 0 ? {...item,...updated,pending:false} : item);
-}
-export function reconcileDeletedMessage(before:ChatMessage[],seq:number):ChatMessage[]{
- return before.filter(m=>m.seq!==seq&&!m.deletedAt).map(m=>m.replyToSeq===seq?{...m,replyToSeq:null}:m);
-}
-export function reconcileChatSnapshot(before:ChatMessage[],server:ChatMessage[]):ChatMessage[]{
- const latest=server.filter(m=>!m.deletedAt),ids=new Set(latest.map(m=>m.seq));
- const min=latest.length?Math.min(...latest.map(m=>m.seq)):0;
- const max=latest.length?Math.max(...latest.map(m=>m.seq)):0;
- // Keep older pages and WebSocket messages that arrived after the GET began.
- return reconcileChatMessages(before.filter(m=>!m.deletedAt&&(m.pending||m.seq<=0||
- (min>0&&(m.seq<min||m.seq>max))||ids.has(m.seq))),latest);
-}
 export function lastReadByOther(reads:ChatReadReceipt[],ownActor:string):number {
   return Math.max(0,...reads.filter(r=>r.actorId!==ownActor).map(r=>r.seq));
 }
@@ -97,11 +83,6 @@ export async function searchChatMessages(session:ChatSession,query:string,base=H
   const data=await result.json() as ChatSnapshot & {error?:string};
   if(!result.ok)throw new Error(data.error||'No se pudo buscar');
   return data.messages||[];
-}
-
-export function reconcileReactions(before: ChatReaction[], event: {messageSeq: number;actorId: string;emoji: ChatEmoji;active: boolean}): ChatReaction[] {
-  const kept = before.filter(x => !(x.messageSeq === event.messageSeq && x.actorId === event.actorId && x.emoji === event.emoji));
-  return event.active ? [...kept, {messageSeq:event.messageSeq,actorId:event.actorId,emoji:event.emoji}] : kept;
 }
 
 export async function getChatSnapshot(session: ChatSession, apiBaseUrl = HAVANA_V2_DEV_API_BASE_URL): Promise<ChatSnapshot> {
@@ -151,28 +132,6 @@ export function messageDeliveryLabel(message: ChatMessage): string {
 
 export function newClientMessageId(): string {
   return `m_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 14)}`;
-}
-
-export function reconcileChatMessages(
-  before: ChatMessage[],
-  incoming: ChatMessage[],
-): ChatMessage[] {
-  const map = new Map<string, ChatMessage>();
-  for (const message of [...before, ...incoming]) {
-    const key = `${message.senderId}:${message.clientMessageId}`;
-    const previous = map.get(key);
-    // Later server snapshots must override stale edits/deletions in local memory.
-    // Never allow a pending offline copy to overwrite a confirmed server row.
-    if (!previous || (!message.pending && message.seq > 0) || (previous.pending && !message.pending)) {
-      map.set(key, message);
-    }
-  }
-  return [...map.values()].sort((a, b) => {
-    if (a.seq && b.seq) return a.seq - b.seq;
-    if (a.seq) return -1;
-    if (b.seq) return 1;
-    return a.sentAt.localeCompare(b.sentAt);
-  });
 }
 
 /** One authenticated availability check shared by native Android and the PWA.
@@ -261,6 +220,9 @@ export {chatSessionExpired,chatReconnectDelay,CHAT_RECONNECT_MAX_DELAY_MS,CHAT_W
 
 // Both Chat WebSocket event handlers use these exact reconciliation projections.
 export {reconcileChatReadReceipt,removeChatReactionsForMessage} from './chat-events';
+export {reconcileUpdatedMessage,reconcileDeletedMessage,reconcileChatSnapshot,reconcileReactions,reconcileChatMessages} from './chat-events';
+export {applyChatIncomingEvent} from './chat-incoming';
+export type {ChatIncomingEffects} from './chat-incoming';
 export {withoutRemovedChatMessages} from './chat-events';
 export {ChatHistoryRequestGate,oldestConfirmedChatSeq,mergeOlderChatReactions} from './chat-history';
 
