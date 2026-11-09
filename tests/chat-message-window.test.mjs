@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
 import {
  CHAT_MESSAGE_WINDOW_SIZE,CHAT_MESSAGE_WINDOW_STEP,
  selectChatMessageWindow,previousChatWindowEnd,nextChatWindowEnd,chatWindowKey,
@@ -65,7 +66,6 @@ test('Deleted rows stay hidden, empty histories are safe and orphan anchors reco
 });
 
 test('Outgoing messages request the newest window even from an older page',()=>{
- const {readFileSync}=await import('node:fs');
  const app=readFileSync(new URL('../apps/pwa/src/app/App.tsx',import.meta.url),'utf8');
  const timeline=readFileSync(new URL('../apps/pwa/src/features/chat/ChatTimeline.tsx',import.meta.url),'utf8');
  assert.match(app,/setLatestMessageRequest\(n=>n\+1\)/);
