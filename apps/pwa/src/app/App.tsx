@@ -2,7 +2,7 @@ import { lazy, Suspense, useCallback, useEffect, useLayoutEffect, useRef, useSta
 import {
   chatReactionPayload,chatTypingPayload,chatReadReceiptPayload,
   fetchBackendHealth, getChatMediaAvailability, getChatSnapshot, getOlderChatMessages, getChatMenuState, getChatMessagePermissions, isWithinChatEditWindow, selectNextQueuedChatMessage, setOutgoingChatStatus, projectOutgoingChatStatus, CHAT_ACK_TIMEOUT_MS, newClientMessageId, uploadChatMediaBatch,
-  openChatSocket, reconcileChatMessages, startNamedChatSession, restoreNamedChatSession, chatSessionExpired, chatReconnectDelay, reconcileChatReadReceipt, removeChatReactionsForMessage, withoutRemovedChatMessages, ChatHistoryRequestGate, oldestConfirmedChatSeq, mergeOlderChatReactions, CHAT_WS_HANDSHAKE_TIMEOUT_MS, captureChatOfflineSnapshot, restoreChatOfflineOutbox,
+  openChatSocket, reconcileChatMessages, startNamedChatSession, restoreNamedChatSession, recoverChatAccess, chatSessionExpired, chatReconnectDelay, reconcileChatReadReceipt, removeChatReactionsForMessage, withoutRemovedChatMessages, ChatHistoryRequestGate, oldestConfirmedChatSeq, mergeOlderChatReactions, CHAT_WS_HANDSHAKE_TIMEOUT_MS, captureChatOfflineSnapshot, restoreChatOfflineOutbox,
   type BackendHealth, type ChatMessage, type ChatServerEvent, type ChatSession, type PwaReaderTarget, parsePwaReaderHash,
   HAVANA_V2_DEV_API_BASE_URL,
   reconcileReactions, reconcileUpdatedMessage, reconcileDeletedMessage, reconcileChatSnapshot, type ChatReaction, type ChatEmoji, type ChatReadReceipt, type MemberScreen,
@@ -494,16 +494,15 @@ export default function App() {
       if(disposed.current)return;
       if(activeSession.current){restoredStorage.current=true;persist();return;}
       if (!saved || !saved.session || chatSessionExpired(saved.session)) return;
-      let approved:ChatSession | null = saved.session;
-      try {approved = await restoreNamedChatSession(saved.session);}
-      catch {approved = saved.session;} // Offline: keep local chat pending reconnection
+      const access=await recoverChatAccess(saved.session,restoreNamedChatSession);
       if(disposed.current)return;
-      if(!approved){
+      if(access.state==='revoked'){
         await saveLocalChat(null);
         setName('');
         setError('Acceso no autorizado. Consulta al administrador.');
         return;
       }
+      const approved=access.session;
       activeSession.current = approved;
       outbox.current = restoreChatOfflineOutbox(saved.outbox || []);
       setMessages([...outbox.current.values()]);

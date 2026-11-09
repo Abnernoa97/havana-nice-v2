@@ -172,6 +172,9 @@ jobs:
       - name: Keep Chat media and composer unmounted outside Chat without duplicating the engine
         run: node --test tests/chat-idle-isolation.test.mjs
 
+      - name: Verify one offline-first session recovery and native socket transport
+        run: node --experimental-strip-types --test tests/chat-session-recovery.test.mjs
+
       - name: Verify one Chat reconnect and session expiry policy across PWA and Android
         run: node --experimental-strip-types --test tests/chat-connection-policy.test.mjs tests/chat-presence-policy.test.mjs
 

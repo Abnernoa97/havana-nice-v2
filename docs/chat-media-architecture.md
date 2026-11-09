@@ -111,3 +111,14 @@ GitHub Actions completo se reserva para ejecución manual o la programación
 existente; no se dispara en cada modificación pequeña. Compilar la PWA en
 Cloudflare no sustituye probar con una foto real en iPhone, Android PWA y la
 siguiente APK Android nativa.
+
+## Conexión y recuperación de sesión (auditoría estructural)
+
+`recoverChatAccess` es la única decisión compartida al restaurar acceso:
+una validación exitosa usa la sesión autorizada, una revocación explícita
+rechaza el acceso y una interrupción de red conserva la sesión local para
+reintentar. No crea un segundo inicio de sesión ni toca IndexedDB o SQLite.
+El transporte nativo `openNativeChatSocket` solo abre el handshake existente
+(`Authorization: Bearer`, subprotocolo `havana-v2`); el controlador Android
+conserva la titularidad del único socket, reintentos y manejo de eventos.
+La PWA sigue usando `openChatSocket`, sin alterar su autenticación.

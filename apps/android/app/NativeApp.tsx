@@ -5,8 +5,8 @@ import {
 } from 'react-native';
 import {
   chatReactionPayload,chatTypingPayload,chatReadReceiptPayload,
-  HAVANA_V2_DEV_API_BASE_URL, fetchBackendHealth, getChatMediaAvailability, getChatSnapshot, getOlderChatMessages, getChatMenuState, getChatMessagePermissions, isWithinChatEditWindow, selectNextQueuedChatMessage, setOutgoingChatStatus, projectOutgoingChatStatus, CHAT_ACK_TIMEOUT_MS, newClientMessageId, uploadChatMediaBatch,
-  reconcileChatMessages, reconcileReactions, reconcileUpdatedMessage, reconcileDeletedMessage, reconcileChatSnapshot, startNamedChatSession, restoreNamedChatSession, chatSessionExpired, chatReconnectDelay, reconcileChatReadReceipt, removeChatReactionsForMessage, withoutRemovedChatMessages, ChatHistoryRequestGate, oldestConfirmedChatSeq, mergeOlderChatReactions, CHAT_WS_HANDSHAKE_TIMEOUT_MS, captureChatOfflineSnapshot, restoreChatOfflineOutbox,
+  fetchBackendHealth, getChatMediaAvailability, getChatSnapshot, getOlderChatMessages, getChatMenuState, getChatMessagePermissions, isWithinChatEditWindow, selectNextQueuedChatMessage, setOutgoingChatStatus, projectOutgoingChatStatus, CHAT_ACK_TIMEOUT_MS, newClientMessageId, uploadChatMediaBatch,
+  reconcileChatMessages, reconcileReactions, reconcileUpdatedMessage, reconcileDeletedMessage, reconcileChatSnapshot, startNamedChatSession, restoreNamedChatSession, recoverChatAccess, chatSessionExpired, chatReconnectDelay, reconcileChatReadReceipt, removeChatReactionsForMessage, withoutRemovedChatMessages, ChatHistoryRequestGate, oldestConfirmedChatSeq, mergeOlderChatReactions, CHAT_WS_HANDSHAKE_TIMEOUT_MS, captureChatOfflineSnapshot, restoreChatOfflineOutbox,
   type ChatMessage, type ChatServerEvent, type ChatSession, type ChatReaction, type ChatEmoji, type ChatReadReceipt,
   type MemberScreen,
 } from '@havana/shared';
@@ -18,6 +18,7 @@ import NativeChatReactionShower,{type ReactionShowerBurst} from '../features/cha
 import NativeComposerIcon from '../features/chat/ChatComposerIcon';
 import NativeMemberHome from './NativeMemberHome';
 import {uploadNativeChatFile} from '../services/native-chat-r2-upload';
+import {openNativeChatSocket} from '../services/native-chat-socket';
 import {styles} from '../styles/chat-styles';
 import {useNativeMediaSelection} from '../features/chat/useNativeMediaSelection';
 import NativeChatMediaQueuePreview from '../features/chat/NativeChatMediaQueuePreview';
@@ -432,13 +433,6 @@ export default function App() {
     setConnection('conectando…');
     setError('');
 
-    type NativeWebSocketConstructor = new (
-      url: string,
-      protocols: string[],
-      options: { headers: Record<string, string> },
-    ) => WebSocket;
-    const NativeWebSocket = WebSocket as unknown as NativeWebSocketConstructor;
-
     function retry() {
       if (disposed.current || appLifecycle.current !== 'active' || socket.current !== ws ||
         !activeSession.current || retryTimer.current) return;
@@ -457,11 +451,7 @@ export default function App() {
 
     let ws: WebSocket;
     try {
-      ws = new NativeWebSocket(
-        `${HAVANA_V2_DEV_API_BASE_URL.replace(/^http/, 'ws')}/ws`,
-        ['havana-v2'],
-        { headers: { Authorization: `Bearer ${next.token}` } },
-      );
+      ws = openNativeChatSocket(next);
     } catch {
       setConnection('sin conexión');
       // Constructor errors are exceptional; avoid an indefinite retry loop.
@@ -572,16 +562,15 @@ export default function App() {
       if (disposed.current) return;
       if (activeSession.current) {restoredStorage.current=true;persistLocal();return;}
       if (!saved?.session || chatSessionExpired(saved.session)) return;
-      let approved:ChatSession | null = saved.session;
-      try {approved = await restoreNamedChatSession(saved.session);}
-      catch {approved = saved.session;} // Offline: retain local identity and retry once online
+      const access=await recoverChatAccess(saved.session,restoreNamedChatSession);
       if (disposed.current) return;
-      if (!approved) {
+      if (access.state==='revoked') {
         await saveNativeLocalChat(null);
         setName('');
         setError('Acceso no autorizado. Consulta al administrador.');
         return;
       }
+      const approved=access.session;
       activeSession.current = approved;
       beginFreshChatViewport();
       outbox.current = restoreChatOfflineOutbox(saved.outbox);

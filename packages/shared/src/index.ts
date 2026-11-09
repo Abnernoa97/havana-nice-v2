@@ -251,6 +251,10 @@ export {chatReactionPayload,chatTypingPayload,chatReadReceiptPayload,CHAT_TYPING
 export {selectNextQueuedChatMessage,setOutgoingChatStatus,projectOutgoingChatStatus,CHAT_ACK_TIMEOUT_MS} from './chat-outbox';
 export type {ChatOutboxState} from './chat-outbox';
 
+// One shared decision for online validation, offline restoration and revocation.
+export {recoverChatAccess} from './chat-session-recovery';
+export type {ChatAccessRecovery} from './chat-session-recovery';
+
 // Preserve one offline-capable Chat session expiry and reconnect backoff policy.
 export {chatSessionExpired,chatReconnectDelay,CHAT_RECONNECT_MAX_DELAY_MS,CHAT_WS_HANDSHAKE_TIMEOUT_MS} from './chat-connection';
 
