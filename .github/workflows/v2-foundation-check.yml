@@ -81,6 +81,36 @@ jobs:
           fi
           node scripts/report-npm-audit.mjs /tmp/havana-v2-npm-audit.json
 
+      - name: Temporary Expo SDK 58 and node-forge security candidate review (no commit)
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp package-lock.json /tmp/hn-expo-old-lock.json
+          echo 'HN_CANDIDATE baseline: Expo 58.0.14 / forge 1.4.0'
+          npm update node-forge --package-lock-only --ignore-scripts --no-audit --no-fund
+          node -e 'const fs=require("node:fs");const before=JSON.parse(fs.readFileSync("/tmp/hn-expo-old-lock.json"));const after=JSON.parse(fs.readFileSync("package-lock.json"));const changed=Object.keys(after.packages).filter(k=>before.packages[k]?.version!==after.packages[k]?.version).map(k=>({pkg:k,old:before.packages[k]?.version,new:after.packages[k]?.version}));console.log("HN_FORGE_CANDIDATE="+JSON.stringify({changed,forge:after.packages["node_modules/node-forge"]}));'
+          set +e
+          npm audit --json > /tmp/hn-forge-audit.json
+          set -e
+          node -e 'const a=require("/tmp/hn-forge-audit.json");console.log("HN_FORGE_AUDIT="+JSON.stringify(a.metadata?.vulnerabilities||{error:a.error}));'
+          git restore -- package-lock.json
+          echo 'HN_CANDIDATE SDK 58 current maintenance patch 58.0.23'
+          set +e
+          npm install --package-lock-only --ignore-scripts --no-audit --no-fund --save-exact -w @havana/android expo@58.0.23
+          candidate_exit=$?
+          set -e
+          if [[ "$candidate_exit" == "0" ]]; then
+            node -e 'const fs=require("node:fs");const before=JSON.parse(fs.readFileSync("/tmp/hn-expo-old-lock.json"));const after=JSON.parse(fs.readFileSync("package-lock.json"));const changed=Object.keys(after.packages).filter(k=>before.packages[k]?.version!==after.packages[k]?.version).map(k=>({pkg:k,old:before.packages[k]?.version,new:after.packages[k]?.version}));console.log("HN_EXPO_CANDIDATE="+JSON.stringify({count:changed.length,changed,expo:after.packages["node_modules/expo"]?.version,forge:after.packages["node_modules/node-forge"]?.version}));'
+            set +e
+            npm audit --json > /tmp/hn-expo-audit.json
+            set -e
+            node -e 'const a=require("/tmp/hn-expo-audit.json");console.log("HN_EXPO_AUDIT="+JSON.stringify(a.metadata?.vulnerabilities||{error:a.error}));'
+          else
+            echo "HN_EXPO_CANDIDATE_NOT_RESOLVED: $candidate_exit"
+          fi
+          git restore -- package-lock.json apps/android/package.json
+          git diff --exit-code -- package-lock.json apps/android/package.json
+
       - name: Verify pinned Wrangler security patch and preserved Android SDK
         run: node --test tests/security-lock-policy.test.mjs
 
