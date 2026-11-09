@@ -1,7 +1,7 @@
 {
   "approved": true,
   "releaseMode": "explicit-batch",
-  "version": "0.0.17",
-  "versionCode": 17,
-  "notes": "BOOK y Recuerdos 3D PWA dentro del cascarón Android, sin ventanas externas, con sesión única inyectada al WebView mediante injectedJavaScriptObject; mismo PageFlip. CSP restrictiva y validación en Chrome real + export Android. Conservar Chat, Familia, Calendario, D1, R2 y firma 0.0.16; publicar APK y respaldo con gate firmado. QA físico pendiente."
+  "version": "0.0.18",
+  "versionCode": 18,
+  "notes": "BOOK 0.0.18 correctiva: Android WebView muestra un indicador nativo, espera prueba real del render de StPageFlip y ofrece recuperación/reintento ante pantalla vacía; PWA reintenta una lectura tardía del mismo objeto de sesión sin pedir otro login. Preservar firma de 0.0.17, instalación por actualización sin eliminar datos, sesiones, Chat, Calendario, Familia, D1, R2 ni Worker. Publicación de lote solicitada explícitamente por usuario 09/11/2026. QA física BOOK/Recuerdos pendiente."
 }
