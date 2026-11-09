@@ -68,6 +68,19 @@ jobs:
       - name: Install exact dependencies
         run: npm ci
 
+      - name: Classify npm advisories without changing dependencies
+        shell: bash
+        run: |
+          set +e
+          npm audit --json > /tmp/havana-v2-npm-audit.json
+          audit_exit="$?"
+          set -e
+          if [ "$audit_exit" -gt 1 ]; then
+            echo "::error::npm audit could not query its advisories"
+            exit "$audit_exit"
+          fi
+          node scripts/report-npm-audit.mjs /tmp/havana-v2-npm-audit.json
+
       - name: Typecheck all workspaces
         run: npm run typecheck
 
