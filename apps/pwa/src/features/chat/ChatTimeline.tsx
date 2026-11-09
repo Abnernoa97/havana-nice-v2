@@ -11,6 +11,8 @@ type ChatTimelineProps={
  messages:ChatMessage[];
  searchResults:ChatMessage[]|null;
  actorId:string;
+ onlineActorIds:ReadonlySet<string>;
+ connected:boolean;
  token:string;
  reactions:ChatReaction[];
  receipts:ChatReadReceipt[];
@@ -24,7 +26,7 @@ type ChatTimelineProps={
 };
 
 export default function ChatTimeline({
- messages,searchResults,actorId,token,reactions,receipts,hasMore,loadingOlder,
+ messages,searchResults,actorId,onlineActorIds,connected,token,reactions,receipts,hasMore,loadingOlder,
  onLoadOlder,onReply,onMessageLongPress,onRetry,bottomRef,
 }:ChatTimelineProps){
  const display=useMemo(()=>buildChatDisplayIndex(messages,reactions,receipts,actorId),
@@ -38,7 +40,7 @@ export default function ChatTimeline({
             {(searchResults??messages).filter(message=>!message.deletedAt).map(message => {
               const mine = message.senderId === actorId;
               const badges=display.reactionBadges.get(message.seq)??[];
-              return <SwipeMessage className={mine?'bubble mine':'bubble theirs'}
+              return <SwipeMessage className={`bubble ${mine?'mine':'theirs'}${connected&&onlineActorIds.has(message.senderId)?' online':''}`}
                 key={message.senderId+':'+message.clientMessageId}
                 onSwipeRight={()=>onReply(message)}
                 onLongPress={anchor=>onMessageLongPress(message,anchor)}>
