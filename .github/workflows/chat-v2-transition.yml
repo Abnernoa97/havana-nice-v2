@@ -1,0 +1,47 @@
+name: Temporary Chat V2 verification and one-branch cleanup
+
+on:
+  push:
+    branches:
+      - chat-v2-fullscreen-native-back-reactions
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  verify-chat:
+    if: github.ref_name == 'chat-v2-fullscreen-native-back-reactions'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - run: npm ci
+      - run: npm run typecheck
+      - run: node --test tests/chat-fullscreen-back.test.mjs tests/member-home-navigation.test.mjs tests/chat-menu-policy.test.mjs tests/native-chat-virtualization.test.mjs tests/android-pwa-parity.test.mjs
+      - run: npm run build:pwa
+      - run: npm run export -w @havana/android
+
+  remove-staging-branch:
+    if: github.ref_name == 'main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Restore canonical single-main topology after verified fast-forward
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          BRANCH='chat-v2-fullscreen-native-back-reactions'
+          STAGING_SHA="$(gh api "repos/$GH_REPO/git/ref/heads/$BRANCH" --jq '.object.sha')"
+          if [ "$STAGING_SHA" != "$GITHUB_SHA" ]; then
+            echo 'Staging ref is not the exact merged main; refusing deletion'
+            exit 1
+          fi
+          gh api -X DELETE "repos/$GH_REPO/git/refs/heads/$BRANCH"
+          echo 'One main branch restored'
