@@ -33,6 +33,7 @@ export default function ChatTimeline({
   [messages,reactions,receipts,actorId]);
  return (
           <section className="chat-messages" aria-label="Mensajes">
+            <div className="chat-message-content">
             {searchResults===null&&hasMore&&<button type="button" className="load-older" disabled={loadingOlder}
               onClick={()=>void onLoadOlder()}>{loadingOlder?'Cargando…':'Cargar mensajes anteriores'}</button>}
             {searchResults!==null&&<p className="search-count">{searchResults.length} resultado(s) en historial</p>}
@@ -66,6 +67,7 @@ export default function ChatTimeline({
               </SwipeMessage>;
             })}
             <div ref={bottomRef} />
+            </div>
           </section>
  );
 }
