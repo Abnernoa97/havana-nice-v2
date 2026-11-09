@@ -14,7 +14,6 @@ import PwaChatMessageMenu from '../features/chat/PwaChatMessageMenu';
 import {usePwaMediaSelection} from '../features/chat/usePwaMediaSelection';
 import PwaChatMediaQueuePreview from '../features/chat/PwaChatMediaQueuePreview';
 import ComposerIcon from '../features/chat/ChatComposerIcon';
-import {uploadChatFile} from '../services/chat-media-upload';
 // The authorized HOME is fetched only when needed; Chat's live socket
 // and the existing single-session access remain in this canonical shell.
 const VisualApp=lazy(()=>import('./VisualApp'));
@@ -125,6 +124,8 @@ export default function App() {
     // Same successful Familia transport, sequential files with 3 parallel parts per video.
     // Never clear a failed file: tapping Enviar resumes its own R2 upload ID.
     try{
+      // R2 upload code is downloaded only if the musician actually sends files.
+      const {uploadChatFile}=await import('../services/chat-media-upload');
       await uploadChatMediaBatch([...mediaQueue.current],{
         sizeOf:item=>item.file.size,
         upload:(item,onSent)=>uploadChatFile(session,item.file,item.selection.kind,onSent),
