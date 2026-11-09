@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Alert, AppState, BackHandler, Keyboard, KeyboardAvoidingView, PanResponder, Platform, Pressable, SafeAreaView, FlatList,
   StatusBar, Text, TextInput, View, useWindowDimensions,
@@ -33,11 +33,11 @@ export default function App() {
   const previousScreen=useRef<MemberScreen>('home');
   const activeScreenRef=useRef({screen:activeScreen,authorized:!!session});
   activeScreenRef.current={screen:activeScreen,authorized:!!session};
-  const navigateTo=(target:MemberScreen)=>{
+  const navigateTo=useCallback((target:MemberScreen)=>{
     if(target!=='chat'){setComposerPanel(null);setMenuMessage(null);}
     if(target==='chat'&&activeScreen!=='chat')previousScreen.current=activeScreen;
     setActiveScreen(target);
-  };
+  },[activeScreen]);
   // iOS native: capture only the extreme left edge, never message-reply swipes.
   const iosBackPan=useRef(PanResponder.create({
     onStartShouldSetPanResponder:()=>false,

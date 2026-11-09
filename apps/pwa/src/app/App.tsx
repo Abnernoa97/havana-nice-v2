@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import {
   chatReactionPayload,chatTypingPayload,chatReadReceiptPayload,
   fetchBackendHealth, getChatMediaAvailability, getChatSnapshot, getOlderChatMessages, getChatMenuState, getChatMessagePermissions, isWithinChatEditWindow, selectNextQueuedChatMessage, setOutgoingChatStatus, projectOutgoingChatStatus, CHAT_ACK_TIMEOUT_MS, newClientMessageId, uploadChatMediaBatch,
@@ -27,14 +27,14 @@ export default function App() {
   const [activeScreen,setActiveScreen]=useState<MemberScreen>('home');
   const previousScreen=useRef<MemberScreen>('home');
   const edgeSwipeStart=useRef<{x:number;y:number}|null>(null);
-  const navigateTo=(target:MemberScreen)=>{
+  const navigateTo=useCallback((target:MemberScreen)=>{
     if(target!=='chat'){setComposerPanel(null);setMenuMessage(null);}
     if(target==='chat'&&activeScreen!=='chat'){
       previousScreen.current=activeScreen;
       window.history.pushState({...window.history.state,hnChatNavigation:true},'',window.location.href);
     }
     setActiveScreen(target);
-  };
+  },[activeScreen]);
   const closeChat=()=>{
     setMenuMessage(null);
     setComposerPanel(null);

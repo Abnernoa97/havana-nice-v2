@@ -1,4 +1,4 @@
-import {lazy,Suspense,useState} from 'react';
+import {lazy,Suspense,memo,useState} from 'react';
 import {MEMBER_MODULES,type MemberScreen} from '@havana/shared';
 // Each module is a separate on-demand production chunk. The HOME shell and
 // existing authorized session stay mounted; no routes, APIs or data flow change.
@@ -24,7 +24,7 @@ const notes:Record<Exclude<MemberScreen,'chat'|'home'>,string>={
 };
 // Reuses the existing visual shell for the member HOME after successful login.
 // /visual.html remains presentation-only; it cannot open Chat or issue a session.
-export default function VisualApp({displayName,active,onNavigate,preview=false,token}:Props){
+function VisualApp({displayName,active,onNavigate,preview=false,token}:Props){
   const [previewScreen,setPreviewScreen]=useState<MemberScreen>('home');
   const screen=active??previewScreen;
   const navigate=(target:MemberScreen)=>{
@@ -112,3 +112,5 @@ export default function VisualApp({displayName,active,onNavigate,preview=false,t
     </nav>
   </div>;
 }
+// Ignore background Chat deliveries when no HOME prop changed.
+export default memo(VisualApp);

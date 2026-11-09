@@ -14,7 +14,7 @@ type Props={
 };
 // HOME is a navigation surface. Authentication and the native Chat remain
 // owned by app/NativeApp.tsx: mounting HOME never issues, copies or revokes a token.
-export default function NativeMemberHome({displayName,token,active,onNavigate}:Props){
+function NativeMemberHome({displayName,token,active,onNavigate}:Props){
   const selected=MEMBER_MODULES.find(module=>module.id===active);
   const content=<>
     <View style={styles.top}>
@@ -109,3 +109,5 @@ const styles=StyleSheet.create({
   pendingTitle:{fontSize:19,fontWeight:'700',color:'#1B332B'},
   pendingDescription:{fontSize:13,lineHeight:20,color:'#657269',marginTop:9},
 });
+// The Chat socket can update in the parent without re-rendering HOME modules.
+export default React.memo(NativeMemberHome);
