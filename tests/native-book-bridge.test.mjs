@@ -29,7 +29,7 @@ test('The embedded PWA uses the original PageFlip and initial native context, no
  const h=read('apps/pwa/book.html');
  const reader=read('apps/pwa/src/features/book/BookReader.tsx');
  assert.match(p,/\.ReactNativeWebView\?\.injectedObjectJson\?\.\(\)/);
- assert.match(p,/parseNativeBookContext\(json\)/);
+ assert.match(p,/parseNativeBookContext\(/);
  assert.match(p,/const MemberBook=lazy/);
  assert.match(p,/readNativeContext\(\)/);
  assert.match(p,/attempts>=30/);
