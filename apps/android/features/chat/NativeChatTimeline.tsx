@@ -14,6 +14,8 @@ type Props={
  messages:ChatMessage[];
  results:ChatMessage[]|null;
  session:ChatSession;
+ onlineActorIds:ReadonlySet<string>;
+ connected:boolean;
  reactions:ChatReaction[];
  receipts:ChatReadReceipt[];
  hasMore:boolean;
@@ -30,7 +32,7 @@ type Props={
  onRetry:(clientMessageId:string)=>void;
 };
 export default function NativeChatTimeline({
- messages,results,session,reactions,receipts,hasMore,loadingOlder,
+ messages,results,session,onlineActorIds,connected,reactions,receipts,hasMore,loadingOlder,
  scrollRef,onContentSizeChange,onLayout,onScrollBeginDrag,onScroll,onScrollEndDrag,
  onLoadOlder,onReply,onMessageLongPress,onRetry,
 }:Props){
@@ -70,20 +72,21 @@ export default function NativeChatTimeline({
 
                 const mine = message.senderId === session.actorId;
                 const badges=display.reactionBadges.get(message.seq)??[];
+                const online=connected&&onlineActorIds.has(message.senderId);
                 return (
                   <SwipeableBubble
-                    style={[styles.bubble, mine ? styles.mine : styles.theirs]}
+                    style={[styles.bubble, mine ? styles.mine : styles.theirs, online&&styles.onlineBubble]}
                     onReply={() => onReply(message)}
                     onLongPress={(anchor) => onMessageLongPress(message,anchor)}
                     onPress={() => {if(mine && message.pending && message.deliveryStatus==='error')onRetry(message.clientMessageId);}}
                   >
-                    {!mine && <Text style={styles.sender}>{message.senderName}</Text>}
+                    {!mine && <Text style={[styles.sender,online&&styles.onlineText]}>{message.senderName}</Text>}
                     {message.replyToSeq ? (
-                      <Text style={[styles.replyLabel,mine && styles.mineMeta]}>
+                      <Text style={[styles.replyLabel,mine && styles.mineMeta,online&&styles.onlineMeta]}>
                         ↪ {display.replySnippets.get(message.replyToSeq)||'Mensaje anterior'}
                       </Text>
                     ) : null}
-                    {!message.media?<Text style={[styles.bubbleText,mine && styles.mineText]}>
+                    {!message.media?<Text style={[styles.bubbleText,mine && styles.mineText,online&&styles.onlineText]}>
                       {message.text}
                     </Text>:null}
                     {message.media?<NativeChatMediaView media={message.media} session={session}/>:null}
@@ -94,7 +97,7 @@ export default function NativeChatTimeline({
                         ))}
                       </View>
                     ):null}
-                    <Text style={[styles.messageTime,mine && styles.mineMeta]}>
+                    <Text style={[styles.messageTime,mine && styles.mineMeta,online&&styles.onlineMeta]}>
                       {new Date(message.sentAt).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}
                       {message.editedAt&&!message.deletedAt?' · editado':''}
                       {mine?' · '+messageDeliveryLabel(message):''}
