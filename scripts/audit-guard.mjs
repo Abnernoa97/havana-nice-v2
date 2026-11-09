@@ -212,7 +212,7 @@ present(android,/keyboardVerticalOffset=\{0\}/,
   'Native Chat keyboard offset must be predictable');
 present(read('apps/android/hooks/useNativeKeyboardVisibility.ts'),/Keyboard.addListener\('keyboardDidShow'/,
   'Android Chat must react to IME visibility');
-present(android,/useNativeKeyboardVisibility\(\)/,'Native App must use the single keyboard lifecycle hook');
+present(android,/useNativeKeyboardVisibility\(activeScreen==='chat'\)/,'Native App must use the single keyboard lifecycle hook');
 present(android,/keyboardOpen && styles.screenKeyboard/,
   'Android Chat must clear nav padding while the keyboard is open');
 absent(android,/<Text style=\{styles.roomTitle\}>HAVANA NICE · Chat<\/Text>/,
