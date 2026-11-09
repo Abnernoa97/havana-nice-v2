@@ -1,0 +1,34 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+const read=path=>JSON.parse(readFileSync(new URL('../'+path,import.meta.url),'utf8'));
+const atLeast=(actual,min)=>{
+ const a=actual.split('.').map(Number),b=min.split('.').map(Number);
+ for(let i=0;i<Math.max(a.length,b.length);i++){
+  if((a[i]||0)!==(b[i]||0))return (a[i]||0)>(b[i]||0);
+ }
+ return true;
+};
+test('Cloudflare security patch is pinned in both manifest and lock with no detached versions',()=>{
+ const pkg=read('cloudflare/package.json');
+ const lock=read('package-lock.json');
+ const wr=pkg.devDependencies.wrangler;
+ assert.equal(wr,lock.packages.cloudflare.devDependencies.wrangler);
+ assert.equal(wr,lock.packages['node_modules/wrangler'].version);
+ assert.ok(atLeast(wr,'4.158.0'));
+ assert.ok(atLeast(lock.packages['node_modules/undici'].version,'7.30.1'));
+ assert.ok(atLeast(lock.packages['node_modules/miniflare'].version,'5.20261104.0'));
+ assert.ok(lock.packages['node_modules/wrangler'].dev);
+ assert.ok(lock.packages['node_modules/undici'].dev);
+});
+test('Android app and WebView versions remain pinned and unchanged by Wrangler patch',()=>{
+ const android=read('apps/android/package.json');
+ const lock=read('package-lock.json');
+ assert.equal(android.dependencies.expo,'58.0.14');
+ assert.equal(android.dependencies['react-native'],'0.88.0');
+ assert.equal(android.dependencies['react-native-webview'],'14.0.1');
+ for(const dependency of ['expo','react-native','react-native-webview']){
+  assert.equal(android.dependencies[dependency],lock.packages['apps/android'].dependencies[dependency]);
+  assert.equal(android.dependencies[dependency],lock.packages['node_modules/'+dependency].version);
+ }
+});
