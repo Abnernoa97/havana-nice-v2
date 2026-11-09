@@ -1,4 +1,4 @@
-import {memo,useLayoutEffect,useMemo,useRef,useState,type RefObject,type UIEvent} from 'react';
+import {memo,useLayoutEffect,useMemo,useRef,useState,type RefObject,type UIEvent,type KeyboardEvent} from 'react';
 import {
  buildChatDisplayIndex,messageDeliveryLabel,
  type ChatMessage,type ChatReaction,type ChatReadReceipt
@@ -120,7 +120,7 @@ function ChatTimeline({
    else if(action==='newer')showNext();
    else jumpLatest();
  };
- const handleWindowKeyDown=(event:React.KeyboardEvent<HTMLElement>)=>{
+ const handleWindowKeyDown=(event:KeyboardEvent<HTMLElement>)=>{
    if(['ArrowUp','ArrowDown','PageUp','PageDown','Home','End',' '].includes(event.key))markGesture();
  };
  // An outgoing message from the middle of history behaves like WhatsApp:
