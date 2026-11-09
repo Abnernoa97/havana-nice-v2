@@ -657,6 +657,8 @@ export default function App() {
       if(stickToLatest.current)scrollChatToLatest();
     });
     observer.observe(content);
+    // Composer growth and mobile keyboard resize the scrolling viewport itself.
+    observer.observe(list);
     if(stickToLatest.current)scrollChatToLatest();
     return()=>{
       observer.disconnect();
