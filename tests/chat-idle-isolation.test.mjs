@@ -19,6 +19,13 @@ test('HOME keeps one authorized Chat engine but mounts no message, video or comp
   }
   assert.doesNotMatch(pwa,/member-chat-hidden|searchResults/);
   assert.doesNotMatch(native,/styles\.inactiveChat|setResults\(/);
+  const visual=read('apps/pwa/src/app/VisualApp.tsx');
+  const nativeHome=read('apps/android/app/NativeMemberHome.tsx');
+  assert.match(pwa,/const navigateTo=useCallback\(/);
+  assert.match(native,/const navigateTo=useCallback\(/);
+  assert.match(visual,/export default memo\(VisualApp\)/);
+  assert.match(nativeHome,/export default React\.memo\(NativeMemberHome\)/);
+
 });
 
 test('Pickers, keyboard subscriptions and uploads remain independent actions',()=>{
