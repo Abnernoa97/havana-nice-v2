@@ -1,13 +1,18 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {chatReactionPayload,chatTypingPayload,CHAT_TYPING_THROTTLE_MS}
+import {chatReactionPayload,chatTypingPayload,chatReadReceiptPayload,CHAT_TYPING_THROTTLE_MS}
  from '../packages/shared/src/chat-presence.ts';
 
 test('reaction retains server message shape and ignores unconfirmed seq',()=>{
  assert.equal(chatReactionPayload(0,'❤️'),null);
  assert.equal(chatReactionPayload(-1,'😂'),null);
  assert.deepEqual(JSON.parse(chatReactionPayload(3,'👍')),{type:'chat.react',messageSeq:3,emoji:'👍'});
+});
+test('read receipts retain the same event and never send pending sequence',()=>{
+ assert.equal(chatReadReceiptPayload(0),null);
+ assert.equal(chatReadReceiptPayload(-3),null);
+ assert.deepEqual(JSON.parse(chatReadReceiptPayload(42)),{type:'chat.read',seq:42});
 });
 test('typing retains 1700ms edge and trimmed inactive draft',()=>{
  assert.equal(CHAT_TYPING_THROTTLE_MS,1700);
@@ -21,6 +26,8 @@ test('one pure policy, while each platform retains its WebSocket owner',()=>{
  for(const p of ['apps/pwa/src/app/App.tsx','apps/android/app/NativeApp.tsx']){
   const src=readFileSync(new URL('../'+p,import.meta.url),'utf8');
   assert.match(src,/chatReactionPayload\(seq,emoji\)/,p);
+  assert.match(src,/chatReadReceiptPayload\(seq\)/,p);
+  assert.doesNotMatch(src,/JSON\.stringify\(\{type:'chat\.read'/,p);
   assert.match(src,/chatTypingPayload\(value,now,typingLast\.current\)/,p);
   assert.match(src,/socket\.current\?\.readyState===WebSocket\.OPEN/,p);
   assert.doesNotMatch(src,/JSON\.stringify\(\{type:'chat\.typing'/,p);

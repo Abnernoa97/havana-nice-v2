@@ -4,6 +4,12 @@ import type {ChatEmoji} from './index';
 
 export const CHAT_TYPING_THROTTLE_MS=1700;
 
+// Browser visibility/Android lifecycle remain platform-owned: this is just
+// the shared protocol shape for an acknowledged read sequence.
+export function chatReadReceiptPayload(seq:number):string|null{
+ return seq>0?JSON.stringify({type:'chat.read',seq}):null;
+}
+
 export function chatReactionPayload(seq:number,emoji:ChatEmoji):string|null{
  return seq>0?JSON.stringify({type:'chat.react',messageSeq:seq,emoji}):null;
 }

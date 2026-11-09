@@ -4,7 +4,7 @@ import {
   StatusBar, Text, TextInput, View, useWindowDimensions,
 } from 'react-native';
 import {
-  chatReactionPayload,chatTypingPayload,
+  chatReactionPayload,chatTypingPayload,chatReadReceiptPayload,
   HAVANA_V2_DEV_API_BASE_URL, fetchBackendHealth, getChatMediaAvailability, getChatSnapshot, getOlderChatMessages, searchChatMessages, getChatMenuState, getChatMessagePermissions, isWithinChatEditWindow, selectNextQueuedChatMessage, setOutgoingChatStatus, projectOutgoingChatStatus, CHAT_ACK_TIMEOUT_MS, newClientMessageId, uploadChatMediaBatch,
   reconcileChatMessages, reconcileReactions, reconcileUpdatedMessage, reconcileDeletedMessage, reconcileChatSnapshot, startNamedChatSession, restoreNamedChatSession, chatSessionExpired, chatReconnectDelay, reconcileChatReadReceipt, removeChatReactionsForMessage, withoutRemovedChatMessages, ChatHistoryRequestGate, oldestConfirmedChatSeq, mergeOlderChatReactions, CHAT_WS_HANDSHAKE_TIMEOUT_MS, captureChatOfflineSnapshot, restoreChatOfflineOutbox,
   type ChatMessage, type ChatServerEvent, type ChatSession, type ChatReaction, type ChatEmoji, type ChatReadReceipt,
@@ -167,8 +167,9 @@ export default function App() {
   }
 
   function sendReadReceipt(seq:number) {
-    if(seq>0 && appLifecycle.current==='active' && socket.current?.readyState===WebSocket.OPEN) {
-      socket.current.send(JSON.stringify({type:'chat.read',seq}));
+    const payload=chatReadReceiptPayload(seq);
+    if(payload && appLifecycle.current==='active' && socket.current?.readyState===WebSocket.OPEN) {
+      socket.current.send(payload);
     }
   }
   async function loadOlder() {

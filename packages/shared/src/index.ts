@@ -241,7 +241,7 @@ export {uploadChatMediaBatch} from './chat-media-batch';
 export type {ChatMediaBatchOptions} from './chat-media-batch';
 
 // One pure cross-platform reaction and typing event policy; shells own their sockets.
-export {chatReactionPayload,chatTypingPayload,CHAT_TYPING_THROTTLE_MS} from './chat-presence';
+export {chatReactionPayload,chatTypingPayload,chatReadReceiptPayload,CHAT_TYPING_THROTTLE_MS} from './chat-presence';
 
 // Shared ordered offline outbox and ACK policy for both Chat clients.
 export {selectNextQueuedChatMessage,setOutgoingChatStatus,projectOutgoingChatStatus,CHAT_ACK_TIMEOUT_MS} from './chat-outbox';

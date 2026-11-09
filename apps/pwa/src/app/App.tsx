@@ -1,6 +1,6 @@
 import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import {
-  chatReactionPayload,chatTypingPayload,
+  chatReactionPayload,chatTypingPayload,chatReadReceiptPayload,
   fetchBackendHealth, getChatMediaAvailability, getChatSnapshot, getOlderChatMessages, searchChatMessages, getChatMenuState, getChatMessagePermissions, isWithinChatEditWindow, selectNextQueuedChatMessage, setOutgoingChatStatus, projectOutgoingChatStatus, CHAT_ACK_TIMEOUT_MS, newClientMessageId, uploadChatMediaBatch,
   openChatSocket, reconcileChatMessages, startNamedChatSession, restoreNamedChatSession, chatSessionExpired, chatReconnectDelay, reconcileChatReadReceipt, removeChatReactionsForMessage, withoutRemovedChatMessages, ChatHistoryRequestGate, oldestConfirmedChatSeq, mergeOlderChatReactions, CHAT_WS_HANDSHAKE_TIMEOUT_MS, captureChatOfflineSnapshot, restoreChatOfflineOutbox,
   type BackendHealth, type ChatMessage, type ChatServerEvent, type ChatSession, type PwaReaderTarget, parsePwaReaderHash,
@@ -164,8 +164,9 @@ export default function App() {
     storageQueue.current = storageQueue.current.catch(() => {}).then(() => saveLocalChat(value)).catch(() => {});
   }
   function sendReadReceipt(seq: number) {
-    if (seq > 0 && document.visibilityState === 'visible' && socket.current?.readyState === WebSocket.OPEN) {
-      socket.current.send(JSON.stringify({type:'chat.read',seq}));
+    const payload=chatReadReceiptPayload(seq);
+    if(payload && document.visibilityState === 'visible' && socket.current?.readyState === WebSocket.OPEN) {
+      socket.current.send(payload);
     }
   }
   async function loadOlder() {
