@@ -1,4 +1,4 @@
-import {useEffect,useLayoutEffect,useRef,type RefObject} from 'react';
+import {useCallback,useEffect,useLayoutEffect,useRef,type RefObject} from 'react';
 
 // Owns only scroll positioning. No Chat socket, storage, messages or media API.
 // Attaches DOM observers only when the conversation is visible.
@@ -16,6 +16,15 @@ export function useChatScrollAnchor({
  const chatWasVisible=useRef(false);
  const stickToLatest=useRef(true);
  const userScrollGesture=useRef(false);
+ // Browsing an older window must never trigger automatic bottom snapping.
+ const pauseFollow=useCallback(()=>{stickToLatest.current=false;},[]);
+ const resumeLatest=useCallback(()=>{
+   stickToLatest.current=true;
+   requestAnimationFrame(()=>{
+     const list=bottomRef.current?.closest('.chat-messages') as HTMLElement|null;
+     if(list)list.scrollTop=Math.max(0,list.scrollHeight-list.clientHeight);
+   });
+ },[bottomRef]);
  const scrollChatToLatest=()=>{
    const list=bottomRef.current?.closest('.chat-messages') as HTMLElement|null;
    if(list)list.scrollTop=Math.max(0,list.scrollHeight-list.clientHeight);
@@ -92,4 +101,5 @@ export function useChatScrollAnchor({
      list.removeEventListener('keydown',onKeyDown);
    };
  },[active,sessionToken]);
+ return {pauseFollow,resumeLatest};
 }

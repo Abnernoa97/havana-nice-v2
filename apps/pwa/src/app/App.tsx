@@ -567,7 +567,7 @@ export default function App() {
 
 
   // The scroll lifecycle is isolated from the single Chat socket and outbox.
-  useChatScrollAnchor({
+  const {pauseFollow,resumeLatest}=useChatScrollAnchor({
     active:activeScreen==='chat'&&!!session,
     sessionToken:session?.token,
     messageCount:messages.length,
@@ -748,6 +748,7 @@ export default function App() {
              onlineActorIds={onlineActorIds} connected={connection==='en vivo'}
             reactions={reactions} receipts={receipts}
             hasMore={hasMore} loadingOlder={loadingOlder}
+            onBrowseOlder={pauseFollow} onReturnLatest={resumeLatest}
             onLoadOlder={onTimelineLoadOlder} onReply={onTimelineReply}
             onMessageLongPress={onTimelineLongPress} onRetry={onTimelineRetry}
             bottomRef={bottom}/>

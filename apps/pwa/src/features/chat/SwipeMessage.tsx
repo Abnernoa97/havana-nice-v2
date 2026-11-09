@@ -6,13 +6,14 @@ export type MessageAnchor={x:number;y:number;width:number;height:number};
 type Props={
   children:ReactNode;
   className:string;
+  messageKey?:string;
   onSwipeRight:()=>void;
   onLongPress:(anchor:MessageAnchor)=>void;
 };
 
 // Familiar messaging gestures with HAVANA NICE styling.
 // Horizontal movement replies. Vertical scrolling remains native.
-export default function SwipeMessage({children,className,onSwipeRight,onLongPress}:Props){
+export default function SwipeMessage({children,className,messageKey,onSwipeRight,onLongPress}:Props){
   const start=useRef<{x:number;y:number}|null>(null);
   const elementRef=useRef<HTMLElement|null>(null);
   const timer=useRef<ReturnType<typeof setTimeout>|null>(null);
@@ -54,7 +55,8 @@ export default function SwipeMessage({children,className,onSwipeRight,onLongPres
       event.preventDefault();openMenu();
     }
   };
-  return <article ref={elementRef} className={className} tabIndex={0}
+  return <article ref={elementRef} className={className}
+      data-chat-row-key={messageKey} tabIndex={0}
       style={{touchAction:'pan-y',transform:shift?'translateX('+shift+'px)':undefined,
         transition:shift?'none':'transform 130ms ease'}}
       onTouchStart={touchStart} onTouchMove={touchMove} onTouchEnd={touchEnd}
