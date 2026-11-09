@@ -34,7 +34,7 @@ test('deleted message reactions disappear; unrelated message reactions remain',(
  assert.deepEqual(removeChatReactionsForMessage([],17),[]);
 });
 
-test('deleted messages cannot return through stale pages, results or socket reconciliation',()=>{
+test('deleted messages cannot return through stale pages or socket reconciliation',()=>{
  const rows=[{seq:8,text:'A'},{seq:9,text:'B'},{seq:10,text:'C',deletedAt:'2026-11-08T00:00:00Z'}];
  assert.deepEqual(withoutRemovedChatMessages(rows,new Set([9])),[rows[0]]);
  assert.equal(rows.length,3,'input remains untouched');
@@ -43,7 +43,7 @@ test('deleted messages cannot return through stale pages, results or socket reco
   assert.match(src,/removedSeq\.current\.add\((value|item)\.seq\)/,path);
   assert.match(src,/withoutRemovedChatMessages\(history,removedSeq\.current\)/,path);
   assert.match(src,/withoutRemovedChatMessages\(data\.messages,removedSeq\.current\)/,path);
-  assert.match(src,/withoutRemovedChatMessages\(found,removedSeq\.current\)/,path);
+  assert.doesNotMatch(src,/searchChatMessages|searchHistory|runSearch|setSearchResults|setResults\(/,path);
   assert.match(src,/activeSession\.current\?\.token/,path);
  }
  const android=readFileSync(new URL('../apps/android/app/NativeApp.tsx',import.meta.url),'utf8');
