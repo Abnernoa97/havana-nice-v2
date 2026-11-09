@@ -586,13 +586,14 @@ export default function App() {
   },[draft]);
 
 
-  // Chat stays mounted behind HOME: every re-entry must reset its viewport to
-  // the newest message. Scroll the list itself, not the document or a smooth anchor.
+  // The musician Chat stays mounted behind HOME, but its scroll position must
+  // re-anchor to the real last message every time the room is opened.
   const chatWasVisible=useRef(false);
   const stickToLatest=useRef(true);
+  const userScrollGesture=useRef(false);
   const scrollChatToLatest=()=>{
     const list=bottom.current?.closest('.chat-messages') as HTMLElement|null;
-    if(list)list.scrollTop=list.scrollHeight;
+    if(list)list.scrollTop=Math.max(0,list.scrollHeight-list.clientHeight);
   };
   useLayoutEffect(()=>{
     if(!session||activeScreen!=='chat'){
@@ -602,8 +603,11 @@ export default function App() {
     if(!chatWasVisible.current){
       chatWasVisible.current=true;
       stickToLatest.current=true;
+      userScrollGesture.current=false;
       scrollChatToLatest();
-      requestAnimationFrame(scrollChatToLatest);
+      // Re-apply after the previously hidden room becomes measurable on Safari.
+      const frame=requestAnimationFrame(scrollChatToLatest);
+      return()=>cancelAnimationFrame(frame);
     }
   },[activeScreen,session?.token]);
   useLayoutEffect(()=>{
@@ -614,17 +618,55 @@ export default function App() {
   useEffect(()=>{
     if(activeScreen!=='chat')return;
     const list=bottom.current?.closest('.chat-messages') as HTMLElement|null;
-    if(!list)return;
+    const content=list?.querySelector('.chat-message-content');
+    if(!list||!content)return;
+    const gap=()=>list.scrollHeight-list.scrollTop-list.clientHeight;
     const onScroll=()=>{
-      stickToLatest.current=list.scrollHeight-list.scrollTop-list.clientHeight<100;
+      // A late-loading video must not look like a manual scroll upward.
+      if(gap()<=64)stickToLatest.current=true;
+      else if(userScrollGesture.current)stickToLatest.current=false;
+    };
+    const onTouchMove=()=>{userScrollGesture.current=true;};
+    const onTouchEnd=()=>{
+      requestAnimationFrame(()=>{userScrollGesture.current=false;});
+    };
+    const onWheel=()=>{
+      userScrollGesture.current=true;
+      requestAnimationFrame(()=>{
+        onScroll();
+        userScrollGesture.current=false;
+      });
+    };
+    const onKeyDown=(event:KeyboardEvent)=>{
+      if(['ArrowUp','ArrowDown','PageUp','PageDown','Home','End',' '].includes(event.key)){
+        userScrollGesture.current=true;
+        requestAnimationFrame(()=>{
+          onScroll();userScrollGesture.current=false;
+        });
+      }
     };
     list.addEventListener('scroll',onScroll,{passive:true});
-    // Videos and images can resize after the message list first renders.
+    list.addEventListener('touchmove',onTouchMove,{passive:true});
+    list.addEventListener('touchend',onTouchEnd,{passive:true});
+    list.addEventListener('touchcancel',onTouchEnd,{passive:true});
+    list.addEventListener('wheel',onWheel,{passive:true});
+    list.addEventListener('keydown',onKeyDown);
+    // The scrolling viewport stays the same size. Observe the ACTUAL content:
+    // photos, video metadata and multiline bubbles settle asynchronously.
     const observer=new ResizeObserver(()=>{
       if(stickToLatest.current)scrollChatToLatest();
     });
-    observer.observe(list);
-    return()=>{observer.disconnect();list.removeEventListener('scroll',onScroll);};
+    observer.observe(content);
+    if(stickToLatest.current)scrollChatToLatest();
+    return()=>{
+      observer.disconnect();
+      list.removeEventListener('scroll',onScroll);
+      list.removeEventListener('touchmove',onTouchMove);
+      list.removeEventListener('touchend',onTouchEnd);
+      list.removeEventListener('touchcancel',onTouchEnd);
+      list.removeEventListener('wheel',onWheel);
+      list.removeEventListener('keydown',onKeyDown);
+    };
   },[activeScreen,session?.token]);
 
   function acceptApprovedSession(next:ChatSession){
