@@ -38,12 +38,14 @@ export default function NativeChatTimeline({
 }:Props){
  const display=useMemo(()=>buildChatDisplayIndex(messages,reactions,receipts,session.actorId),
    [messages,reactions,receipts,session.actorId]);
+ const liveRenderData=useMemo(()=>({display,onlineActorIds,connected}),
+   [display,onlineActorIds,connected]);
  const visibleMessages=useMemo(
   ()=>(results??messages).filter(message=>!message.deletedAt),[results,messages]);
  return (
   <FlatList
    ref={scrollRef} data={visibleMessages}
-   extraData={display}
+   extraData={liveRenderData}
    keyExtractor={message=>message.senderId+':'+message.clientMessageId}
    style={styles.messageList} contentContainerStyle={styles.messages}
    keyboardShouldPersistTaps="handled"
