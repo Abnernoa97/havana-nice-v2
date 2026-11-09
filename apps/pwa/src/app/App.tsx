@@ -1,7 +1,7 @@
 import { lazy, Suspense, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import {
   chatReactionPayload,chatTypingPayload,chatReadReceiptPayload,
-  fetchBackendHealth, getChatMediaAvailability, getChatSnapshot, getOlderChatMessages, searchChatMessages, getChatMenuState, getChatMessagePermissions, isWithinChatEditWindow, selectNextQueuedChatMessage, setOutgoingChatStatus, projectOutgoingChatStatus, CHAT_ACK_TIMEOUT_MS, newClientMessageId, uploadChatMediaBatch,
+  fetchBackendHealth, getChatMediaAvailability, getChatSnapshot, getOlderChatMessages, getChatMenuState, getChatMessagePermissions, isWithinChatEditWindow, selectNextQueuedChatMessage, setOutgoingChatStatus, projectOutgoingChatStatus, CHAT_ACK_TIMEOUT_MS, newClientMessageId, uploadChatMediaBatch,
   openChatSocket, reconcileChatMessages, startNamedChatSession, restoreNamedChatSession, chatSessionExpired, chatReconnectDelay, reconcileChatReadReceipt, removeChatReactionsForMessage, withoutRemovedChatMessages, ChatHistoryRequestGate, oldestConfirmedChatSeq, mergeOlderChatReactions, CHAT_WS_HANDSHAKE_TIMEOUT_MS, captureChatOfflineSnapshot, restoreChatOfflineOutbox,
   type BackendHealth, type ChatMessage, type ChatServerEvent, type ChatSession, type PwaReaderTarget, parsePwaReaderHash,
   HAVANA_V2_DEV_API_BASE_URL,
@@ -29,6 +29,7 @@ export default function App() {
   const previousScreen=useRef<MemberScreen>('home');
   const edgeSwipeStart=useRef<{x:number;y:number}|null>(null);
   const navigateTo=(target:MemberScreen)=>{
+    if(target!=='chat'){setComposerPanel(null);setMenuMessage(null);}
     if(target==='chat'&&activeScreen!=='chat'){
       previousScreen.current=activeScreen;
       window.history.pushState({...window.history.state,hnChatNavigation:true},'',window.location.href);
@@ -37,6 +38,7 @@ export default function App() {
   };
   const closeChat=()=>{
     setMenuMessage(null);
+    setComposerPanel(null);
     if(window.history.state?.hnChatNavigation)window.history.back();
     else setActiveScreen(previousScreen.current);
   };
@@ -92,10 +94,6 @@ export default function App() {
   const [receipts, setReceipts] = useState<ChatReadReceipt[]>([]);
   const [hasMore, setHasMore] = useState(false);
   const [loadingOlder, setLoadingOlder] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [searchOpen,setSearchOpen] = useState(false);
-  const [searchResults, setSearchResults] = useState<ChatMessage[] | null>(null);
-  const [searching, setSearching] = useState(false);
   const [editing, setEditing] = useState<ChatMessage | null>(null);
   const [menuMessage,setMenuMessage] = useState<ChatMessage | null>(null);
   const [menuAnchor,setMenuAnchor] = useState<MessageAnchor|null>(null);
@@ -165,7 +163,7 @@ export default function App() {
   function revokeCurrentAccess() {
     clearConnectionWatchdog();
     historyRequests.current.reset();
-    setLoadingOlder(false);setSearching(false);setSearchResults(null);
+    setLoadingOlder(false);
     setActiveScreen('home');
     const previous = socket.current;
     socket.current = null;
@@ -219,25 +217,6 @@ export default function App() {
       if(historyRequests.current.finishOlder(request))setLoadingOlder(false);
     }
   }
-  async function runSearch() {
-    const query=searchQuery.trim();
-    if(!session||query.length<2){
-      historyRequests.current.cancelSearch();setSearchResults(null);setSearching(false);return;
-    }
-    const request=historyRequests.current.beginSearch();
-    setSearching(true);
-    try{
-      const found=await searchChatMessages(session,query);
-      if(historyRequests.current.isSearchCurrent(request)&&activeSession.current?.token===session.token)
-        setSearchResults(withoutRemovedChatMessages(found,removedSeq.current));
-    }catch(e){
-      if(historyRequests.current.isSearchCurrent(request)&&activeSession.current?.token===session.token)
-        setError(e instanceof Error?e.message:'Error de búsqueda');
-    }finally{
-      if(historyRequests.current.isSearchCurrent(request))setSearching(false);
-    }
-  }
-
   function resetEditTimeout(){
     if(editTimeout.current){clearTimeout(editTimeout.current);editTimeout.current=null;}
   }
@@ -454,7 +433,6 @@ export default function App() {
         } else if (value.type === 'chat.deleted') {
           removedSeq.current.add(value.seq);
           setMessages(before=>reconcileDeletedMessage(before,value.seq));
-          setSearchResults(before=>before?.filter(m=>m.seq!==value.seq)??null);
           setReactions(before=>removeChatReactionsForMessage(before,value.seq));
           setReplyTo(current=>current?.seq===value.seq?null:current);
           setMenuMessage(current=>current?.seq===value.seq?null:current);
@@ -586,8 +564,8 @@ export default function App() {
   },[draft]);
 
 
-  // The musician Chat stays mounted behind HOME, but its scroll position must
-  // re-anchor to the real last message every time the room is opened.
+  // Keep one socket, offline outbox and drafts alive behind HOME.
+  // Mount the message/media interface only while Chat is visible.
   const chatWasVisible=useRef(false);
   const stickToLatest=useRef(true);
   const userScrollGesture=useRef(false);
@@ -672,13 +650,12 @@ export default function App() {
   },[activeScreen,session?.token]);
 
   function acceptApprovedSession(next:ChatSession){
-    historyRequests.current.reset();setLoadingOlder(false);setSearching(false);
+    historyRequests.current.reset();setLoadingOlder(false);
     editingSnapshot.current=null;
     beforeEdit.current=null;
     setEditing(null);
     setMessages([]);
     setReceipts([]);
-    setSearchResults(null);
     setHasMore(false);
     outbox.current.clear();
     setSession(next);
@@ -781,7 +758,7 @@ export default function App() {
          <VisualApp displayName={session.displayName}
           active={activeScreen} token={session.token} onNavigate={navigateTo}/>}
       </Suspense>}
-      <div className={session&&activeScreen!=='chat'?'member-chat-hidden':'member-chat-visible'}>
+      {(!session||activeScreen==='chat')&&<div className="member-chat-visible">
     <main className="chat-app" onTouchStart={event=>{
         const t=event.touches[0];
         const isIphone=/iPhone|iPad|iPod/.test(navigator.userAgent);
@@ -822,7 +799,7 @@ export default function App() {
         </section>
       ) : (
         <>
-          <ChatTimeline messages={messages} searchResults={searchResults}
+          <ChatTimeline messages={messages}
             actorId={session.actorId} token={session.token}
              onlineActorIds={onlineActorIds} connected={connection==='en vivo'}
             reactions={reactions} receipts={receipts}
@@ -909,7 +886,7 @@ export default function App() {
         </>
       )}
     </main>
-      </div>
+      </div>}
     </>
   );
 }
