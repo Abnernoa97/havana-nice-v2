@@ -5,7 +5,7 @@ import {
 } from 'react-native';
 import {
   chatReactionPayload,chatTypingPayload,chatReadReceiptPayload,
-  HAVANA_V2_DEV_API_BASE_URL, fetchBackendHealth, getChatMediaAvailability, getChatSnapshot, getOlderChatMessages, searchChatMessages, getChatMenuState, getChatMessagePermissions, isWithinChatEditWindow, selectNextQueuedChatMessage, setOutgoingChatStatus, projectOutgoingChatStatus, CHAT_ACK_TIMEOUT_MS, newClientMessageId, uploadChatMediaBatch,
+  HAVANA_V2_DEV_API_BASE_URL, fetchBackendHealth, getChatMediaAvailability, getChatSnapshot, getOlderChatMessages, getChatMenuState, getChatMessagePermissions, isWithinChatEditWindow, selectNextQueuedChatMessage, setOutgoingChatStatus, projectOutgoingChatStatus, CHAT_ACK_TIMEOUT_MS, newClientMessageId, uploadChatMediaBatch,
   reconcileChatMessages, reconcileReactions, reconcileUpdatedMessage, reconcileDeletedMessage, reconcileChatSnapshot, startNamedChatSession, restoreNamedChatSession, chatSessionExpired, chatReconnectDelay, reconcileChatReadReceipt, removeChatReactionsForMessage, withoutRemovedChatMessages, ChatHistoryRequestGate, oldestConfirmedChatSeq, mergeOlderChatReactions, CHAT_WS_HANDSHAKE_TIMEOUT_MS, captureChatOfflineSnapshot, restoreChatOfflineOutbox,
   type ChatMessage, type ChatServerEvent, type ChatSession, type ChatReaction, type ChatEmoji, type ChatReadReceipt,
   type MemberScreen,
@@ -34,6 +34,7 @@ export default function App() {
   const activeScreenRef=useRef({screen:activeScreen,authorized:!!session});
   activeScreenRef.current={screen:activeScreen,authorized:!!session};
   const navigateTo=(target:MemberScreen)=>{
+    if(target!=='chat'){setComposerPanel(null);setMenuMessage(null);}
     if(target==='chat'&&activeScreen!=='chat')previousScreen.current=activeScreen;
     setActiveScreen(target);
   };
@@ -70,11 +71,7 @@ export default function App() {
   const [receipts,setReceipts] = useState<ChatReadReceipt[]>([]);
   const [hasMore,setHasMore] = useState(false);
   const [loadingOlder,setLoadingOlder] = useState(false);
-  const [searchText,setSearchText] = useState('');
-  const [searchOpen,setSearchOpen] = useState(false);
-  const keyboardOpen=useNativeKeyboardVisibility();
-  const [results,setResults] = useState<ChatMessage[] | null>(null);
-  const [searching,setSearching] = useState(false);
+  const keyboardOpen=useNativeKeyboardVisibility(activeScreen==='chat');
   const [editing,setEditing] = useState<ChatMessage | null>(null);
   const [menuMessage,setMenuMessage] = useState<ChatMessage | null>(null);
   const [reactionBurst,setReactionBurst]=useState<ReactionShowerBurst|null>(null);
@@ -166,8 +163,8 @@ export default function App() {
     userHasScrolled.current=false;
     autoScroll.current=true;
   }
-  // Native Chat is kept mounted behind HOME. Re-entering must not restore
-  // the old FlatList offset from the previous visit.
+  // Keep one socket, offline outbox and drafts alive behind HOME. The virtualized
+  // message/media surface mounts fresh on entry, anchored to the last bubble.
   useEffect(()=>{
     if(activeScreen!=='chat'||!session)return;
     userHasScrolled.current=false;
@@ -188,17 +185,10 @@ export default function App() {
     autoScroll.current=gap<90;
   }
 
-  function toggleSearch() {
-    historyRequests.current.cancelSearch();setSearching(false);
-    setSearchOpen(open=>!open);
-    setSearchText('');
-    setResults(null);
-  }
-
   function revokeCurrentAccess() {
     clearConnectionWatchdog();
     historyRequests.current.reset();
-    setLoadingOlder(false);setSearching(false);setResults(null);
+    setLoadingOlder(false);
     setActiveScreen('home');
     const previous = socket.current;
     socket.current = null;
@@ -253,25 +243,6 @@ export default function App() {
       if(historyRequests.current.finishOlder(request))setLoadingOlder(false);
     }
   }
-  async function searchHistory(){
-    const query=searchText.trim();
-    if(!session||query.length<2){
-      historyRequests.current.cancelSearch();setResults(null);setSearching(false);return;
-    }
-    const request=historyRequests.current.beginSearch();
-    setSearching(true);
-    try{
-      const found=await searchChatMessages(session,query);
-      if(historyRequests.current.isSearchCurrent(request)&&activeSession.current?.token===session.token)
-        setResults(withoutRemovedChatMessages(found,removedSeq.current));
-    }catch(e){
-      if(historyRequests.current.isSearchCurrent(request)&&activeSession.current?.token===session.token)
-        setError(e instanceof Error?e.message:'No se pudo buscar');
-    }finally{
-      if(historyRequests.current.isSearchCurrent(request))setSearching(false);
-    }
-  }
-
   function resetEditTimeout(){
     if(editTimeout.current){clearTimeout(editTimeout.current);editTimeout.current=null;}
   }
@@ -540,7 +511,6 @@ export default function App() {
         } else if (item.type === 'chat.deleted') {
           removedSeq.current.add(item.seq);
           setMessages(before=>reconcileDeletedMessage(before,item.seq));
-          setResults(before=>before?.filter(m=>m.seq!==item.seq)??null);
           setReactions(before=>removeChatReactionsForMessage(before,item.seq));
           setReplyTo(current=>current?.seq===item.seq?null:current);
           setMenuMessage(current=>current?.seq===item.seq?null:current);
@@ -680,14 +650,13 @@ export default function App() {
 
 
   function acceptApprovedSession(next: ChatSession) {
-    historyRequests.current.reset();setLoadingOlder(false);setSearching(false);
+    historyRequests.current.reset();setLoadingOlder(false);
     editingSnapshot.current=null;
     beforeEdit.current=null;
     setEditing(null);
     beginFreshChatViewport();
     setMessages([]);
     setReceipts([]);
-    setResults(null);
     setHasMore(false);
     setSession(next);
     activeSession.current=next;
@@ -802,7 +771,7 @@ export default function App() {
       {/* Android 16 edge-to-edge can draw the composer behind the IME even with
             adjustResize. Height mode keeps the native chat input and Enviar
             visible above the keyboard without changing the PWA or storage. */}
-      <KeyboardAvoidingView style={[styles.flex,session && activeScreen!=='chat' && styles.inactiveChat]}
+      {(!session||activeScreen==='chat'||restoringAccess)&&<KeyboardAvoidingView style={styles.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         keyboardVerticalOffset={0}>
         
@@ -826,7 +795,7 @@ export default function App() {
         ) : (
           <>
             <NativeChatTimeline
-              messages={messages} results={results} session={session}
+              messages={messages} session={session}
                onlineActorIds={onlineActorIds} connected={connection==='en vivo'}
               reactions={reactions} receipts={receipts}
               hasMore={hasMore} loadingOlder={loadingOlder} scrollRef={scroll}
@@ -960,7 +929,7 @@ export default function App() {
                 setComposerPanel(null);
               }}><Text style={styles.emojiOptionText}>{emoji}</Text></Pressable>)}
         </View>}
-      </KeyboardAvoidingView>
+      </KeyboardAvoidingView>}
       {session&&activeScreen!=='chat'&&<NativeMemberHome token={session.token} displayName={session.displayName}
         active={activeScreen} onNavigate={navigateTo}/>}
       {session&&activeScreen==='chat'&&<NativeChatReactionShower burst={reactionBurst}/>}
