@@ -217,30 +217,30 @@ present(android,/keyboardOpen && styles.screenKeyboard/,
   'Android Chat must clear nav padding while the keyboard is open');
 absent(android,/<Text style=\{styles.roomTitle\}>HAVANA NICE · Chat<\/Text>/,
   'Native Chat must not show the duplicated room banner');
-present(android,/\{searchOpen \? <View style=\{styles.searchRow\}>/,
-  'Native Chat search must be collapsible');
+absent(android,/style=\{styles\.searchRow\}/,
+  'Native Chat must not render unused search controls');
 absent(pwa,/<div className="room-title">/,
   'PWA Chat must not show the duplicated room banner');
-present(pwa,/\{searchOpen&&<div className="chat-search">/,
-  'PWA Chat search must be collapsible');
+absent(pwa,/className="chat-search"/,
+  'PWA Chat must not render unused search controls');
 // Typing presence should follow the composer rather than occupy the fixed header.
 present(android,/styles\.typingIndicator/,'Android typing indicator must appear above the composer');
 present(pwa,/className="chat-typing-indicator"/,'PWA typing indicator must appear above the composer');
 present(pwaStyles,/\.chat-typing-indicator\{/,'PWA styling for the typing indicator');
 absent(android,/typing \|\| `\$\{connection\}/,'Android header must only show connection state');
 absent(pwa,/typing \|\| `\$\{connection\}/,'PWA header must only show connection state');
-// C04: presence counts from a disconnected socket are stale and must be hidden.
-present(android,/connection === 'en vivo' \? ` ·/,'Android must hide online count when disconnected');
-present(pwa,/connection === 'en vivo' \? ` ·/,'PWA must hide online count when disconnected');
-// Android initial history should land on the latest message and respect manual scrolling.
+// C04: online colors now reflect actual actor IDs and vanish when connection is stale.
+present(android,/setOnlineActorIds\(new Set\(item\.users\.map\(user=>user\.actorId\)\)\)/,
+present(pwa,/setOnlineActorIds\(new Set\(value\.users\.map\(user=>user\.actorId\)\)\)/,
+  'PWA must use actual online actor identities');
 present(android,/initialHistoryPending = useRef\(true\)/,'Native chat must track initial bottom placement');
 present(android,/requestAnimationFrame\(scheduleInitialBottom\)/,'Native chat must wait for initial snapshot layout');
 present(android,/scrollToEnd\(\{animated:false\}\)/,'Native chat must avoid animated initial scrolling');
 present(android,/onScrollBeginDrag=/,'Native chat must respect manual scroll');
 absent(android,/onContentSizeChange=\{\(\) => \{if\(autoScroll\.current\)scroll\.current\?\.scrollToEnd\(\{animated:true\}\);\}\}/,
   'Native chat must not animate every content size change');
-present(nativeMenu,/Responder/,'Native contextual menu must provide a reply action');
-present(android,/<NativeChatMessageMenu message=\{menuMessage\}/,'Native Chat must mount its context menu in the original owner');
+absent(nativeMenu,/Responder|Editar|Borrar/,
+  'Native long press must offer emojis only');
 absent(nativeMenu,/startNamedChatSession|restoreNamedChatSession|new WebSocket|AsyncStorage/,'Native menu must stay presentation-only');
 absent(android,/whatsappPlus|whatsappPlusText/,'Remove inert extra-reaction button on Android');
 present(webBubble,/getBoundingClientRect\(\)/,'PWA Chat must measure held message');
@@ -250,8 +250,8 @@ present(pwa,/onMessageLongPress=\{showMessageMenu\}/,
 present(chatTimeline,/onLongPress=\{anchor=>onMessageLongPress\(message,anchor\)\}/,
   'PWA Timeline must forward long-press anchors to the one Chat controller');
 present(pwaMenu,/aria-modal="true"/,'PWA contextual menu must be a dialog');
-present(pwaMenu,/Responder/,'PWA contextual menu must provide a reply action');
-present(pwa,/<PwaChatMessageMenu message=\{menuMessage\}/,'PWA Chat must mount its context menu in the original owner');
+absent(pwaMenu,/Responder|Editar|Borrar/,
+  'PWA long press must offer emojis only');
 absent(pwaMenu,/startNamedChatSession|restoreNamedChatSession|new WebSocket|localStorage/,'PWA menu must stay presentation-only');
 // C02: retain the target of the edit after app suspension/reopening.
 const pwaLocal=read('apps/pwa/src/services/local.ts');
