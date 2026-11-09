@@ -178,7 +178,7 @@ jobs:
         run: node --experimental-strip-types --test tests/chat-menu-policy.test.mjs
 
       - name: Verify one Chat reconnect and session expiry policy across PWA and Android
-        run: node --experimental-strip-types --test tests/chat-connection-policy.test.mjs
+        run: node --experimental-strip-types --test tests/chat-connection-policy.test.mjs tests/chat-presence-policy.test.mjs
 
       - name: Verify single shared Chat event receipt and reaction reconciliation
         run: node --experimental-strip-types --test tests/chat-events-policy.test.mjs

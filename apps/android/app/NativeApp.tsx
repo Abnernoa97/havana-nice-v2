@@ -4,6 +4,7 @@ import {
   StatusBar, Text, TextInput, View, useWindowDimensions,
 } from 'react-native';
 import {
+  chatReactionPayload,chatTypingPayload,
   HAVANA_V2_DEV_API_BASE_URL, fetchBackendHealth, getChatMediaAvailability, getChatSnapshot, getOlderChatMessages, searchChatMessages, getChatMenuState, getChatMessagePermissions, isWithinChatEditWindow, selectNextQueuedChatMessage, setOutgoingChatStatus, projectOutgoingChatStatus, CHAT_ACK_TIMEOUT_MS, newClientMessageId, uploadChatMediaBatch,
   reconcileChatMessages, reconcileReactions, reconcileUpdatedMessage, reconcileDeletedMessage, reconcileChatSnapshot, startNamedChatSession, restoreNamedChatSession, chatSessionExpired, chatReconnectDelay, reconcileChatReadReceipt, removeChatReactionsForMessage, withoutRemovedChatMessages, ChatHistoryRequestGate, oldestConfirmedChatSeq, mergeOlderChatReactions, CHAT_WS_HANDSHAKE_TIMEOUT_MS, captureChatOfflineSnapshot, restoreChatOfflineOutbox,
   type ChatMessage, type ChatServerEvent, type ChatSession, type ChatReaction, type ChatEmoji, type ChatReadReceipt,
@@ -644,17 +645,16 @@ export default function App() {
   }
 
   function react(seq: number, emoji: ChatEmoji) {
-    if (seq > 0 && socket.current?.readyState === WebSocket.OPEN) {
-      socket.current.send(JSON.stringify({type:'chat.react',messageSeq:seq,emoji}));
-    }
+    const payload=chatReactionPayload(seq,emoji);
+    if(payload&&socket.current?.readyState===WebSocket.OPEN)socket.current.send(payload);
   }
   function typeText(value: string) {
     latestDraft.current=value;
     setDraft(value);
-    const now = Date.now();
-    if (now - typingLast.current > 1700 && socket.current?.readyState === WebSocket.OPEN) {
-      typingLast.current = now;
-      socket.current.send(JSON.stringify({type:'chat.typing',active:!!value.trim()}));
+    const now=Date.now();
+    if(socket.current?.readyState===WebSocket.OPEN){
+      const payload=chatTypingPayload(value,now,typingLast.current);
+      if(payload){typingLast.current=now;socket.current.send(payload);}
     }
   }
 

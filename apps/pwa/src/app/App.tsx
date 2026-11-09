@@ -1,5 +1,6 @@
 import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import {
+  chatReactionPayload,chatTypingPayload,
   fetchBackendHealth, getChatMediaAvailability, getChatSnapshot, getOlderChatMessages, searchChatMessages, getChatMenuState, getChatMessagePermissions, isWithinChatEditWindow, selectNextQueuedChatMessage, setOutgoingChatStatus, projectOutgoingChatStatus, CHAT_ACK_TIMEOUT_MS, newClientMessageId, uploadChatMediaBatch,
   openChatSocket, reconcileChatMessages, startNamedChatSession, restoreNamedChatSession, chatSessionExpired, chatReconnectDelay, reconcileChatReadReceipt, removeChatReactionsForMessage, withoutRemovedChatMessages, ChatHistoryRequestGate, oldestConfirmedChatSeq, mergeOlderChatReactions, CHAT_WS_HANDSHAKE_TIMEOUT_MS, captureChatOfflineSnapshot, restoreChatOfflineOutbox,
   type BackendHealth, type ChatMessage, type ChatServerEvent, type ChatSession, type PwaReaderTarget, parsePwaReaderHash,
@@ -634,17 +635,16 @@ export default function App() {
     flushOutbox();
   }
   function react(seq: number, emoji: ChatEmoji) {
-    if (seq > 0 && socket.current?.readyState === WebSocket.OPEN) {
-      socket.current.send(JSON.stringify({type:'chat.react',messageSeq:seq,emoji}));
-    }
+    const payload=chatReactionPayload(seq,emoji);
+    if(payload&&socket.current?.readyState===WebSocket.OPEN)socket.current.send(payload);
   }
   function typeText(value: string) {
     latestDraft.current=value;
     setDraft(value);
-    const now = Date.now();
-    if (now - typingLast.current > 1700 && socket.current?.readyState === WebSocket.OPEN) {
-      typingLast.current = now;
-      socket.current.send(JSON.stringify({type:'chat.typing',active:!!value.trim()}));
+    const now=Date.now();
+    if(socket.current?.readyState===WebSocket.OPEN){
+      const payload=chatTypingPayload(value,now,typingLast.current);
+      if(payload){typingLast.current=now;socket.current.send(payload);}
     }
   }
   function retryMessage(id: string) {
