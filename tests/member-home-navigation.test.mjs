@@ -14,8 +14,8 @@ test('Existing Android login and Chat engine stay in one mounted App',()=>{
  assert.match(source,/startNamedChatSession\(name\.trim\(\)\)/);
  assert.match(source,/restoreNamedChatSession/);
  assert.match(source,/session&&activeScreen!=='chat'&&<NativeMemberHome/);
- assert.match(source,/session && activeScreen!=='chat' && styles\.inactiveChat/);
- assert.match(read('apps/android/styles/chat-styles.ts'),/inactiveChat:\{display:'none'\}/);
+ assert.match(source,/\(!session\|\|activeScreen==='chat'\|\|restoringAccess\)&&<KeyboardAvoidingView/);
+ assert.doesNotMatch(source,/styles\.inactiveChat/);
  assert.ok(source.includes("BackHandler.addEventListener('hardwareBackPress'"));
  assert.match(source,/onMoveShouldSetPanResponderCapture/);
  assert.doesNotMatch(source,/accessibilityLabel="Volver a Inicio"/);
@@ -25,11 +25,11 @@ test('Android styles live outside Chat controller without changing navigation or
  const app=read('apps/android/app/NativeApp.tsx');
  const styles=read('apps/android/styles/chat-styles.ts');
  assert.match(app,/import \{styles\} from '\.\.\/styles\/chat-styles'/);
- assert.match(app,/const keyboardOpen=useNativeKeyboardVisibility\(\)/);
+ assert.match(app,/const keyboardOpen=useNativeKeyboardVisibility\(activeScreen==='chat'\)/);
  assert.match(read('apps/android/hooks/useNativeKeyboardVisibility.ts'),/Keyboard.addListener\('keyboardDidHide'/);
  assert.doesNotMatch(app,/StyleSheet\.create\(/);
  assert.match(styles,/export const styles = StyleSheet\.create\(/);
- assert.match(styles,/inactiveChat:\{display:'none'\}/);
+ assert.doesNotMatch(styles,/inactiveChat:\{display:'none'\}/);
  assert.match(styles,/paddingBottom: Platform\.OS === 'android' \? 42 : 0/);
  assert.match(styles,/screenKeyboard: \{paddingBottom:0\}/);
  assert.match(styles,/composer:\{flexDirection:'row'/);
