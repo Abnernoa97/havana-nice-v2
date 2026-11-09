@@ -1,13 +1,13 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
-  Alert, AppState, Keyboard, KeyboardAvoidingView, Platform, Pressable, SafeAreaView, ScrollView, FlatList,
-  StatusBar, Text, TextInput, View, Image, useWindowDimensions,
+  Alert, AppState, Keyboard, KeyboardAvoidingView, Platform, Pressable, SafeAreaView, FlatList,
+  StatusBar, Text, TextInput, View, useWindowDimensions,
 } from 'react-native';
 import {
   HAVANA_V2_DEV_API_BASE_URL, fetchBackendHealth, getChatMediaAvailability, getChatSnapshot, getOlderChatMessages, searchChatMessages, getChatMenuState, getChatMessagePermissions, isWithinChatEditWindow, selectNextQueuedChatMessage, setOutgoingChatStatus, projectOutgoingChatStatus, CHAT_ACK_TIMEOUT_MS, newClientMessageId, uploadChatMediaBatch,
   reconcileChatMessages, reconcileReactions, reconcileUpdatedMessage, reconcileDeletedMessage, reconcileChatSnapshot, startNamedChatSession, restoreNamedChatSession, chatSessionExpired, chatReconnectDelay, reconcileChatReadReceipt, removeChatReactionsForMessage, withoutRemovedChatMessages, ChatHistoryRequestGate, oldestConfirmedChatSeq, mergeOlderChatReactions, CHAT_WS_HANDSHAKE_TIMEOUT_MS, captureChatOfflineSnapshot, restoreChatOfflineOutbox,
   type ChatMessage, type ChatServerEvent, type ChatSession, type ChatReaction, type ChatEmoji, type ChatReadReceipt,
-  CHAT_MEDIA_MAX_PER_SEND, type MemberScreen,
+  type MemberScreen,
 } from '@havana/shared';
 import { loadNativeLocalChat, saveNativeLocalChat } from '../storage/chatStorage';
 import type {BubbleAnchor} from '../features/chat/SwipeableBubble';
