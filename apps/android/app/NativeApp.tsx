@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
-  Alert, AppState, Keyboard, KeyboardAvoidingView, Platform, Pressable, SafeAreaView, FlatList,
+  Alert, AppState, BackHandler, Keyboard, KeyboardAvoidingView, PanResponder, Platform, Pressable, SafeAreaView, FlatList,
   StatusBar, Text, TextInput, View, useWindowDimensions,
 } from 'react-native';
 import {
@@ -29,6 +29,26 @@ export default function App() {
   const [session, setSession] = useState<ChatSession | null>(null);
   // Access remains the same ChatSession; only the destination changes to HOME.
   const [activeScreen,setActiveScreen]=useState<MemberScreen>('home');
+  const previousScreen=useRef<MemberScreen>('home');
+  const activeScreenRef=useRef({screen:activeScreen,authorized:!!session});
+  activeScreenRef.current={screen:activeScreen,authorized:!!session};
+  const navigateTo=(target:MemberScreen)=>{
+    if(target==='chat'&&activeScreen!=='chat')previousScreen.current=activeScreen;
+    setActiveScreen(target);
+  };
+  // iOS native: capture only the extreme left edge, never message-reply swipes.
+  const iosBackPan=useRef(PanResponder.create({
+    onStartShouldSetPanResponder:()=>false,
+    onMoveShouldSetPanResponderCapture:(_,gesture)=>
+      Platform.OS==='ios'&&activeScreenRef.current.authorized&&
+      activeScreenRef.current.screen==='chat'&&gesture.x0<28&&
+      gesture.dx>24&&Math.abs(gesture.dy)<40,
+    onPanResponderRelease:(_,gesture)=>{
+      if(gesture.dx>72&&Math.abs(gesture.dy)<65){
+        Keyboard.dismiss();setMenuMessage(null);setActiveScreen(previousScreen.current);
+      }
+    },
+  })).current;
   const [restoringAccess,setRestoringAccess] = useState(true);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [draft, setDraft] = useState('');
@@ -44,7 +64,7 @@ export default function App() {
   const [joining, setJoining] = useState(false);
   const [replyTo, setReplyTo] = useState<ChatMessage | null>(null);
   const [reactions, setReactions] = useState<ChatReaction[]>([]);
-  const [onlineCount, setOnlineCount] = useState(0);
+  const [onlineActorIds,setOnlineActorIds]=useState<ReadonlySet<string>>(()=>new Set());
   const [typing, setTyping] = useState('');
   const [receipts,setReceipts] = useState<ChatReadReceipt[]>([]);
   const [hasMore,setHasMore] = useState(false);
@@ -57,6 +77,20 @@ export default function App() {
   const [editing,setEditing] = useState<ChatMessage | null>(null);
   const [menuMessage,setMenuMessage] = useState<ChatMessage | null>(null);
   const [menuAnchor,setMenuAnchor] = useState<BubbleAnchor | null>(null);
+  // Android system Back: unwind Chat or another member module before exiting.
+  useEffect(()=>{
+    if(Platform.OS!=='android')return;
+    const listener=BackHandler.addEventListener('hardwareBackPress',()=>{
+      if(menuMessage){setMenuMessage(null);return true;}
+      if(composerPanel){setComposerPanel(null);return true;}
+      if(session&&activeScreen==='chat'){
+        Keyboard.dismiss();setActiveScreen(previousScreen.current);return true;
+      }
+      if(session&&activeScreen!=='home'){setActiveScreen('home');return true;}
+      return false;
+    });
+    return()=>listener.remove();
+  },[session,activeScreen,menuMessage,composerPanel]);
   const socket = useRef<WebSocket | null>(null);
   const removedSeq = useRef<Set<number>>(new Set());
   const historyRequests=useRef(new ChatHistoryRequestGate());
@@ -453,9 +487,9 @@ export default function App() {
       try {
         const item = JSON.parse(String(event.data)) as ChatServerEvent;
         if (item.type === 'chat.ready') {
-          setOnlineCount(item.users?.length || 1);
+          setOnlineActorIds(new Set((item.users??[]).map(user=>user.actorId)));
         } else if (item.type === 'chat.presence') {
-          setOnlineCount(item.users.length);
+          setOnlineActorIds(new Set(item.users.map(user=>user.actorId)));
         } else if (item.type === 'chat.typing') {
           if (item.actorId !== next.actorId) {
             setTyping(item.active ? item.senderName + ' está escribiendo…' : '');
@@ -728,15 +762,16 @@ export default function App() {
 
   // One message-action policy across native Android and the iPhone PWA.
   // Keep Android-specific StatusBar and keyboard viewport insets unchanged.
-  const {owned:menuOwn,canEdit:allowEdit,canDelete:allowDelete,width:menuWidth,top:menuTop,left:menuLeft}=getChatMenuState(
+  const {width:menuWidth,top:menuTop,left:menuLeft}=getChatMenuState(
     menuMessage,session?.actorId,connection,menuAnchor,{
       width:viewportWidth,height:viewportHeight,offsetTop:0,
       topPadding:(StatusBar.currentHeight??0)+8,bottomPadding:14,
-      maxWidth:288,menuHeight:118,
+      maxWidth:220,menuHeight:64,
     });
 
   return (
-    <SafeAreaView style={[styles.screen,keyboardOpen && styles.screenKeyboard]}>
+    <SafeAreaView {...(Platform.OS==='ios'?iosBackPan.panHandlers:{})}
+      style={[styles.screen,keyboardOpen && styles.screenKeyboard]}>
       <StatusBar barStyle="dark-content" />
       {/* Android 16 edge-to-edge can draw the composer behind the IME even with
             adjustResize. Height mode keeps the native chat input and Enviar
@@ -744,26 +779,7 @@ export default function App() {
       <KeyboardAvoidingView style={[styles.flex,session && activeScreen!=='chat' && styles.inactiveChat]}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         keyboardVerticalOffset={0}>
-        <View style={styles.header}>
-          <View>
-            <Text style={styles.brand}>HAVANA NICE</Text>
-            <Text style={styles.title}>Chat V2</Text>
-          </View>
-          <View style={styles.headerActions}>
-            {session&&<Pressable accessibilityRole="button" accessibilityLabel="Volver a Inicio"
-              onPress={()=>{Keyboard.dismiss();setActiveScreen('home');}} style={styles.headerSearchButton}>
-              <Text style={styles.headerSearchText}>‹ Inicio</Text>
-            </Pressable>}
-            <Text style={styles.connection}>
-              {session ? `${connection}${connection === 'en vivo' ? ` · ${onlineCount} en línea` : ''}` : `API ${apiState}`}
-            </Text>
-            {session ? <Pressable accessibilityRole="button" accessibilityLabel="Buscar mensajes"
-              accessibilityState={{expanded:searchOpen}}
-              onPress={toggleSearch} style={styles.headerSearchButton}>
-              <Text style={styles.headerSearchText}>{searchOpen?'Cerrar':'Buscar'}</Text>
-            </Pressable> : null}
-          </View>
-        </View>
+        
 
         {restoringAccess ? <View style={styles.login}><Text style={styles.description}>Abriendo HAVANA NICE…</Text></View> : !session ? (
           <View style={styles.login}>
@@ -783,20 +799,9 @@ export default function App() {
           </View>
         ) : (
           <>
-            {searchOpen ? <View style={styles.searchRow}>
-              <TextInput accessibilityLabel="Buscar mensajes" style={styles.searchInput}
-                value={searchText} onChangeText={value=>{historyRequests.current.cancelSearch();setSearchText(value);setResults(null);setSearching(false);}}
-                placeholder="Buscar mensajes…" onSubmitEditing={()=>void searchHistory()} returnKeyType="search"
-                placeholderTextColor="#8a8174" />
-              <Pressable onPress={()=>void searchHistory()} disabled={searching||searchText.trim().length<2}>
-                <Text style={styles.searchAction}>{searching?'…':'Buscar'}</Text>
-              </Pressable>
-              {results!==null ? <Pressable onPress={()=>{historyRequests.current.cancelSearch();setResults(null);setSearchText('');setSearching(false);}}>
-                <Text style={styles.searchAction}>Cerrar</Text>
-              </Pressable> : null}
-            </View> : null}
             <NativeChatTimeline
               messages={messages} results={results} session={session}
+               onlineActorIds={onlineActorIds} connected={connection==='en vivo'}
               reactions={reactions} receipts={receipts}
               hasMore={hasMore} loadingOlder={loadingOlder} scrollRef={scroll}
               onContentSizeChange={()=>{
@@ -816,13 +821,10 @@ export default function App() {
               onMessageLongPress={showMessageMenu} onRetry={retryOutgoing}
             />
             <NativeChatMessageMenu message={menuMessage} actorId={session.actorId}
-              connection={connection} reactions={reactions} allowEdit={allowEdit} allowDelete={allowDelete}
+              connection={connection} reactions={reactions}
               left={menuLeft} top={menuTop} width={menuWidth}
               onClose={()=>setMenuMessage(null)}
               onReact={(m,emoji)=>{react(m.seq,emoji);setMenuMessage(null);}}
-              onReply={replyToMessage}
-              onEdit={m=>{setMenuMessage(null);manageOwn(m);}}
-              onDelete={m=>manageOwn(m,true)}
             />
             {error ? <Text style={styles.errorBanner}>{error}</Text> : null}
             {connection !== 'en vivo' ? (
@@ -920,7 +922,7 @@ export default function App() {
         </View>}
       </KeyboardAvoidingView>
       {session&&activeScreen!=='chat'&&<NativeMemberHome token={session.token} displayName={session.displayName}
-        active={activeScreen} onNavigate={setActiveScreen}/>}
+        active={activeScreen} onNavigate={navigateTo}/>}
     </SafeAreaView>
   );
 }
