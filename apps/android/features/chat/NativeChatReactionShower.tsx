@@ -1,8 +1,9 @@
 import React,{useCallback,useEffect,useRef,useState} from 'react';
 import {Animated,Easing,Platform,StatusBar,View,useWindowDimensions} from 'react-native';
 import {
- makeChatReactionParticles,CHAT_REACTION_BURST_PER_TICK,
- CHAT_REACTION_BURST_MAX_PARTICLES,type ChatReactionParticle,type ChatEmoji,
+ makeChatReactionParticles,CHAT_REACTION_BURST_WAVES,CHAT_REACTION_BURST_WAVE_GAP_MS,
+ CHAT_REACTION_BURST_PER_TICK,CHAT_REACTION_BURST_MAX_PARTICLES,
+ type ChatReactionParticle,type ChatEmoji,
 } from '@havana/shared';
 
 // Entirely visual: this overlay never intercepts Chat touches or sends events.
