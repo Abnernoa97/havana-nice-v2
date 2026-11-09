@@ -241,7 +241,7 @@ export {uploadChatMediaBatch} from './chat-media-batch';
 export type {ChatMediaBatchOptions} from './chat-media-batch';
 
 // One bounded emoji-particle motion policy for iPad/iPhone PWA and Android native.
-export {makeChatReactionParticles,CHAT_REACTION_BURST_HOLD_MS,CHAT_REACTION_BURST_TICK_MS,CHAT_REACTION_BURST_PER_TICK,CHAT_REACTION_BURST_MAX_PARTICLES} from './chat-reaction-burst';
+export {makeChatReactionParticles,CHAT_REACTION_BURST_WAVES,CHAT_REACTION_BURST_WAVE_GAP_MS,CHAT_REACTION_BURST_PER_TICK,CHAT_REACTION_BURST_MAX_PARTICLES} from './chat-reaction-burst';
 export type {ChatReactionParticle} from './chat-reaction-burst';
 
 // One pure cross-platform reaction and typing event policy; shells own their sockets.
