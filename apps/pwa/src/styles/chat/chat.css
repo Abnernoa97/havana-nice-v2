@@ -183,3 +183,14 @@ h1 span { font-weight:400; }
  height:52px;width:60px;max-width:60px}
 .chat-media-queue small{color:#746a60;font-size:11px;line-height:1.25}
 .chat-media-queue button:disabled{opacity:.35}
+
+/* WebKit iPhone: reserve identical photo/video heights before and after load.
+   Full originals remain intact; inline images always use contain. */
+.chat-messages{-webkit-overflow-scrolling:touch;overflow-anchor:none;touch-action:pan-y}
+.hn-chat-image-button{position:relative;display:block;aspect-ratio:1/1;background:#e8e5df}
+.hn-chat-image-button .hn-chat-photo{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}
+.hn-media-loading.hn-photo-placeholder{width:100%;min-height:0;aspect-ratio:1/1}
+.hn-chat-video,.hn-media-loading.hn-video-placeholder{width:100%;aspect-ratio:16/9;min-height:0}
+.hn-chat-video{height:auto}
+.hn-chat-video-cover{width:100%;aspect-ratio:16/9;display:flex;align-items:center;justify-content:center;gap:12px;padding:12px;border:0;border-radius:12px;background:#182420;color:#fff;font-size:14px;font-weight:650;touch-action:pan-y}
+.hn-chat-video-cover span{font-size:27px;line-height:1}

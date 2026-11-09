@@ -166,3 +166,18 @@ test('a PWA sender reuses its local photo without changing video or R2 transport
  assert.match(src,/return uploadChatFile\(session,item\.file,item\.selection\.kind,onSent,item\.id\)/);
  assert.doesNotMatch(src,/uploadChatFile\(session,thumb/);
 });
+
+test('iPhone video grants are request-on-tap, with fixed photo/video frames',()=>{
+ const media=read('apps/pwa/src/features/chat/ChatMediaView.tsx');
+ const preview=read('apps/pwa/src/features/chat/useChatMediaPreview.ts');
+ const css=read('apps/pwa/src/styles/chat/chat.css');
+ assert.match(media,/videoRequest===0\?/);
+ assert.match(media,/onClick=\{\(\)=>setVideoRequest\(1\)\}/);
+ assert.match(media,/preload="none"/);
+ assert.match(media,/hn-photo-placeholder/);
+ assert.match(media,/hn-video-placeholder/);
+ assert.match(preview,/if\(media\.kind==='video'\)\{\s*if\(videoRequest===0\)return/);
+ assert.match(css,/\.hn-chat-image-button\{position:relative;display:block;aspect-ratio:1\/1/);
+ assert.match(css,/\.hn-chat-video,\.hn-media-loading\.hn-video-placeholder\{width:100%;aspect-ratio:16\/9/);
+ assert.match(css,/\.chat-messages\{-webkit-overflow-scrolling:touch;overflow-anchor:none;touch-action:pan-y\}/);
+});

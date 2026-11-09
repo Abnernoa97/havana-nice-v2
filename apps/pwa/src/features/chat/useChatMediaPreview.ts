@@ -6,7 +6,7 @@ import {requestChatMediaUrl} from './chat-media-grant';
 import {fetchChatPhotoThumbnail} from './chat-photo-preview';
 import {peekChatPhotoPreview,loadChatPhotoPreview,storeChatPhotoPreview} from './chat-photo-thumbnail-cache';
 
-export function useChatMediaPreview(media:ChatMedia,token:string){
+export function useChatMediaPreview(media:ChatMedia,token:string,videoRequest=0){
  const surface=useRef<HTMLDivElement|null>(null);
  const [visible,setVisible]=useState(false);
  const [preview,setPreview]=useState('');
@@ -50,6 +50,14 @@ export function useChatMediaPreview(media:ChatMedia,token:string){
    const controller=new AbortController();
    setPreview('');setVideoGrant('');setError('');
    void (async()=>{
+     // Merely scrolling past a video must not request a grant or mount a player.
+     if(media.kind==='video'){
+       if(videoRequest===0)return;
+       const signed=await requestChatMediaUrl(media.assetId,token,controller.signal);
+       if(!alive||controller.signal.aborted)return;
+       setVideoGrant(signed);
+       return;
+     }
      if(media.kind==='photo'){
        // Reopening Chat must not download and resize the original again.
        // The in-memory hit is synchronous; IndexedDB survives page/app restarts.
@@ -65,7 +73,6 @@ export function useChatMediaPreview(media:ChatMedia,token:string){
      // Only a first-time cache miss requests a private R2 grant.
      const signed=await requestChatMediaUrl(media.assetId,token,controller.signal);
      if(!alive)return;
-     if(media.kind==='video'){setVideoGrant(signed);return;}
      const thumbnail=await fetchChatPhotoThumbnail(signed,controller.signal);
      if(!alive||controller.signal.aborted)return;
      previewUrl=URL.createObjectURL(thumbnail);
@@ -80,7 +87,7 @@ export function useChatMediaPreview(media:ChatMedia,token:string){
      alive=false;controller.abort();
      if(previewUrl)URL.revokeObjectURL(previewUrl);
    };
- },[visible,media.assetId,media.sizeBytes,media.kind,token]);
+ },[visible,media.assetId,media.sizeBytes,media.kind,token,videoRequest]);
 
- return {surface,preview,videoGrant,error};
+ return {surface,preview,videoGrant,error,visible};
 }
