@@ -1,6 +1,7 @@
 import {useEffect,useRef,useState,type CSSProperties} from 'react';
 import {
- makeChatReactionParticles,CHAT_REACTION_BURST_PER_TICK,CHAT_REACTION_BURST_MAX_PARTICLES,
+ makeChatReactionParticles,CHAT_REACTION_BURST_WAVES,CHAT_REACTION_BURST_WAVE_GAP_MS,
+ CHAT_REACTION_BURST_PER_TICK,CHAT_REACTION_BURST_MAX_PARTICLES,
  type ChatReactionParticle,type ChatMessage,type ChatEmoji,type ChatReaction,
 } from '@havana/shared';
 
@@ -11,8 +12,6 @@ type Props={
  left:number;top:number;width:number;
  onClose:()=>void;onReact:(message:ChatMessage,emoji:ChatEmoji)=>void;
 };
-const WAVES=9;
-const WAVE_GAP_MS=95;
 
 export default function PwaChatMessageMenu({message,actorId,connection,reactions,
  left,top,width,onClose,onReact}:Props){
@@ -35,8 +34,8 @@ export default function PwaChatMessageMenu({message,actorId,connection,reactions
      setParticles(before=>[...before,...next].slice(-CHAT_REACTION_BURST_MAX_PARTICLES));
    };
    emit();
-   for(let wave=1;wave<WAVES;wave++){
-     showerTimers.current.push(setTimeout(emit,wave*WAVE_GAP_MS));
+   for(let wave=1;wave<CHAT_REACTION_BURST_WAVES;wave++){
+     showerTimers.current.push(setTimeout(emit,wave*CHAT_REACTION_BURST_WAVE_GAP_MS));
    }
  };
  return <>
