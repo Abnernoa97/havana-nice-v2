@@ -86,7 +86,11 @@ test('PWA attachment menu only offers Fotos and Video, with distinct media filte
  assert.match(src,/sendSelectedMedia/);
  assert.match(src,/multiple onChange=/);
  assert.match(picker,/mediaQueue\.current\.length\+files\.length>CHAT_MEDIA_MAX_PER_SEND/);
- assert.match(src,/selectedMedia\.map\(item=>/);
+ assert.match(src,/<PwaChatMediaQueuePreview/);
+ const preview=read('apps/pwa/src/features/chat/PwaChatMediaQueuePreview.tsx');
+ assert.match(preview,/selectedMedia\.map\(item=>/);
+ assert.match(preview,/onRemove\(item.id\)/);
+ assert.doesNotMatch(preview,/startNamedChatSession|new WebSocket|uploadChatFile|localStorage|MEDIA_BUCKET/);
  assert.equal(existsSync(new URL('../apps/pwa/src/media-upload.ts',import.meta.url)),false);
 });
 
@@ -140,7 +144,11 @@ test('Android native: two gallery filters, camera direct, no legacy extra menu',
  assert.match(picker,/quality:1/);
  assert.match(picker,/allowsMultipleSelection:source==='gallery'/);
  assert.match(picker,/selectionLimit:source==='gallery'\?free:1/);
- assert.match(src,/selectedMedia\.map\(item=>/);
+ assert.match(src,/<NativeChatMediaQueuePreview/);
+ const preview=read('apps/android/features/chat/NativeChatMediaQueuePreview.tsx');
+ assert.match(preview,/selectedMedia\.map\(item=>/);
+ assert.match(preview,/onRemove\(item\)/);
+ assert.doesNotMatch(preview,/startNamedChatSession|new WebSocket|uploadNativeChatFile|AsyncStorage|MEDIA_BUCKET/);
  assert.equal(manifest.dependencies['expo-file-system'],'~58.0.11');
  assert.equal(existsSync(new URL('../apps/android/media-upload.ts',import.meta.url)),false);
 });

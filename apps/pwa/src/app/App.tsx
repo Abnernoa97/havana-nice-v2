@@ -11,6 +11,7 @@ import type {MessageAnchor} from '../features/chat/SwipeMessage';
 import ChatTimeline from '../features/chat/ChatTimeline';
 import PwaChatMessageMenu from '../features/chat/PwaChatMessageMenu';
 import {usePwaMediaSelection} from '../features/chat/usePwaMediaSelection';
+import PwaChatMediaQueuePreview from '../features/chat/PwaChatMediaQueuePreview';
 import ComposerIcon from '../features/chat/ChatComposerIcon';
 import {uploadChatFile} from '../services/chat-media-upload';
 // The authorized HOME is fetched only when needed; Chat's live socket
@@ -772,22 +773,11 @@ export default function App() {
           <input className="chat-media-hidden-input" type="file" ref={cameraPicker}
             tabIndex={-1} aria-hidden="true" accept="image/*" capture="environment"
             onChange={e=>{chooseMedia('camera','photo',Array.from(e.currentTarget.files||[]));e.currentTarget.value='';}}/>
-          {selectedMedia.length>0&&<div aria-label="Archivos para enviar">
-            <small>{selectedMedia.length} de {CHAT_MEDIA_MAX_PER_SEND} archivos · Puedes mezclar Fotos y Video</small>
-            {selectedMedia.map(item=><div key={item.id} className="chat-media-preview">
-              {item.selection.kind==='photo'
-                ?<img src={item.selection.uri} alt={'Vista previa de '+item.selection.name}/>
-                :<video src={item.selection.uri} controls preload="metadata" playsInline aria-label={'Vista previa de '+item.selection.name}/>}
-              <div className="chat-media-preview-info">
-                <strong>{item.selection.name}</strong>
-                <small>{item.selection.kind==='photo'?'Fotografía':'Video'} · {(item.selection.sizeBytes/1048576).toFixed(1)} MB</small>
-              </div>
-              <button type="button" aria-label={'Quitar '+item.selection.name} onClick={()=>removeSelectedMedia(item.id)}>✕</button>
-            </div>)}
-            <small>{mediaUploading?'Subiendo originales a R2 · '+mediaProgress+' %':
-              mediaReady?'Originales listos para enviar':'Almacenamiento de archivos aún no configurado.'}</small>
-            {mediaUploading&&<progress aria-label="Progreso de subida" max={100} value={mediaProgress} style={{width:'100%'}}/>}
-          </div>}
+          {selectedMedia.length>0&&<PwaChatMediaQueuePreview
+            selectedMedia={selectedMedia} mediaUploading={mediaUploading}
+            mediaProgress={mediaProgress} mediaReady={mediaReady}
+            onRemove={removeSelectedMedia}
+          />}
           {mediaError&&<p className="chat-media-error" role="alert">{mediaError}</p>}
           <form className="chat-composer" onSubmit={event=>{event.preventDefault();if(selectedMedia.length&&!editing)void sendSelectedMedia();else send();}}>
             <div className="chat-input-pill">

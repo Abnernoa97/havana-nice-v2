@@ -18,6 +18,7 @@ import NativeMemberHome from './NativeMemberHome';
 import {uploadNativeChatFile} from '../services/native-chat-r2-upload';
 import {styles} from '../styles/chat-styles';
 import {useNativeMediaSelection} from '../features/chat/useNativeMediaSelection';
+import NativeChatMediaQueuePreview from '../features/chat/NativeChatMediaQueuePreview';
 import {useNativeKeyboardVisibility} from '../hooks/useNativeKeyboardVisibility';
 
 export default function App() {
@@ -843,36 +844,14 @@ export default function App() {
             {typing ? <View style={styles.typingIndicator} accessibilityLiveRegion="polite">
                <Text style={styles.typingIndicatorText}>{typing}</Text>
              </View> : null}
-             {selectedMedia.length>0&&<View accessibilityLabel="Archivos para enviar">
-               <Text style={styles.mediaHint}>{selectedMedia.length} de {CHAT_MEDIA_MAX_PER_SEND} archivos · Fotos y Video</Text>
-               <ScrollView style={{maxHeight:250}} nestedScrollEnabled keyboardShouldPersistTaps="handled">
-                 {selectedMedia.map(item=><View key={item.id} style={styles.mediaPreview}>
-                   {item.kind==='photo'
-                     ?<Image source={{uri:item.uri}} style={styles.mediaThumb}/>
-                     :<View style={[styles.mediaThumb,styles.videoThumb]}><Text style={styles.videoThumbText}>▶</Text></View>}
-                   <View style={styles.mediaInfo}>
-                     <Text style={styles.mediaName} numberOfLines={1}>{item.name}</Text>
-                     <Text style={styles.mediaHint}>{item.kind==='photo'?'Fotografía':'Video'} · {(item.sizeBytes/1048576).toFixed(1)} MB</Text>
-                   </View>
-                   <Pressable accessibilityRole="button"
-                     accessibilityLabel={'Quitar '+item.name}
-                     onPress={()=>{
-                       const remaining=selectedMedia.filter(x=>x.id!==item.id);
-                       
-                       setSelectedMedia(remaining);setMediaError('');
-                     }}>
-                     <Text style={styles.mediaClose}>✕</Text>
-                   </Pressable>
-                 </View>)}
-               </ScrollView>
-               <Text style={styles.mediaHint}>{mediaUploading?
-                 'Subiendo originales a R2 · '+mediaProgress+' %':
-                 mediaReady?'Originales listos para enviar':'Almacenamiento no disponible.'}</Text>
-               {mediaUploading&&<View accessibilityLabel="Progreso de subida"
-                 style={{height:6,borderRadius:3,backgroundColor:'#d8d1c9',overflow:'hidden',marginTop:7}}>
-                 <View style={{height:'100%',width:(mediaProgress+'%') as `${number}%`,backgroundColor:'#6a846e'}}/>
-               </View>}
-             </View>}
+             {selectedMedia.length>0&&<NativeChatMediaQueuePreview
+               selectedMedia={selectedMedia} mediaUploading={mediaUploading}
+               mediaProgress={mediaProgress} mediaReady={mediaReady}
+               onRemove={item=>{
+                 const remaining=selectedMedia.filter(x=>x.id!==item.id);
+                 setSelectedMedia(remaining);setMediaError('');
+               }}
+             />}
               {!!mediaError&&<Text style={styles.mediaError}>{mediaError}</Text>}
              <View style={styles.composer}>
                <View style={styles.inputPill}>
