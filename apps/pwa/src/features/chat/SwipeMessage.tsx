@@ -1,4 +1,4 @@
-import {useRef,useState} from 'react';
+import {useEffect,useRef,useState} from 'react';
 import type {ReactNode,TouchEvent,KeyboardEvent,MouseEvent} from 'react';
 
 export type MessageAnchor={x:number;y:number;width:number;height:number};
@@ -17,6 +17,13 @@ export default function SwipeMessage({children,className,onSwipeRight,onLongPres
   const elementRef=useRef<HTMLElement|null>(null);
   const timer=useRef<ReturnType<typeof setTimeout>|null>(null);
   const [shift,setShift]=useState(0);
+  useEffect(()=>{
+    const node=elementRef.current;
+    if(!node)return;
+    const preventNativeSelection=(event:Event)=>event.preventDefault();
+    node.addEventListener('selectstart',preventNativeSelection);
+    return()=>node.removeEventListener('selectstart',preventNativeSelection);
+  },[]);
   const clear=()=>{if(timer.current)clearTimeout(timer.current);timer.current=null;};
   const openMenu=()=>{
     const rect=elementRef.current?.getBoundingClientRect();
@@ -53,7 +60,6 @@ export default function SwipeMessage({children,className,onSwipeRight,onLongPres
       onTouchStart={touchStart} onTouchMove={touchMove} onTouchEnd={touchEnd}
       onTouchCancel={()=>{clear();start.current=null;setShift(0);}}
       onContextMenu={menu} onKeyDown={keyboard}
-      onSelectStart={event=>event.preventDefault()}
       onDragStart={event=>event.preventDefault()}
       aria-label="Mensaje. Desliza a la derecha para responder, mantén pulsado para opciones">
       {children}
