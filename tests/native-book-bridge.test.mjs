@@ -39,11 +39,11 @@ test('Android opens the PWA 3D directly in its own shell with the existing login
  assert.doesNotMatch(n,/Linking\.|Alert\.alert|pwaReaderUrl|FlatList|getBookPages|havana-v2-book-auth|AUTHORIZED|injectedJavaScriptBeforeContentLoaded/);
  assert.doesNotMatch(n,/\?token=|localStorage|AsyncStorage|startNamedChatSession|restoreNamedChatSession/);
 });
-test('The embedded PWA uses the original PageFlip and initial native context, no external login',()=>{
+test('The embedded PWA uses PageFlip and a single native-boot session delivery, without browser login',()=>{
  const p=read('apps/pwa/src/app/native-book-main.tsx');
  const h=read('apps/pwa/book.html');
  const reader=read('apps/pwa/src/features/book/BookReader.tsx');
- assert.doesNotMatch(p,/injectedObjectJson|attempts>=30/);
+ assert.doesNotMatch(p,/\.injectedObjectJson\?\.\(|attempts>=30/);
  assert.match(p,/window.addEventListener\('havana-v2-book-context',onContext\)/);
  assert.match(p,/reportReaderPhase\('boot'\)/);
  assert.match(p,/parseNativeBookContext\(/);
