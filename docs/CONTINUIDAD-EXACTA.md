@@ -7,8 +7,8 @@
 - Repositorio: `Abnernoa97/havana-nice-v2`, única rama `main`; en la auditoría, PRs abiertos **0**. PWA: `https://havana-nice-v2.pages.dev`; acceso habitual de músico `/`, vista visual `/visual.html`, Admin `/admin.html`, BOOK `/book.html`.
 - Worker único `havana-nice-v2-dev` (en Cloudflare bajo cuenta y proyecto V2, no HAVANA CLOUD). **Versión viva v66:** `87e6d28a-f1eb-43ed-974b-eb1884198533` al 100 %; refactor de ChatRoom desplegado desde bundle Wrangler verificado. v65 (`81a512bb-a383-4258-8f5b-6aacf831b9b5`) se conserva para reversión.
 - D1 única `6a4abd3a-c01b-4d4f-b0ed-49f7eaca0cc5`. Bucket R2 único privado `havana-nice-v2-media` → `MEDIA_BUCKET`. DO `CHAT_ROOMS` clase `ChatRoom` y `CALENDAR_ROOMS` clase `CalendarRoom`. Siete bindings conservados; credencial Admin solo secreto de Cloudflare, nunca fuente.
-- Android package ID `com.havananice.v2`; APK más reciente publicada **0.0.17**, `versionCode 17`, firmada y compatible con la anterior según CI; incluye BOOK 3D embebido. **Instalación física sobre 0.0.16 y comprobación de sesión/BOOK pendientes.** Solo se crea una nueva versión mediante lote explícitamente autorizado.
-- GitHub Actions: exactamente dos workflows, `.github/workflows/v2-foundation-check.yml` y `v2-android-apk.yml`. CI verde de Android 0.0.17: [42529962866](https://github.com/Abnernoa97/havana-nice-v2/actions/runs/42529962866); CI verde de BOOK/PWA: [42529962685](https://github.com/Abnernoa97/havana-nice-v2/actions/runs/42529962685). La exportación Android de la CI general **no** publica APK; la versión firmada se libera únicamente mediante el workflow de lote.
+- Android package ID `com.havananice.v2`; APK más reciente publicada **0.0.18**, `versionCode 18`, firmada y compatible con 0.0.17 según CI; incorpora recuperación de pantalla vacía BOOK 3D. **Instalación física sobre 0.0.17, sesión y páginas BOOK/Recuerdos pendientes.** Solo se crea una nueva versión mediante lote explícitamente autorizado.
+- GitHub Actions: exactamente dos workflows, `.github/workflows/v2-foundation-check.yml` y `v2-android-apk.yml`. CI verde de Android 0.0.18: [42558009892](https://github.com/Abnernoa97/havana-nice-v2/actions/runs/42558009892); CI general/BOOK: [42558009901](https://github.com/Abnernoa97/havana-nice-v2/actions/runs/42558009901). La exportación Android de la CI general **no** publica APK; la versión firmada se libera únicamente mediante el workflow de lote.
 
 ## Principios no negociables
 
@@ -40,10 +40,10 @@
 
 ## Próximos pasos en orden
 
-1. **Worker v66 ya publicado y verificado:** conservar los siete bindings y v65 como opción de reversión; no tocar Worker/D1/R2 durante QA física de Android 0.0.17.
+1. **Worker v66 ya publicado y verificado:** conservar los siete bindings y v65 como opción de reversión; no tocar Worker/D1/R2 durante QA física de Android 0.0.18.
 2. Continuar segmentando los controladores Chat nativo/PWA (sobre todo sockets y estado), sin mover ni duplicar autoridad de sesión. Prueba CI y reconexión con pérdida de internet.
 3. Comprobar cache offline PWA de módulos abiertos/no abiertos en iPhone real; conservar semántica y no cachear APIs ni archivos privados.
-4. **Validar físicamente APK 0.0.17 sin desinstalar la anterior:** misma sesión, BOOK y Recuerdos 3D, Chat/Familia/Calendario; próxima APK acumulativa sólo después de reunir fallos comprobados, manteniendo la firma.
+4. **Validar físicamente APK 0.0.18 sin desinstalar la 0.0.17:** misma sesión, BOOK y Recuerdos 3D, Chat/Familia/Calendario; próxima APK acumulativa sólo después de reunir fallos comprobados, manteniendo la firma.
 5. Completar Músicos y Multimedia, después detalles One UI y diseño; medir tiempos reales antes de prometer velocidad.
 
 ## Regla de trabajo del siguiente chat
