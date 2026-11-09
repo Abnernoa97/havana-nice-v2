@@ -7,6 +7,7 @@ import './book.css';
 type FlipEvent={data:number|string};
 type BookEngine={
  flipNext:(corner:'top'|'bottom')=>void;
+ flipPrev:(corner:'top'|'bottom')=>void;
  turnToPage:(page:number)=>void;
  destroy:()=>void;
  startUserTouch:(point:{x:number;y:number})=>void;
