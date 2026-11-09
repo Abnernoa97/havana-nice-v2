@@ -6,6 +6,7 @@ import type {ChatMessage,ChatSession} from '@havana/shared';
 import {photoPath,cacheWholePhoto} from '../../storage/chatPhotoCache';
 import {requestNativeChatMediaUrl} from './native-chat-media-grant';
 type Media=NonNullable<ChatMessage['media']>;
+const photoRatios=new Map<string,number>();
 
 export default function NativeChatPhoto({
  media,session,width,screenWidth,screenHeight
@@ -21,9 +22,21 @@ export default function NativeChatPhoto({
    const abort=new AbortController();
    setPhoto('');setRatio(1);setError('');setEnlarged(false);
    const display=(uri:string)=>{
+     // Display verified on-disk originals immediately; size detection happens
+     // in parallel instead of blocking the image's first render.
+     if(!active)return;
+     setPhoto(uri);
+     const key=media.assetId+':'+media.sizeBytes;
+     const known=photoRatios.get(key);
+     if(known)setRatio(known);
      Image.getSize(uri,(w,h)=>{
-       if(active){setRatio(w>0&&h>0?w/h:1);setPhoto(uri);}
-     },()=>{if(active)setError('No se pudo visualizar la fotografía');});
+       if(active){
+         const next=w>0&&h>0?w/h:1;
+         photoRatios.set(key,next);
+         if(photoRatios.size>100)photoRatios.delete(photoRatios.keys().next().value!);
+         setRatio(next);
+       }
+     },()=>{if(active){setPhoto('');setError('No se pudo visualizar la fotografía');}});
    };
    void (async()=>{
      const cached=photoPath(media);

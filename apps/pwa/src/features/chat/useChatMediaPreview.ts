@@ -4,6 +4,7 @@ import {useEffect,useRef,useState} from 'react';
 import type {ChatMedia} from './chat-media-types';
 import {requestChatMediaUrl} from './chat-media-grant';
 import {fetchChatPhotoThumbnail} from './chat-photo-preview';
+import {peekChatPhotoPreview,loadChatPhotoPreview,storeChatPhotoPreview} from './chat-photo-thumbnail-cache';
 
 export function useChatMediaPreview(media:ChatMedia,token:string){
  const surface=useRef<HTMLDivElement|null>(null);
@@ -49,6 +50,19 @@ export function useChatMediaPreview(media:ChatMedia,token:string){
    const controller=new AbortController();
    setPreview('');setVideoGrant('');setError('');
    void (async()=>{
+     if(media.kind==='photo'){
+       // Reopening Chat must not download and resize the original again.
+       // The in-memory hit is synchronous; IndexedDB survives page/app restarts.
+       const immediate=peekChatPhotoPreview(token,media);
+       const cached=immediate??await loadChatPhotoPreview(token,media);
+       if(!alive||controller.signal.aborted)return;
+       if(cached){
+         previewUrl=URL.createObjectURL(cached);
+         setPreview(previewUrl);
+         return;
+       }
+     }
+     // Only a first-time cache miss requests a private R2 grant.
      const signed=await requestChatMediaUrl(media.assetId,token,controller.signal);
      if(!alive)return;
      if(media.kind==='video'){setVideoGrant(signed);return;}
@@ -56,6 +70,8 @@ export function useChatMediaPreview(media:ChatMedia,token:string){
      if(!alive||controller.signal.aborted)return;
      previewUrl=URL.createObjectURL(thumbnail);
      setPreview(previewUrl);
+     // Never persist the original photograph or any signed URL.
+     void storeChatPhotoPreview(token,media,thumbnail);
    })().catch(()=>{
      if(alive&&!controller.signal.aborted)
        setError('No se pudo cargar la miniatura');
@@ -64,7 +80,7 @@ export function useChatMediaPreview(media:ChatMedia,token:string){
      alive=false;controller.abort();
      if(previewUrl)URL.revokeObjectURL(previewUrl);
    };
- },[visible,media.assetId,media.kind,token]);
+ },[visible,media.assetId,media.sizeBytes,media.kind,token]);
 
  return {surface,preview,videoGrant,error};
 }

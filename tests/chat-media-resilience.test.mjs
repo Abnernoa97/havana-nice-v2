@@ -141,3 +141,19 @@ test('PWA upload ref exists before media selection hook executes',()=>{
  assert.equal(picker>declaration,true);
  assert.equal(app.indexOf('const mediaUploadBusy=useRef(false)',declaration+1),-1);
 });
+
+test('PWA keeps a private, bounded preview cache and never stores signed grants',()=>{
+ const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
+ const hook=read('apps/pwa/src/features/chat/useChatMediaPreview.ts');
+ const cache=read('apps/pwa/src/features/chat/chat-photo-thumbnail-cache.ts');
+ assert.match(hook,/peekChatPhotoPreview\(token,media\)/);
+ assert.match(hook,/loadChatPhotoPreview\(token,media\)/);
+ assert.match(hook,/storeChatPhotoPreview\(token,media,thumbnail\)/);
+ assert.ok(hook.indexOf('loadChatPhotoPreview(token,media)')<
+   hook.indexOf('requestChatMediaUrl(media.assetId,token,controller.signal)'));
+ assert.match(hook,/URL\.revokeObjectURL\(previewUrl\)/);
+ assert.match(cache,/crypto\.subtle\.digest\('SHA-256'/);
+ assert.match(cache,/CHAT_PREVIEW_DISK_LIMIT_BYTES=48\*1024\*1024/);
+ assert.match(cache,/CHAT_PREVIEW_TTL_MS=14\*24\*60\*60\*1000/);
+ assert.doesNotMatch(cache,/localStorage|sessionStorage|remoteUrl|grantUrl/);
+});

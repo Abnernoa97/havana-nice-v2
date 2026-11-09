@@ -168,3 +168,16 @@ reconexión, **no** descarta la recuperación inicial de la sesión guardada.
 La conexión inicial se aplaza hasta que PWA esté visible y con red, o Android
 esté activa. Los temporizadores también invalidan callbacks ya cancelados,
 aunque el sistema entregue uno de ellos tardíamente.
+
+## Miniaturas rápidas del Chat (PWA y Android)
+
+La carátula de una foto descargada una primera vez se conserva como **Blob
+optimizado**, no como original ni enlace firmado: PWA usa una LRU en RAM
+(limitada a 16 MiB) más IndexedDB privado (48 MiB, 80 miniaturas como máximo,
+14 días), separadas por huella SHA-256 de la sesión. Las fotos visibles se
+restauran desde caché antes de solicitar una nueva autorización o descargar el
+original de R2. Si el navegador no permite IndexedDB, el chat sigue funcionando
+por la ruta habitual. El `blob:` temporal se revoca al salir de la vista.
+En Android una fotografía ya verificada en caché se pinta antes de terminar
+`Image.getSize`; su relación de aspecto se ajusta sin descargar de nuevo.
+No se tocaron videos, R2, datos de D1, ni las fotografías originales.
