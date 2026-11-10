@@ -217,3 +217,14 @@ test('encoder deadline freezes late results before R2 upload starts',()=>{
  assert.ok(app.indexOf('await waitForMediaPreparation()')<
    app.indexOf('await uploadChatMediaBatch([...mediaQueue.current]'));
 });
+
+test('photo encoding has one reset path on identity rotation and queue cancellation',()=>{
+ const source=read('apps/pwa/src/features/chat/usePwaMediaSelection.ts');
+ assert.match(source,/const resetPhotoPreparation=\(\)=>\{/);
+ assert.match(source,/photoEncodeTasks\.current\.clear\(\)/);
+ assert.match(source,/photoEncodeFrozen\.current\.clear\(\)/);
+ assert.match(source,/photoEncodeChain\.current=Promise\.resolve\(\)/);
+ assert.match(source,/mediaOwner\.current=actorId;\s*resetPhotoPreparation\(\)/);
+ assert.match(source,/const clearSelectedMedia=\(\)=>\{[\s\S]*?resetPhotoPreparation\(\)/);
+ assert.match(source,/actorRef\.current!==owner\|\|!mediaQueue\.current\.includes\(item\)/);
+});

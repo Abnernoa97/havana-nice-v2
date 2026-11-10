@@ -1,238 +1,133 @@
-# HAVANA NICE V2 — Chat multimedia
+# HAVANA NICE V2 · Chat multimedia — arquitectura vigente
 
-## Objetivo
+## Principios
 
-Cada acción ejecuta solo su responsabilidad. El chat mantiene una sola sesión,
-un solo historial y el mismo almacenamiento R2. Ni el módulo multimedia ni el
-visor pueden crear otra conexión de chat, modificar Google Drive, alterar
-mensajes anteriores o reescribir la autenticación.
+Una sola rama (`main`), una sesión autorizada, un historial, una ruta de
+subida a Cloudflare R2 y una fuente de verdad para el estado de mensajes.
+Los módulos de multimedia no abren WebSockets, no gestionan permisos de chat
+ni modifican Familia, Drive, OPFS, D1 o la navegación. No crear rutas paralelas
+ni modificar datos existentes durante una limpieza estructural.
 
-## Recorrido de una fotografía
+## Recorrido de foto · PWA de iPhone
 
-1. **Seleccionar o fotografiar:** el selector del dispositivo devuelve el
-   archivo original. Se valida tipo y tamaño antes de añadirlo a la cola.
-2. **Conservar pendiente:** una copia temporal privada se mantiene por un máximo
-   de 24 horas, dentro del límite de almacenamiento aplicable, para recuperar
-   la selección después de una interrupción.
-3. **Preparar y enviar:** la PWA de iPhone intenta comprimir fotos a WebP/JPEG
-   (hasta 2048 px de lado largo) antes de enviarlas a R2, con ID de reintento
-   estable. Videos y Android nativo siguen enviando el archivo seleccionado.
-   Si no hay conversor compatible se utiliza el original.
-4. **Confirmar:** solo después de la confirmación del servidor se quita ese
-   archivo de la cola y se limpia su copia temporal.
-5. **Ver en conversación:** se solicita un permiso corto de lectura y se crea
-   una vista previa, no una copia permanente del original.
-6. **Ampliar:** solo cuando se toca la foto se descarga el original completo.
-   Al cerrar, la URL temporal se revoca y se libera memoria.
+1. **Selección:** `usePwaMediaSelection.ts` valida hasta cinco archivos por
+   envío y muestra inmediatamente la bandeja con un `clientMessageId` de
+   adjunto estable (UUID de medio).
+2. **Preparación:** `chat-photo-upload-optimizer.ts` intenta WebP a calidad
+   0.74 o JPEG a 0.76, conservando la proporción y limitando el lado largo a
+   2048 px. No amplía imágenes pequeñas. Solo reemplaza el archivo si ahorra
+   al menos 8 % de bytes. No convierte PNG con transparencia a JPEG. Si
+   Safari no puede decodificar/codificar, conserva el archivo compatible.
+3. **Plazo:** la preparación corre en una cola local de una foto a la vez.
+   Al tocar Enviar, espera un máximo adicional de 1.5 s por el lote.
+   Los trabajos sin terminar se congelan: no pueden cambiar los bytes
+   mientras R2 ya conoce el tamaño y el MIME. Una cancelación o cambio de
+   integrante reinicia la cola sin modificar el historial.
+4. **Subida:** `chat-media-upload.ts` usa el transporte R2 existente, con
+   los mismos UUID y reintentos. No se sube otra copia del original cuando
+   existe una versión optimizada. Un error de conversión no bloquea el envío.
+5. **Confirmación:** solo al confirmar R2 se retira la selección enviada.
+   Los fallos permanecen pendientes para reintento; los archivos pendientes
+   se respaldan en `chat-media-draft.ts`, con vigencia de 24 h y límite
+   de 80 MiB, cuando el almacenamiento del iPhone lo permita.
+6. **Lectura:** `useChatMediaPreview.ts` consulta primero la miniatura de
+   caché y solo ante fallo pide permiso a R2 y genera una miniatura.
+   `ChatPhotoViewer.tsx` muestra al abrir la miniatura disponible e
+   intercambia a la foto confirmada en R2 en cuanto termine de bajarla.
+   Esa foto puede ser WebP optimizado, no necesariamente el original de cámara.
 
-Si una subida falla, el archivo permanece pendiente y puede reintentarse.
+No prometer que toda imagen será WebP: iOS puede conservar el original
+cuando el formato no es compatible, la imagen ya pesa poco o excede los
+límites seguros del convertidor. La compresión ocurre **antes de subir**,
+no en Cloudflare.
 
-## PWA / administrador — responsabilidades
+## Fotos · caché y presentación
 
-| Módulo | Única responsabilidad |
+| Módulo | Responsable |
 | --- | --- |
-| `usePwaMediaSelection.ts` | Interacción con cámara/galería y cola seleccionada |
-| `chat-media-draft.ts` | Recuperación temporal y validada del archivo pendiente |
-| `PwaChatMediaQueuePreview.tsx` | Mostrar adjuntos pendientes y progreso |
-| `chat-media-upload.ts` | Subir archivos preparados a R2 y confirmar mensajes |
-| `chat-media-grant.ts` | Solicitar URL autorizada temporal de lectura |
-| `chat-photo-preview.ts` | Decodificar una miniatura nítida con memoria acotada |
-| `useChatMediaPreview.ts` | Cargar/liberar previews cerca de la ventana visible |
-| `ChatMediaView.tsx` | Mostrar burbuja de foto o video, sin lógica de transporte |
-| `ChatPhotoViewer.tsx` | Abrir el original a pantalla completa **solo al tocar** |
+| `usePwaMediaSelection.ts` | Selección y cola de adjuntos PWA |
+| `chat-photo-upload-optimizer.ts` | Reducción local de fotos antes de R2 |
+| `chat-media-draft.ts` | Recuperación privada de selección no enviada |
+| `PwaChatMediaQueuePreview.tsx` | Progreso y miniaturas de selección |
+| `chat-media-upload.ts` | Transporte y confirmación R2 |
+| `chat-media-grant.ts` | Permiso temporal de lectura |
+| `chat-photo-preview.ts` | Generación acotada de miniaturas |
+| `chat-photo-thumbnail-cache.ts` | LRU de miniaturas en memoria e IndexedDB |
+| `useChatMediaPreview.ts` | Cargar/liberar medios de la ventana visible |
+| `ChatMediaView.tsx` | Burbuja; no realiza subidas |
+| `ChatPhotoViewer.tsx` | Visor progresivo; libera la URL temporal |
 
-Las fotos JPEG se previsualizan con borde largo máximo de **1,440 px** y
-calidad **0.92**. Las PNG conservan formato sin pérdidas para textos y
-transparencias. No se aumenta una foto pequeña artificialmente. Solo hay
-**dos decodificaciones** simultáneas; las miniaturas que quedan lejos de la
-pantalla se liberan con una pequeña espera para evitar parpadeos al desplazarse.
+Las miniaturas usan un máximo de 1440 px en el lado largo, JPEG 0.92 para
+fotografías y PNG cuando corresponde. Hasta dos decodificaciones simultáneas.
+La caché privada PWA dispone de 16 MiB en memoria y de hasta 48 MiB,
+80 elementos y 14 días en IndexedDB. Se identifica por huella de la
+sesión, no almacena el token ni una URL firmada. Nunca utilizar la
+caché de un integrante para mostrar medios a otro. Los `blob:`
+temporales se revocan al liberar el componente.
 
-Estas cifras afectan únicamente las miniaturas del chat. Al ampliar una
-foto, el visor presenta de inmediato la miniatura y después carga el archivo
-almacenado en R2, que en la PWA puede ser WebP optimizado, no necesariamente
-un original de cámara. El visor también se usa en administración.
+Las fotografías dentro del chat respetan su proporción natural
+(`aspect-ratio:auto`; `object-fit:contain`), no un marco cuadrado
+forzado. El visor muestra la miniatura disponible al instante mientras
+carga la versión almacenada en R2.
 
-## Android nativo — responsabilidades
+## Videos y Android nativo
 
-| Módulo | Única responsabilidad |
-| --- | --- |
-| `useNativeMediaSelection.ts` | Elegir medios y recuperar el resultado de la cámara |
-| `chatPendingMedia.ts` | Copias privadas de archivos todavía no enviados |
-| `NativeChatMediaQueuePreview.tsx` | Mostrar archivos pendientes |
-| `native-chat-r2-upload.ts` | Transmitir originales y confirmar mensajes |
-| `native-chat-media-grant.ts` | Solicitar permiso de lectura |
-| `NativeChatMediaView.tsx` | Elegir el componente de foto o video |
-| `NativeChatPhoto.tsx` | Usar cache verificada y abrir el original |
-| `NativeChatVideo.tsx` | Reproducir video con el reproductor Expo |
-| `chatPhotoCache.ts` | Descargar/verificar el original completo en almacenamiento de caché de la app |
+Los videos de la PWA no se convierten con el codificador de fotografías:
+mantienen el formato admitido por el servidor y la ruta de subida R2
+existente. Durante el scroll solo muestran una carátula 16:9:
+el permiso y reproductor se activan al tocar **Ver video**.
+No instalar un transcodificador pesado de video en Safari sin pruebas
+de rendimiento y de reproducción.
 
-El módulo de fotos **no** inicializa un reproductor de video; el módulo de
-video **no** descarga ni decodifica fotos. No se eliminan originales completos
-del cache solo por reorganizar el código.
+Android nativo conserva su flujo de selección y R2, **independiente de
+la PWA**, pero comparte el contrato de servidor y mensajes.
+`useNativeMediaSelection.ts` obtiene medios;
+`chatPendingMedia.ts` los recupera;
+`native-chat-r2-upload.ts` los transmite;
+`NativeChatPhoto.tsx` y `chatPhotoCache.ts` muestran fotos ya
+verificadas sin esperar otra descarga ni el cálculo inicial de relación.
+`NativeChatVideo.tsx` usa el reproductor Expo.
 
-## Aislamiento de adjuntos por integrante
+Cambiar la PWA en Cloudflare **no instala una APK nueva**.
 
-Si cambia o termina la sesión autorizada, PWA y Android vacían inmediatamente la
-cola multimedia **en memoria** para que otra identidad no pueda reutilizar las
-fotos o videos pendientes. Las URL temporales de la PWA se revocan. Esta medida
-no modifica el historial, R2, la caché de originales confirmados ni los
-archivos permanentes de otras secciones. La recuperación de borradores sigue
-validando el `actorId` autorizado.
+## Desplazamiento y sesiones
 
-## Responsabilidad de la navegación
+En la PWA el historial mantiene una ventana de 80 mensajes, avanzando
+24 por vez, sin descartar los mensajes almacenados. La paginación espera
+a que el desplazamiento termine; Safari no debe cambiar de página durante
+el toque ni responder al rebote elástico. Los gestos verticales no activan
+la animación lateral de responder. El seguimiento al final se suspende
+mientras se revisa el historial. Solo existe un propietario del WebSocket
+por plataforma.
 
-Inicio es la pantalla inicial en PWA y Android. El controlador principal
-decide el destino y gestiona Atrás. Cámara, selección, almacenamiento temporal
-y subida no pueden abrir una pantalla por su cuenta cuando hay archivos
-pendientes. La recuperación de una selección es independiente de la
-navegación. Si iOS reinicia la PWA al tomar una foto, se vuelve a Inicio y
-el archivo ya guardado temporalmente estará disponible al entrar a Chat.
-Android mantiene el retorno explícito a Chat tras un resultado nuevo que
-entrega `ImagePicker.getPendingResultAsync`, pero los borradores antiguos
-no cambian la pantalla inicial.
+Los módulos compartidos `chat-outbox.ts`, `chat-outbox-delivery.ts`,
+`chat-incoming.ts`, `chat-connection-timers.ts`,
+`chat-resume-gate.ts` y `chat-session-recovery.ts` concentran el orden,
+ACK, eventos, timers y recuperación autorizada, respectivamente.
+La capa multimedia nunca debe crear una segunda cola de mensajes
+confirmados ni una conexión paralela.
 
-## Contratos que deben respetarse
+En cambios de integrante o revocación, descartar solo la selección
+transitoria del miembro anterior y revocar sus URLs temporales;
+no eliminar R2, fotografías confirmadas, historial ni los datos de
+Familia. La recuperación de borradores valida el integrante autorizado.
 
-- Optimizar fotos en la PWA antes de iniciar R2; una vez reservado el tamaño/MIME
-  no modificar el archivo. Los videos y Android nativo no se recodifican.
-- Nunca borrar una selección después de un fallo de subida.
-- No duplicar sesiones WebSocket, llamadas de subida ni mensajes confirmados.
-- No guardar tokens ni URLs privadas autorizadas en almacenamiento persistente.
-- No descargar originales completos para todas las burbujas del historial.
-- Respetar el máximo de archivos, límites de tamaño y permisos existentes.
-- Conservar los controles nativos de volver y el acceso a la cámara y galería.
-- Proteger Inicio, Familia, Google Drive, R2, OPFS y el resto de la aplicación.
-- No eliminar cache de usuario ni mensajes como parte de limpieza estructural.
+## Contratos de mantenimiento y QA
 
-## Validación y publicación
-
-Las regresiones de UI y recuperación están en
-`tests/chat-media-ui.test.mjs`,
-`tests/chat-media-resilience.test.mjs` y
-`tests/chat-photo-preview-policy.test.mjs`.
-
-GitHub Actions completo se reserva para ejecución manual o la programación
-existente; no se dispara en cada modificación pequeña. Compilar la PWA en
-Cloudflare no sustituye probar con una foto real en iPhone, Android PWA y la
-siguiente APK Android nativa.
-
-## Conexión y recuperación de sesión (auditoría estructural)
-
-`recoverChatAccess` es la única decisión compartida al restaurar acceso:
-una validación exitosa usa la sesión autorizada, una revocación explícita
-rechaza el acceso y una interrupción de red conserva la sesión local para
-reintentar. No crea un segundo inicio de sesión ni toca IndexedDB o SQLite.
-El transporte nativo `openNativeChatSocket` solo abre el handshake existente
-(`Authorization: Bearer`, subprotocolo `havana-v2`); el controlador Android
-conserva la titularidad del único socket, reintentos y manejo de eventos.
-La PWA sigue usando `openChatSocket`, sin alterar su autenticación.
-
-## Un solo ciclo para mensajes salientes y confirmaciones
-
-`chat-outbox.ts` conserva el orden y las transiciones puras. El módulo
-`chat-outbox-delivery.ts` ejecuta la única política de envío, temporizador ACK,
-confirmación, pausa y reintento manual compartida por PWA y Android. Los
-controladores siguen siendo propietarios de sus sockets, cola local y
-persistencia, sin nuevos registros, nuevos endpoints ni limpieza de datos.
-
-El envío ahora exige que `senderId` coincida con `actorId` de la sesión
-activa. Una autorización nueva vacía la cola anterior y cancela ACK pendientes
-en **ambas** plataformas. El rechazo ocurre antes de transmitir datos,
-sin eliminar historiales confirmados, caché, R2 ni borradores de otras secciones.
-
-## Eventos entrantes — fuente de verdad
-
-`chat-incoming.ts` es el único controlador de decisiones sobre eventos
-`chat.ready`, presencia, escritura, edición, borrado, lectura, reacciones,
-mensajes, revocación y errores. `chat-events.ts` concentra las proyecciones
-puras de mensajes y evita reglas duplicadas en `index.ts`. El WebSocket y los
-estados visuales permanecen en cada cliente, sin una segunda sesión.
-Una edición rechazada conserva ahora su mensaje de error visible en lugar
-de borrarlo en la misma actualización. No se modifica R2, D1 ni la APK.
-
-## Control único de temporizadores de conexión
-
-`ChatConnectionTimers` comparte solamente los temporizadores de reintento y
-de espera del handshake (9 segundos). No tiene acceso a tokens, WebSocket ni
-almacenamiento. Cada cliente mantiene su propio criterio de visibilidad/actividad
-y el único socket existente. Las pruebas usan un reloj inyectable para detectar
-reintentos duplicados y temporizadores que sobrevivan al cierre de la app.
-
-## Validaciones tardías al volver de segundo plano
-
-`ChatResumeGate` descarta respuestas de restauración antiguas o terminadas
-mientras la app está en segundo plano, fuera de línea, revocada o con una
-nueva sesión. En ambos clientes, solo la última comprobación de identidad
-puede reconectar o revocar acceso. El socket permanece en su controlador
-original, sin modificar almacenamiento ni endpoints.
-
-Las validaciones al volver a primer plano y la recuperación inicial tienen
-controles de antigüedad separados: ocultar la app invalida los resultados de
-reconexión, **no** descarta la recuperación inicial de la sesión guardada.
-La conexión inicial se aplaza hasta que PWA esté visible y con red, o Android
-esté activa. Los temporizadores también invalidan callbacks ya cancelados,
-aunque el sistema entregue uno de ellos tardíamente.
-
-## Miniaturas rápidas del Chat (PWA y Android)
-
-La carátula de una foto descargada una primera vez se conserva como **Blob
-optimizado**, no como original ni enlace firmado: PWA usa una LRU en RAM
-(limitada a 16 MiB) más IndexedDB privado (48 MiB, 80 miniaturas como máximo,
-14 días), separadas por huella SHA-256 de la sesión. Las fotos visibles se
-restauran desde caché antes de solicitar una nueva autorización o descargar el
-original de R2. Si el navegador no permite IndexedDB, el chat sigue funcionando
-por la ruta habitual. El `blob:` temporal se revoca al salir de la vista.
-En Android una fotografía ya verificada en caché se pinta antes de terminar
-`Image.getSize`; su relación de aspecto se ajusta sin descargar de nuevo.
-No se tocaron videos, R2, datos de D1, ni las fotografías originales.
-
-Las fotos enviadas desde la PWA generan su miniatura en paralelo a la
-subida, directamente desde el archivo local, sin pedir una descarga posterior
-del original a R2. La generación es no bloqueante y su error nunca puede
-interrumpir la subida. No cambia el flujo de videos ni el original enviado.
-
-## Desplazamiento del Chat PWA en iPhone
-
-El Chat de iPhone mantiene un rango de 80 mensajes (saltos de 24, solapamiento
-de 56), sin modificar ni borrar el historial almacenado. La paginación
-automática espera a que termine el desplazamiento, no se activa mientras el
-dedo está apoyado, e ignora valores fuera de rango del rebote elástico de
-iOS. El seguimiento al último mensaje queda suspendido durante el gesto
-y el momentum; el `ResizeObserver` no lucha contra el usuario cuando cargan
-fotos o videos. El desplazamiento a lo último sigue disponible por acción
-explícita o cuando el usuario realmente llega al fondo.
-
-## iPhone · Multimedia y gestos del chat
-
-Las fotografías ocupan un marco estable cuadrado, con `object-fit: contain`
-para no recortar su contenido. Los videos ocupan un marco 16:9 y solicitan
-autorización y reproductor solo cuando se toca su carátula; al salir de la
-vista, su reproductor se libera. No se tocan originales R2 ni videos guardados.
-
-`SwipeMessage` identifica si el gesto empezó vertical u horizontal. El
-desplazamiento vertical no actualiza la posición React de la burbuja en cada
-movimiento. `ChatTimeline` descarta cualquier dirección residual al
-estabilizarse el movimiento, incluso si no cambia de página.
-
-## PWA iPhone · archivo de foto optimizado ANTES de R2
-
-Al seleccionar fotos, Chat muestra inmediatamente la bandeja. Un único
-codificador local intenta convertir cada fotografía a WebP de buena calidad,
-conservando la proporción y limitando el lado largo a 2048 píxeles sin
-ampliar fotos pequeñas. Solo reemplaza el archivo si ahorra al menos 8% de
-bytes; JPEG es un fallback para fotos
-sin transparencia. PNG nunca se convierte a JPEG. Si Safari no soporta el
-formato o no puede codificarlo de forma segura, se conserva el archivo
-compatible. Los videos no se recodifican con esta ruta.
-
-La subida espera a que el tamaño y MIME finales de cada foto estén cerrados:
-un UUID de R2 nunca cambia de contenido en mitad de una transferencia ni en
-el reintento. La copia de recuperación en IndexedDB guarda los bytes finales
-optimizados, no una segunda copia original. Esta protección deja los videos,
-su protocolo multipart y la base de datos existentes intactos.
-
-Si Safari tarda demasiado en comprimir, Enviar tiene una espera máxima
-adicional de 1.5 segundos por el lote de fotos que todavía se esté preparando.
-Las conversiones pendientes se congelan antes de que R2 reserve tamaño y MIME,
-para impedir modificaciones tardías del archivo durante una transferencia.
-Se conserva el archivo original compatible como respaldo, no se aborta la subida.
+- Una responsabilidad por módulo. No volver a duplicar subida, compresión,
+  almacenamiento de previews o autorización por plataforma.
+- El UUID, tamaño y MIME deben permanecer estables durante cada subida R2.
+  Nunca cambiar `item.file` después de empezar la transferencia.
+- No borrar selecciones con error ni hacer limpieza destructiva de cachés.
+- No persistir URLs firmadas, tokens en claro ni originales extra si hay
+  versión comprimida; la miniatura es una copia pequeña de visualización.
+- No mezclar las decisiones de video y foto en un segundo pipeline.
+- Conservar Inicio, Atrás, cámara/galería, calendario y resto de la aplicación.
+- Las pruebas de UI, recuperación y compresión están en
+  `tests/chat-media-ui.test.mjs`, `tests/chat-media-resilience.test.mjs`,
+  `tests/chat-photo-preview-policy.test.mjs` y
+  `tests/chat-photo-upload-optimizer.test.mjs`.
+- La compilación de Cloudflare valida la PWA; no reemplaza las pruebas
+  de velocidad y gestos con un iPhone real ni las pruebas de APK Android.
+- GitHub Actions de auditoría completa se ejecuta manualmente o según
+  la programación existente, no por cada commit.

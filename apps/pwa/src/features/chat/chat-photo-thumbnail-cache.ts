@@ -1,5 +1,5 @@
-// Private, bounded photo previews. Originals remain in R2; no signed URL,
-// raw session token, or original-quality photo enters IndexedDB.
+// Private, bounded photo previews. R2 holds the confirmed upload, which may
+// already be optimized WebP. Never persist a signed URL or raw session token.
 import type {ChatMedia} from './chat-media-types';
 
 export const CHAT_PREVIEW_MEMORY_LIMIT_BYTES=16*1024*1024;

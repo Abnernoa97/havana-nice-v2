@@ -1,5 +1,5 @@
 // Browser-only camera/gallery controller. The Chat socket, R2 transport and
-// authenticated session stay in App; private selected originals can survive a
+// authenticated session stay in App; private selected attachments can survive a
 // system-camera PWA restart in an isolated short-lived IndexedDB draft.
 import {useEffect,useLayoutEffect,useRef,useState,type RefObject} from 'react';
 import {validateChatMediaSelection,CHAT_MEDIA_MAX_PER_SEND,
@@ -51,14 +51,20 @@ export function usePwaMediaSelection({
  const actorRef=useRef(actorId);
  actorRef.current=actorId;
  const mediaOwner=useRef(actorId);
+ // Reset the one in-memory preparation queue on actor rotation or cancellation.
+ // Late work is still guarded by its original owner and queue membership.
+ const resetPhotoPreparation=()=>{
+   photoEncodeTasks.current.clear();
+   photoEncodeFrozen.current.clear();
+   photoEncodeChain.current=Promise.resolve();
+   setPhotoPreparing(false);
+ };
  // A new authorized member must never inherit the previous member's pending files.
  // Discard only transient object URLs/state, not completed R2 media or Chat caches.
  useLayoutEffect(()=>{
   if(mediaOwner.current===actorId)return;
   mediaOwner.current=actorId;
-  photoEncodeTasks.current.clear();
-  photoEncodeFrozen.current.clear();
-  setPhotoPreparing(false);
+  resetPhotoPreparation();
   for(const item of mediaQueue.current)URL.revokeObjectURL(item.selection.uri);
   mediaQueue.current=[];
   setSelectedMedia([]);
@@ -143,6 +149,8 @@ export function usePwaMediaSelection({
    saveWhenPrepared();
  };
  const clearSelectedMedia=()=>{
+   // Reset preparation too; a later selection must not wait behind old files.
+   resetPhotoPreparation();
    for(const item of mediaQueue.current)URL.revokeObjectURL(item.selection.uri);
    mediaQueue.current=[];setSelectedMedia([]);setMediaError('');
    persistQueue([]);

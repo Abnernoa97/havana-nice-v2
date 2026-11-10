@@ -1,5 +1,5 @@
-// One purpose: open the unmodified private original after a deliberate tap.
-// The inline thumbnail is never stretched to fullscreen while it downloads.
+// One purpose: open the confirmed R2 photo on tap. Show the cached thumbnail
+// immediately, then replace it with the full uploaded image when available.
 import {useEffect,useState} from 'react';
 import {createPortal} from 'react-dom';
 import type {ChatMedia} from './chat-media-types';
