@@ -14,7 +14,10 @@ export async function deleteChatMessageRecord(env,seq){
  for(const item of media){
   await env.DB.prepare('DELETE FROM chat_media_objects WHERE id=? AND message_seq IS NULL')
    .bind(item.id).run();
-  if(env.MEDIA_BUCKET)await env.MEDIA_BUCKET.delete(item.object_key).catch(()=>{});
+  if(env.MEDIA_BUCKET){
+   await env.MEDIA_BUCKET.delete(item.object_key).catch(()=>{});
+   await env.MEDIA_BUCKET.delete(item.object_key+'.poster.jpg').catch(()=>{});
+  }
  }
  if(check)throw new Error('Deletion not confirmed');
  return true;

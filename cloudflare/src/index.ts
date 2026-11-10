@@ -122,8 +122,8 @@ export default {
       return handleFamilyApi(request,env,url,origin,respond,verifySession,ctx);
     // One R2 API for Chat originals; real access requires existing member/Admin auth.
     if(url.pathname.startsWith('/api/chat/media/')){
-      const match=/^\/api\/chat\/media\/([0-9a-f-]{36})\/file$/.exec(url.pathname);
-      if(match&&request.method==='GET')return readChatMedia(request,env,match[1],url,origin);
+      const match=/^\/api\/chat\/media\/([0-9a-f-]{36})\/(file|poster)$/.exec(url.pathname);
+      if(match&&request.method==='GET')return readChatMedia(request,env,match[1],url,origin,match[2]==='poster');
       const member=await verifySession(env,(request.headers.get('authorization')||'').replace(/^Bearer\s+/i,''));
       const admin=!member&&await verifyAdminSession(request,env);
       if(!member&&!admin)return respond({error:'No autorizado'},401,origin);

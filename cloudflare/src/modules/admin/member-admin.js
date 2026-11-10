@@ -150,6 +150,12 @@ export async function handleAdminMemberManagement(request,env,url,origin,respond
      'INSERT OR IGNORE INTO r2_member_delete_queue(object_key,actor_id,multipart_upload_id,size_bytes,queued_at) '+
      'SELECT object_key,actor_id,upload_id,size_bytes,? FROM family_upload_sessions WHERE actor_id=?'
    ).bind(queuedAt,actorId),
+   // Video sidecars share the existing durable R2 delete queue.
+   env.DB.prepare(
+     'INSERT OR IGNORE INTO r2_member_delete_queue(object_key,actor_id,multipart_upload_id,size_bytes,queued_at) '+
+     "SELECT object_key||'.poster.jpg',sender_id,NULL,0,? FROM chat_media_objects "+
+     "WHERE sender_id=? AND kind='video'"
+   ).bind(queuedAt,actorId),
    // Chat media FK (sender_id -> chat_members) is not ON DELETE CASCADE.
    // Release media grants/parts with their existing ON DELETE CASCADE FKs.
    env.DB.prepare('DELETE FROM chat_media_objects WHERE sender_id=?').bind(actorId),

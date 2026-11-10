@@ -9,6 +9,8 @@ const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 export const CHAT_PART_BYTES=5*1024*1024;
 export const CHAT_DIRECT_MAX=15*1024*1024;
 const MAX_PARTS=2000,GRANT_MS=10*60*1000,ROOM='main-chat-v2';
+export const CHAT_VIDEO_POSTER_MAX_BYTES=256*1024;
+export function chatVideoPosterKey(objectKey){return objectKey+'.poster.jpg';}
 function reply(data,status=200,origin=''){
  return new Response(JSON.stringify(data),{status,headers:{
   'content-type':'application/json; charset=utf-8','cache-control':'no-store',
@@ -31,6 +33,7 @@ async function prune(env){
    if(row.status==='pending'&&row.multipart_upload_id)
     await env.MEDIA_BUCKET.resumeMultipartUpload(row.object_key,row.multipart_upload_id).abort();
    else await env.MEDIA_BUCKET.delete(row.object_key);
+   await env.MEDIA_BUCKET.delete(chatVideoPosterKey(row.object_key)).catch(()=>{});
    await env.DB.prepare('DELETE FROM chat_media_objects WHERE id=? AND message_seq IS NULL')
     .bind(row.id).run();
    await releaseFamilyStorage(env,row.id);
@@ -175,6 +178,25 @@ export async function completeChatMedia(env,session,id,origin){
   return reply({error:'No se pudo completar; reintenta la confirmación'},503,origin);
  }
 }
+/** Optional, bounded JPEG derivative of a confirmed private video. */
+export async function uploadChatVideoPoster(request,env,session,id,origin){
+ const row=await asset(env,id);
+ if(!row||row.sender_id!==session.actorId)return reply({error:'Archivo no encontrado'},404,origin);
+ if(row.kind!=='video'||row.status!=='ready')
+  return reply({error:'El video todavía no está disponible'},409,origin);
+ const bytes=Number(request.headers.get('content-length'));
+ if(request.headers.get('content-type')?.split(';')[0]!=='image/jpeg'||
+   !Number.isSafeInteger(bytes)||bytes<3||bytes>CHAT_VIDEO_POSTER_MAX_BYTES)
+  return reply({error:'Carátula no válida'},400,origin);
+ try{
+  const data=new Uint8Array(await request.arrayBuffer());
+  if(data.byteLength!==bytes||data[0]!==255||data[1]!==216||data[2]!==255)
+   return reply({error:'JPEG incorrecto'},400,origin);
+  await env.MEDIA_BUCKET.put(chatVideoPosterKey(row.object_key),data,{
+   httpMetadata:{contentType:'image/jpeg'}});
+  return reply({ok:true},201,origin);
+ }catch{return reply({error:'No se pudo guardar la carátula'},503,origin);}
+}
 export async function sendChatMedia(env,session,id,origin){
  const row=await asset(env,id);
  if(!row||row.sender_id!==session.actorId||row.status!=='ready')
@@ -231,20 +253,22 @@ export async function grantChatMedia(env,id,origin){
  return reply({url:'https://havana-nice-v2-dev.soloaplicaciones97.workers.dev/api/chat/media/'+id+
   '/file?token='+encodeURIComponent(token)},200,origin);
 }
-export async function readChatMedia(request,env,id,url,origin){
+export async function readChatMedia(request,env,id,url,origin,poster=false){
  const token=url.searchParams.get('token');
  if(!token||!/^[a-zA-Z0-9_-]{40,100}$/.test(token))return reply({error:'Acceso denegado'},403,origin);
- const row=await env.DB.prepare('SELECT a.object_key,a.mime_type,a.size_bytes FROM chat_media_grants g '+
+ const row=await env.DB.prepare('SELECT a.object_key,a.mime_type,a.size_bytes,a.kind FROM chat_media_grants g '+
   'JOIN chat_media_objects a ON a.id=g.media_id AND a.status=\'ready\' '+
   'JOIN chat_messages m ON m.seq=a.message_seq AND m.deleted_at IS NULL '+
   'WHERE g.token_hash=? AND g.media_id=? AND g.expires_at>?')
   .bind(await sha256Hex(token),id,Date.now()).first();
  if(!row)return reply({error:'Permiso caducado'},403,origin);
+ if(poster&&row.kind!=='video')return reply({error:'Carátula no disponible'},404,origin);
  const range=request.headers.get('range');
  if(range&&!/^bytes=\d*-\d*$/.test(range))return reply({error:'Rango inválido'},416,origin);
- const object=await env.MEDIA_BUCKET.get(row.object_key,range?{range:request.headers}:{});
+ const object=await env.MEDIA_BUCKET.get(poster?chatVideoPosterKey(row.object_key):row.object_key,
+  !poster&&range?{range:request.headers}:{});
  if(!object)return reply({error:'Archivo no disponible'},404,origin);
- const headers=new Headers({'content-type':row.mime_type,'accept-ranges':'bytes',
+ const headers=new Headers({'content-type':poster?'image/jpeg':row.mime_type,'accept-ranges':poster?'none':'bytes',
   'cache-control':'private, no-store','x-content-type-options':'nosniff',
   'content-security-policy':"default-src 'none'; sandbox",
   'referrer-policy':'no-referrer','content-disposition':'inline',
@@ -260,7 +284,7 @@ export async function readChatMedia(request,env,id,url,origin){
 }
 export async function handleChatMedia(request,env,url,origin,session){
  const path=url.pathname;
- const idMatch=/^\/api\/chat\/media\/([0-9a-f-]{36})(?:\/(content|send|complete|grant|file|parts\/(\d+)))?$/.exec(path);
+ const idMatch=/^\/api\/chat\/media\/([0-9a-f-]{36})(?:\/(content|send|complete|grant|file|poster|parts\/(\d+)))?$/.exec(path);
  if(path==='/api/chat/media/status'&&request.method==='GET')
   return reply({enabled:!!env.MEDIA_BUCKET,maxFilesPerSend:5,
    storage:await familyStorageUsage(env)},200,origin);
@@ -272,6 +296,7 @@ export async function handleChatMedia(request,env,url,origin,session){
  if(operation==='content'&&request.method==='PUT')return uploadChatDirect(request,env,session,id,origin);
  if(part&&request.method==='PUT')return uploadChatPart(request,env,session,id,Number(part),origin);
  if(operation==='complete'&&request.method==='POST')return completeChatMedia(env,session,id,origin);
+ if(operation==='poster'&&request.method==='PUT')return uploadChatVideoPoster(request,env,session,id,origin);
  if(operation==='send'&&request.method==='POST')return sendChatMedia(env,session,id,origin);
  if(operation==='grant'&&request.method==='GET')return grantChatMedia(env,id,origin);
  return reply({error:'Método no permitido'},405,origin);
