@@ -17,7 +17,8 @@ test('Pending attachments never carry across member session changes',()=>{
    assert.match(effect,/setMediaError\(''\)/);
    assert.doesNotMatch(effect,/clearChatMediaDraft|clearNativePendingMedia|discardNativePendingMedia|persistQueue\(\[\]\)/);
  }
- assert.match(web,/for\(const item of mediaQueue\.current\)URL\.revokeObjectURL\(item\.selection\.uri\)/);
+ assert.match(web,/if\(item\.selection\.uri\)URL\.revokeObjectURL\(item\.selection\.uri\)/);
+ assert.match(web,/if\(item\.videoPoster\?\.url\)URL\.revokeObjectURL\(item\.videoPoster\.url\)/);
  assert.match(web,/mediaQueue\.current=\[\]/);
  assert.match(native,/selectedRef\.current=\[\]/);
  assert.match(web,/loadChatMediaDraft\(actorId\)/);
@@ -54,7 +55,7 @@ test('PWA selection protects original photos in a separate short-lived draft',()
  assert.match(store,/record\.items\.some/);
  assert.match(store,/store\.delete\(KEY\)/);
  assert.match(app,/confirmUploadedMedia\(item\.id\)/);
- assert.match(app,/uploadChatFile\(session,item\.file,item\.selection\.kind,onSent,item\.id\)/);
+ assert.match(app,/uploadChatFile\(session,item\.file,item\.selection\.kind,onSent,item\.id,/);
  assert.doesNotMatch(store,/localStorage\.setItem|saveLocalChat\(|session\.token/);
 });
 
@@ -189,7 +190,7 @@ test('iPhone photo preparation is visible and isolated across actor switches',()
  const backend=read('cloudflare/src/modules/chat/chat-media.js');
  assert.match(picker,/photoEncodeTasks\.current\.clear\(\)/);
  assert.match(picker,/setPhotoPreparing\(true\)/);
- assert.match(picker,/setPhotoPreparing\(photoEncodeTasks\.current\.size>0\)/);
+ assert.match(picker,/setPhotoPreparing\(\[\.\.\.photoEncodeTasks\.current\.keys\(\)\]\.some/);
  assert.match(app,/photoPreparing=\{photoPreparing\}/);
  assert.match(view,/photoPreparing\?'Preparando imágenes ligeras/);
  assert.match(backend,/\['image\/webp','photo'\]/);

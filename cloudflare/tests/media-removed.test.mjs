@@ -12,7 +12,7 @@ test('one private R2 binding serves Chat plus Familia; no legacy bridge or secon
  const worker=src('src/index.ts');
  assert.doesNotMatch(worker,/attachChatMedia|handleCloudLinkAdmin|HAVANA_CLOUD/);
  assert.match(worker,/handleChatMedia\(request,env,url,origin,identity\)/);
- assert.match(worker,/readChatMedia\(request,env,match\[1\],url,origin\)/);
+ assert.match(worker,/readChatMedia\(request,env,match\[1\],url,origin,match\[2\]==='poster'\)/);
  assert.match(worker,/media: 'private-r2-chat-and-family'/);
  const media=src('src/modules/chat/chat-media.js');
  assert.match(media,/reserveFamilyStorage\(env,size,id\)/);

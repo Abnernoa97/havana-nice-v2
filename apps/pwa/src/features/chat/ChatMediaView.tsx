@@ -30,7 +30,7 @@ export default function ChatMediaView({media,token}:{media:ChatMedia;token:strin
          <button type="button" className="hn-chat-video-cover"
            onClick={()=>setVideoRequest(1)} aria-label="Cargar video">
            {poster&&<img src={poster} alt="" className="hn-chat-video-poster" decoding="async"/>}
-           <span aria-hidden="true">▶</span> Ver video
+           <span aria-hidden="true">▶</span><span className="hn-chat-video-caption">Ver video</span>
          </button>
        :videoGrant?<video key={videoGrant} src={videoGrant} playsInline controls
           preload="none" className="hn-chat-video"

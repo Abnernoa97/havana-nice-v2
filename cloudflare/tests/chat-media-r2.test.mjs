@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {DatabaseSync} from 'node:sqlite';
 import {startChatMedia,uploadChatDirect,uploadChatPart,completeChatMedia,chatMediaStatus,
- sendChatMedia,grantChatMedia,readChatMedia,decorateChatMessages,CHAT_PART_BYTES} from '../src/modules/chat/chat-media.js';
+ sendChatMedia,grantChatMedia,readChatMedia,uploadChatVideoPoster,chatVideoPosterKey,decorateChatMessages,CHAT_PART_BYTES} from '../src/modules/chat/chat-media.js';
 import {deleteChatMessageRecord} from '../src/modules/chat/message-removal.js';
 import {familyStorageUsage} from '../src/modules/family/family-quota.js';
 
@@ -150,5 +150,38 @@ test('multipart original resumes only missing parts and never publishes incomple
  assert.equal((await sendChatMedia(env,session,id,'')).status,201);
  assert.equal(raw.prepare('SELECT COUNT(*) n FROM chat_messages').get().n,1);
  assert.equal((await familyStorageUsage(env)).usedBytes,size);
+ raw.close();
+});
+
+test('private video JPEG sidecar shares the existing grant and is removed with the message',async()=>{
+ const {env,raw,objects}=fixture();
+ const id=crypto.randomUUID(),video=new Uint8Array([0,0,0,0]);
+ assert.equal((await start(env,id,4,'video/mp4','video')).status,201);
+ assert.equal((await uploadChatDirect(request(base+id+'/content','PUT',{
+   'Content-Type':'video/mp4','Content-Length':'4'},video),env,session,id,'')).status,201);
+ const jpeg=new Uint8Array([255,216,255,0,217]);
+ const wrong=await uploadChatVideoPoster(request(base+id+'/poster','PUT',{
+   'Content-Type':'image/jpeg','Content-Length':'5'},jpeg),env,{actorId:another},id,'');
+ assert.equal(wrong.status,404);
+ const bad=await uploadChatVideoPoster(request(base+id+'/poster','PUT',{
+   'Content-Type':'image/jpeg','Content-Length':'4'},video),env,session,id,'');
+ assert.equal(bad.status,400);
+ assert.equal((await uploadChatVideoPoster(request(base+id+'/poster','PUT',{
+   'Content-Type':'image/jpeg','Content-Length':'5'},jpeg),env,session,id,'')).status,201);
+ assert.equal(objects.has('chat/'+encodeURIComponent(actor)+'/'+id),true);
+ assert.equal(objects.has(chatVideoPosterKey('chat/'+encodeURIComponent(actor)+'/'+id)),true);
+ const sent=await sendChatMedia(env,session,id,'');
+ const seq=(await sent.json()).seq;
+ const grant=(await grantChatMedia(env,id,'')).status;
+ assert.equal(grant,200);
+ const granted=(await grantChatMedia(env,id,'')).json();
+ const url=(await granted).url;
+ const poster=await readChatMedia(request(url.replace('/file?','/poster?'),'GET'),
+   env,id,new URL(url),'',true);
+ assert.equal(poster.status,200);
+ assert.equal(poster.headers.get('content-type'),'image/jpeg');
+ assert.deepEqual([...new Uint8Array(await poster.arrayBuffer())],[...jpeg]);
+ assert.equal(await deleteChatMessageRecord(env,seq),true);
+ assert.equal(objects.size,0);
  raw.close();
 });

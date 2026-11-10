@@ -122,8 +122,9 @@ test('member data removal queues Chat and Familia originals/posters before the F
  const firstMemberDelete=sql.findIndex(x=>x.startsWith('DELETE FROM chat_members'));
  const chatMediaDelete=sql.findIndex(x=>x.startsWith('DELETE FROM chat_media_objects'));
  const enqueue=sql.filter(x=>x.startsWith('INSERT OR IGNORE INTO r2_member_delete_queue'));
- assert.equal(enqueue.length,4,'Chat media, Familia originals, posters, pending uploads each queued atomically');
+ assert.equal(enqueue.length,5,'Chat originals, Chat JPEG posters, Familia originals/posters, pending uploads queued atomically');
  assert.ok(chatMediaDelete>0 && chatMediaDelete<firstMemberDelete,'resolve Chat media FK before deleting a musician');
+ assert.ok(sql.some(x=>x.includes("object_key||'.poster.jpg'")),'queue video covers before member deletion');
  assert.ok(sql.findIndex(x=>x.startsWith('DELETE FROM family_media'))<firstMemberDelete);
  assert.equal(e.DB.members.size,0);
 });

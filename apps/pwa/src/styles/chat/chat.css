@@ -208,8 +208,11 @@ h1 span { font-weight:400; }
 /* One 16:9 image cover per video; the playback control stays accessible. */
 .hn-chat-video-cover{position:relative;overflow:hidden;isolation:isolate}
 .hn-chat-video-poster{position:absolute;inset:0;width:100%;height:100%;
- object-fit:cover;pointer-events:none;z-index:-1}
+ object-fit:cover;pointer-events:none;z-index:0}
 .hn-chat-video-cover:has(.hn-chat-video-poster){background:#19201c}
 .hn-chat-video-cover:has(.hn-chat-video-poster)::before{
- content:'';position:absolute;inset:0;background:#0005;z-index:-1}
+ content:'';position:absolute;inset:0;background:#0005;z-index:1;pointer-events:none}
 .chat-media-preview .chat-video-selected-poster{object-fit:cover}
+
+.hn-chat-video-cover>span{position:relative;z-index:2}
+.hn-chat-video-cover .hn-chat-video-caption{font-size:14px;line-height:1}
