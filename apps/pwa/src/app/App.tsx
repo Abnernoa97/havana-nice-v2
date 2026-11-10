@@ -159,7 +159,9 @@ export default function App() {
           }
           return uploadChatFile(session,item.file,item.selection.kind,onSent,item.id,
             ()=>item.videoPoster?.blob??null).then(result=>{
-             if(result.posterUploaded&&item.videoPoster?.blob)
+             // The sender sees the cover instantly from private cache.
+             // The remote JPEG is optional and may roll out separately.
+             if(item.videoPoster?.blob)
                void storeChatPhotoPreview(session.token,
                  {assetId:item.id,sizeBytes:item.file.size},item.videoPoster.blob);
              return result;
