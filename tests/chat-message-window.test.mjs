@@ -145,3 +145,11 @@ test('vertical touch scroll does not animate bubbles or reuse a stale page gestu
  assert.match(swipe,/if\(axis\.current==='horizontal'&&dx>60/);
  assert.match(timeline,/recentGesture\.current=0;\s*if\(!action\)return/);
 });
+
+test('auto-follow stays frozen through touch start and all Safari momentum events',()=>{
+ const follow=readFileSync(new URL('../apps/pwa/src/features/chat/useChatScrollAnchor.ts',import.meta.url),'utf8');
+ assert.match(follow,/if\(stickToLatest\.current&&!userScrollGesture\.current\)scrollChatToLatest\(\)/);
+ assert.match(follow,/const onTouchStart=\(\)=>\{\s*touchActive=true;\s*userScrollGesture\.current=true;\s*stickToLatest\.current=false;/);
+ assert.match(follow,/if\(!touchActive\)settle\(\)/);
+ assert.match(follow,/\},420\)/);
+});

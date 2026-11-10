@@ -53,7 +53,7 @@ no en Cloudflare.
 | `chat-media-grant.ts` | Permiso temporal de lectura |
 | `chat-photo-preview.ts` | Generación acotada de miniaturas |
 | `chat-photo-thumbnail-cache.ts` | LRU de miniaturas en memoria e IndexedDB |
-| `useChatMediaPreview.ts` | Cargar/liberar medios de la ventana visible |
+| `useChatMediaPreview.ts` | Precargar fotos una vez por mensaje montado; liberar al desmontar; video solo visible |
 | `ChatMediaView.tsx` | Burbuja; no realiza subidas |
 | `ChatPhotoViewer.tsx` | Visor progresivo; libera la URL temporal |
 
@@ -131,3 +131,14 @@ Familia. La recuperación de borradores valida el integrante autorizado.
   de velocidad y gestos con un iPhone real ni las pruebas de APK Android.
 - GitHub Actions de auditoría completa se ejecuta manualmente o según
   la programación existente, no por cada commit.
+
+## Scroll PWA iPhone · ciclo de vida de fotos
+
+La carga de una miniatura se inicia hasta 900 px antes de entrar en pantalla,
+una sola vez por montaje de mensaje. Ya no se borra la foto por salir del
+viewport ni se vuelve a crear su `blob:` al invertir el gesto; solo se libera
+al desmontar la fila, cerrar Chat o cambiar de identidad. La caché LRU/IndexedDB
+mantiene sus límites y permisos, y el video conserva su propia política de
+visibilidad. El controlador de scroll espera 420 ms de silencio de eventos
+tras la inercia de WebKit: jamás fuerza el fondo mientras el dedo o momentum
+siguen desplazando. No se modifica selección, WebP, multipart R2 ni Android.

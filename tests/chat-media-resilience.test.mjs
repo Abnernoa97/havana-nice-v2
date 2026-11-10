@@ -100,6 +100,7 @@ test('Photo chat uses sharp previews and progressive fullscreen media',()=>{
  assert.match(hook,/fetchChatPhotoThumbnail\(signed,controller\.signal\)/);
  assert.match(hook,/IntersectionObserver/);
  assert.match(hook,/rootMargin:'320px'/);
+ assert.match(hook,/rootMargin:'900px'/);
  assert.match(hook,/setVisible\(false\)/);
  assert.match(hook,/clearTimeout\(releaseTimer\)/);
  assert.match(hook,/URL\.revokeObjectURL\(previewUrl\)/);
@@ -175,7 +176,7 @@ test('iPhone video grants are request-on-tap, with fixed photo/video frames',()=
  assert.match(media,/preload="none"/);
  assert.match(media,/hn-photo-placeholder/);
  assert.match(media,/hn-video-placeholder/);
- assert.match(preview,/if\(media\.kind==='video'\)\{\s*if\(videoRequest===0\)return/);
+ assert.match(preview,/media\.kind!=='video'\|\|!visible\|\|videoRequest===0/);
  assert.match(css,/\.hn-chat-image-button\{position:relative;display:block;aspect-ratio:1\/1/);
  assert.match(css,/\.hn-chat-video,\.hn-media-loading\.hn-video-placeholder\{width:100%;aspect-ratio:16\/9/);
  assert.match(css,/\.chat-messages\{-webkit-overflow-scrolling:touch;overflow-anchor:none;touch-action:pan-y\}/);
@@ -227,4 +228,18 @@ test('photo encoding has one reset path on identity rotation and queue cancellat
  assert.match(source,/mediaOwner\.current=actorId;\s*resetPhotoPreparation\(\)/);
  assert.match(source,/const clearSelectedMedia=\(\)=>\{[\s\S]*?resetPhotoPreparation\(\)/);
  assert.match(source,/actorRef\.current!==owner\|\|!mediaQueue\.current\.includes\(item\)/);
+});
+
+test('photo preview remains mounted through iPhone scroll instead of unloading on visibility',()=>{
+ const hook=read('apps/pwa/src/features/chat/useChatMediaPreview.ts');
+ const follow=read('apps/pwa/src/features/chat/useChatScrollAnchor.ts');
+ assert.match(hook,/setPhotoRequested\(true\)/);
+ assert.match(hook,/observer\.disconnect\(\);\s*setPhotoRequested\(true\)/);
+ assert.match(hook,/rootMargin:'900px'/);
+ assert.match(hook,/media\.kind!=='photo'\|\|!photoRequested/);
+ assert.doesNotMatch(hook,/if\(!visible\)\{\s*setPreview\(''\)/);
+ assert.match(hook,/URL\.revokeObjectURL\(previewUrl\)/);
+ assert.match(follow,/if\(stickToLatest\.current&&!userScrollGesture\.current&&!touchActive\)/);
+ assert.match(follow,/setTimeout\(\(\)=>\{\s*settleTimer=null;\s*userScrollGesture\.current=false;/);
+ assert.match(follow,/\},420\)/);
 });

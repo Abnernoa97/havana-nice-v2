@@ -54,7 +54,7 @@ export function useChatScrollAnchor({
    if(!active)return;
    // Pagination prepends older messages without yanking a reader to the bottom.
    if(skipOlderRef.current){skipOlderRef.current=false;return;}
-   if(stickToLatest.current)scrollChatToLatest();
+   if(stickToLatest.current&&!userScrollGesture.current)scrollChatToLatest();
  },[messageCount,active]);
 
  useEffect(()=>{
@@ -68,22 +68,28 @@ export function useChatScrollAnchor({
    const settle=()=>{
      if(settleTimer!==null)clearTimeout(settleTimer);
      if(touchActive)return;
+     // WebKit momentum continues after touchend. Every scroll event resets
+     // this timer, so auto-follow cannot snap during the inertial glide.
      settleTimer=setTimeout(()=>{
        settleTimer=null;
        userScrollGesture.current=false;
-       // Follow only if the user actually reached the latest message.
-       // Never wrestle against Safari's inertial scrolling or a paused history.
        if(!explicitlyBrowsing.current&&gap()<=24)stickToLatest.current=true;
-     },280);
+     },420);
    };
    const onScroll=()=>{
      if(explicitlyBrowsing.current)return;
      if(userScrollGesture.current){
        stickToLatest.current=false;
-       settle();
+       if(!touchActive)settle();
      }else if(gap()<=24)stickToLatest.current=true;
    };
-   const onTouchStart=()=>{touchActive=true;};
+   const onTouchStart=()=>{
+     touchActive=true;
+     userScrollGesture.current=true;
+     stickToLatest.current=false;
+     if(settleTimer!==null)clearTimeout(settleTimer);
+     settleTimer=null;
+   };
    const onTouchMove=()=>{
      userScrollGesture.current=true;
      stickToLatest.current=false;
@@ -110,7 +116,7 @@ export function useChatScrollAnchor({
    list.addEventListener('keydown',onKeyDown);
    // Media loads must not force a bottom snap during a finger movement.
    const observer=new ResizeObserver(()=>{
-     if(stickToLatest.current&&!userScrollGesture.current)
+     if(stickToLatest.current&&!userScrollGesture.current&&!touchActive)
        scrollChatToLatest();
    });
    observer.observe(content);
