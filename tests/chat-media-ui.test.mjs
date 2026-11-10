@@ -263,7 +263,7 @@ test('Web/Admin previews use a high-density thumbnail and original on tap',()=>{
  const thumb=read('apps/pwa/src/features/chat/chat-photo-preview.ts');
  const viewer=read('apps/pwa/src/features/chat/ChatPhotoViewer.tsx');
  const css=read('apps/pwa/src/styles/chat/chat.css');
- assert.match(web,/useChatMediaPreview\(media,token\)/);
+ assert.match(web,/useChatMediaPreview\(media,token,videoRequest\)/);
  assert.match(web,/className="hn-chat-photo"/);
  assert.match(web,/photoOpen&&<ChatPhotoViewer media=\{media\}/);
  assert.match(viewer,/const blob=await response\.blob\(\)/);

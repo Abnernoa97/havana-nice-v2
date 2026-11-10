@@ -95,7 +95,7 @@ test('Photo chat uses sharp lightweight previews and unmodified fullscreen origi
  const viewer=read('apps/pwa/src/features/chat/ChatPhotoViewer.tsx');
  const grant=read('apps/pwa/src/features/chat/chat-media-grant.ts');
  const css=read('apps/pwa/src/styles/chat/chat.css');
- assert.match(web,/useChatMediaPreview\(media,token\)/);
+ assert.match(web,/useChatMediaPreview\(media,token,videoRequest\)/);
  assert.match(web,/photoOpen&&<ChatPhotoViewer media=\{media\}/);
  assert.match(hook,/fetchChatPhotoThumbnail\(signed,controller\.signal\)/);
  assert.match(hook,/IntersectionObserver/);
