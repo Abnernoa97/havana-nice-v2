@@ -213,7 +213,7 @@ jobs:
       - name: Verify durable Chat camera and upload recovery on mobile
         run: node --experimental-strip-types --test tests/chat-media-resilience.test.mjs
       - name: Check full-resolution originals and retina preview sizing
-        run: node --experimental-strip-types --test tests/chat-photo-preview-policy.test.mjs tests/chat-photo-thumbnail-cache.test.mjs
+        run: node --experimental-strip-types --test tests/chat-photo-preview-policy.test.mjs tests/chat-photo-thumbnail-cache.test.mjs tests/chat-photo-upload-optimizer.test.mjs
 
       - name: Protect one authorized HOME and native Chat navigation
         run: node --test tests/member-home-navigation.test.mjs tests/home-visual-identity.test.mjs
