@@ -43,6 +43,8 @@ export function usePwaMediaSelection({
  const videoPicker=useRef<HTMLInputElement|null>(null);
  const cameraPicker=useRef<HTMLInputElement|null>(null);
  const persistChain=useRef<Promise<void>>(Promise.resolve());
+ const photoEncodeChain=useRef<Promise<void>>(Promise.resolve());
+ const photoEncodeTasks=useRef<Map<string,Promise<void>>>(new Map());
  const actorRef=useRef(actorId);
  actorRef.current=actorId;
  const mediaOwner=useRef(actorId);
@@ -70,20 +72,50 @@ export function usePwaMediaSelection({
        setMediaError('Archivos listos para enviar. No fue posible guardarlos para recuperación automática.');
    });
  };
+ // Encode one iPhone image at a time while previews remain interactive.
+ const preparePhoto=(item:PwaQueuedMedia,owner:string)=>{
+   const task=photoEncodeChain.current.catch(()=>{}).then(async()=>{
+     if(actorRef.current!==owner||!mediaQueue.current.includes(item))return;
+     const {optimizeChatPhotoUpload}=await import('./chat-photo-upload-optimizer');
+     const optimized=await optimizeChatPhotoUpload(item.file);
+     if(optimized===item.file||actorRef.current!==owner||
+        !mediaQueue.current.includes(item))return;
+     const nextUri=URL.createObjectURL(optimized);
+     const oldUri=item.selection.uri;
+     item.file=optimized;
+     item.selection={...item.selection,name:optimized.name,
+       mimeType:optimized.type,sizeBytes:optimized.size,uri:nextUri};
+     URL.revokeObjectURL(oldUri);
+     setSelectedMedia([...mediaQueue.current]);
+   }).catch(()=>{/* An unsupported encoder never blocks a photo. */})
+   .finally(()=>{
+     photoEncodeTasks.current.delete(item.id);
+     if(actorRef.current===owner&&photoEncodeTasks.current.size===0)
+       persistQueue(mediaQueue.current);
+   });
+   photoEncodeTasks.current.set(item.id,task);
+   photoEncodeChain.current=task;
+ };
+ const waitForMediaPreparation=async()=>{
+   await Promise.allSettled([...photoEncodeTasks.current.values()]);
+ };
+ const saveWhenPrepared=()=>{
+   if(photoEncodeTasks.current.size===0)persistQueue(mediaQueue.current);
+ };
  const removeSelectedMedia=(id:string)=>{
    if(uploadBusy.current)return;
    const removed=mediaQueue.current.find(item=>item.id===id);
    if(removed)URL.revokeObjectURL(removed.selection.uri);
    mediaQueue.current=mediaQueue.current.filter(item=>item.id!==id);
    setSelectedMedia([...mediaQueue.current]);setMediaError('');
-   persistQueue(mediaQueue.current);
+   saveWhenPrepared();
  };
  const confirmUploadedMedia=(id:string)=>{
    const removed=mediaQueue.current.find(item=>item.id===id);
    if(removed)URL.revokeObjectURL(removed.selection.uri);
    mediaQueue.current=mediaQueue.current.filter(item=>item.id!==id);
    setSelectedMedia([...mediaQueue.current]);setMediaError('');
-   persistQueue(mediaQueue.current);
+   saveWhenPrepared();
  };
  const clearSelectedMedia=()=>{
    for(const item of mediaQueue.current)URL.revokeObjectURL(item.selection.uri);
@@ -109,7 +141,7 @@ export function usePwaMediaSelection({
    picker.click();
  };
  const chooseMedia=(source:ChatMediaSource,kind:ChatMediaKind,files:File[])=>{
-   if(!files.length||uploadBusy.current)return;
+   if(!files.length||uploadBusy.current||!actorId)return;
    if(mediaQueue.current.length+files.length>CHAT_MEDIA_MAX_PER_SEND){
      setMediaError('Máximo 5 archivos por envío, entre fotos y videos.');return;
    }
@@ -128,7 +160,10 @@ export function usePwaMediaSelection({
    });
    mediaQueue.current=[...mediaQueue.current,...additions];
    setSelectedMedia([...mediaQueue.current]);setMediaError('');
-   persistQueue(mediaQueue.current);
+   // Show immediately, encode in the background; keep only final bytes in draft.
+   if(kind==='photo'){
+     for(const item of additions)preparePhoto(item,actorId);
+   }else saveWhenPrepared();
  };
  useEffect(()=>{
    if(!actorId)return;
@@ -153,5 +188,5 @@ export function usePwaMediaSelection({
  return {selectedMedia,mediaError,setMediaError,mediaQueue,
    photosPicker,videoPicker,cameraPicker,removeSelectedMedia,
    confirmUploadedMedia,clearSelectedMedia,
-   openGalleryMedia,openCamera,chooseMedia};
+   openGalleryMedia,openCamera,chooseMedia,waitForMediaPreparation};
 }

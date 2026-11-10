@@ -26,8 +26,8 @@ export default function PwaChatMediaQueuePreview({selectedMedia,mediaUploading,m
                 onClick={()=>onRemove(item.id)}>✕</button>
             </div>)}
             </div>
-            <small>{mediaUploading?'Subiendo originales a R2 · '+mediaProgress+' %':
-              mediaReady?'Originales listos para enviar':'Almacenamiento de archivos aún no configurado.'}</small>
+            <small>{mediaUploading?'Enviando a R2 · '+mediaProgress+' %':
+              mediaReady?'Archivos listos para enviar':'Almacenamiento de archivos aún no configurado.'}</small>
             {mediaUploading&&<progress aria-label="Progreso de subida" max={100} value={mediaProgress} style={{width:'100%'}}/>}
           </div>
  );

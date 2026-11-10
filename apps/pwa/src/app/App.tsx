@@ -89,7 +89,7 @@ export default function App() {
   const {selectedMedia,mediaError,setMediaError,mediaQueue,
     photosPicker,videoPicker,cameraPicker,
     removeSelectedMedia,confirmUploadedMedia,clearSelectedMedia,
-    openGalleryMedia,openCamera,chooseMedia}=
+    openGalleryMedia,openCamera,chooseMedia,waitForMediaPreparation}=
     usePwaMediaSelection({
       actorId:session?.actorId??null,uploadBusy:mediaUploadBusy,
       onCloseMenu:()=>setComposerPanel(null),
@@ -140,6 +140,9 @@ export default function App() {
     // Same successful Familia transport, sequential files with 3 parallel parts per video.
     // Never clear a failed file: tapping Enviar resumes its own R2 upload ID.
     try{
+      // Keep the R2 ID stable: photo dimensions/bytes are finalized first.
+      await waitForMediaPreparation();
+      if(activeSession.current?.token!==session.token||!mediaQueue.current.length)return;
       // R2 upload code is downloaded only if the musician actually sends files.
       const {uploadChatFile}=await import('../services/chat-media-upload');
       const {createChatPhotoThumbnail}=await import('../features/chat/chat-photo-preview');
