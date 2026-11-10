@@ -181,3 +181,17 @@ test('iPhone video grants are request-on-tap, with fixed photo/video frames',()=
  assert.match(css,/\.hn-chat-video,\.hn-media-loading\.hn-video-placeholder\{width:100%;aspect-ratio:16\/9/);
  assert.match(css,/\.chat-messages\{-webkit-overflow-scrolling:touch;overflow-anchor:none;touch-action:pan-y\}/);
 });
+
+test('iPhone photo preparation is visible and isolated across actor switches',()=>{
+ const picker=read('apps/pwa/src/features/chat/usePwaMediaSelection.ts');
+ const app=read('apps/pwa/src/app/App.tsx');
+ const view=read('apps/pwa/src/features/chat/PwaChatMediaQueuePreview.tsx');
+ const backend=read('cloudflare/src/modules/chat/chat-media.js');
+ assert.match(picker,/photoEncodeTasks\.current\.clear\(\)/);
+ assert.match(picker,/setPhotoPreparing\(true\)/);
+ assert.match(picker,/setPhotoPreparing\(photoEncodeTasks\.current\.size>0\)/);
+ assert.match(app,/photoPreparing=\{photoPreparing\}/);
+ assert.match(view,/photoPreparing\?'Preparando imágenes ligeras/);
+ assert.match(backend,/\['image\/webp','photo'\]/);
+ assert.match(backend,/row\.size_bytes!==size\|\|existing\.mime_type!==data\.mimeType/);
+});

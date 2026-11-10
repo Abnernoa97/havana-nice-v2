@@ -209,3 +209,19 @@ vista, su reproductor se libera. No se tocan originales R2 ni videos guardados.
 desplazamiento vertical no actualiza la posición React de la burbuja en cada
 movimiento. `ChatTimeline` descarta cualquier dirección residual al
 estabilizarse el movimiento, incluso si no cambia de página.
+
+## PWA iPhone · archivo de foto optimizado ANTES de R2
+
+Al seleccionar fotos, Chat muestra inmediatamente la bandeja. Un único
+codificador local intenta convertir cada fotografía a WebP de buena calidad,
+conservando el número original de píxeles y la proporción. Solo sustituye el
+archivo si reduce como mínimo el 12% de bytes; JPEG es un fallback para fotos
+sin transparencia. PNG nunca se convierte a JPEG. Si Safari no soporta el
+formato o no puede codificarlo de forma segura, se conserva el archivo
+compatible. Los videos no se recodifican con esta ruta.
+
+La subida espera a que el tamaño y MIME finales de cada foto estén cerrados:
+un UUID de R2 nunca cambia de contenido en mitad de una transferencia ni en
+el reintento. La copia de recuperación en IndexedDB guarda los bytes finales
+optimizados, no una segunda copia original. Esta protección deja los videos,
+su protocolo multipart y la base de datos existentes intactos.

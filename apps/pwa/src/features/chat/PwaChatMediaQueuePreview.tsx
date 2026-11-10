@@ -5,11 +5,12 @@ import type {PwaQueuedMedia} from './usePwaMediaSelection';
 type Props={
  selectedMedia:PwaQueuedMedia[];
  mediaUploading:boolean;
+ photoPreparing:boolean;
  mediaProgress:number;
  mediaReady:boolean;
  onRemove:(id:string)=>void;
 };
-export default function PwaChatMediaQueuePreview({selectedMedia,mediaUploading,mediaProgress,mediaReady,onRemove}:Props){
+export default function PwaChatMediaQueuePreview({selectedMedia,mediaUploading,photoPreparing,mediaProgress,mediaReady,onRemove}:Props){
  return (
 <div className="chat-media-queue" aria-label="Archivos para enviar">
             <small>{selectedMedia.length} de {CHAT_MEDIA_MAX_PER_SEND} archivos · Puedes mezclar Fotos y Video</small>
@@ -26,7 +27,9 @@ export default function PwaChatMediaQueuePreview({selectedMedia,mediaUploading,m
                 onClick={()=>onRemove(item.id)}>✕</button>
             </div>)}
             </div>
-            <small>{mediaUploading?'Enviando a R2 · '+mediaProgress+' %':
+            <small>{mediaUploading&&photoPreparing?'Optimizando fotos…':
+              mediaUploading?'Enviando a R2 · '+mediaProgress+' %':
+              photoPreparing?'Preparando imágenes ligeras…':
               mediaReady?'Archivos listos para enviar':'Almacenamiento de archivos aún no configurado.'}</small>
             {mediaUploading&&<progress aria-label="Progreso de subida" max={100} value={mediaProgress} style={{width:'100%'}}/>}
           </div>

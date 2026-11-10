@@ -89,7 +89,7 @@ export default function App() {
   const {selectedMedia,mediaError,setMediaError,mediaQueue,
     photosPicker,videoPicker,cameraPicker,
     removeSelectedMedia,confirmUploadedMedia,clearSelectedMedia,
-    openGalleryMedia,openCamera,chooseMedia,waitForMediaPreparation}=
+    openGalleryMedia,openCamera,chooseMedia,waitForMediaPreparation,photoPreparing}=
     usePwaMediaSelection({
       actorId:session?.actorId??null,uploadBusy:mediaUploadBusy,
       onCloseMenu:()=>setComposerPanel(null),
@@ -789,7 +789,7 @@ export default function App() {
             }}/>
           {selectedMedia.length>0&&<PwaChatMediaQueuePreview
             selectedMedia={selectedMedia} mediaUploading={mediaUploading}
-            mediaProgress={mediaProgress} mediaReady={mediaReady}
+            photoPreparing={photoPreparing} mediaProgress={mediaProgress} mediaReady={mediaReady}
             onRemove={removeSelectedMedia}
           />}
           {mediaError&&<p className="chat-media-error" role="alert">{mediaError}</p>}

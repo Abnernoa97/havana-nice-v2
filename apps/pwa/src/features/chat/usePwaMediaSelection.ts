@@ -37,6 +37,7 @@ export function usePwaMediaSelection({
  onCloseMenu:()=>void;
 }){
  const [selectedMedia,setSelectedMedia]=useState<PwaQueuedMedia[]>([]);
+ const [photoPreparing,setPhotoPreparing]=useState(false);
  const [mediaError,setMediaError]=useState('');
  const mediaQueue=useRef<PwaQueuedMedia[]>([]);
  const photosPicker=useRef<HTMLInputElement|null>(null);
@@ -53,6 +54,8 @@ export function usePwaMediaSelection({
  useLayoutEffect(()=>{
   if(mediaOwner.current===actorId)return;
   mediaOwner.current=actorId;
+  photoEncodeTasks.current.clear();
+  setPhotoPreparing(false);
   for(const item of mediaQueue.current)URL.revokeObjectURL(item.selection.uri);
   mediaQueue.current=[];
   setSelectedMedia([]);
@@ -90,10 +93,13 @@ export function usePwaMediaSelection({
    }).catch(()=>{/* An unsupported encoder never blocks a photo. */})
    .finally(()=>{
      photoEncodeTasks.current.delete(item.id);
-     if(actorRef.current===owner&&photoEncodeTasks.current.size===0)
-       persistQueue(mediaQueue.current);
+     if(actorRef.current===owner){
+       setPhotoPreparing(photoEncodeTasks.current.size>0);
+       if(photoEncodeTasks.current.size===0)persistQueue(mediaQueue.current);
+     }
    });
    photoEncodeTasks.current.set(item.id,task);
+   setPhotoPreparing(true);
    photoEncodeChain.current=task;
  };
  const waitForMediaPreparation=async()=>{
@@ -188,5 +194,5 @@ export function usePwaMediaSelection({
  return {selectedMedia,mediaError,setMediaError,mediaQueue,
    photosPicker,videoPicker,cameraPicker,removeSelectedMedia,
    confirmUploadedMedia,clearSelectedMedia,
-   openGalleryMedia,openCamera,chooseMedia,waitForMediaPreparation};
+   openGalleryMedia,openCamera,chooseMedia,waitForMediaPreparation,photoPreparing};
 }
