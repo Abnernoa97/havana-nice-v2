@@ -261,3 +261,35 @@ test('iPhone queues original videos without five decoders or MOV copies in Index
  assert.match(batch,/for\(const item of items\)/);
  assert.doesNotMatch(picker,/VideoEncoder|MediaRecorder|ffmpeg|transcod/);
 });
+
+test('video JPEG posters use one isolated decoder, same private R2 grant and scroll-safe cover',()=>{
+ const maker=read('apps/pwa/src/features/chat/chat-video-poster.ts');
+ const pick=read('apps/pwa/src/features/chat/usePwaMediaSelection.ts');
+ const queue=read('apps/pwa/src/features/chat/PwaChatMediaQueuePreview.tsx');
+ const upload=read('apps/pwa/src/services/chat-media-upload.ts');
+ const media=read('apps/pwa/src/features/chat/ChatMediaView.tsx');
+ const hook=read('apps/pwa/src/features/chat/useChatMediaPreview.ts');
+ const backend=read('cloudflare/src/modules/chat/chat-media.js');
+ const root=read('cloudflare/src/index.ts');
+ const grant=read('apps/pwa/src/features/chat/chat-media-grant.ts');
+ const css=read('apps/pwa/src/styles/chat/chat.css');
+ assert.match(maker,/VIDEO_POSTER_MAX_EDGE=640/);
+ assert.match(maker,/VIDEO_POSTER_MAX_BYTES=256\*1024/);
+ assert.match(maker,/setTimeout\(\(\)=>finish\(null\),2400\)/);
+ assert.match(maker,/URL\.revokeObjectURL\(url\)/);
+ assert.match(pick,/posterChain\.current=posterChain\.current\.catch/);
+ assert.match(pick,/prepareVideoPoster\(item,actorId\)/);
+ assert.match(queue,/chat-video-selected-poster/);
+ assert.doesNotMatch(queue,/<video\b/);
+ assert.match(upload,/posterUploaded=false/);
+ assert.match(upload,/base\+id\+'\/poster'/);
+ assert.match(media,/className="hn-chat-video-poster"/);
+ assert.match(hook,/fetch\(chatVideoPosterUrl\(grant\)/);
+ assert.match(hook,/peekChatPhotoPreview\(token,media\)/);
+ assert.match(grant,/url\.pathname=url\.pathname\.slice\(0,-4\)\+'poster'/);
+ assert.match(backend,/CHAT_VIDEO_POSTER_MAX_BYTES=256\*1024/);
+ assert.match(backend,/row\.sender_id!==session\.actorId/);
+ assert.match(backend,/chat_media_grants g/);
+ assert.match(root,/match\[2\]==='poster'/);
+ assert.match(css,/\.hn-chat-video-poster\{/);
+});

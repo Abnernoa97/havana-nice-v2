@@ -15,3 +15,12 @@ export async function requestChatMediaUrl(
    throw Error('Archivo no disponible.');
  return grant.url;
 }
+
+/** The poster uses the original media's exact existing private grant. */
+export function chatVideoPosterUrl(grantUrl:string):string{
+ const url=new URL(grantUrl);
+ if(!url.pathname.endsWith('/file')||!url.searchParams.has('token'))
+   throw Error('Carátula no autorizada');
+ url.pathname=url.pathname.slice(0,-4)+'poster';
+ return url.toString();
+}

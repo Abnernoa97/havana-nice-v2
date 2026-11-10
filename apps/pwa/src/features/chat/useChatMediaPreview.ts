@@ -3,7 +3,7 @@
 // Blob URLs are released on unmount or authorized identity/media change.
 import {useEffect,useRef,useState} from 'react';
 import type {ChatMedia} from './chat-media-types';
-import {requestChatMediaUrl} from './chat-media-grant';
+import {requestChatMediaUrl,chatVideoPosterUrl} from './chat-media-grant';
 import {fetchChatPhotoThumbnail} from './chat-photo-preview';
 import {peekChatPhotoPreview,loadChatPhotoPreview,storeChatPhotoPreview} from './chat-photo-thumbnail-cache';
 
@@ -11,6 +11,7 @@ export function useChatMediaPreview(media:ChatMedia,token:string,videoRequest=0)
  const surface=useRef<HTMLDivElement|null>(null);
  const [visible,setVisible]=useState(false);
  const [photoRequested,setPhotoRequested]=useState(false);
+ const [poster,setPoster]=useState('');
  const [preview,setPreview]=useState('');
  const [videoGrant,setVideoGrant]=useState('');
  const [error,setError]=useState('');
@@ -18,7 +19,7 @@ export function useChatMediaPreview(media:ChatMedia,token:string,videoRequest=0)
  // Photo observation ends at the first near-viewport entry. Do not toggle
  // image src/DOM off and back on for every finger movement on iOS WebKit.
  useEffect(()=>{
-   if(media.kind!=='photo')return;
+   if(media.kind!=='photo'&&media.kind!=='video')return;
    const element=surface.current;
    if(!element)return;
    if(!('IntersectionObserver' in window)){setPhotoRequested(true);return;}
@@ -92,6 +93,37 @@ export function useChatMediaPreview(media:ChatMedia,token:string,videoRequest=0)
    };
  },[photoRequested,media.assetId,media.sizeBytes,media.kind,token]);
 
+ // A confirmed video poster is a tiny JPEG, using the existing photo-preview
+ // cache and private grant. No video decoder is mounted while scrolling.
+ useEffect(()=>{
+   if(media.kind!=='video'||!photoRequested)return;
+   let alive=true;
+   let coverUrl='';
+   const abort=new AbortController();
+   setPoster('');
+   void (async()=>{
+     const immediate=peekChatPhotoPreview(token,media);
+     let jpeg=immediate??await loadChatPhotoPreview(token,media);
+     if(!alive||abort.signal.aborted)return;
+     if(!jpeg){
+       const grant=await requestChatMediaUrl(media.assetId,token,abort.signal);
+       const response=await fetch(chatVideoPosterUrl(grant),{
+         signal:abort.signal,cache:'no-store'});
+       if(!response.ok)return; // Old video or missing JPEG: keep the play tile.
+       jpeg=await response.blob();
+       if(!alive||abort.signal.aborted||jpeg.type!=='image/jpeg'||
+         jpeg.size===0||jpeg.size>256*1024)return;
+       void storeChatPhotoPreview(token,media,jpeg);
+     }
+     coverUrl=URL.createObjectURL(jpeg);
+     setPoster(coverUrl);
+   })().catch(()=>{/* Poster is optional: playback keeps working. */});
+   return()=>{
+     alive=false;abort.abort();
+     if(coverUrl)URL.revokeObjectURL(coverUrl);
+   };
+ },[photoRequested,media.assetId,media.sizeBytes,media.kind,token]);
+
  // Video authorization is independent from photo preview lifetime.
  useEffect(()=>{
    if(media.kind!=='video'||!visible||videoRequest===0){
@@ -109,5 +141,5 @@ export function useChatMediaPreview(media:ChatMedia,token:string,videoRequest=0)
    return()=>{alive=false;controller.abort();};
  },[visible,media.assetId,media.kind,token,videoRequest]);
 
- return {surface,preview,videoGrant,error,visible};
+ return {surface,preview,poster,videoGrant,error,visible};
 }

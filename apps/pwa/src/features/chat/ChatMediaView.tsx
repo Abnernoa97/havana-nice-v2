@@ -8,7 +8,7 @@ export type {ChatMedia} from './chat-media-types';
 
 export default function ChatMediaView({media,token}:{media:ChatMedia;token:string}){
  const [videoRequest,setVideoRequest]=useState(0);
- const {surface,preview,videoGrant,error,visible}=useChatMediaPreview(media,token,videoRequest);
+ const {surface,preview,poster,videoGrant,error,visible}=useChatMediaPreview(media,token,videoRequest);
  const [photoOpen,setPhotoOpen]=useState(false);
  useEffect(()=>{setVideoRequest(0);setPhotoOpen(false);},[media.assetId,token]);
  // A video outside the viewport must not keep a decoder active.
@@ -29,6 +29,7 @@ export default function ChatMediaView({media,token}:{media:ChatMedia;token:strin
        :videoRequest===0?
          <button type="button" className="hn-chat-video-cover"
            onClick={()=>setVideoRequest(1)} aria-label="Cargar video">
+           {poster&&<img src={poster} alt="" className="hn-chat-video-poster" decoding="async"/>}
            <span aria-hidden="true">▶</span> Ver video
          </button>
        :videoGrant?<video key={videoGrant} src={videoGrant} playsInline controls

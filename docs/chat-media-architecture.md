@@ -147,3 +147,23 @@ mantiene sus límites y permisos, y el video conserva su propia política de
 visibilidad. El controlador de scroll espera 420 ms de silencio de eventos
 tras la inercia de WebKit: jamás fuerza el fondo mientras el dedo o momentum
 siguen desplazando. No se modifica selección, WebP, multipart R2 ni Android.
+
+## iPhone · carátulas de videos (sin transcoding)
+
+`chat-video-poster.ts` extrae opcionalmente una carátula JPEG de 640 px
+(calidad 0.76, máximo 256 KiB), usando un solo decodificador a la vez.
+El límite de espera es de 2.4 s por video. La selección aparece primero con
+ícono y pasa a imagen si Safari logra obtener un fotograma. La generación
+NO bloquea el envío ni multiplica videos en la vista. La URL `blob:` se
+revoca al eliminar, confirmar o cerrar la selección.
+
+El mismo `chat-media-upload.ts` sube el MOV intacto, luego intenta
+guardar la carátula en `chat/<miembro>/<id>.poster.jpg` mediante el
+endpoint privado `PUT /api/chat/media/:id/poster`. El JPEG es opcional
+y no cambia D1 ni el UUID del mensaje. Se eliminan ambos objetos al borrar
+el mensaje o miembro, y el cleanup de pendientes también limpia el sidecar.
+
+El historial usa `chatVideoPosterUrl` para derivar la URL privada de la
+carátula desde el mismo permiso temporal de lectura del video. Una única
+caché de imágenes de chat conserva fotos y carátulas; nunca persistimos
+grants. Los videos anteriores sin JPEG siguen mostrando el botón Ver video.
