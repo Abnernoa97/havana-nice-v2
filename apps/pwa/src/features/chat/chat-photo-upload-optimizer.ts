@@ -1,10 +1,18 @@
 // HAVANA NICE Chat PWA · lightweight on-device photo encoding BEFORE R2.
-// Preserve the decoded pixel dimensions and aspect ratio. No remote conversion,
+// Preserve aspect ratio and cap the long edge at 2048px. No remote conversion,
 // WASM codec, second upload, EXIF copy or original stored in R2 when optimized.
-export const CHAT_PHOTO_COMPRESS_MIN_BYTES=350*1024;
-export const CHAT_PHOTO_COMPRESS_MIN_SAVINGS=0.12;
+export const CHAT_PHOTO_COMPRESS_MIN_BYTES=180*1024;
+export const CHAT_PHOTO_COMPRESS_MIN_SAVINGS=0.08;
 export const CHAT_PHOTO_COMPRESS_MAX_PIXELS=22_000_000;
 const MAX_SOURCE_BYTES=32*1024*1024;
+export const CHAT_PHOTO_UPLOAD_LONG_EDGE=2048;
+export const CHAT_PHOTO_WEBP_QUALITY=0.74;
+export const CHAT_PHOTO_JPEG_QUALITY=0.76;
+export function chatPhotoUploadDimensions(width:number,height:number){
+ const scale=Math.min(1,CHAT_PHOTO_UPLOAD_LONG_EDGE/Math.max(1,width,height));
+ return {width:Math.max(1,Math.round(width*scale)),
+   height:Math.max(1,Math.round(height*scale))};
+}
 
 export function chatPhotoCompressionWorthIt(originalBytes:number,encodedBytes:number):boolean{
  return Number.isFinite(originalBytes)&&Number.isFinite(encodedBytes)&&
@@ -44,7 +52,7 @@ async function encode(canvas:HTMLCanvasElement,mime:string,quality:number):Promi
 
 /** Lossy WebP, or JPEG fallback for opaque photos. Returns the original when
  * already smaller, unsupported by Safari, too big for a safe canvas, or broken.
- * No pixel downscaling: geometry stays identical to the decoded source.
+ * Moderate downscaling keeps chat images sharp without uploading camera originals.
  */
 export async function optimizeChatPhotoUpload(file:File):Promise<File>{
  if(file.size<CHAT_PHOTO_COMPRESS_MIN_BYTES||file.size>MAX_SOURCE_BYTES||
@@ -54,21 +62,24 @@ export async function optimizeChatPhotoUpload(file:File):Promise<File>{
   decoded=await decode(file);
   const {width,height}=decoded;
   if(!width||!height||width*height>CHAT_PHOTO_COMPRESS_MAX_PIXELS)return file;
+  const target=chatPhotoUploadDimensions(width,height);
   const canvas=document.createElement('canvas');
-  canvas.width=width;canvas.height=height;
+  canvas.width=target.width;canvas.height=target.height;
   try{
    const context=canvas.getContext('2d');
    if(!context)return file;
-   context.drawImage(decoded.source,0,0,width,height);
-   const webp=await encode(canvas,'image/webp',file.type==='image/png'?0.88:0.82);
+   context.imageSmoothingEnabled=true;
+   context.imageSmoothingQuality='high';
+   context.drawImage(decoded.source,0,0,target.width,target.height);
+   const webp=await encode(canvas,'image/webp',CHAT_PHOTO_WEBP_QUALITY);
    if(webp&&chatPhotoCompressionWorthIt(file.size,webp.size)){
     return new File([webp],file.name.replace(/\.[^.]+$/,'')+'.webp',{
      type:'image/webp',lastModified:file.lastModified,
     });
    }
-   // Never remove transparency from PNG, or re-encode a more efficient WebP.
+   // Never flatten transparent PNGs or repeatedly re-encode an efficient WebP.
    if(file.type==='image/png'||file.type==='image/webp')return file;
-   const jpeg=await encode(canvas,'image/jpeg',0.8);
+   const jpeg=await encode(canvas,'image/jpeg',CHAT_PHOTO_JPEG_QUALITY);
    if(jpeg&&chatPhotoCompressionWorthIt(file.size,jpeg.size)){
     return new File([jpeg],file.name.replace(/\.[^.]+$/,'')+'.jpg',{
      type:'image/jpeg',lastModified:file.lastModified,

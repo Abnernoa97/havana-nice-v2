@@ -195,3 +195,12 @@ test('iPhone photo preparation is visible and isolated across actor switches',()
  assert.match(backend,/\['image\/webp','photo'\]/);
  assert.match(backend,/row\.size_bytes!==size\|\|existing\.mime_type!==data\.mimeType/);
 });
+
+test('photo viewer displays cached preview immediately and inline photos are not forced square',()=>{
+ const media=read('apps/pwa/src/features/chat/ChatMediaView.tsx');
+ const viewer=read('apps/pwa/src/features/chat/ChatPhotoViewer.tsx');
+ const css=read('apps/pwa/src/styles/chat/chat.css');
+ assert.match(media,/token=\{token\} preview=\{preview\}/);
+ assert.match(viewer,/\(original\|\|preview\)&&<img src=\{original\|\|preview\}/);
+ assert.match(css,/\.hn-chat-image-button\{aspect-ratio:auto;background:transparent\}/);
+});

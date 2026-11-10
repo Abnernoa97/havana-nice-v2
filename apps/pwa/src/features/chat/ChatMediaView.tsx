@@ -40,7 +40,7 @@ export default function ChatMediaView({media,token}:{media:ChatMedia;token:strin
          </button>
        :<div className="hn-media-loading hn-video-placeholder" role="status">Preparando video…</div>}
    </div>
-   {media.kind==='photo'&&photoOpen&&<ChatPhotoViewer media={media} token={token}
+   {media.kind==='photo'&&photoOpen&&<ChatPhotoViewer media={media} token={token} preview={preview}
      onClose={()=>setPhotoOpen(false)}/>}
  </>;
 }

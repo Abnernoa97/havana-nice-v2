@@ -6,8 +6,8 @@ import type {ChatMedia} from './chat-media-types';
 import {requestChatMediaUrl} from './chat-media-grant';
 
 export default function ChatPhotoViewer({
- media,token,onClose,
-}:{media:ChatMedia;token:string;onClose:()=>void}){
+ media,token,preview,onClose,
+}:{media:ChatMedia;token:string;preview:string;onClose:()=>void}){
  const [original,setOriginal]=useState('');
  const [error,setError]=useState('');
  const [loading,setLoading]=useState(true);
@@ -45,11 +45,11 @@ export default function ChatPhotoViewer({
      aria-label="Fotografía ampliada" onClick={onClose}>
      <button type="button" className="hn-photo-close" aria-label="Cerrar fotografía"
        onClick={onClose}>×</button>
-     {original&&<img src={original} alt="Fotografía original" className="hn-photo-full"
-       onClick={event=>event.stopPropagation()}/>}
-     {!original&&(loading||error)&&<div role={error?'alert':'status'}
+     {(original||preview)&&<img src={original||preview} alt="Fotografía ampliada"
+       className="hn-photo-full" onClick={event=>event.stopPropagation()}/>}
+     {!original&&!preview&&(loading||error)&&<div role={error?'alert':'status'}
        className="hn-photo-loading" onClick={event=>event.stopPropagation()}>
-       {error||'Cargando fotografía original…'}
+       {error||'Cargando fotografía…'}
      </div>}
    </div>,document.body
  );

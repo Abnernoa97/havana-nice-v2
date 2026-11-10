@@ -194,3 +194,8 @@ h1 span { font-weight:400; }
 .hn-chat-video{height:auto}
 .hn-chat-video-cover{width:100%;aspect-ratio:16/9;display:flex;align-items:center;justify-content:center;gap:12px;padding:12px;border:0;border-radius:12px;background:#182420;color:#fff;font-size:14px;font-weight:650;touch-action:pan-y}
 .hn-chat-video-cover span{font-size:27px;line-height:1}
+
+/* Chat photos follow their actual orientation; never force a square.
+   Reserve the previous image only while the new source is loading. */
+.hn-chat-image-button{aspect-ratio:auto;background:transparent}
+.hn-chat-image-button .hn-chat-photo{position:static;inset:auto;width:100%;height:auto;object-fit:contain}
