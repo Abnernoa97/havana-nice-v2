@@ -14,10 +14,11 @@ async function json(url:string,token:string,method='GET',body?:unknown):Promise<
  if(!res.ok)throw new Error(payload.error||'Error de transferencia ('+res.status+')');
  return payload;
 }
-function putBlob(token:string,url:string,blob:Blob,onProgress:(value:number)=>void){
+function putBlob(token:string,url:string,blob:Blob,onProgress:(value:number)=>void,timeoutMs=0){
  return new Promise<void>((resolve,reject)=>{
   const xhr=new XMLHttpRequest();
-  xhr.open('PUT',url,true);xhr.setRequestHeader('Authorization','Bearer '+token);
+  xhr.open('PUT',url,true);if(timeoutMs>0)xhr.timeout=timeoutMs;
+  xhr.setRequestHeader('Authorization','Bearer '+token);
   xhr.setRequestHeader('Content-Type',blob.type||'application/octet-stream');
   xhr.upload.onprogress=e=>{if(e.lengthComputable)onProgress(Math.min(blob.size,e.loaded));};
   xhr.onerror=()=>reject(new Error('Se interrumpió la conexión durante la subida.'));
@@ -33,8 +34,9 @@ function putBlob(token:string,url:string,blob:Blob,onProgress:(value:number)=>vo
 }
 export async function uploadChatFile(
  session:ChatSession,file:File,kind:'photo'|'video',
- onProgress:(loaded:number,total:number)=>void,stableId?:string
-):Promise<{id:string;seq:number}>{
+ onProgress:(loaded:number,total:number)=>void,stableId?:string,
+ getPoster?:()=>Blob|null,
+):Promise<{id:string;seq:number;posterUploaded:boolean}>{
  // Idempotent across iOS camera restarts: the queued item owns its R2 ID.
  // WeakMap remains a safe fallback for older direct-upload callers.
  let id=stableId??savedIds.get(file);
@@ -96,8 +98,19 @@ export async function uploadChatFile(
   }
  }
  onProgress(file.size,file.size);
+ // Best effort JPEG alongside original MOV. Never prevent message confirmation.
+ let posterUploaded=false;
+ if(kind==='video'){
+   const poster=getPoster?.();
+   if(poster?.type==='image/jpeg'&&poster.size<=256*1024){
+     try{
+       await putBlob(session.token,base+id+'/poster',poster,()=>{},2400);
+       posterUploaded=true;
+     }catch{/* Keep the video and existing play-button fallback. */}
+   }
+ }
  const sent=await json(base+id+'/send',session.token,'POST',{}) as {seq?:number};
  if(!Number.isSafeInteger(sent.seq)||!sent.seq)throw new Error('No se confirmó el mensaje.');
  savedIds.delete(file);
- return {id,seq:sent.seq};
+ return {id,seq:sent.seq,posterUploaded};
 }

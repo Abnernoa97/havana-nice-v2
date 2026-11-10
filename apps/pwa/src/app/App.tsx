@@ -157,7 +157,13 @@ export default function App() {
                 {assetId:item.id,sizeBytes:item.file.size},thumb)
             ).catch(()=>{});
           }
-          return uploadChatFile(session,item.file,item.selection.kind,onSent,item.id);
+          return uploadChatFile(session,item.file,item.selection.kind,onSent,item.id,
+            ()=>item.videoPoster?.blob??null).then(result=>{
+             if(result.posterUploaded&&item.videoPoster?.blob)
+               void storeChatPhotoPreview(session.token,
+                 {assetId:item.id,sizeBytes:item.file.size},item.videoPoster.blob);
+             return result;
+           });
         },
         progress:setMediaProgress,
         confirmed:item=>confirmUploadedMedia(item.id),
