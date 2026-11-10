@@ -5,7 +5,7 @@ import {useEffect,useLayoutEffect,useRef,useState,type RefObject} from 'react';
 import {validateChatMediaSelection,CHAT_MEDIA_MAX_PER_SEND,
  type ChatMediaKind,type ChatMediaSource,type ChatMediaSelection} from '@havana/shared';
 import {
- loadChatMediaDraft,saveChatMediaDraft,clearChatMediaDraft,
+ loadChatMediaDraft,saveChatMediaDraft,
  type StoredChatMediaItem,
 } from './chat-media-draft';
 
@@ -44,6 +44,8 @@ export function usePwaMediaSelection({
  const videoPicker=useRef<HTMLInputElement|null>(null);
  const cameraPicker=useRef<HTMLInputElement|null>(null);
  const persistChain=useRef<Promise<void>>(Promise.resolve());
+ // Avoid serializing unchanged photos when another video is selected.
+ const lastPhotoDraftKey=useRef<string|null>(null);
  const photoEncodeChain=useRef<Promise<void>>(Promise.resolve());
  const photoEncodeTasks=useRef<Map<string,Promise<void>>>(new Map());
  // After the send deadline, never replace an R2-bound file with late output.
@@ -64,6 +66,7 @@ export function usePwaMediaSelection({
  useLayoutEffect(()=>{
   if(mediaOwner.current===actorId)return;
   mediaOwner.current=actorId;
+  lastPhotoDraftKey.current=null;
   resetPhotoPreparation();
   for(const item of mediaQueue.current)URL.revokeObjectURL(item.selection.uri);
   mediaQueue.current=[];
@@ -72,7 +75,12 @@ export function usePwaMediaSelection({
  },[actorId]);
  const persistQueue=(queue:PwaQueuedMedia[])=>{
    if(!actorId)return;
-   const records=queue.map(toStored);
+   // MOV/MP4 originals are never copied to IndexedDB on iOS: five
+   // 25MB movies can otherwise saturate the main thread and quota.
+   const records=queue.filter(item=>item.selection.kind==='photo').map(toStored);
+   const key=actorId+'|'+records.map(item=>item.id+':'+item.sizeBytes).join('|');
+   if(lastPhotoDraftKey.current===key)return;
+   lastPhotoDraftKey.current=key;
    // Serialize writes so removing a sent file cannot be overwritten by an
    // older delayed photo-selection write.
    persistChain.current=persistChain.current.catch(()=>{}).then(async()=>{
@@ -80,8 +88,11 @@ export function usePwaMediaSelection({
      if(result==='too-large'&&actorRef.current===actorId)
        setMediaError('Archivo listo para enviar. Por su tamaño no puede recuperarse si el sistema reinicia la app.');
    }).catch(()=>{
-     if(actorRef.current===actorId)
-       setMediaError('Archivos listos para enviar. No fue posible guardarlos para recuperación automática.');
+     if(actorRef.current===actorId){
+       if(lastPhotoDraftKey.current===key)lastPhotoDraftKey.current=null;
+       if(records.length)
+         setMediaError('Las fotos están listas, pero no se pudieron guardar para recuperar la selección.');
+     }
    });
  };
  // Encode one iPhone image at a time while previews remain interactive.
@@ -136,17 +147,17 @@ export function usePwaMediaSelection({
  const removeSelectedMedia=(id:string)=>{
    if(uploadBusy.current)return;
    const removed=mediaQueue.current.find(item=>item.id===id);
-   if(removed)URL.revokeObjectURL(removed.selection.uri);
+   if(removed?.selection.uri)URL.revokeObjectURL(removed.selection.uri);
    mediaQueue.current=mediaQueue.current.filter(item=>item.id!==id);
    setSelectedMedia([...mediaQueue.current]);setMediaError('');
-   saveWhenPrepared();
+   if(removed?.selection.kind==='photo')saveWhenPrepared();
  };
  const confirmUploadedMedia=(id:string)=>{
    const removed=mediaQueue.current.find(item=>item.id===id);
-   if(removed)URL.revokeObjectURL(removed.selection.uri);
+   if(removed?.selection.uri)URL.revokeObjectURL(removed.selection.uri);
    mediaQueue.current=mediaQueue.current.filter(item=>item.id!==id);
    setSelectedMedia([...mediaQueue.current]);setMediaError('');
-   saveWhenPrepared();
+   if(removed?.selection.kind==='photo')saveWhenPrepared();
  };
  const clearSelectedMedia=()=>{
    // Reset preparation too; a later selection must not wait behind old files.
@@ -186,7 +197,7 @@ export function usePwaMediaSelection({
      if(issue){setMediaError(file.name+': '+issue);return;}
    }
    const additions:PwaQueuedMedia[]=normalized.map(file=>{
-     const uri=URL.createObjectURL(file);
+     const uri=kind==='photo'?URL.createObjectURL(file):'';
      return {id:crypto.randomUUID(),file,
        selection:{kind,source,uri,name:file.name,
          mimeType:file.type.toLowerCase(),sizeBytes:file.size}};
@@ -207,7 +218,7 @@ export function usePwaMediaSelection({
        const file=item.file instanceof File?item.file:
          new File([item.file],item.name,{type:item.mimeType});
        return {id:item.id,file,selection:{kind:item.kind,source:item.source,
-         uri:URL.createObjectURL(file),name:item.name,mimeType:item.mimeType,
+         uri:item.kind==='photo'?URL.createObjectURL(file):'',name:item.name,mimeType:item.mimeType,
          sizeBytes:item.sizeBytes}} as PwaQueuedMedia;
      });
      if(!active){for(const item of restored)URL.revokeObjectURL(item.selection.uri);return;}

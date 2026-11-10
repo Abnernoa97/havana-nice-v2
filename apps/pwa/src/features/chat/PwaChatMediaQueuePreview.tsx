@@ -18,7 +18,7 @@ export default function PwaChatMediaQueuePreview({selectedMedia,mediaUploading,p
             {selectedMedia.map(item=><div key={item.id} className="chat-media-preview">
               {item.selection.kind==='photo'
                 ?<img src={item.selection.uri} alt={'Vista previa de '+item.selection.name}/>
-                :<video src={item.selection.uri} controls preload="metadata" playsInline aria-label={'Vista previa de '+item.selection.name}/>}
+                :<span className="chat-video-file-icon" role="img" aria-label="Video seleccionado">▶</span>}
               <div className="chat-media-preview-info">
                 <strong>{item.selection.name}</strong>
                 <small>{item.selection.kind==='photo'?'Fotografía':'Video'} · {(item.selection.sizeBytes/1048576).toFixed(1)} MB</small>

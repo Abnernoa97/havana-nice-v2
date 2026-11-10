@@ -199,3 +199,8 @@ h1 span { font-weight:400; }
    Reserve the previous image only while the new source is loading. */
 .hn-chat-image-button{aspect-ratio:auto;background:transparent}
 .hn-chat-image-button .hn-chat-photo{position:static;inset:auto;width:100%;height:auto;object-fit:contain}
+
+/* Video selections are simple icons: no simultaneous AV decoders on iOS. */
+.chat-video-file-icon{height:52px;width:60px;min-width:60px;display:grid;
+ place-items:center;border-radius:10px;background:#e8e7e5;
+ color:#4d5353;font-size:20px;line-height:1}

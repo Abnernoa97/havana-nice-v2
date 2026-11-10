@@ -243,3 +243,21 @@ test('photo preview remains mounted through iPhone scroll instead of unloading o
  assert.match(follow,/setTimeout\(\(\)=>\{\s*settleTimer=null;\s*userScrollGesture\.current=false;/);
  assert.match(follow,/\},420\)/);
 });
+
+test('iPhone queues original videos without five decoders or MOV copies in IndexedDB',()=>{
+ const picker=read('apps/pwa/src/features/chat/usePwaMediaSelection.ts');
+ const queue=read('apps/pwa/src/features/chat/PwaChatMediaQueuePreview.tsx');
+ const draft=read('apps/pwa/src/features/chat/chat-media-draft.ts');
+ const uploader=read('apps/pwa/src/services/chat-media-upload.ts');
+ const batch=read('packages/shared/src/chat-media-batch.ts');
+ assert.doesNotMatch(queue,/<video\b/);
+ assert.match(queue,/className="chat-video-file-icon"/);
+ assert.match(picker,/const uri=kind==='photo'\?URL\.createObjectURL\(file\):''/);
+ assert.match(picker,/queue\.filter\(item=>item\.selection\.kind==='photo'\)\.map\(toStored\)/);
+ assert.match(picker,/lastPhotoDraftKey\.current===key/);
+ assert.match(draft,/const photos=items\.filter\(item=>item\.kind==='photo'\)/);
+ assert.match(draft,/record\.items\.filter\(item=>item\.kind==='photo'\)/);
+ assert.match(uploader,/file\.slice\(start,Math\.min\(file\.size,start\+partSize\),file\.type\)/);
+ assert.match(batch,/for\(const item of items\)/);
+ assert.doesNotMatch(picker,/VideoEncoder|MediaRecorder|ffmpeg|transcod/);
+});

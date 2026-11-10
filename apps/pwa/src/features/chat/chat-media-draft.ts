@@ -3,8 +3,8 @@ import {
  type ChatMediaKind,type ChatMediaSource,
 } from '@havana/shared';
 
-// Separate, short-lived browser store: never change the existing Chat session
-// IndexedDB or put private media in a service worker/cache/localStorage.
+// Short-lived recovery stores only photo files; never full MOV/MP4 originals.
+// Keep Chat session, service worker, localStorage and R2 records separate.
 const DATABASE='havana-v2-pending-chat-attachments';
 const STORE='pending';
 const KEY='one-current-draft';
@@ -51,13 +51,14 @@ export async function clearChatMediaDraft():Promise<void>{
 }
 export async function saveChatMediaDraft(actorId:string,items:readonly StoredChatMediaItem[]):Promise<'saved'|'too-large'>{
  if(!actorId)throw Error('Sesión no disponible.');
- if(!items.length){await clearChatMediaDraft();return 'saved';}
- const total=items.reduce((sum,item)=>sum+item.sizeBytes,0);
- if(items.length>CHAT_MEDIA_MAX_PER_SEND||total>PWA_MEDIA_DRAFT_MAX_BYTES){
+ const photos=items.filter(item=>item.kind==='photo');
+ if(!photos.length){await clearChatMediaDraft();return 'saved';}
+ const total=photos.reduce((sum,item)=>sum+item.sizeBytes,0);
+ if(photos.length>CHAT_MEDIA_MAX_PER_SEND||total>PWA_MEDIA_DRAFT_MAX_BYTES){
    await clearChatMediaDraft();
    return 'too-large';
  }
- const record:DraftRecord={actorId,updatedAt:Date.now(),items:[...items]};
+ const record:DraftRecord={actorId,updatedAt:Date.now(),items:[...photos]};
  await transaction<void>('readwrite',store=>{store.put(record,KEY);});
  return 'saved';
 }
@@ -78,5 +79,9 @@ export async function loadChatMediaDraft(actorId:string):Promise<StoredChatMedia
     validateChatMediaSelection(item)!==null)){
    await clearChatMediaDraft();return [];
  }
- return record.items;
+ // Older PWA versions may have saved video blobs. Migrate them out once.
+ const photos=record.items.filter(item=>item.kind==='photo');
+ if(photos.length!==record.items.length)
+   void saveChatMediaDraft(actorId,photos).catch(()=>{});
+ return photos;
 }

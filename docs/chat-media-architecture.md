@@ -28,8 +28,10 @@ ni modificar datos existentes durante una limpieza estructural.
    existe una versión optimizada. Un error de conversión no bloquea el envío.
 5. **Confirmación:** solo al confirmar R2 se retira la selección enviada.
    Los fallos permanecen pendientes para reintento; los archivos pendientes
-   se respaldan en `chat-media-draft.ts`, con vigencia de 24 h y límite
-   de 80 MiB, cuando el almacenamiento del iPhone lo permita.
+   las fotografías pendientes se respaldan en `chat-media-draft.ts`, con
+   vigencia de 24 h y límite de 80 MiB. Los videos originales no se
+   copian a IndexedDB: si iOS cierra la PWA antes de confirmar el envío,
+   habrá que volver a seleccionar los videos pendientes.
 6. **Lectura:** `useChatMediaPreview.ts` consulta primero la miniatura de
    caché y solo ante fallo pide permiso a R2 y genera una miniatura.
    `ChatPhotoViewer.tsx` muestra al abrir la miniatura disponible e
@@ -74,7 +76,10 @@ carga la versión almacenada en R2.
 
 Los videos de la PWA no se convierten con el codificador de fotografías:
 mantienen el formato admitido por el servidor y la ruta de subida R2
-existente. Durante el scroll solo muestran una carátula 16:9:
+existente. La bandeja de selección muestra un icono liviano y nombre,
+sin montar elementos `<video>` o precargar metadatos para cinco archivos
+a la vez. La subida a R2 sigue siendo secuencial por archivo.
+Durante el scroll del historial solo muestran una carátula 16:9:
 el permiso y reproductor se activan al tocar **Ver video**.
 No instalar un transcodificador pesado de video en Safari sin pruebas
 de rendimiento y de reproducción.
