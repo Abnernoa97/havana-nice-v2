@@ -225,3 +225,9 @@ un UUID de R2 nunca cambia de contenido en mitad de una transferencia ni en
 el reintento. La copia de recuperación en IndexedDB guarda los bytes finales
 optimizados, no una segunda copia original. Esta protección deja los videos,
 su protocolo multipart y la base de datos existentes intactos.
+
+Si Safari tarda demasiado en comprimir, Enviar tiene una espera máxima
+adicional de 1.5 segundos por el lote de fotos que todavía se esté preparando.
+Las conversiones pendientes se congelan antes de que R2 reserve tamaño y MIME,
+para impedir modificaciones tardías del archivo durante una transferencia.
+Se conserva el archivo original compatible como respaldo, no se aborta la subida.

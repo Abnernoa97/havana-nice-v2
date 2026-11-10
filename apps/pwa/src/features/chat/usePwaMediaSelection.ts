@@ -46,6 +46,8 @@ export function usePwaMediaSelection({
  const persistChain=useRef<Promise<void>>(Promise.resolve());
  const photoEncodeChain=useRef<Promise<void>>(Promise.resolve());
  const photoEncodeTasks=useRef<Map<string,Promise<void>>>(new Map());
+ // After the send deadline, never replace an R2-bound file with late output.
+ const photoEncodeFrozen=useRef<Set<string>>(new Set());
  const actorRef=useRef(actorId);
  actorRef.current=actorId;
  const mediaOwner=useRef(actorId);
@@ -55,6 +57,7 @@ export function usePwaMediaSelection({
   if(mediaOwner.current===actorId)return;
   mediaOwner.current=actorId;
   photoEncodeTasks.current.clear();
+  photoEncodeFrozen.current.clear();
   setPhotoPreparing(false);
   for(const item of mediaQueue.current)URL.revokeObjectURL(item.selection.uri);
   mediaQueue.current=[];
@@ -82,6 +85,7 @@ export function usePwaMediaSelection({
      const {optimizeChatPhotoUpload}=await import('./chat-photo-upload-optimizer');
      const optimized=await optimizeChatPhotoUpload(item.file);
      if(optimized===item.file||actorRef.current!==owner||
+        photoEncodeFrozen.current.has(item.id)||
         !mediaQueue.current.includes(item))return;
      const nextUri=URL.createObjectURL(optimized);
      const oldUri=item.selection.uri;
@@ -94,7 +98,8 @@ export function usePwaMediaSelection({
    .finally(()=>{
      photoEncodeTasks.current.delete(item.id);
      if(actorRef.current===owner){
-       setPhotoPreparing(photoEncodeTasks.current.size>0);
+       setPhotoPreparing([...photoEncodeTasks.current.keys()].some(id=>
+         !photoEncodeFrozen.current.has(id)));
        if(photoEncodeTasks.current.size===0)persistQueue(mediaQueue.current);
      }
    });
@@ -103,7 +108,21 @@ export function usePwaMediaSelection({
    photoEncodeChain.current=task;
  };
  const waitForMediaPreparation=async()=>{
-   await Promise.allSettled([...photoEncodeTasks.current.values()]);
+   if(photoEncodeTasks.current.size===0)return;
+   // A user pressing Enviar must never be held hostage by Safari's encoder.
+   // Any unfinished task is frozen before R2 reserves a byte length and MIME.
+   let deadline:ReturnType<typeof setTimeout>|null=null;
+   try{
+     await Promise.race([
+       Promise.allSettled([...photoEncodeTasks.current.values()]),
+       new Promise<void>(resolve=>{deadline=setTimeout(resolve,1500);}),
+     ]);
+   }finally{
+     if(deadline!==null)clearTimeout(deadline);
+     for(const id of photoEncodeTasks.current.keys())
+       photoEncodeFrozen.current.add(id);
+     setPhotoPreparing(false);
+   }
  };
  const saveWhenPrepared=()=>{
    if(photoEncodeTasks.current.size===0)persistQueue(mediaQueue.current);

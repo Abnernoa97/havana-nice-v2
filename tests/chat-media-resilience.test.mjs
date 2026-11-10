@@ -204,3 +204,17 @@ test('photo viewer displays cached preview immediately and inline photos are not
  assert.match(viewer,/\(original\|\|preview\)&&<img src=\{original\|\|preview\}/);
  assert.match(css,/\.hn-chat-image-button\{aspect-ratio:auto;background:transparent\}/);
 });
+
+test('encoder deadline freezes late results before R2 upload starts',()=>{
+ const picker=read('apps/pwa/src/features/chat/usePwaMediaSelection.ts');
+ const app=read('apps/pwa/src/app/App.tsx');
+ assert.match(picker,/Promise\.race\(\[/);
+ assert.match(picker,/setTimeout\(resolve,1500\)/);
+ assert.match(picker,/photoEncodeFrozen\.current\.add\(id\)/);
+ assert.match(picker,/photoEncodeFrozen\.current\.has\(item\.id\)/);
+ assert.match(picker,/if\(deadline!==null\)clearTimeout\(deadline\)/);
+ assert.match(picker,/photoEncodeFrozen\.current\.clear\(\)/);
+ assert.match(app,/await waitForMediaPreparation\(\)/);
+ assert.ok(app.indexOf('await waitForMediaPreparation()')<
+   app.indexOf('await uploadChatMediaBatch([...mediaQueue.current]'));
+});
