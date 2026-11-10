@@ -14,8 +14,10 @@ mensajes anteriores o reescribir la autenticación.
 2. **Conservar pendiente:** una copia temporal privada se mantiene por un máximo
    de 24 horas, dentro del límite de almacenamiento aplicable, para recuperar
    la selección después de una interrupción.
-3. **Enviar:** el transportador existente sube el **archivo original sin
-   recomprimirlo**. Conserva el identificador estable para reintentar.
+3. **Preparar y enviar:** la PWA de iPhone intenta comprimir fotos a WebP/JPEG
+   (hasta 2048 px de lado largo) antes de enviarlas a R2, con ID de reintento
+   estable. Videos y Android nativo siguen enviando el archivo seleccionado.
+   Si no hay conversor compatible se utiliza el original.
 4. **Confirmar:** solo después de la confirmación del servidor se quita ese
    archivo de la cola y se limpia su copia temporal.
 5. **Ver en conversación:** se solicita un permiso corto de lectura y se crea
@@ -32,7 +34,7 @@ Si una subida falla, el archivo permanece pendiente y puede reintentarse.
 | `usePwaMediaSelection.ts` | Interacción con cámara/galería y cola seleccionada |
 | `chat-media-draft.ts` | Recuperación temporal y validada del archivo pendiente |
 | `PwaChatMediaQueuePreview.tsx` | Mostrar adjuntos pendientes y progreso |
-| `chat-media-upload.ts` | Subir originales a R2 y confirmar mensajes |
+| `chat-media-upload.ts` | Subir archivos preparados a R2 y confirmar mensajes |
 | `chat-media-grant.ts` | Solicitar URL autorizada temporal de lectura |
 | `chat-photo-preview.ts` | Decodificar una miniatura nítida con memoria acotada |
 | `useChatMediaPreview.ts` | Cargar/liberar previews cerca de la ventana visible |
@@ -45,9 +47,10 @@ transparencias. No se aumenta una foto pequeña artificialmente. Solo hay
 **dos decodificaciones** simultáneas; las miniaturas que quedan lejos de la
 pantalla se liberan con una pequeña espera para evitar parpadeos al desplazarse.
 
-Estas cifras afectan solo a lo que se muestra **en Chat**. Los originales
-almacenados en R2 permanecen intactos y se recuperan al ampliarlos. El visor
-compartido se utiliza también en la sección administrativa.
+Estas cifras afectan únicamente las miniaturas del chat. Al ampliar una
+foto, el visor presenta de inmediato la miniatura y después carga el archivo
+almacenado en R2, que en la PWA puede ser WebP optimizado, no necesariamente
+un original de cámara. El visor también se usa en administración.
 
 ## Android nativo — responsabilidades
 
@@ -90,7 +93,8 @@ no cambian la pantalla inicial.
 
 ## Contratos que deben respetarse
 
-- No comprimir ni alterar fotografías o videos antes de enviarlos.
+- Optimizar fotos en la PWA antes de iniciar R2; una vez reservado el tamaño/MIME
+  no modificar el archivo. Los videos y Android nativo no se recodifican.
 - Nunca borrar una selección después de un fallo de subida.
 - No duplicar sesiones WebSocket, llamadas de subida ni mensajes confirmados.
 - No guardar tokens ni URLs privadas autorizadas en almacenamiento persistente.
@@ -214,8 +218,9 @@ estabilizarse el movimiento, incluso si no cambia de página.
 
 Al seleccionar fotos, Chat muestra inmediatamente la bandeja. Un único
 codificador local intenta convertir cada fotografía a WebP de buena calidad,
-conservando el número original de píxeles y la proporción. Solo sustituye el
-archivo si reduce como mínimo el 12% de bytes; JPEG es un fallback para fotos
+conservando la proporción y limitando el lado largo a 2048 píxeles sin
+ampliar fotos pequeñas. Solo reemplaza el archivo si ahorra al menos 8% de
+bytes; JPEG es un fallback para fotos
 sin transparencia. PNG nunca se convierte a JPEG. Si Safari no soporta el
 formato o no puede codificarlo de forma segura, se conserva el archivo
 compatible. Los videos no se recodifican con esta ruta.

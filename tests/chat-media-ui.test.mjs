@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync,existsSync} from 'node:fs';
 const read=name=>readFileSync(new URL('../'+name,import.meta.url),'utf8');
 
-test('One shared photo/video original quality policy; runtime Worker controls enablement',()=>{
+test('One shared photo/video format and size policy; runtime Worker controls enablement',()=>{
  const src=read('packages/shared/src/index.ts');
  assert.doesNotMatch(src,/CHAT_MEDIA_UPLOAD_ENABLED/);
  assert.match(src,/export type ChatMediaKind='photo'\|'video'/);
@@ -258,7 +258,7 @@ test('Native photo cache housekeeping touches only abandoned V2 transfers',()=>{
   assert.doesNotMatch(cache,/Paths\.cache\.delete\(\)|hn-v2-chat-photo-.*\.delete\(/);
 });
 
-test('Web/Admin previews use a high-density thumbnail and original on tap',()=>{
+test('Web/Admin previews display cache immediately and upgrade to R2 on tap',()=>{
  const web=read('apps/pwa/src/features/chat/ChatMediaView.tsx');
  const thumb=read('apps/pwa/src/features/chat/chat-photo-preview.ts');
  const viewer=read('apps/pwa/src/features/chat/ChatPhotoViewer.tsx');
@@ -268,7 +268,7 @@ test('Web/Admin previews use a high-density thumbnail and original on tap',()=>{
  assert.match(web,/photoOpen&&<ChatPhotoViewer media=\{media\}/);
  assert.match(viewer,/const blob=await response\.blob\(\)/);
  assert.match(viewer,/URL\.createObjectURL\(blob\)/);
- assert.match(viewer,/<img src=\{original\}/);
+ assert.match(viewer,/<img src=\{original\|\|preview\}/);
  assert.match(thumb,/CHAT_PREVIEW_LONG_EDGE=1440/);
  assert.match(thumb,/CHAT_PREVIEW_JPEG_QUALITY=\.92/);
  assert.match(thumb,/canvas\.toBlob/);
@@ -277,7 +277,7 @@ test('Web/Admin previews use a high-density thumbnail and original on tap',()=>{
  assert.doesNotMatch(css,/\.hn-chat-video\{[^}]*aspect-ratio:4\/5/);
 });
 
-test('one real original-quality R2 uploader for Chat PWA with Familia fast multipart',()=>{
+test('one real R2 uploader for optimized PWA photos and video originals',()=>{
  const uploader=read('apps/pwa/src/services/chat-media-upload.ts');
  const member=read('apps/pwa/src/app/App.tsx');
  const preview=read('apps/pwa/src/features/chat/PwaChatMediaQueuePreview.tsx');

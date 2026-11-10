@@ -88,7 +88,7 @@ test('Retry keeps exactly one media message ID across app restart',()=>{
  }
 });
 
-test('Photo chat uses sharp lightweight previews and unmodified fullscreen originals',()=>{
+test('Photo chat uses sharp previews and progressive fullscreen media',()=>{
  const web=read('apps/pwa/src/features/chat/ChatMediaView.tsx');
  const hook=read('apps/pwa/src/features/chat/useChatMediaPreview.ts');
  const thumb=read('apps/pwa/src/features/chat/chat-photo-preview.ts');
@@ -110,8 +110,7 @@ test('Photo chat uses sharp lightweight previews and unmodified fullscreen origi
  assert.match(thumb,/originalType==='image\/png'\?'image\/png':'image\/jpeg'/);
  assert.match(viewer,/requestChatMediaUrl\(media\.assetId,token,controller\.signal\)/);
  assert.match(viewer,/URL\.revokeObjectURL\(objectUrl\)/);
- assert.match(viewer,/original&&<img src=\{original\}/);
- assert.doesNotMatch(viewer,/src=\{original\|\|preview\}/);
+ assert.match(viewer,/\(original\|\|preview\)&&<img src=\{original\|\|preview\}/);
  assert.match(grant,/Authorization:'Bearer '\+token/);
  assert.match(css,/\.chat-media-queue-items\{max-height:190px/);
  assert.doesNotMatch(css,/\.chat-media-hidden-input\{display:none/);
