@@ -9,7 +9,8 @@ import {
  type StoredChatMediaItem,
 } from './chat-media-draft';
 
-export type PwaQueuedMedia={id:string;file:File;selection:ChatMediaSelection};
+export type PwaQueuedMedia={id:string;file:File;selection:ChatMediaSelection;
+ videoPoster?:{blob:Blob;url:string};};
 
 const EXTENSION_MIME:Record<string,string>={
  jpg:'image/jpeg',jpeg:'image/jpeg',png:'image/png',webp:'image/webp',
@@ -47,6 +48,7 @@ export function usePwaMediaSelection({
  // Avoid serializing unchanged photos when another video is selected.
  const lastPhotoDraftKey=useRef<string|null>(null);
  const photoEncodeChain=useRef<Promise<void>>(Promise.resolve());
+ const posterChain=useRef<Promise<void>>(Promise.resolve());
  const photoEncodeTasks=useRef<Map<string,Promise<void>>>(new Map());
  // After the send deadline, never replace an R2-bound file with late output.
  const photoEncodeFrozen=useRef<Set<string>>(new Set());
@@ -59,6 +61,7 @@ export function usePwaMediaSelection({
    photoEncodeTasks.current.clear();
    photoEncodeFrozen.current.clear();
    photoEncodeChain.current=Promise.resolve();
+   posterChain.current=Promise.resolve();
    setPhotoPreparing(false);
  };
  // A new authorized member must never inherit the previous member's pending files.
@@ -68,7 +71,10 @@ export function usePwaMediaSelection({
   mediaOwner.current=actorId;
   lastPhotoDraftKey.current=null;
   resetPhotoPreparation();
-  for(const item of mediaQueue.current)URL.revokeObjectURL(item.selection.uri);
+  for(const item of mediaQueue.current){
+    if(item.selection.uri)URL.revokeObjectURL(item.selection.uri);
+    if(item.videoPoster?.url)URL.revokeObjectURL(item.videoPoster.url);
+  }
   mediaQueue.current=[];
   setSelectedMedia([]);
   setMediaError('');
@@ -124,6 +130,18 @@ export function usePwaMediaSelection({
    setPhotoPreparing(true);
    photoEncodeChain.current=task;
  };
+ // Each video is decoded once, serially, after its initial selection renders.
+ const prepareVideoPoster=(item:PwaQueuedMedia,owner:string)=>{
+   posterChain.current=posterChain.current.catch(()=>{}).then(async()=>{
+     await new Promise<void>(resolve=>setTimeout(resolve,160));
+     if(actorRef.current!==owner||!mediaQueue.current.includes(item))return;
+     const {makeChatVideoPoster}=await import('./chat-video-poster');
+     const blob=await makeChatVideoPoster(item.file);
+     if(!blob||actorRef.current!==owner||!mediaQueue.current.includes(item))return;
+     item.videoPoster={blob,url:URL.createObjectURL(blob)};
+     setSelectedMedia([...mediaQueue.current]);
+   }).catch(()=>{/* Never block original video selection or upload. */});
+ };
  const waitForMediaPreparation=async()=>{
    if(photoEncodeTasks.current.size===0)return;
    // A user pressing Enviar must never be held hostage by Safari's encoder.
@@ -148,6 +166,7 @@ export function usePwaMediaSelection({
    if(uploadBusy.current)return;
    const removed=mediaQueue.current.find(item=>item.id===id);
    if(removed?.selection.uri)URL.revokeObjectURL(removed.selection.uri);
+   if(removed?.videoPoster?.url)URL.revokeObjectURL(removed.videoPoster.url);
    mediaQueue.current=mediaQueue.current.filter(item=>item.id!==id);
    setSelectedMedia([...mediaQueue.current]);setMediaError('');
    if(removed?.selection.kind==='photo')saveWhenPrepared();
@@ -155,6 +174,7 @@ export function usePwaMediaSelection({
  const confirmUploadedMedia=(id:string)=>{
    const removed=mediaQueue.current.find(item=>item.id===id);
    if(removed?.selection.uri)URL.revokeObjectURL(removed.selection.uri);
+   if(removed?.videoPoster?.url)URL.revokeObjectURL(removed.videoPoster.url);
    mediaQueue.current=mediaQueue.current.filter(item=>item.id!==id);
    setSelectedMedia([...mediaQueue.current]);setMediaError('');
    if(removed?.selection.kind==='photo')saveWhenPrepared();
@@ -162,7 +182,10 @@ export function usePwaMediaSelection({
  const clearSelectedMedia=()=>{
    // Reset preparation too; a later selection must not wait behind old files.
    resetPhotoPreparation();
-   for(const item of mediaQueue.current)URL.revokeObjectURL(item.selection.uri);
+   for(const item of mediaQueue.current){
+     if(item.selection.uri)URL.revokeObjectURL(item.selection.uri);
+     if(item.videoPoster?.url)URL.revokeObjectURL(item.videoPoster.url);
+   }
    mediaQueue.current=[];setSelectedMedia([]);setMediaError('');
    persistQueue([]);
  };
@@ -207,7 +230,10 @@ export function usePwaMediaSelection({
    // Show immediately, encode in the background; keep only final bytes in draft.
    if(kind==='photo'){
      for(const item of additions)preparePhoto(item,actorId);
-   }else saveWhenPrepared();
+   }else{
+     for(const item of additions)prepareVideoPoster(item,actorId);
+     saveWhenPrepared();
+   }
  };
  useEffect(()=>{
    if(!actorId)return;
@@ -227,8 +253,10 @@ export function usePwaMediaSelection({
    return()=>{active=false;};
  },[actorId]);
  // Object URLs are view-only. Never persist or reuse them across app restarts.
- useEffect(()=>()=>{for(const item of mediaQueue.current)
-   URL.revokeObjectURL(item.selection.uri);},[]);
+ useEffect(()=>()=>{for(const item of mediaQueue.current){
+   if(item.selection.uri)URL.revokeObjectURL(item.selection.uri);
+   if(item.videoPoster?.url)URL.revokeObjectURL(item.videoPoster.url);
+ }},[]);
  return {selectedMedia,mediaError,setMediaError,mediaQueue,
    photosPicker,videoPicker,cameraPicker,removeSelectedMedia,
    confirmUploadedMedia,clearSelectedMedia,
