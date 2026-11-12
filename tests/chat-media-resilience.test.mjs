@@ -164,7 +164,7 @@ test('a PWA sender reuses its local photo without changing video or R2 transport
  assert.match(src,/if\(item\.selection\.kind==='photo'\)/);
  assert.match(src,/createChatPhotoThumbnail\(item\.file\)/);
  assert.match(src,/storeChatPhotoPreview\(session\.token,/);
- assert.match(src,/return uploadChatFile\(session,item\.file,item\.selection\.kind,onSent,item\.id\)/);
+ assert.match(src,/return uploadChatFile\(session,item\.file,item\.selection\.kind,onSent,item\.id,/);
  assert.doesNotMatch(src,/uploadChatFile\(session,thumb/);
 });
 
@@ -194,7 +194,7 @@ test('iPhone photo preparation is visible and isolated across actor switches',()
  assert.match(app,/photoPreparing=\{photoPreparing\}/);
  assert.match(view,/photoPreparing\?'Preparando imágenes ligeras/);
  assert.match(backend,/\['image\/webp','photo'\]/);
- assert.match(backend,/row\.size_bytes!==size\|\|existing\.mime_type!==data\.mimeType/);
+ assert.match(backend,/existing\.size_bytes!==size\|\|existing\.mime_type!==data\.mimeType/);
 });
 
 test('photo viewer displays cached preview immediately and inline photos are not forced square',()=>{
@@ -226,7 +226,7 @@ test('photo encoding has one reset path on identity rotation and queue cancellat
  assert.match(source,/photoEncodeTasks\.current\.clear\(\)/);
  assert.match(source,/photoEncodeFrozen\.current\.clear\(\)/);
  assert.match(source,/photoEncodeChain\.current=Promise\.resolve\(\)/);
- assert.match(source,/mediaOwner\.current=actorId;\s*resetPhotoPreparation\(\)/);
+ assert.match(source,/mediaOwner\.current=actorId;\s*lastPhotoDraftKey\.current=null;\s*resetPhotoPreparation\(\)/);
  assert.match(source,/const clearSelectedMedia=\(\)=>\{[\s\S]*?resetPhotoPreparation\(\)/);
  assert.match(source,/actorRef\.current!==owner\|\|!mediaQueue\.current\.includes\(item\)/);
 });

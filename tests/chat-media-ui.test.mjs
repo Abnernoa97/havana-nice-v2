@@ -99,7 +99,7 @@ test('PWA camera icon requests camera capture directly instead of media gallery'
  const src=read('apps/pwa/src/app/App.tsx');
  const picker=read('apps/pwa/src/features/chat/usePwaMediaSelection.ts');
  assert.match(picker,/const openCamera=\(\)=>/);
- assert.match(picker,/cameraPicker\.current\?\.click\(\)/);
+ assert.match(picker,/const picker=cameraPicker\.current;[\s\S]*?picker\.click\(\)/);
  assert.match(src,/onClick=\{openCamera\}/);
  assert.match(src,/ref=\{cameraPicker\}/);
  assert.match(src,/accept="image\/\*" capture="environment"/);
