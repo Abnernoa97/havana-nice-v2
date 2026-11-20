@@ -31,7 +31,7 @@ test('Virtual list preserves native video surfaces, old-page loading, deletes, r
   /onScrollBeginDrag=\{onScrollBeginDrag\}/,
   /onMomentumScrollEnd=\{onScrollEndDrag\}/,
  ])assert.match(timeline,part);
- assert.match(controller,/const scroll = useRef<FlatList<ChatMessage> \| null>\(null\)/);
+ assert.match(controller,/const scroll\s*=\s*useRef<FlatList<ChatMessage>\s*\|\s*null>\(null\)/);
  assert.match(controller,/scroll\.current\?\.scrollToEnd\(\{animated:false\}\)/);
  assert.match(controller,/userHasScrolled\.current=true/);
  assert.match(controller,/onScrollEndDrag=\{onTimelineScrollEndDrag\}/);

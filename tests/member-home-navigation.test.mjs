@@ -1,7 +1,8 @@
+import {readNativeSource} from './helpers/native-source.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
+const read=path=>path==='apps/android/app/NativeApp.tsx'?readNativeSource(import.meta.url):readFileSync(new URL('../'+path,import.meta.url),'utf8');
 test('One shared list of member HOME destinations, not a second access mechanism',()=>{
  const modules=read('packages/shared/src/memberModules.ts');
  for(const name of ['chat','calendar','repertoire','musicians','family','notices','settings'])
@@ -24,7 +25,7 @@ test('Existing Android login and Chat engine stay in one mounted App',()=>{
 test('Android styles live outside Chat controller without changing navigation or IME safety',()=>{
  const app=read('apps/android/app/NativeApp.tsx');
  const styles=read('apps/android/styles/chat-styles.ts');
- assert.match(app,/import \{styles\} from '\.\.\/styles\/chat-styles'/);
+ assert.match(app,/import \{styles\} from '\.\.\/\.\.\/styles\/chat-styles'/);
  assert.match(app,/const keyboardOpen=useNativeKeyboardVisibility\(activeScreen==='chat'\)/);
  assert.match(read('apps/android/hooks/useNativeKeyboardVisibility.ts'),/Keyboard.addListener\('keyboardDidHide'/);
  assert.doesNotMatch(app,/StyleSheet\.create\(/);
