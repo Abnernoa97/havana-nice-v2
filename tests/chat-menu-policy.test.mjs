@@ -1,3 +1,4 @@
+import {readNativeSource} from './helpers/native-source.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
@@ -82,9 +83,9 @@ test('Chat context menus are independent render-only components, not another ses
  const pwa=readFileSync(new URL('../apps/pwa/src/features/chat/PwaChatMessageMenu.tsx',import.meta.url),'utf8');
  const android=readFileSync(new URL('../apps/android/features/chat/NativeChatMessageMenu.tsx',import.meta.url),'utf8');
  const webApp=readFileSync(new URL('../apps/pwa/src/app/App.tsx',import.meta.url),'utf8');
- const nativeApp=readFileSync(new URL('../apps/android/app/NativeApp.tsx',import.meta.url),'utf8');
+ const nativeApp=readNativeSource(import.meta.url);
  assert.match(webApp,/import PwaChatMessageMenu from/);
- assert.match(nativeApp,/import NativeChatMessageMenu from/);
+ assert.match(nativeApp,/import NativeChatMessageMenu from '\.\/NativeChatMessageMenu'/);
   assert.ok(readFileSync(new URL('../apps/pwa/src/features/chat/SwipeMessage.tsx',import.meta.url),'utf8').includes('onSwipeRight()'));
   assert.ok(readFileSync(new URL('../apps/android/features/chat/SwipeableBubble.tsx',import.meta.url),'utf8').includes('callbacks.current.onReply()'));
  assert.match(webApp,/<PwaChatMessageMenu message=\{menuMessage\}/);
@@ -99,7 +100,7 @@ test('Chat context menus are independent render-only components, not another ses
 test('both frontends call the same helper, never duplicate message edit policy',()=>{
  const paths=['apps/pwa/src/app/App.tsx','apps/android/app/NativeApp.tsx'];
  for(const path of paths){
-  const source=readFileSync(new URL('../'+path,import.meta.url),'utf8');
+  const source=path==='apps/android/app/NativeApp.tsx'?readNativeSource(import.meta.url):readFileSync(new URL('../'+path,import.meta.url),'utf8');
   assert.match(source,/getChatMenuState\(/,path);
   assert.match(source,/getChatMessagePermissions\(message,session\?\.actorId,connection\)/,path);
   assert.match(source,/isWithinChatEditWindow\(editing\.sentAt\)/,path);

@@ -1,3 +1,4 @@
+import {readNativeSource} from './helpers/native-source.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
@@ -49,7 +50,7 @@ test('compatibility: no new IndexedDB or Android SQLite storage keys are introdu
 
 test('one snapshot and restore policy is consumed by both V2 client controllers',()=>{
  for(const path of ['apps/pwa/src/app/App.tsx','apps/android/app/NativeApp.tsx']){
-  const code=readFileSync(new URL('../'+path,import.meta.url),'utf8');
+  const code=path==='apps/android/app/NativeApp.tsx'?readNativeSource(import.meta.url):readFileSync(new URL('../'+path,import.meta.url),'utf8');
   assert.match(code,/captureChatOfflineSnapshot\(/,path);
   assert.match(code,/restoreChatOfflineOutbox\(saved\.outbox/,path);
   assert.match(code,/editingSnapshot\.current,beforeEdit\.current/,path);

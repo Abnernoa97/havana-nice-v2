@@ -1,3 +1,4 @@
+import {readNativeSource} from './helpers/native-source.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
@@ -48,7 +49,7 @@ test('one in-flight older page and only latest search may update visible chat',(
 });
 
 test('PWA and Android history operations share one request gate and preserve their own session owner',()=>{
- const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
+ const read=path=>path==='apps/android/app/NativeApp.tsx'?readNativeSource(import.meta.url):readFileSync(new URL('../'+path,import.meta.url),'utf8');
  for(const path of ['apps/pwa/src/app/App.tsx','apps/android/app/NativeApp.tsx']){
   const app=read(path);
   assert.match(app,/historyRequests=useRef\(new ChatHistoryRequestGate\(\)\)/,path);

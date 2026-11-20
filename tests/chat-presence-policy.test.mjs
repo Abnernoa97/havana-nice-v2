@@ -1,3 +1,4 @@
+import {readNativeSource} from './helpers/native-source.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
@@ -24,7 +25,7 @@ test('one pure policy, while each platform retains its WebSocket owner',()=>{
  const shared=readFileSync(new URL('../packages/shared/src/chat-presence.ts',import.meta.url),'utf8');
  assert.doesNotMatch(shared,/new WebSocket|\.send\(|localStorage|AsyncStorage|setTimeout|useEffect/);
  for(const p of ['apps/pwa/src/app/App.tsx','apps/android/app/NativeApp.tsx']){
-  const src=readFileSync(new URL('../'+p,import.meta.url),'utf8');
+  const src=p==='apps/android/app/NativeApp.tsx'?readNativeSource(import.meta.url):readFileSync(new URL('../'+p,import.meta.url),'utf8');
   assert.match(src,/chatReactionPayload\(seq,emoji\)/,p);
   assert.match(src,/chatReadReceiptPayload\(seq\)/,p);
   assert.doesNotMatch(src,/JSON\.stringify\(\{type:'chat\.read'/,p);
