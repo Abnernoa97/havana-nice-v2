@@ -149,21 +149,11 @@ tests/ + cloudflare/tests/ + scripts/ → reglas de seguridad y CI
 
 **Continuación:** `docs/CONTINUIDAD-EXACTA.md` contiene referencias prácticas cortas; este Plan Maestro manda. El historial íntegro de pasos y estados anteriores se recupera de los commits de Git, no de copias obsoletas en `main`.
 
-## 6. BOOK y Recuerdos 3D · una sola entrada Android (09/11/2026)
+## 6. BOOK y Recuerdos 3D — estado consolidado
 
-- [x] **Sensibilidad del deslizamiento 3D (09/11):** reportado doblez de la esquina que regresaba a la misma página. Reproducido por prueba nueva de swipe corto (~62 px) en Chrome móvil [42575174531](https://github.com/Abnernoa97/havana-nice-v2/actions/runs/42575174531). Corrección en único `BookReader.tsx`: un gesto horizontal suficiente termina el mismo pliegue a través del lomo antes de liberar el dedo; gesto insuficiente sigue cancelable, scroll vertical intacto. Animación 780 → 650 ms. [CI completa SUCCESS](https://github.com/Abnernoa97/havana-nice-v2/actions/runs/42575432656), PWA publicada en Pages commit `a931343c`. **El usuario confirmó el 09/11 que la fluidez mejoró considerablemente. Pruebas de Recuerdos y cobertura iPhone pendientes; sin APK nueva ni cambios a D1/R2/Worker.**
-
-- [x] **Retorno de páginas 3D compartido (09/11):** bug reproducido en Chrome antes de corregirlo: `Página anterior` no cambiaba hoja. `page-flip@2.0.7` calcula `x=10` para `flipPrev` y, en un libro centrado con `disableFlipByClick:true`, la esquina queda fuera del libro. Solución en el **único** `BookReader.tsx`: enviar la esquina física `rect.left+10` / `rect.top+rect.height-2` al mismo controlador PageFlip. La prueba [42573769336 SUCCESS](https://github.com/Abnernoa97/havana-nice-v2/actions/runs/42573769336) verifica avance, retroceso hasta portada, swipe inverso, scroll vertical y una sola instancia en móvil/escritorio. Pages publicó `d4b866c` correctamente; **sin APK nueva**. QA en teléfono pendiente.
-
-- [x] **Localizado:** Cloudflare Pages redirige `/book.html` a `/book`. Las APK anteriores bloqueaban la redirección; corregido en 0.0.20. El ensayo público de HTML y JS pasó. [CI](https://github.com/Abnernoa97/havana-nice-v2/actions/runs/42566524470).
-- [x] **Prueba física 0.0.20:** la PWA ya ejecuta JavaScript, pero no recibe el contexto de sesión `injectedObjectJson()` de Android. Los datos no se borraron ni dejaron de existir.
-- [x] **Sustitución arquitectónica implementada en `main`:** un solo puente en memoria: página registra listener → emite `boot` → Android entrega contexto mediante `injectJavaScript`, comprobando origen y ruta → PWA valida el token existente y abre el único PageFlip. Se elimina dependencia del objeto inyectado y el bucle de 30 reintentos. Sin login adicional, token en URL o almacenamiento persistente.
-- [x] **CI completa 0.0.21:** TypeScript, permisos, Android/PWA, PageFlip Chrome con el mismo JS nativo de entrega de sesión, rutas privadas, Worker dry-run, PWA y export nativo: [42570903423 SUCCESS](https://github.com/Abnernoa97/havana-nice-v2/actions/runs/42570903423).
-- [x] **Entrega Android 0.0.21 publicada:** `versionCode 21`, JS integrado, firma anterior compatible, enlace estable verificado y 0.0.20 preservada como PREVIOUS: [APK SUCCESS 42571102335](https://github.com/Abnernoa97/havana-nice-v2/actions/runs/42571102335), [CI general SUCCESS 42571102501](https://github.com/Abnernoa97/havana-nice-v2/actions/runs/42571102501).
-- [x] **BOOK 3D Android 0.0.21:** usuario confirmó apertura, sesión, retroceso y fluidez desde la PWA compartida.
-- [ ] **Recuerdos / regresión integral:** probar páginas de una fecha completada y retorno a Calendario, además de navegación nativa y reconexión. Chat, Repertorio, Familia, Worker, D1 y R2 intocables.
-
-Versiones y pruebas anteriores se consultan en Git; no repetir una bitácora cronológica en el Plan Maestro.
+- [x] **Motor único:** StPageFlip compartido entre BOOK y Recuerdos; el lector /book recibe la sesión Android por el puente de memoria tras el mensaje boot, sin otro login, token en URL ni segundo motor.
+- [x] **Gesto y vuelta de página:** avance y retroceso, esquina física correcta, deslizamiento horizontal fluido y scroll vertical preservados. BOOK Android/PWA confirmado por el usuario con APK firmada **0.0.21**. CI y experimentos anteriores permanecen en el historial Git.
+- [ ] **Recuerdos:** verificar en Android/iPhone el libro de una fecha realizada, cierre y retorno al Calendario. No generar una APK por cada corrección ni tocar datos privados.
 
 ## 7. Limpieza estructural y línea única (09/11/2026)
 
