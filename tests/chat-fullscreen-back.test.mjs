@@ -20,10 +20,10 @@ test('The shared live presence marks real senders, not an estimated online count
   const native=read('apps/android/app/NativeApp.tsx');
   const webTimeline=read('apps/pwa/src/features/chat/ChatTimeline.tsx');
   const nativeTimeline=read('apps/android/features/chat/NativeChatTimeline.tsx');
-  for(const src of [pwa,native]){
-    assert.match(src,/Set\(.*\.users.*map\(user=>user\.actorId\)/);
-    assert.match(src,/onlineActorIds=\{onlineActorIds\}/);
-  }
+  // Actor identity projection is canonical in the shared incoming router.
+  const incoming=read('packages/shared/src/chat-incoming.ts');
+  assert.match(incoming,/new Set\(\(value\.users\?\?\[\]\)\.map\(user=>user\.actorId\)\)/);
+  for(const src of [pwa,native])assert.match(src,/onlineActorIds=\{onlineActorIds\}/);
   assert.match(webTimeline,/connected&&onlineActorIds\.has\(message\.senderId\)/);
   assert.match(nativeTimeline,/connected&&onlineActorIds\.has\(message\.senderId\)/);
   assert.match(read('apps/pwa/src/styles/chat/chat.css'),/\.bubble\.online\{background:#123D32/);
@@ -66,7 +66,7 @@ test('Opening Chat lands at the true bottom even after media sizes change',()=>{
   assert.match(pwa,/useChatScrollAnchor\(\{/);
   assert.match(scroll,/observer\.observe\(content\)/);
   assert.match(scroll,/list\.scrollTop=Math\.max\(0,list\.scrollHeight-list\.clientHeight\)/);
-  assert.match(scroll,/else if\(userScrollGesture\.current\)stickToLatest\.current=false/);
+  assert.match(scroll,/if\(userScrollGesture\.current\)\{\s*stickToLatest\.current=false/);
   assert.match(scroll,/observer\.observe\(list\)/);
   assert.match(scroll,/if\(explicitlyBrowsing\.current\)return;/);
   assert.match(scroll,/if\(skipOlderRef\.current\)\{skipOlderRef\.current=false;return;\}/);

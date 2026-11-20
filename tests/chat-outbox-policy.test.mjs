@@ -108,7 +108,8 @@ test('timed-out sends only retry explicitly; pause and failed socket keep messag
  const socket={readyState:1,send(){}};
  assert.equal(delivery.flushChatOutbox({readyState:0,send(){}},outbox,timers,mark,'member:fer',clock),false);
  assert.equal(delivery.flushChatOutbox(socket,outbox,timers,mark,'member:fer',clock),true);
- tasks.get(timers.get('original'))();
+ const expired=timers.get('original');
+ tasks.get(expired)();tasks.delete(expired); // A real timer leaves the scheduler when it fires.
  assert.equal(outbox.get('original').deliveryStatus,'error');
  assert.equal(delivery.flushChatOutbox(socket,outbox,timers,mark,'member:fer',clock),false);
  delivery.clearChatAckTimer(timers,'original',clock);

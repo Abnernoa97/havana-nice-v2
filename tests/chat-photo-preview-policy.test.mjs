@@ -33,5 +33,5 @@ test('local send creates a private cover without requesting R2 again',()=>{
  assert.match(app,/createChatPhotoThumbnail\(item\.file\)/);
  assert.match(app,/storeChatPhotoPreview\(session\.token,/);
  assert.match(app,/\{assetId:item\.id,sizeBytes:item\.file\.size\},thumb/);
- assert.match(app,/return uploadChatFile\(session,item\.file,item\.selection\.kind,onSent,item\.id\)/);
+ assert.match(app,/return uploadChatFile\(session,item\.file,item\.selection\.kind,onSent,item\.id,/);
 });
