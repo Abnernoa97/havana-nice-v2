@@ -41,7 +41,7 @@
 ## Próximos pasos en orden
 
 1. **Worker de carátulas activo y alineado con PWA:** conservar siete bindings y v66 como reversión; sin cambios al backend durante el refactor nativo.
-2. **NativeApp modularizado en main (20/11):** Cloudflare Build `b0cb0fab` verificó `check:structure`, `audit:guard`, los tres typechecks, build PWA y **300/300 pruebas**. No hay APK nueva y falta QA físico de reconexión/offline. Siguiente paso: segmentar `apps/pwa/src/app/App.tsx` sin duplicar estado ni conexión.
+2. **NativeApp modularizado en main (20/11):** Cloudflare Build `b0cb0fab` verificó `check:structure`, `audit:guard`, los tres typechecks, build PWA y **300/300 pruebas**. No hay APK nueva y falta QA físico de reconexión/offline. Se inició la separación PWA: `PwaMemberAccessPanel.tsx` extrae sólo el acceso visual (843 → 826 líneas en `App.tsx`); sesión, socket y outbox siguen en el mismo dueño. Próximo: separar más presentación del Chat sin mover el controlador ni duplicar conexiones.
 3. Comprobar cache offline PWA de módulos abiertos/no abiertos en iPhone real; conservar semántica y no cachear APIs ni archivos privados.
 4. **Conservar APK 0.0.21:** BOOK y el gesto 3D están confirmados por el usuario; verificar Recuerdos y sincronización Chat/Familia/Calendario en pruebas independientes. La próxima APK requiere un lote explícito, manteniendo la firma.
 5. Completar Músicos y Multimedia, después detalles One UI y diseño; medir tiempos reales antes de prometer velocidad.

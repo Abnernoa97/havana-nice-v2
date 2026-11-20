@@ -170,7 +170,7 @@ jobs:
         run: node --experimental-strip-types --test tests/chat-menu-policy.test.mjs tests/chat-reaction-burst.test.mjs tests/chat-fullscreen-back.test.mjs tests/chat-render-isolation.test.mjs tests/chat-message-window.test.mjs
 
       - name: Keep Chat media and composer unmounted outside Chat without duplicating the engine
-        run: node --test tests/chat-idle-isolation.test.mjs
+        run: node --test tests/chat-idle-isolation.test.mjs tests/pwa-access-presentation.test.mjs
 
       - name: Verify one offline-first session recovery and native socket transport
         run: node --experimental-strip-types --test tests/chat-session-recovery.test.mjs tests/chat-resume-gate.test.mjs

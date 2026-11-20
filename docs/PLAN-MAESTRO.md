@@ -122,6 +122,8 @@ tests/ + cloudflare/tests/ + scripts/ → reglas de seguridad y CI
 - [x] **Chat Android, primera optimización de render:** mensajes con `FlatList` virtualizada (`windowSize=7`, lotes limitados) para no montar todas las fotos/videos del historial; claves estables, paginación manual y posición visible preservadas; no cambiar sesión, D1, R2 ni caché. Requiere QA física de desplazamiento/60 FPS.
 - [ ] **Optimización posterior de Chat:** el controlador sigue siendo grande, pero el timeline YA usa `FlatList`; dividir el controlador restante únicamente tras comprobar desplazamiento, gestos, multimedia y memoria en Android real. No confundir organización con FPS medidos.
 
+- [x] **PWA: presentación de acceso aislada (20/11):** `App.tsx` pasó de 843 a 826 líneas; `PwaMemberAccessPanel.tsx` presenta restauración, acceso denegado de BOOK y entrada por nombre. La sesión, WebSocket, reconexión, rutas, la cola offline y la autorización permanecen en `App.tsx`; comprobación de build Pages exitosa en `bdc018c`. Se incorpora una prueba de límites de responsabilidad. QA física de sesión y modo avión sigue pendiente.
+
 ## 4.1. Matriz de aceptación física antes de declarar sincronización 100 %
 
 - [x] **BOOK 3D Android/PWA:** el usuario confirmó que abrió y que el giro hacia atrás y el deslizamiento mejorado funcionan con 0.0.21 y actualizaciones web.
