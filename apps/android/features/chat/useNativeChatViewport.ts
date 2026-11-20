@@ -11,7 +11,7 @@ export function useNativeChatViewport(activeScreen:MemberScreen,sessionToken?:st
   const initialHistoryPending=useRef(true);
   const initialHistoryLoaded=useRef(false);
   const initialBottomTimer=useRef<ReturnType<typeof setTimeout>|null>(null);
-  const initialBottomAttempts=useRef(0);
+  const initialBottomAttempts = useRef(0);
   const userHasScrolled=useRef(false);
   function scheduleInitialBottom() {
     if (!initialHistoryPending.current || !initialHistoryLoaded.current || userHasScrolled.current) return;
@@ -40,7 +40,7 @@ export function useNativeChatViewport(activeScreen:MemberScreen,sessionToken?:st
   // Keep one socket, offline outbox and drafts alive behind HOME. The virtualized
   // message/media surface mounts fresh on entry, anchored to the last bubble.
   useEffect(()=>{
-    if(activeScreen!=='chat'||!session)return;
+    if(activeScreen!=='chat'||!sessionToken)return;
     userHasScrolled.current=false;
     autoScroll.current=true;
     initialHistoryPending.current=true;
@@ -51,7 +51,7 @@ export function useNativeChatViewport(activeScreen:MemberScreen,sessionToken?:st
       if(initialBottomTimer.current)clearTimeout(initialBottomTimer.current);
       initialBottomTimer.current=null;
     };
-  },[activeScreen,session?.token]);
+  },[activeScreen,sessionToken]);
 
   function trackUserScroll(event:{nativeEvent:{contentOffset:{y:number};contentSize:{height:number};layoutMeasurement:{height:number}}}) {
     const {contentOffset,contentSize,layoutMeasurement}=event.nativeEvent;

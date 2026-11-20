@@ -55,19 +55,29 @@ assert.deepEqual(children('apps/android'),
 assert.deepEqual(children('apps/android/app'),['NativeApp.tsx','NativeMemberHome.tsx']);
 assert.deepEqual(children('apps/android/features'),
  ['book','calendar','chat','family','musicians','repertoire']);
-assert.deepEqual(children('apps/android/hooks'),['useNativeKeyboardVisibility.ts']);
-assert.deepEqual(children('apps/android/storage'),['chatPhotoCache.ts','chatStorage.ts']);
+assert.deepEqual(children('apps/android/hooks'),['useNativeKeyboardVisibility.ts','useNativeMemberNavigation.ts']);
+assert.deepEqual(children('apps/android/storage'),['chatPendingMedia.ts','chatPhotoCache.ts','chatStorage.ts']);
 assert.deepEqual(children('apps/android/styles'),['chat-styles.ts']);
 assert.deepEqual(children('apps/android/services'),
  ['native-calendar-live.ts','native-chat-r2-upload.ts','native-chat-socket.ts']);
 const expoEntry=readFileSync(join(rootDir,'apps/android/App.tsx'),'utf8');
 assert.match(expoEntry,/export \{default\} from '\.\/app\/NativeApp'/);
 assert.ok(expoEntry.split('\n').length<12,'Expo entry must remain a tiny loader');
-const nativeController=readFileSync(join(rootDir,'apps/android/app/NativeApp.tsx'),'utf8');
+const nativeEntry=readFileSync(join(rootDir,'apps/android/app/NativeApp.tsx'),'utf8');
+const nativeController=readFileSync(join(rootDir,'apps/android/features/chat/useNativeChatController.ts'),'utf8');
+const nativeView=readFileSync(join(rootDir,'apps/android/features/chat/NativeChatSurface.tsx'),'utf8');
+const nativeNavigation=readFileSync(join(rootDir,'apps/android/hooks/useNativeMemberNavigation.ts'),'utf8');
+const nativeViewport=readFileSync(join(rootDir,'apps/android/features/chat/useNativeChatViewport.ts'),'utf8');
+assert.match(nativeEntry,/useNativeChatController\(\)/);
+assert.match(nativeEntry,/<NativeChatSurface ui=\{ui\}\/>/);
+assert.doesNotMatch(nativeView,/openNativeChatSocket|saveNativeLocalChat|startNamedChatSession|ChatConnectionTimers/);
+assert.match(nativeNavigation,/BackHandler.addEventListener/);
+assert.match(nativeViewport,/scheduleInitialBottom/);
+
 assert.match(nativeController,/startNamedChatSession/);
 assert.match(nativeController,/restoreNamedChatSession/);
-assert.match(nativeController,/from '\.\.\/storage\/chatStorage'/);
-assert.match(nativeController,/from '\.\.\/styles\/chat-styles'/);
+assert.match(nativeController,/from '\.\.\/\.\.\/storage\/chatStorage'/);
+assert.match(nativeView,/from '\.\.\/\.\.\/styles\/chat-styles'/);
 assert.match(nativeController,/useNativeKeyboardVisibility\(activeScreen==='chat'\)/);
 assert.match(readFileSync(join(rootDir,'apps/android/storage/chatStorage.ts'),'utf8'),
  /havana-v2-chat-local-v1/,'Never lose the installed Android session/drafts/outbox key');

@@ -1,3 +1,4 @@
+import {readNativeSource} from '../tests/helpers/native-source.mjs';
 import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import assert from 'node:assert/strict';
 
@@ -16,7 +17,7 @@ const worker = read('cloudflare/src/index.ts');
 const chatRoom = read('cloudflare/src/modules/chat/chat-room.ts');
 const chatSession = read('cloudflare/src/modules/chat/chat-session.ts');
 assert.doesNotMatch(worker,/\/\/\s*@ts-nocheck\b/,'V2 Worker entrypoint must remain strictly typechecked');
-const android = read('apps/android/app/NativeApp.tsx');
+const android = readNativeSource(import.meta.url);
 const pwa = read('apps/pwa/src/app/App.tsx');
 const nativeBubble = read('apps/android/features/chat/SwipeableBubble.tsx');
 const nativeTimeline = read('apps/android/features/chat/NativeChatTimeline.tsx');
