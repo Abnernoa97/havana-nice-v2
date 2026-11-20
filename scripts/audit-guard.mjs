@@ -236,7 +236,7 @@ present(chatIncoming,/new Set\(\(value\.users\?\?\[\]\)\.map\(user=>user\.actorI
   'Chat presence must use real actor IDs');
 present(android,/applyChatIncomingEvent\(item,\{/,'Native must use shared incoming event router');
 present(pwa,/applyChatIncomingEvent\(value,\{/,'PWA must use shared incoming event router');
-present(android,/initialHistoryPending = useRef\(true\)/,'Native chat must track initial bottom placement');
+present(android,/initialHistoryPending\s*=\s*useRef\(true\)/,'Native chat must track initial bottom placement');
 present(android,/requestAnimationFrame\(scheduleInitialBottom\)/,'Native chat must wait for initial snapshot layout');
 present(android,/scrollToEnd\(\{animated:false\}\)/,'Native chat must avoid animated initial scrolling');
 present(android,/onScrollBeginDrag=/,'Native chat must respect manual scroll');
