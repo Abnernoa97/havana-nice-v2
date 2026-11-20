@@ -16,6 +16,7 @@ import {
 } from '@havana/shared';
 import {loadNativeLocalChat,saveNativeLocalChat} from '../../storage/chatStorage';
 import type {BubbleAnchor} from './SwipeableBubble';
+import type {ReactionShowerBurst} from './NativeChatReactionShower';
 import {uploadNativeChatFile} from '../../services/native-chat-r2-upload';
 import {openNativeChatSocket} from '../../services/native-chat-socket';
 import {useNativeMediaSelection} from './useNativeMediaSelection';

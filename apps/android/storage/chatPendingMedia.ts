@@ -7,7 +7,7 @@ import {
 } from '@havana/shared';
 
 export type PendingNativeChatMedia=ChatMediaSelection&{id:string};
-type Stored={actorId:string;updatedAt:number;items:PendingNativeChatMedia[]};
+type Stored={actorId:string;updatedAt:number;items:readonly PendingNativeChatMedia[]};
 const KEY='hn-v2-chat-media-draft-v1';
 const TTL=24*60*60*1000;
 const COPY_BUDGET=80*1024*1024;
