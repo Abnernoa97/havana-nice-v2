@@ -1,7 +1,9 @@
+import {readNativeSource} from './helpers/native-source.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync,existsSync} from 'node:fs';
-const read=name=>readFileSync(new URL('../'+name,import.meta.url),'utf8');
+const read=path=>path==='apps/android/app/NativeApp.tsx'?
+  readNativeSource(import.meta.url):readFileSync(new URL('../'+path,import.meta.url),'utf8');
 
 test('One shared photo/video format and size policy; runtime Worker controls enablement',()=>{
  const src=read('packages/shared/src/index.ts');

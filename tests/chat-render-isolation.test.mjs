@@ -1,7 +1,9 @@
+import {readNativeSource} from './helpers/native-source.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
+const read=path=>path==='apps/android/app/NativeApp.tsx'?
+  readNativeSource(import.meta.url):readFileSync(new URL('../'+path,import.meta.url),'utf8');
 
 test('Typing and draft state do not rerender the complete Chat timelines',()=>{
  const web=read('apps/pwa/src/app/App.tsx');

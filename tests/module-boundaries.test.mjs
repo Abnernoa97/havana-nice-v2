@@ -1,8 +1,10 @@
+import {readNativeSource} from './helpers/native-source.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 
-const read=(path)=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
+const read=path=>path==='apps/android/app/NativeApp.tsx'?
+  readNativeSource(import.meta.url):readFileSync(new URL('../'+path,import.meta.url),'utf8');
 const screens=[
   ['HOME Android','apps/android/app/NativeMemberHome.tsx'],
   ['HOME PWA','apps/pwa/src/app/VisualApp.tsx'],
