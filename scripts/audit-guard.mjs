@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 const read = path => readFileSync(new URL('../' + path, import.meta.url), 'utf8');
 // A separate repository must contain only V2 source, never the original app.
 const allowedRoot=new Set(['.git','.github','.gitignore','.env.example','README.md',
- 'apps','cloudflare','packages','docs','scripts','tests','releases',
+ 'apps','cloudflare','packages','docs','scripts','tests','releases','node_modules',
  'package.json','package-lock.json','tsconfig.base.json']);
 assert.deepEqual(readdirSync(new URL('../',import.meta.url)).filter(x=>!allowedRoot.has(x)),
  [],'Standalone V2 repository cannot include original app files');
