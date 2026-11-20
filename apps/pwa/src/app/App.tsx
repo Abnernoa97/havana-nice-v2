@@ -14,6 +14,7 @@ import {useChatScrollAnchor} from '../features/chat/useChatScrollAnchor';
 import PwaChatMessageMenu from '../features/chat/PwaChatMessageMenu';
 import {usePwaMediaSelection} from '../features/chat/usePwaMediaSelection';
 import PwaChatMediaQueuePreview from '../features/chat/PwaChatMediaQueuePreview';
+import PwaMemberAccessPanel from '../features/chat/PwaMemberAccessPanel';
 import ComposerIcon from '../features/chat/ChatComposerIcon';
 // The authorized HOME is fetched only when needed; Chat's live socket
 // and the existing single-session access remain in this canonical shell.
@@ -719,29 +720,11 @@ export default function App() {
       }} onTouchCancel={()=>{edgeSwipeStart.current=null;}}>
       
 
-      {restoringAccess ? <section className="join-panel"><p>Abriendo HAVANA NICE…</p></section>
-       : !session&&readerRoute ? (
-        <section className="join-panel">
-         <span className="overline">BOOK HAVANA NICE · PWA</span>
-         <h2>Sesión web no autorizada</h2>
-         <p>Este lector 3D funciona con una sesión PWA previamente autorizada.
-          La sesión de Android no se transfiere al navegador. No vuelvas a registrar
-          el mismo nombre: solo puede estar vinculado a una instalación.</p>
-         <button type="button" onClick={closeReader}>Volver a la aplicación PWA</button>
-        </section>
-       ) : !session ? (
-        <section className="join-panel">
-          <span className="overline">ACCESO HAVANA NICE</span>
-          <h2>Bienvenido.</h2>
-          <p>Introduce el nombre que el Administrador creó y autorizó para ti. Entrarás a Inicio.</p>
-          <form onSubmit={event => { event.preventDefault(); void join(); }}>
-            <label htmlFor="chat-name">Tu nombre</label>
-            <input id="chat-name" maxLength={28} autoComplete="nickname" autoCapitalize="none" value={name} onChange={event => setName(event.target.value)} placeholder="Tu nombre" />
-            <button type="submit" disabled={joining || !name.trim()}>{joining ? 'Comprobando acceso…' : 'Continuar'}</button>
-          </form>
-          {error && <p className="chat-error" role="alert">{error}</p>}
-          <small>Si tu nombre no está registrado por el Administrador, no podrás entrar.</small>
-        </section>
+      {restoringAccess || !session ? (
+        <PwaMemberAccessPanel
+          mode={restoringAccess?'restoring':readerRoute?'reader-denied':'join'}
+          name={name} joining={joining} error={error}
+          onNameChange={setName} onJoin={()=>{void join();}} onCloseReader={closeReader}/>
       ) : (
         <>
           <ChatTimeline messages={messages} latestMessageRequest={latestMessageRequest}
