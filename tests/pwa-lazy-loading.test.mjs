@@ -1,9 +1,10 @@
+import {readPwaSource} from './helpers/pwa-source.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {join} from 'node:path';
 
-const source=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
+const source=path=>path==='apps/pwa/src/app/App.tsx'?readPwaSource(import.meta.url):readFileSync(new URL('../'+path,import.meta.url),'utf8');
 const manifestPath=new URL('../apps/pwa/dist/.vite/manifest.json',import.meta.url);
 const manifest=JSON.parse(readFileSync(manifestPath,'utf8'));
 const entries=Object.entries(manifest);
@@ -108,7 +109,7 @@ test('No extra session owner, HTML page controller, duplicate Worker or new Reac
  const visual=source('apps/pwa/src/app/VisualApp.tsx');
  const adminShell=source('apps/pwa/src/features/admin/AdminChatAccess.tsx');
  assert.match(memberShell,/restoreNamedChatSession/);
- assert.match(memberShell,/const VisualApp=lazy\(\(\)=>import\('\.\/VisualApp'\)\)/);
+ assert.match(memberShell,/const VisualApp=lazy\(\(\)=>import\('\.\.\/\.\.\/app\/VisualApp'\)\)/);
  assert.match(memberShell,/session&&activeScreen!=='chat'&&<Suspense/);
  for(const name of ['CalendarAccordion','MemberRepertoire','MemberMusicians','MemberFamily'])
   assert.match(visual,new RegExp('const '+name+'=lazy\\('));

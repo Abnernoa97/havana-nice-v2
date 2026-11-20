@@ -1,3 +1,4 @@
+import {readPwaSource} from './helpers/pwa-source.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
@@ -66,7 +67,7 @@ test('Deleted rows stay hidden, empty histories are safe and orphan anchors reco
 });
 
 test('Outgoing messages request the newest window even from an older page',()=>{
- const app=readFileSync(new URL('../apps/pwa/src/app/App.tsx',import.meta.url),'utf8');
+ const app=readPwaSource(import.meta.url);
  const timeline=readFileSync(new URL('../apps/pwa/src/features/chat/ChatTimeline.tsx',import.meta.url),'utf8');
  assert.match(app,/setLatestMessageRequest\(n=>n\+1\)/);
  assert.match(app,/<ChatTimeline messages=\{messages\} latestMessageRequest=\{latestMessageRequest\}/);

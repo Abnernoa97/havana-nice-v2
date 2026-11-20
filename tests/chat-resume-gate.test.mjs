@@ -1,3 +1,4 @@
+import {readPwaSource} from './helpers/pwa-source.mjs';
 import {readNativeSource} from './helpers/native-source.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -26,7 +27,7 @@ test('a changed member token and a revoked session always reject stale replies',
 });
 test('both platforms guard success, failure, startup restoration and logout',()=>{
  for(const path of ['apps/pwa/src/app/App.tsx','apps/android/app/NativeApp.tsx']){
-  const source=path==='apps/android/app/NativeApp.tsx'?readNativeSource(import.meta.url):readFileSync(new URL('../'+path,import.meta.url),'utf8');
+  const source=path==='apps/android/app/NativeApp.tsx'?readNativeSource(import.meta.url):path==='apps/pwa/src/app/App.tsx'?readPwaSource(import.meta.url):readFileSync(new URL('../'+path,import.meta.url),'utf8');
   assert.match(source,/resumeGate=useRef\(new ChatResumeGate\(\)\)/);
   assert.match(source,/startupGate=useRef\(new ChatResumeGate\(\)\)/);
   assert.match(source,/const request=resumeGate\.current\.begin\(\)/);
@@ -50,7 +51,7 @@ test('initial recovery is not invalidated by an unrelated foreground check',()=>
  assert.equal(startup.isRequestCurrent(initial),false);
 });
 test('restoration waits until the platform is foreground before opening a socket',()=>{
- const pwa=readFileSync(new URL('../apps/pwa/src/app/App.tsx',import.meta.url),'utf8');
+ const pwa=readPwaSource(import.meta.url);
  const native=readNativeSource(import.meta.url);
  assert.match(pwa,/if\(document\.visibilityState==='visible'&&navigator\.onLine\)\s*connectLatest\.current\(approved\)/);
  assert.match(native,/if\(appLifecycle\.current==='active'\)connectLatest\.current\(approved\)/);

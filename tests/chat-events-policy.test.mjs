@@ -1,3 +1,4 @@
+import {readPwaSource} from './helpers/pwa-source.mjs';
 import {readNativeSource} from './helpers/native-source.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -40,7 +41,7 @@ test('deleted messages cannot return through stale pages or socket reconciliatio
  assert.deepEqual(withoutRemovedChatMessages(rows,new Set([9])),[rows[0]]);
  assert.equal(rows.length,3,'input remains untouched');
  for(const path of ['apps/pwa/src/app/App.tsx','apps/android/app/NativeApp.tsx']){
-  const src=path==='apps/android/app/NativeApp.tsx'?readNativeSource(import.meta.url):readFileSync(new URL('../'+path,import.meta.url),'utf8');
+  const src=path==='apps/android/app/NativeApp.tsx'?readNativeSource(import.meta.url):path==='apps/pwa/src/app/App.tsx'?readPwaSource(import.meta.url):readFileSync(new URL('../'+path,import.meta.url),'utf8');
   assert.match(src,/applyChatIncomingEvent\((value|item),\{/,path);
   assert.match(src,/withoutRemovedChatMessages\(history,removedSeq\.current\)/,path);
   assert.match(src,/withoutRemovedChatMessages\(data\.messages,removedSeq\.current\)/,path);
@@ -52,7 +53,7 @@ test('deleted messages cannot return through stale pages or socket reconciliatio
 });
 test('PWA and native Chat use one incoming event dispatcher and canonical projections',()=>{
  for(const path of ['apps/pwa/src/app/App.tsx','apps/android/app/NativeApp.tsx']){
-  const source=path==='apps/android/app/NativeApp.tsx'?readNativeSource(import.meta.url):readFileSync(new URL('../'+path,import.meta.url),'utf8');
+  const source=path==='apps/android/app/NativeApp.tsx'?readNativeSource(import.meta.url):path==='apps/pwa/src/app/App.tsx'?readPwaSource(import.meta.url):readFileSync(new URL('../'+path,import.meta.url),'utf8');
   assert.match(source,/applyChatIncomingEvent\((value|item),\{/);
   assert.doesNotMatch(source,/reconcileChatReadReceipt\(before,(value|item)\)/);
  }

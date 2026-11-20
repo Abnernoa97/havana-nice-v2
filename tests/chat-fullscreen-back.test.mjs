@@ -1,10 +1,11 @@
+import {readPwaSource} from './helpers/pwa-source.mjs';
 import {readNativeSource} from './helpers/native-source.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 
 const read=path=>path==='apps/android/app/NativeApp.tsx'?
-  readNativeSource(import.meta.url):readFileSync(new URL('../'+path,import.meta.url),'utf8');
+  readNativeSource(import.meta.url):path==='apps/pwa/src/app/App.tsx'?readPwaSource(import.meta.url):readFileSync(new URL('../'+path,import.meta.url),'utf8');
 
 test('Both musician Chat clients use a full-viewport conversation without old navigation or search',()=>{
   const pwa=read('apps/pwa/src/app/App.tsx');

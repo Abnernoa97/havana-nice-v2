@@ -1,3 +1,4 @@
+import {readPwaSource} from './helpers/pwa-source.mjs';
 import {readNativeSource} from './helpers/native-source.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -6,7 +7,7 @@ import {recoverChatAccess} from '../packages/shared/src/chat-session-recovery.ts
 
 const saved={token:'existing-private-token',actorId:'member:fer',displayName:'Fer',expiresAt:'2100-01-01T00:00:00Z'};
 const read=path=>path==='apps/android/app/NativeApp.tsx'?
-  readNativeSource(import.meta.url):readFileSync(new URL('../'+path,import.meta.url),'utf8');
+  readNativeSource(import.meta.url):path==='apps/pwa/src/app/App.tsx'?readPwaSource(import.meta.url):readFileSync(new URL('../'+path,import.meta.url),'utf8');
 
 test('validated session uses server identity and never replaces token with old local credentials',async()=>{
  const updated={...saved,token:'server-revalidated-token'};

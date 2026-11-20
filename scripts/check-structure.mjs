@@ -47,6 +47,23 @@ const children=folder=>readdirSync(join(rootDir,folder)).sort();
 assert.deepEqual(children('apps/pwa/src'),
  ['app','features','services','styles','vite-env.d.ts'],
  'PWA source root cannot grow parallel or legacy implementations');
+// The browser entry is now a small composition; only one controller owns Chat.
+const pwaEntry=readFileSync(join(rootDir,'apps/pwa/src/app/App.tsx'),'utf8');
+const pwaController=readFileSync(join(rootDir,'apps/pwa/src/features/chat/usePwaChatController.ts'),'utf8');
+const pwaView=readFileSync(join(rootDir,'apps/pwa/src/features/chat/PwaChatSurface.tsx'),'utf8');
+const pwaMedia=readFileSync(join(rootDir,'apps/pwa/src/features/chat/usePwaChatMediaUpload.ts'),'utf8');
+const pwaNavigation=readFileSync(join(rootDir,'apps/pwa/src/app/usePwaMemberNavigation.ts'),'utf8');
+assert.ok(pwaEntry.split('\n').length<12,'PWA App entry must remain a tiny composition');
+assert.match(pwaEntry,/usePwaChatController\(\)/);
+assert.match(pwaEntry,/<PwaChatSurface ui=\{ui\}\/\>/);
+assert.equal((pwaController.match(/const socket = useRef<WebSocket \| null>\(null\)/g)||[]).length,1,
+ 'PWA must have exactly one WebSocket owner');
+assert.match(pwaController,/captureChatOfflineSnapshot\(/);
+assert.match(pwaController,/saveLocalChat\(value\)/);
+assert.match(pwaNavigation,/window.addEventListener\('popstate',syncBack\)/);
+assert.match(pwaMedia,/uploadChatMediaBatch\(/);
+assert.doesNotMatch(pwaView,/startNamedChatSession|restoreNamedChatSession|openChatSocket|saveLocalChat|new WebSocket/);
+
 assert.deepEqual(children('apps/android'),
  ['App.tsx','app','app.json','features','hooks','package.json','services','storage','styles','tsconfig.json'],
  'Android must keep one Expo entry and grouped modules');

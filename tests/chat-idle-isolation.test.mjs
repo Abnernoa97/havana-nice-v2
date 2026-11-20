@@ -1,10 +1,11 @@
+import {readPwaSource} from './helpers/pwa-source.mjs';
 import {readNativeSource} from './helpers/native-source.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 
 const read=path=>path==='apps/android/app/NativeApp.tsx'?
-  readNativeSource(import.meta.url):readFileSync(new URL('../'+path,import.meta.url),'utf8');
+  readNativeSource(import.meta.url):path==='apps/pwa/src/app/App.tsx'?readPwaSource(import.meta.url):readFileSync(new URL('../'+path,import.meta.url),'utf8');
 
 test('HOME keeps one authorized Chat engine but mounts no message, video or composer view',()=>{
   const pwa=read('apps/pwa/src/app/App.tsx');
@@ -34,7 +35,7 @@ test('Pickers, keyboard subscriptions and uploads remain independent actions',()
   const pwa=read('apps/pwa/src/app/App.tsx');
   const native=read('apps/android/app/NativeApp.tsx');
   const keyboard=read('apps/android/hooks/useNativeKeyboardVisibility.ts');
-  assert.match(pwa,/const \{uploadChatFile\}=await import\('\.\.\/services\/chat-media-upload'\)/);
+  assert.match(pwa,/const \{uploadChatFile\}=await import\('\.\.\/\.\.\/services\/chat-media-upload'\)/);
   assert.doesNotMatch(pwa,/^import \{uploadChatFile\}/m);
   assert.match(native,/useNativeKeyboardVisibility\(activeScreen==='chat'\)/);
   assert.match(keyboard,/if\(!enabled\)\{setVisible\(false\);return;\}/);

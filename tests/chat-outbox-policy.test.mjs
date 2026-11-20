@@ -1,3 +1,4 @@
+import {readPwaSource} from './helpers/pwa-source.mjs';
 import {readNativeSource} from './helpers/native-source.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -9,7 +10,7 @@ import {
 import * as delivery from '../packages/shared/src/chat-outbox-delivery.ts';
 
 const readSource=path=>path==='apps/android/app/NativeApp.tsx'?
- readNativeSource(import.meta.url):readFileSync(new URL('../'+path,import.meta.url),'utf8');
+ readNativeSource(import.meta.url):path==='apps/pwa/src/app/App.tsx'?readPwaSource(import.meta.url):readFileSync(new URL('../'+path,import.meta.url),'utf8');
 const row=(id,time,status='queued',pending=true,senderId='member:fer')=>({
  seq:pending?-1:1,clientMessageId:id,senderId,senderName:'Fer',
  text:id,sentAt:new Date(time).toISOString(),pending,deliveryStatus:status

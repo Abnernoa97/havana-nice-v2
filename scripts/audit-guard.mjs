@@ -18,7 +18,14 @@ const chatRoom = read('cloudflare/src/modules/chat/chat-room.ts');
 const chatSession = read('cloudflare/src/modules/chat/chat-session.ts');
 assert.doesNotMatch(worker,/\/\/\s*@ts-nocheck\b/,'V2 Worker entrypoint must remain strictly typechecked');
 const android = readNativeSource(import.meta.url);
-const pwa = read('apps/pwa/src/app/App.tsx');
+// Follow the same one-owner PWA graph as the compiled App entry.
+const pwa = [
+ 'apps/pwa/src/app/App.tsx',
+ 'apps/pwa/src/features/chat/usePwaChatController.ts',
+ 'apps/pwa/src/app/usePwaMemberNavigation.ts',
+ 'apps/pwa/src/features/chat/usePwaChatMediaUpload.ts',
+ 'apps/pwa/src/features/chat/PwaChatSurface.tsx',
+].map(read).join('\n');
 const nativeBubble = read('apps/android/features/chat/SwipeableBubble.tsx');
 const nativeTimeline = read('apps/android/features/chat/NativeChatTimeline.tsx');
 const nativeMenu = read('apps/android/features/chat/NativeChatMessageMenu.tsx');

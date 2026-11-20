@@ -1,10 +1,11 @@
+import {readPwaSource} from './helpers/pwa-source.mjs';
 import {readNativeSource} from './helpers/native-source.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 
 const read=path=>path==='apps/android/app/NativeApp.tsx'?
-  readNativeSource(import.meta.url):readFileSync(new URL('../'+path,import.meta.url),'utf8');
+  readNativeSource(import.meta.url):path==='apps/pwa/src/app/App.tsx'?readPwaSource(import.meta.url):readFileSync(new URL('../'+path,import.meta.url),'utf8');
 
 test('Pending attachments never carry across member session changes',()=>{
  const web=read('apps/pwa/src/features/chat/usePwaMediaSelection.ts');
@@ -146,7 +147,7 @@ test('PWA upload ref exists before media selection hook executes',()=>{
 });
 
 test('PWA keeps a private, bounded preview cache and never stores signed grants',()=>{
- const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
+ const read=path=>path==='apps/pwa/src/app/App.tsx'?readPwaSource(import.meta.url):readFileSync(new URL('../'+path,import.meta.url),'utf8');
  const hook=read('apps/pwa/src/features/chat/useChatMediaPreview.ts');
  const cache=read('apps/pwa/src/features/chat/chat-photo-thumbnail-cache.ts');
  assert.match(hook,/peekChatPhotoPreview\(token,media\)/);

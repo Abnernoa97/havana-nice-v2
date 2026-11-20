@@ -1,3 +1,4 @@
+import {readPwaSource} from './helpers/pwa-source.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
@@ -27,7 +28,7 @@ test('The preview policy never enlarges the original and preserves aspect ratio'
 
 test('local send creates a private cover without requesting R2 again',()=>{
  const thumb=readFileSync(new URL('../apps/pwa/src/features/chat/chat-photo-preview.ts',import.meta.url),'utf8');
- const app=readFileSync(new URL('../apps/pwa/src/app/App.tsx',import.meta.url),'utf8');
+ const app=readPwaSource(import.meta.url);
  assert.match(thumb,/export function createChatPhotoThumbnail\(original:Blob,signal\?:AbortSignal\)/);
  assert.match(thumb,/return withPreviewSlot\(\(\)=>renderChatPhotoThumbnail\(original,signal\)\)/);
  assert.match(app,/createChatPhotoThumbnail\(item\.file\)/);

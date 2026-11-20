@@ -124,6 +124,8 @@ tests/ + cloudflare/tests/ + scripts/ → reglas de seguridad y CI
 
 - [x] **PWA: presentación de acceso aislada (20/11):** `App.tsx` pasó de 843 a 826 líneas; `PwaMemberAccessPanel.tsx` presenta restauración, acceso denegado de BOOK y entrada por nombre. La sesión, WebSocket, reconexión, rutas, la cola offline y la autorización permanecen en `App.tsx`; comprobación de build Pages exitosa en `bdc018c`. Se incorpora una prueba de límites de responsabilidad. QA física de sesión y modo avión sigue pendiente.
 
+- [x] **PWA `App.tsx` reorganizado (20/11):** de 826 líneas a entrada de 9. `usePwaChatController.ts` conserva el único dueño de sesión, WebSocket, histórico, borrado, ACK y offline; `PwaChatSurface.tsx` contiene la presentación completa; `usePwaMemberNavigation.ts` conserva el historial y retroceso del navegador; `usePwaChatMediaUpload.ts` conserva las llamadas de R2 originales y el progreso. El selector `usePwaMediaSelection`, la galería, IndexedDB y los servicios permanecen intactos. Pruebas de fuente migradas al grafo modular; los comandos de Cloudflare Pages bloquean una compilación con fallas de estructura, auditoría, TypeScript o pruebas del acceso/bundle. CI general y QA físico siguen siendo exigibles antes de declarar sincronización integral.
+
 ## 4.1. Matriz de aceptación física antes de declarar sincronización 100 %
 
 - [x] **BOOK 3D Android/PWA:** el usuario confirmó que abrió y que el giro hacia atrás y el deslizamiento mejorado funcionan con 0.0.21 y actualizaciones web.
