@@ -1,3 +1,4 @@
+import {readNativeSource} from './helpers/native-source.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
@@ -7,6 +8,8 @@ import {
 } from '../packages/shared/src/chat-outbox.ts';
 import * as delivery from '../packages/shared/src/chat-outbox-delivery.ts';
 
+const readSource=path=>path==='apps/android/app/NativeApp.tsx'?
+ readNativeSource(import.meta.url):readFileSync(new URL('../'+path,import.meta.url),'utf8');
 const row=(id,time,status='queued',pending=true,senderId='member:fer')=>({
  seq:pending?-1:1,clientMessageId:id,senderId,senderName:'Fer',
  text:id,sentAt:new Date(time).toISOString(),pending,deliveryStatus:status
@@ -55,7 +58,7 @@ test('same optimistic state transition updates only pending bubbles from same se
 
 test('shared send and ACK lifecycle is the only source of timer/transport logic',()=>{
  for(const path of ['apps/pwa/src/app/App.tsx','apps/android/app/NativeApp.tsx']){
-  const source=readFileSync(new URL('../'+path,import.meta.url),'utf8');
+  const source=readSource(path);
   assert.match(source,/flushChatOutbox\(socket\.current,outbox\.current,(ackTimers|acknowledgementTimers)\.current,markOutgoing,activeSession\.current\?\.actorId\)/);
   assert.match(source,/confirmChatOutgoingMessage\(message,activeSession\.current\?\.actorId/);
   assert.match(source,/pauseChatOutbox\(outbox\.current,(ackTimers|acknowledgementTimers)\.current,markOutgoing\)/);
@@ -137,7 +140,7 @@ test('both clients clear old outbox and ACK timers before activating a new login
   ['apps/pwa/src/app/App.tsx','ackTimers'],
   ['apps/android/app/NativeApp.tsx','acknowledgementTimers']
  ]){
-  const src=readFileSync(new URL('../'+path,import.meta.url),'utf8');
+  const src=readSource(path);
   const from=src.indexOf('function acceptApprovedSession(');
   const to=src.indexOf('async function join(',from);
   assert.ok(from>=0&&to>from);

@@ -1,3 +1,4 @@
+import {readNativeSource} from './helpers/native-source.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
@@ -5,6 +6,8 @@ import {
  chatSessionExpired,chatReconnectDelay,CHAT_RECONNECT_MAX_DELAY_MS,CHAT_WS_HANDSHAKE_TIMEOUT_MS
 } from '../packages/shared/src/chat-connection.ts';
 
+const readSource=path=>path==='apps/android/app/NativeApp.tsx'?
+ readNativeSource(import.meta.url):readFileSync(new URL('../'+path,import.meta.url),'utf8');
 const now=Date.parse('2026-11-07T14:00:00.000Z');
 const session=expiresAt=>({expiresAt});
 
@@ -24,7 +27,7 @@ test('one retry policy preserves the original backoff, max 20 seconds',()=>{
 
 test('shared timer owner handles handshake and retries without extra sockets',()=>{
  for(const path of ['apps/pwa/src/app/App.tsx','apps/android/app/NativeApp.tsx']){
-  const source=readFileSync(new URL('../'+path,import.meta.url),'utf8');
+  const source=readSource(path);
   assert.match(source,/connectionTimers=useRef\(new ChatConnectionTimers\(\)\)/);
   assert.match(source,/connectionTimers\.current\.watchHandshake\(/);
   assert.match(source,/connectionTimers\.current\.scheduleRetry\((retryCount|retryAttempts)\.current,/);
@@ -36,7 +39,7 @@ test('shared timer owner handles handshake and retries without extra sockets',()
 });
 test('PWA/Android use one expiry and retry policy without an extra socket',()=>{
  for(const path of ['apps/pwa/src/app/App.tsx','apps/android/app/NativeApp.tsx']){
-  const s=readFileSync(new URL('../'+path,import.meta.url),'utf8');
+  const s=readSource(path);
   assert.match(s,/chatSessionExpired\(next\)/,path);
   assert.match(s,/chatSessionExpired\(saved\.session\)/,path);
   assert.match(s,/connectionTimers\.current\.scheduleRetry\((retryCount|retryAttempts)\.current,/,path);

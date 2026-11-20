@@ -1,8 +1,10 @@
+import {readNativeSource} from './helpers/native-source.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 
-const read=(path)=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
+const read=path=>path==='apps/android/app/NativeApp.tsx'?
+  readNativeSource(import.meta.url):readFileSync(new URL('../'+path,import.meta.url),'utf8');
 
 test('HOME keeps one authorized Chat engine but mounts no message, video or composer view',()=>{
   const pwa=read('apps/pwa/src/app/App.tsx');
