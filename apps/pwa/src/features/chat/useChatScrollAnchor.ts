@@ -4,7 +4,7 @@ import {useCallback,useEffect,useLayoutEffect,useRef,type RefObject} from 'react
 // Attaches DOM observers only when the conversation is visible.
 type ChatScrollAnchorOptions={
  active:boolean;
- sessionToken?:string;
+ sessionToken:string|undefined;
  messageCount:number;
  bottomRef:RefObject<HTMLDivElement|null>;
  skipOlderRef:RefObject<boolean>;

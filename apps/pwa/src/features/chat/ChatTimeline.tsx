@@ -78,7 +78,8 @@ function ChatTimeline({
    preserveVisibleMessage();
    if(windowed.hasOlder){
      const nextEnd=previousChatWindowEnd(windowed.start,windowed.end);
-     setEndAnchorKey(chatWindowKey(windowed.rows[nextEnd-windowed.start-1]));
+     const nextFirst=windowed.rows[nextEnd-windowed.start-1];
+     if(nextFirst)setEndAnchorKey(chatWindowKey(nextFirst));
    }else if(hasMore){
      // Pre-position on the oldest loaded rows. A server page then becomes
      // immediately visible, rather than requiring a second "Ver anteriores" tap.
