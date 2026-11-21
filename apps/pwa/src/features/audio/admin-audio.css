@@ -1,0 +1,28 @@
+.hn-admin-audio{display:grid;gap:15px;color:#1c3c30}
+.hn-admin-audio-top{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.hn-admin-audio h2{font-size:20px;margin:0}
+.hn-admin-audio-top button,.hn-audio-cover-picker{border:1px solid #e1dfd4;border-radius:11px;background:#fffdf8;padding:10px 13px;color:#285441;font-size:12px}
+.hn-audio-upload{border:1px solid #e7e2d5;border-radius:16px;background:#fffdf8;padding:17px}
+.hn-audio-file-picker{display:inline-flex;cursor:pointer;border-radius:12px;background:#174232;color:#fff;padding:12px 17px;font-weight:750;font-size:13px}
+.hn-audio-file-picker input,.hn-audio-cover-picker input{position:absolute;max-width:1px;max-height:1px;opacity:0}
+.hn-audio-upload-editor{display:grid;gap:14px;margin-top:19px}
+.hn-audio-upload-editor>label:not(.hn-audio-cover-picker){display:grid;gap:6px;font-size:12px;color:#667768;font-weight:650}
+.hn-audio-upload-editor>label input{font:inherit;padding:12px;border:1px solid #dedbd1;border-radius:11px;background:#fff}
+.hn-audio-upload-editor audio{width:100%}
+.hn-audio-upload-preview{display:flex;align-items:center;gap:14px;min-width:0}
+.hn-audio-upload-preview img,.hn-audio-upload-preview>div:first-child{width:75px;height:75px;flex:0 0 75px;border-radius:13px;object-fit:cover}
+.hn-audio-upload-preview>div:first-child{display:grid;place-items:center;background:#194332;color:#d5c39a;font-size:32px}
+.hn-audio-upload-preview>div:last-child{display:grid;gap:5px;min-width:0;overflow-wrap:anywhere;font-size:12px}
+.hn-audio-upload-preview small{color:#879383}
+.hn-audio-cover-picker{display:inline-flex;cursor:pointer;justify-self:start}
+.hn-admin-audio-actions{display:flex;gap:10px;flex-wrap:wrap}
+.hn-admin-audio-actions button{border:1px solid #d9d7cb;border-radius:12px;padding:11px 15px;background:#fff;font-weight:650}
+.hn-admin-audio-actions button:first-child{background:#194332;color:#fff}
+.hn-audio-admin-list{display:grid;gap:8px}
+.hn-audio-admin-row{display:flex;align-items:center;gap:12px;border-radius:13px;border:1px solid #e6e0d5;background:#fffdf8;padding:10px}
+.hn-audio-admin-row img,.hn-audio-admin-row>span{width:49px;height:49px;border-radius:9px;object-fit:cover;display:grid;place-items:center;background:#194332;color:#d6c398;font-size:22px}
+.hn-audio-admin-row>div{flex:1;min-width:0;display:grid;gap:5px;font-size:13px}
+.hn-audio-admin-row small{font-size:11px;color:#66736c}
+.hn-audio-admin-row button{background:#fff4ee;border:1px solid #ebd5c8;color:#8f4c3e;padding:9px;border-radius:9px;font-size:11px}
+.hn-audio-upload-error,.hn-audio-upload-notice{padding:13px;border-radius:12px;font-size:12px;background:#fff5ed;color:#a43d34}
+.hn-audio-upload-notice{background:#eff5eb;color:#356746}
