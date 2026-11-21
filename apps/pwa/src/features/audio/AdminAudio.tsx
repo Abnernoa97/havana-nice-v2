@@ -12,16 +12,22 @@ export default function AdminAudio({token,onExpired}:{token:string;onExpired:()=
  const [artist,setArtist]=useState('HAVANA NICE');
  const [album,setAlbum]=useState('HAVANA NICE');
  const [busy,setBusy]=useState(false);
+ const [serverReady,setServerReady]=useState<boolean|null>(null);
  const [error,setError]=useState('');
  const [notice,setNotice]=useState('');
  const [preview,setPreview]=useState('');
  const [coverPreview,setCoverPreview]=useState('');
  const requestId=useRef(0);
  const refresh=useCallback(async()=>{
-  try{setItems(await getAudioTracks(token,true));setError('');}
-  catch(e){
+  try{
+   const tracks=await getAudioTracks(token,true);
+   setItems(tracks);setServerReady(true);setError('');
+  }catch(e){
+   setServerReady(false);
    if(e instanceof AudioApiError&&e.status===401)onExpired();
-   else setError(e instanceof Error?e.message:'La biblioteca no está disponible.');
+   else if(e instanceof AudioApiError&&e.status===404)
+    setError('El reproductor está instalado, pero la API de Audio aún no está publicada en Cloudflare. La subida se habilitará al actualizar el Worker.');
+   else setError(e instanceof Error?e.message:'La conexión con Audio no está disponible.');
   }
  },[token,onExpired]);
  useEffect(()=>{void refresh();},[refresh]);
@@ -55,6 +61,7 @@ export default function AdminAudio({token,onExpired}:{token:string;onExpired:()=
  };
  const save=async()=>{
   if(!file||!title.trim()||busy)return;
+  if(serverReady!==true){setNotice('');setError('El servidor de Audio todavía no está disponible. Pulsa Actualizar para comprobarlo.');return;}
   setBusy(true);setNotice('Subiendo audio privado…');setError('');
   try{
    const id=await uploadAudioTrack(token,file,{
@@ -69,7 +76,7 @@ export default function AdminAudio({token,onExpired}:{token:string;onExpired:()=
    await refresh();
    setNotice(coverSaved?'Audio y portada disponibles para el equipo.':
     'Audio guardado. La portada no pudo subirse; puedes cambiarla en la lista.');
-  }catch(e){setError(e instanceof Error?e.message:'No se pudo subir el audio.');}
+  }catch(e){setNotice('');setError(e instanceof Error?e.message:'No se pudo subir el audio.');}
   finally{setBusy(false);}
  };
  const remove=async(item:AudioTrack)=>{
@@ -82,7 +89,10 @@ export default function AdminAudio({token,onExpired}:{token:string;onExpired:()=
  return <section className="hn-admin-audio">
   <div className="hn-admin-audio-top"><h2>Biblioteca de audio</h2>
    <button type="button" onClick={()=>void refresh()}>Actualizar</button></div>
-  <p className="a-detail">Tus audios aparecen en el reproductor de los músicos. La foto incrustada en un MP3 se identifica automáticamente; también puedes elegir una portada.</p>
+  <p className="a-detail">Los audios que publiques aparecerán en el reproductor del equipo. Al elegir un MP3 reconocemos su portada y los datos que tenga guardados.</p>
+  {serverReady===false&&<p className="hn-audio-server-warning" role="status">
+   La biblioteca necesita la actualización del servidor. Puedes preparar el audio y su portada, pero Guardar y publicar estará deshabilitado hasta que la conexión funcione.
+  </p>}
   {error&&<p role="alert" className="hn-audio-upload-error">{error}</p>}
   {notice&&<p role="status" className="hn-audio-upload-notice">{notice}</p>}
   <div className="hn-audio-upload">
@@ -107,7 +117,7 @@ export default function AdminAudio({token,onExpired}:{token:string;onExpired:()=
      <input type="file" accept="image/jpeg,image/png,image/webp" onChange={event=>void chooseCover(event)} disabled={busy}/>
     </label>
     <div className="hn-admin-audio-actions">
-     <button type="button" disabled={busy||!title.trim()} onClick={()=>void save()}>
+     <button type="button" disabled={busy||!title.trim()||serverReady!==true} onClick={()=>void save()}>
       {busy?'Guardando…':'Guardar y publicar'}</button>
      <button type="button" disabled={busy} onClick={()=>{setFile(null);setCover(null);}}>Cancelar</button>
     </div>
