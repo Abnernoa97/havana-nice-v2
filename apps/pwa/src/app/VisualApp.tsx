@@ -11,6 +11,7 @@ const MemberRepertoire=lazy(()=>import('../features/repertoire/MemberRepertoire'
 const MemberMusicians=lazy(()=>import('../features/musicians/MemberMusicians'));
 const MemberFamily=lazy(()=>import('../features/family/MemberFamily'));
 const MemberHome=lazy(()=>import('../features/home/MemberHome'))
+const MemberNotices=lazy(()=>import('../features/notices/MemberNotices'));
 
 type Props={
   displayName?:string;
@@ -82,6 +83,7 @@ function VisualApp({displayName,active,onNavigate,preview=false,token,actorId}:P
             screen==='repertoire'&&token?<MemberRepertoire token={token}/>:
             screen==='musicians'&&token?<MemberMusicians token={token}/>:
             screen==='family'&&token?<MemberFamily token={token}/>:
+            screen==='notices'&&token?<MemberNotices token={token}/>:
             <div className="visual-empty">
              <span className="visual-empty-icon" aria-hidden="true">◇</span>
              <h3>Módulo en preparación</h3>
