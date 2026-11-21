@@ -10,6 +10,7 @@ import {handleRepertoireApi} from './modules/repertoire/repertoire.js';
 import {handleFamilyApi} from './modules/family/family.js';
 import {handleProfileApi} from './modules/profile/profile.js';
 import {handleStoriesApi,cleanupExpiredStories} from './modules/stories/stories.js';
+import {handleMemberNotices} from './modules/notices/member-notifications.js';
 import {handleBookApi} from './modules/book/book.js';
 import {notifyFamilyClients} from './modules/family/family-realtime.js';
 import {handleChatMedia,readChatMedia,decorateChatMessages} from './modules/chat/chat-media.js';
@@ -122,6 +123,9 @@ export default {
     // Member profile photos: private R2, separate from Chat/Familia, same one session.
     if(url.pathname.startsWith('/api/profile/'))
       return handleProfileApi(request,env,url,origin,verifySession,ctx);
+    // Authenticated, recipient-scoped notifications. Reuse the musician session.
+    if(url.pathname==='/api/notices'||url.pathname==='/api/notices/read')
+      return handleMemberNotices(request,env,url,origin,verifySession);
     // Ephemeral photo stories have independent storage, reads and 24h expiry.
     if(url.pathname.startsWith('/api/stories/'))
       return handleStoriesApi(request,env,url,origin,verifySession,ctx);
