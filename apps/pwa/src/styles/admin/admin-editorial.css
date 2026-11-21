@@ -143,3 +143,54 @@
  .hn-admin-editorial .hn-admin-rep-row>a{font-size:10px}
  .hn-admin-editorial .hn-admin-rep-editor{padding:12px}
 }
+
+/* ADMIN SIMPLIFICADO · menú plano, 6 accesos, sin portada ni tarjetas verdes.
+   Los estilos anteriores quedan acotados a los módulos internos existentes. */
+.hn-admin-minimal{background:#f7f5ef;--hn-forest:#17382f}
+.hn-admin-minimal .a-header.hn-admin-minimal-header{background:#f9f7f1;color:#17382f;padding:13px 19px;
+ min-height:68px;border-bottom:1px solid #e8e4db}
+.hn-admin-minimal .hn-admin-brand-button{display:flex;flex-direction:column;align-items:flex-start;gap:3px;
+ background:none;border:0;padding:2px 0;text-align:left;color:#17382f;cursor:pointer}
+.hn-admin-minimal .hn-admin-brand-button strong{font:700 17px/1.2 Georgia,serif;letter-spacing:.21em;color:#17382f}
+.hn-admin-minimal .hn-admin-brand-button small{font:700 9px/1.3 system-ui,sans-serif;color:#8a8172;letter-spacing:.16em}
+.hn-admin-minimal .hn-admin-home-shortcut{width:40px;height:40px;border:1px solid #e3dfd4;border-radius:50%;
+ background:#fffdf8;color:#315443;font-size:24px;display:grid;place-items:center}
+.hn-admin-minimal .a-main.visual-content{padding:18px clamp(14px,4vw,36px) 105px}
+.hn-admin-minimal .hn-admin-plain-menu{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.hn-admin-minimal .hn-admin-plain-item{background:#fffefa;border:1px solid #e4dfd5;min-height:105px;
+ border-radius:15px;padding:16px;text-align:left;color:#26392f;display:flex;align-items:center;gap:10px;
+ transition:border-color .15s ease}
+.hn-admin-minimal .hn-admin-plain-item:hover{border-color:#bca886}
+.hn-admin-minimal .hn-admin-plain-icon{flex:0 0 34px;font-size:23px;color:#476e57;text-align:center}
+.hn-admin-minimal .hn-admin-plain-title{flex:1;min-width:0;font-size:15px;line-height:1.35;font-weight:650}
+.hn-admin-minimal .hn-admin-plain-arrow{font-size:24px;font-weight:300;color:#9e927c}
+.hn-admin-minimal .hn-admin-simple-title{display:flex;gap:12px;align-items:center;margin-bottom:15px}
+.hn-admin-minimal .hn-admin-simple-title button{height:37px;width:37px;border:1px solid #e1d8c9;
+ border-radius:12px;background:#fffdfa;color:#385343;font-size:26px}
+.hn-admin-minimal .hn-admin-simple-title h1{font-size:clamp(25px,4vw,33px);margin:0;letter-spacing:-.04em}
+.hn-admin-minimal .hn-admin-auth-workspace[hidden]{display:none!important}
+.hn-admin-minimal .a-side.visual-side{padding-top:22px}
+.hn-admin-minimal .a-side nav button{min-height:50px}
+.hn-admin-minimal .a-side nav button.active{background:#e4ece3;color:#204a36}
+.hn-admin-minimal .a-bottom.visual-bottom-nav{grid-template-columns:repeat(6,minmax(0,1fr))}
+.hn-admin-minimal .a-bottom button.active{color:#1d5639;background:#e6eee4}
+.hn-admin-minimal .a-bottom button{min-width:0}
+.hn-admin-minimal .a-bottom button span:last-child{display:block;max-width:100%;
+ overflow:hidden;white-space:normal;overflow-wrap:anywhere;text-align:center;line-height:1.18}
+@media(max-width:750px){
+ .hn-admin-minimal .a-main.visual-content{padding:16px 14px calc(110px + env(safe-area-inset-bottom))}
+ .hn-admin-minimal .hn-admin-plain-menu{gap:9px}
+ .hn-admin-minimal .hn-admin-plain-item{min-height:95px;padding:13px 12px}
+ .hn-admin-minimal .hn-admin-plain-icon{flex-basis:27px;font-size:20px}
+ .hn-admin-minimal .hn-admin-plain-title{font-size:13px}
+ .hn-admin-minimal .hn-admin-plain-arrow{font-size:19px}
+ .hn-admin-minimal .a-bottom.visual-bottom-nav{padding-left:3px;padding-right:3px}
+ .hn-admin-minimal .a-bottom button{gap:5px;padding:7px 0 6px;min-height:66px}
+ .hn-admin-minimal .a-bottom button span:first-child{font-size:20px}
+ .hn-admin-minimal .a-bottom button span:last-child{font-size:9px;letter-spacing:-.035em}
+}
+@media(max-width:365px){
+ .hn-admin-minimal .hn-admin-plain-menu{grid-template-columns:1fr}
+ .hn-admin-minimal .hn-admin-plain-item{min-height:64px}
+ .hn-admin-minimal .a-bottom button span:last-child{font-size:8px}
+}
