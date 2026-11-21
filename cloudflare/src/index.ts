@@ -1,5 +1,6 @@
 import { handleAdminSessionApi, verifyAdminSession } from './modules/admin/admin-auth.js';
 import {handleAdminStorageSummary} from './modules/admin/admin-storage-summary.js';
+import {handleAudioApi} from './modules/audio/audio.js';
 import {handleAdminTrustedDevice} from './modules/admin/admin-trusted-device.js';
 import { adminSocketToken, adminTokenRequest, notifyAdminClients } from './modules/admin/admin-realtime.js';
 import {handleAdminChat} from './modules/admin/admin-chat.js';
@@ -131,6 +132,9 @@ export default {
     // Ephemeral photo stories have independent storage, reads and 24h expiry.
     if(url.pathname.startsWith('/api/stories/'))
       return handleStoriesApi(request,env,url,origin,verifySession,ctx);
+    // Audio uses one signed catalog and R2 gateway, independent from voice notes.
+    if(url.pathname.startsWith('/api/audio/'))
+      return handleAudioApi(request,env,url,origin,verifySession,ctx);
     // Familia HAVANA NICE: private team albums and original R2 media.
     if(url.pathname.startsWith('/api/family/'))
       return handleFamilyApi(request,env,url,origin,respond,verifySession,ctx);
