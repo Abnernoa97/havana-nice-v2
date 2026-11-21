@@ -1,8 +1,9 @@
 import type {MemberProfile} from '@havana/shared';
+import PrivateProfileAvatar from '../profile/PrivateProfileAvatar';
 
-export default function TeamStoriesStrip({displayName,actorId,profiles,preview,canEditProfile,onOpenProfile}:{
+export default function TeamStoriesStrip({displayName,actorId,profiles,preview,canEditProfile,onPhotoError,onOpenProfile}:{
  displayName:string|undefined;actorId:string|undefined;profiles:readonly MemberProfile[];
- preview:boolean;canEditProfile:boolean;onOpenProfile:()=>void;
+ preview:boolean;canEditProfile:boolean;onPhotoError:(memberId:string)=>void;onOpenProfile:()=>void;
 }){
  const me=displayName?.trim()||'Mi perfil';
  const visible=profiles.filter(p=>p.actorId!==actorId&&p.name.toLocaleLowerCase()!==me.toLocaleLowerCase());
@@ -13,8 +14,8 @@ export default function TeamStoriesStrip({displayName,actorId,profiles,preview,c
     <button type="button" className="hn-moment-circle" onClick={onOpenProfile}
      disabled={preview||!canEditProfile} aria-label="Abrir mi perfil">
      <span className="hn-moment-photo">
-      {mine?.photoUrl?<img src={mine.photoUrl} alt=""/>:
-       <span className="hn-moment-initial">{me.charAt(0).toUpperCase()}</span>}
+      <PrivateProfileAvatar photoUrl={mine?.photoUrl} name={me} fallbackClassName="hn-moment-initial"
+       onImageFailure={()=>onPhotoError(mine?.actorId||'')}/>
      </span>
      <span className="hn-moment-add" aria-hidden="true">+</span>
     </button>
@@ -23,8 +24,8 @@ export default function TeamStoriesStrip({displayName,actorId,profiles,preview,c
    {visible.map(person=><div className="hn-moment-person" key={person.actorId}>
     <div className="hn-moment-circle" aria-label={'Perfil de '+person.name}>
      <span className="hn-moment-photo">
-      {person.photoUrl?<img src={person.photoUrl} alt=""/>:
-       <span className="hn-moment-initial">{person.name.charAt(0).toUpperCase()}</span>}
+      <PrivateProfileAvatar photoUrl={person.photoUrl} name={person.name} fallbackClassName="hn-moment-initial"
+       onImageFailure={()=>onPhotoError(person.actorId)}/>
      </span>
     </div>
     <span className="hn-moment-name">{person.name}</span>

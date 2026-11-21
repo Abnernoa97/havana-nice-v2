@@ -1,6 +1,7 @@
 import {lazy,Suspense,memo,useState} from 'react';
 import {usePwaMemberProfiles,PwaProfileLive} from '../features/profile/usePwaMemberProfiles';
 import MemberProfilePanel from '../features/profile/MemberProfilePanel';
+import PrivateProfileAvatar from '../features/profile/PrivateProfileAvatar';
 import '../features/profile/profile.css';
 import {MEMBER_MODULES,type MemberScreen} from '@havana/shared';
 // Each module is a separate on-demand production chunk. The HOME shell and
@@ -46,7 +47,7 @@ function VisualApp({displayName,active,onNavigate,preview=false,token,actorId}:P
       <div><div className="visual-brand">HAVANA NICE</div><div className="visual-subtitle">ESPACIO DEL EQUIPO</div></div>
       <button type="button" className="visual-account" disabled={preview||profile.phase==='legacy'||profile.phase==='offline'||profile.phase==='checking'} onClick={()=>setProfileOpen(true)}
         aria-label={'Abrir perfil de '+(displayName||'integrante')}>
-        <span className="visual-account-avatar">{own?.photoUrl?<img src={own.photoUrl} alt=""/>:preview?'H':(displayName||'H').charAt(0).toUpperCase()}</span>
+        <span className="visual-account-avatar"><PrivateProfileAvatar photoUrl={own?.photoUrl} name={preview?'H':displayName||'H'} onImageFailure={()=>profile.retryPhoto(own?.actorId||'')}/></span>
         <span className="visual-account-label">{preview?'Vista previa':displayName||'Mi perfil'}</span>
       </button>
     </header>
@@ -67,7 +68,7 @@ function VisualApp({displayName,active,onNavigate,preview=false,token,actorId}:P
       </aside>
       <main className="visual-content" id="visual-content">
         {screen==='home'?<Suspense fallback={<div className="visual-empty" role="status">Abriendo Inicio…</div>}>
-          <MemberHome displayName={displayName} actorId={actorId} profiles={profile.profiles} preview={preview} canEditProfile={profile.phase==='ready'||profile.phase==='missing'} onOpenProfile={()=>setProfileOpen(true)}/>
+          <MemberHome displayName={displayName} actorId={actorId} profiles={profile.profiles} preview={preview} canEditProfile={profile.phase==='ready'||profile.phase==='missing'} onPhotoError={profile.retryPhoto} onOpenProfile={()=>setProfileOpen(true)}/>
         </Suspense>:<>
           <div className="visual-section-header">
             <button className="visual-back" type="button" onClick={()=>navigate('home')}>‹ Inicio</button>
@@ -106,7 +107,7 @@ function VisualApp({displayName,active,onNavigate,preview=false,token,actorId}:P
     {!preview&&token&&(profile.phase==='missing'||profileOpen)&&profile.phase!=='checking'&&
      <MemberProfilePanel name={displayName||'integrante'} photo={own}
        required={profile.phase==='missing'} saving={profile.saving} error={profile.error}
-       onUpload={profile.upload} onClose={()=>setProfileOpen(false)}/>}
+       onUpload={profile.upload} onImageFailure={()=>profile.retryPhoto(own?.actorId||'')} onClose={()=>setProfileOpen(false)}/>}
   </div>;
 }
 // Ignore background Chat deliveries when no HOME prop changed.

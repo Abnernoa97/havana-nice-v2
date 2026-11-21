@@ -33,7 +33,7 @@ async function readPhotoGrant(request,env,url,origin){
   'content-length':String(object.size)
  }});
 }
-async function listProfiles(env,origin){
+async function listProfiles(env,origin,workerOrigin){
  await env.DB.prepare('DELETE FROM member_profile_grants WHERE expires_at<=?').bind(Date.now()).run();
  const rows=(await env.DB.prepare(
   'SELECT m.actor_id,m.display_name,p.photo_key FROM chat_members m '+
@@ -50,7 +50,8 @@ async function listProfiles(env,origin){
   return AUTH_PREFIX+token;
  }));
  return json({profiles:rows.map((row,i)=>({
-  actorId:row.actor_id,name:row.display_name,photoUrl:grants[i]
+  actorId:row.actor_id,name:row.display_name,
+  photoUrl:grants[i]?new URL(grants[i],workerOrigin).toString():null
  }))},200,origin);
 }
 async function uploadPhoto(request,env,actor,origin,ctx){
@@ -114,7 +115,7 @@ export async function handleProfileApi(request,env,url,origin,verifySession,ctx)
   const actor=await verifySession(env,token);
   if(!actor)return json({error:'No autorizado'},401,origin);
   if(url.pathname==='/api/profile/team'&&request.method==='GET')
-   return listProfiles(env,origin);
+   return listProfiles(env,origin,url.origin);
   if(url.pathname==='/api/profile/me/photo'&&request.method==='PUT')
    return uploadPhoto(request,env,actor,origin,ctx);
   return json({error:'Ruta no encontrada'},404,origin);

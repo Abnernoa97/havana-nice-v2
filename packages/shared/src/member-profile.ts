@@ -13,8 +13,7 @@ export async function getTeamProfiles(token:string,base=API):Promise<MemberProfi
  if(!res.ok)throw new MemberProfileApiError(data.error||'No se pudieron cargar los perfiles.',res.status);
  return (data.profiles||[]).map(profile=>({
   ...profile,
-  photoUrl:typeof profile.photoUrl==='string'&&/^\/api\/profile\/photo\/[a-f0-9]{32}$/.test(profile.photoUrl)
-   ?new URL(profile.photoUrl,base).toString():null,
+  photoUrl:resolvePrivatePhotoUrl(profile.photoUrl,base),
  }));
 }
 export async function uploadMyProfilePhoto(
@@ -29,4 +28,14 @@ export async function uploadMyProfilePhoto(
  });
  const data=await res.json() as {error?:string};
  if(!res.ok)throw new MemberProfileApiError(data.error||'No se pudo guardar la fotografía.',res.status);
+}
+
+function resolvePrivatePhotoUrl(raw:string|null,base:string):string|null{
+ if(typeof raw!=='string')return null;
+ try{
+  const url=new URL(raw,base);
+  if(url.origin!==new URL(base).origin||url.search||url.hash||
+    !/^\/api\/profile\/photo\/[a-f0-9]{32}$/.test(url.pathname))return null;
+  return url.toString();
+ }catch{return null;}
 }

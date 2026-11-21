@@ -11,8 +11,9 @@ test('iPhone and Android share the same member profile contract, no new identity
  const shell=read('apps/pwa/src/app/VisualApp.tsx');
  const android=read('apps/android/app/NativeMemberHome.tsx');
  assert.match(contract,/\/api\/profile\/team/);
- assert.match(contract,/new URL\(profile\.photoUrl,base\)\.toString\(\)/);
- assert.match(contract,/photoUrl:typeof profile\.photoUrl/);
+ assert.match(contract,/resolvePrivatePhotoUrl\(profile\.photoUrl,base\)/);
+ assert.match(contract,/url\.origin!==new URL\(base\)\.origin/);
+ assert.match(server,/new URL\(grants\[i\],workerOrigin\)\.toString\(\)/);
  assert.match(contract,/\/api\/profile\/me\/photo/);
  assert.match(server,/verifySession\(env,token\)/);
  assert.match(server,/member_profiles/);
@@ -37,4 +38,9 @@ test('Notifications are the sixth bottom tab on both platforms, profile contains
  assert.match(native,/\['home','chat','calendar','repertoire','family','notices'\]/);
  assert.match(read('apps/pwa/src/features/profile/MemberProfilePanel.tsx'),/Ajustes del perfil/);
  assert.match(native,/Ajustes del perfil/);
+ const avatar=read('apps/pwa/src/features/profile/PrivateProfileAvatar.tsx');
+ assert.match(avatar,/onError=/);
+ assert.match(avatar,/setFailedUrl\(photoUrl\)/);
+ assert.match(pwa,/retryPhoto/);
+ assert.match(read('apps/pwa/src/features/home/TeamStoriesStrip.tsx'),/PrivateProfileAvatar/);
 });

@@ -38,7 +38,7 @@
 - Worker refactor: una clase Durable Object y un `index.ts` delgado. Worker de carátulas publicado desde el 12/11; siete bindings preservados. El control del 20/11 validó las fuentes y pruebas, sin subir otro Worker ni compilar nueva APK. Los smoke tests históricos de v66 siguen documentados en Git.
 - No confundir compilación + pruebas con experiencia física. En iPhone la navegación modular fue confirmada por usuario; el lector BOOK 3D Android/PWA también fue confirmado después de la corrección. Siguen pendientes modo avión, Recuerdos y QA integral de Chat/Familia/Calendario.
 
-**21/11 · Perfil:** foto inicial y edición en círculo superior; sincronización por actorId D1/R2. Notificaciones sexta pestaña; Ajustes dentro del Perfil. Migración 0030 aplicada; Worker v69 Wrangler activado al 100% el 21/11 con los 7 bindings preservados y v67 reversible. PWA preparada con URL absoluta del Worker para imágenes; QA física de foto pendiente. Android fuente modificada, APK sin actualizar.
+**21/11 · Perfil:** foto obligatoria y editable por actorId, Notificaciones sexta pestaña; D1 0030 y Worker v69 activos, R2 privado. Foto cargada en R2 pero ícono roto en iPhone: Workers Logs sin solicitudes GET de foto, compatible con ruta relativa en JS anterior. Corrección lista: Worker devuelve URL absoluta de imagen, ambos clientes validan mismo origen y PWA usa fallback con única recuperación. Verificar Pages, versión Wrangler nueva y QA iPhone; Android código modificado sin APK.
 
 ## Próximos pasos en orden
 

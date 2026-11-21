@@ -10,6 +10,7 @@ export function usePwaMemberProfiles(token:string|undefined,actorId:string|undef
  const [error,setError]=useState('');
  const [saving,setSaving]=useState(false);
  const request=useRef(0);
+ const photoRetryActors=useRef(new Set<string>());
  const refresh=useCallback(async()=>{
   if(!token){setPhase('legacy');setProfiles([]);return;}
   const id=++request.current;
@@ -56,8 +57,14 @@ export function usePwaMemberProfiles(token:string|undefined,actorId:string|undef
    setError(e instanceof Error?e.message:'No se pudo guardar la fotografía.');
   }finally{setSaving(false);}
  },[token,saving,refresh]);
+ // Recover one failed grant per musician per mount; avoid retry loops.
+ const retryPhoto=useCallback((memberId:string)=>{
+  if(!memberId||photoRetryActors.current.has(memberId))return;
+  photoRetryActors.current.add(memberId);
+  void refresh();
+ },[refresh]);
  const own=profiles.find(p=>p.actorId===actorId);
- return {profiles,own,phase,error,saving,upload,refresh};
+ return {profiles,own,phase,error,saving,upload,refresh,retryPhoto};
 }
 async function normalizeProfilePhoto(file:File):Promise<Blob>{
  if(!file.type.startsWith('image/'))throw new Error('Elige una fotografía.');

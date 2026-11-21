@@ -34,7 +34,7 @@ function setup(){
  async function api(path,method='GET',token='fer',data=null,mime='image/jpeg'){
   const headers=token?{Authorization:'Bearer '+token}:{};
   if(data){headers['Content-Type']=mime;headers['Content-Length']=String(data.byteLength);}
-  const request=new Request(BASE+path,{method,headers,body:data});
+  const request=new Request(new URL(path,BASE),{method,headers,body:data});
   const response=await handleProfileApi(request,env,new URL(request.url),'',
    async(_e,value)=>value==='fer'?{actorId:FER,displayName:'Fer'}:
     value==='noa'?{actorId:NOA,displayName:'Noa'}:null,
@@ -61,7 +61,8 @@ test('Member upload creates one private R2 photo and signed team avatars',async(
  assert.equal(e.objects.size,1);
  const roster=await (await e.api('/api/profile/team')).json();
  assert.equal(roster.profiles[0].name,'Fer');
- assert.match(roster.profiles[0].photoUrl,/^\/api\/profile\/photo\/[a-f0-9]{32}$/);
+ assert.equal(new URL(roster.profiles[0].photoUrl).origin,BASE);
+ assert.match(new URL(roster.profiles[0].photoUrl).pathname,/^\/api\/profile\/photo\/[a-f0-9]{32}$/);
  assert.equal(roster.profiles[1].photoUrl,null);
  assert.equal(JSON.stringify(roster).includes('profiles/member'),false,'R2 keys are never exposed');
  const asset=await e.api(roster.profiles[0].photoUrl,'GET','');

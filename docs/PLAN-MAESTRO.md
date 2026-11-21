@@ -40,7 +40,7 @@ cloudflare/migrations/ → historial aditivo D1; NUNCA reescribir migraciones us
 tests/ + cloudflare/tests/ + scripts/ → reglas de seguridad y CI
 ```
 
-**HOME social, perfil (21/11):** foto inicial y edición desde Perfil; Notificaciones es sexta pestaña y Ajustes queda en Perfil. API /api/profile/team y PUT /api/profile/me/photo privadas; Worker v69 activado al 100% (Wrangler), D1 0030 aplicada, R2 y 7 bindings conservados; grants 10 min y baja con cola R2. La PWA transforma URLs de avatar en rutas absolutas del Worker. QA fotográfico en dispositivo y APK Android pendientes; Chat/BOOK intactos.
+**HOME social, perfil (21/11):** foto obligatoria al entrar, editable en Perfil; Notificaciones sexta pestaña. R2 privado, D1 0030 y Worker v69 activos; Chat/BOOK intactos. Incidencia iPhone: foto guardada, pero imagen rota; logs sin GET a /api/profile/photo: enlaces relativos en PWA antigua. Solución: API entrega URL absoluta del Worker, cliente valida origen; si caduca el grant, foto muestra inicial y reintenta una vez. QA física y APK Android pendientes.
 
 **Separación de carga PWA:** `React.lazy`/`Suspense` en HOME, Calendario, Repertorio, Familia, BOOK y pestañas Admin. La PWA tiene cuatro entradas HTML históricas, pero **no URLs HTML diferentes por módulo**; cada componente pesado se descarga bajo demanda. Comprobación con manifiesto real de Vite. Usuario aprobó navegación de iPhone el 08/11; pruebas físicas adicionales sin red siguen pendientes.
 
