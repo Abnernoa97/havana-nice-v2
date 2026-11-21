@@ -1,4 +1,4 @@
-import {lazy,Suspense,memo,useState} from 'react';
+import {lazy,Suspense,memo,useEffect,useState} from 'react';
 import {usePwaMemberProfiles,PwaProfileLive} from '../features/profile/usePwaMemberProfiles';
 import MemberProfilePanel from '../features/profile/MemberProfilePanel';
 import PrivateProfileAvatar from '../features/profile/PrivateProfileAvatar';
@@ -12,6 +12,7 @@ const MemberMusicians=lazy(()=>import('../features/musicians/MemberMusicians'));
 const MemberFamily=lazy(()=>import('../features/family/MemberFamily'));
 const MemberHome=lazy(()=>import('../features/home/MemberHome'))
 const MemberNotices=lazy(()=>import('../features/notices/MemberNotices'));
+const MemberAudio=lazy(()=>import('../features/audio/MemberAudio'));
 
 type Props={
   displayName?:string;
@@ -27,16 +28,19 @@ const notes:Record<Exclude<MemberScreen,'chat'|'home'>,string>={
   musicians:'La lista de integrantes requiere la sesión autorizada del equipo.',
   family:'Las fotografías y los videos privados se muestran al entrar con una sesión autorizada. BOOK HAVANA NICE muestra las páginas que publique Administración.',
   notices:'Las notificaciones estarán disponibles cuando activemos su sistema privado.',
+  audio:'Audios privados del equipo y sus portadas.',
 };
 // Reuses the existing visual shell for the member HOME after successful login.
 // /visual.html remains presentation-only; it cannot open Chat or issue a session.
 function VisualApp({displayName,active,onNavigate,preview=false,token,actorId}:Props){
   const [profileOpen,setProfileOpen]=useState(false);
+  const [audioOpened,setAudioOpened]=useState(active==='audio');
   const [storyEpoch,setStoryEpoch]=useState(0);
   const profile=usePwaMemberProfiles(token,actorId);
   const own=profile.own;
   const [previewScreen,setPreviewScreen]=useState<MemberScreen>('home');
   const screen=active??previewScreen;
+  useEffect(()=>{if(screen==='audio')setAudioOpened(true);},[screen]);
   const navigate=(target:MemberScreen)=>{
     if(target==='chat'&&!onNavigate)return; // Public preview never opens private Chat.
     if(onNavigate)onNavigate(target);
@@ -47,6 +51,8 @@ function VisualApp({displayName,active,onNavigate,preview=false,token,actorId}:P
   return <div className={screen==='home'?'visual-shell hn-home-route':'visual-shell'}>
     <header className="visual-header">
       <div><div className="visual-brand">HAVANA NICE</div><div className="visual-subtitle">ESPACIO DEL EQUIPO</div></div>
+      <button type="button" className="hn-header-notices" onClick={()=>navigate('notices')}
+       aria-label="Abrir notificaciones" aria-current={screen==='notices'?'page':undefined}>◌</button>
       <button type="button" className="visual-account" disabled={preview||profile.phase==='legacy'||profile.phase==='offline'||profile.phase==='checking'} onClick={()=>setProfileOpen(true)}
         aria-label={'Abrir perfil de '+(displayName||'integrante')}>
         <span className="visual-account-avatar"><PrivateProfileAvatar photoUrl={own?.photoUrl} name={preview?'H':displayName||'H'} onImageFailure={()=>profile.retryPhoto(own?.actorId||'')}/></span>
@@ -84,6 +90,7 @@ function VisualApp({displayName,active,onNavigate,preview=false,token,actorId}:P
             screen==='musicians'&&token?<MemberMusicians token={token}/>:
             screen==='family'&&token?<MemberFamily token={token}/>:
             screen==='notices'&&token?<MemberNotices token={token}/>:
+            screen==='audio'?null:
             <div className="visual-empty">
              <span className="visual-empty-icon" aria-hidden="true">◇</span>
              <h3>Módulo en preparación</h3>
@@ -91,10 +98,13 @@ function VisualApp({displayName,active,onNavigate,preview=false,token,actorId}:P
             </div>}
           </Suspense>
         </>}
+        {audioOpened&&token&&<Suspense fallback={<div className="visual-empty" role="status">Abriendo Audio…</div>}>
+         <MemberAudio token={token} active={screen==='audio'}/>
+        </Suspense>}
       </main>
     </div>
     <nav className="visual-bottom-nav" aria-label="Navegación principal">
-      {(['home','chat','calendar','repertoire','family','notices'] as MemberScreen[]).map(item=>{
+      {(['home','chat','calendar','repertoire','family','audio'] as MemberScreen[]).map(item=>{
         const module=MEMBER_MODULES.find(module=>module.id===item);
         return <button key={item} type="button" disabled={preview&&item==='chat'}
           className={screen===item?'active':''} aria-current={screen===item?'page':undefined}
