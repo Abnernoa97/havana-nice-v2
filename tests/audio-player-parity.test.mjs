@@ -1,0 +1,50 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
+test('Audio is an independent module, not another Chat or voice recorder',()=>{
+ const meta=read('packages/shared/src/memberModules.ts');
+ const worker=read('cloudflare/src/index.ts');
+ const chat=read('apps/android/features/chat/NativeChatSurface.tsx');
+ const quota=read('cloudflare/src/modules/family/family-quota.js');
+ assert.match(meta,/id:'audio',label:'Audio'/);
+ assert.match(worker,/handleAudioApi\(request,env,url,origin,verifySession,ctx\)/);
+ assert.match(worker,/handleChatMedia/);
+ assert.match(chat,/session&&<NativeAudio token=\{session.token\}/);
+ assert.match(quota,/AUDIO_SQL/);
+ assert.match(quota,/AUDIO_DELETE_SQL/);
+ assert.doesNotMatch(read('cloudflare/src/modules/audio/audio.js'),
+  /startNamedChatSession|createSession\(|env\.CHAT_ROOMS\.get\(/);
+});
+test('PWA uses artwork from R2 and HTML media session without mock songs',()=>{
+ const pwa=read('apps/pwa/src/features/audio/MemberAudio.tsx');
+ const admin=read('apps/pwa/src/features/audio/AdminAudio.tsx');
+ const metadata=read('apps/pwa/src/features/audio/audio-tags.ts');
+ const shared=read('packages/shared/src/audio.ts');
+ const shell=read('apps/pwa/src/app/VisualApp.tsx');
+ assert.match(pwa,/new MediaMetadata/);
+ assert.match(pwa,/current\.coverUrl/);
+ assert.match(pwa,/onTimeUpdate=/);
+ assert.match(pwa,/onDurationChange=/);
+ assert.match(pwa,/previoustrack/);
+ assert.match(admin,/detectAudioTags\(next\)/);
+ assert.match(admin,/uploadAudioCover/);
+ assert.match(metadata,/name==='APIC'/);
+ assert.match(metadata,/file\.slice\(0,2\*1024\*1024\)/);
+ assert.match(shared,/privateAudioUrl/);
+ assert.match(shell,/MemberAudio token=\{token\} active=\{screen==='audio'\}/);
+ assert.doesNotMatch(pwa+shared,/https?:\/\/(?:example\.com|music\.mp3|testaudio)/);
+});
+test('Android OS player uses the same cover and MediaSession with audio background enabled',()=>{
+ const native=read('apps/android/features/audio/NativeAudio.tsx');
+ const app=JSON.parse(read('apps/android/app.json'));
+ assert.match(native,/setActiveForLockScreen\(true/);
+ assert.match(native,/artworkUrl:privateAudioUrl\(current\.coverUrl\)/);
+ assert.match(native,/setAudioModeAsync/);
+ assert.match(native,/shouldPlayInBackground:true/);
+ assert.match(native,/getAudioTracks\(token\)/);
+ assert.match(native,/onClose=\{onClose\}/);
+ const audio=app.expo.plugins.find(p=>Array.isArray(p)&&p[0]==='expo-audio');
+ assert.equal(audio[1].enableBackgroundPlayback,true);
+ assert.equal(app.expo.version,'0.0.23','do not generate an Android version bump during the feature batch');
+});
