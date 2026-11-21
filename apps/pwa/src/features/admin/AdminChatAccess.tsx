@@ -5,11 +5,12 @@ const AdminChatGeneral=lazy(()=>import('../chat/AdminChatGeneral'));
 const AdminCalendar=lazy(()=>import('../calendar/AdminCalendar'));
 const AdminRepertoire=lazy(()=>import('../repertoire/AdminRepertoire'));
 const AdminFamily=lazy(()=>import('../family/AdminFamily'));
+const AdminStorageSummary=lazy(()=>import('./AdminStorageSummary'));
 import AdminMemberDirectory from './AdminMemberDirectory';
 import {adminAvailability,adminLogin,adminLogout,adminVerify,adminOtherSessions,adminRevokeOtherSessions,adminMembers,adminCreateMember,adminMemberHistory,adminDeletionPreview,adminRemoveMember,adminRetryMemberMediaCleanup,adminDuplicateLogins,adminReviewDuplicateLogin,adminReleaseInstallation,openAdminRealtime,
  type AdminSession,type AdminMember,type AdminMemberHistory,type AdminDeletionPreview,type AdminDuplicateLoginAlert,type AdminChatStreamEvent,isAdminUnauthorized} from '../../services/admin-api';
 
-type Section='access'|'chat'|'repertoire'|'calendar'|'family'|'more';
+type Section='access'|'chat'|'repertoire'|'calendar'|'family'|'memory';
 type Readiness='loading'|'disabled'|'enabled'|'error';
 
 export default function AdminChatAccess({section}:{section:Section}){
@@ -362,7 +363,7 @@ export default function AdminChatAccess({section}:{section:Section}){
    finally{setBusy(false);}
  }
  // Keep the Administrator's verified session when changing navigation sections.
- if(section!=='access'&&section!=='chat'&&section!=='calendar'&&section!=='repertoire'&&section!=='family')return null;
+ if(section!=='access'&&section!=='chat'&&section!=='calendar'&&section!=='repertoire'&&section!=='family'&&section!=='memory')return null;
  if(readiness==='loading')return <section className="a-panel">Comprobando el acceso administrativo…</section>;
  if(readiness!=='enabled')return <section className="a-panel">
    <h2>Acceso de Administrador</h2>
@@ -379,6 +380,7 @@ export default function AdminChatAccess({section}:{section:Section}){
    </form>
    {error&&<p role="alert" className="a-admin-error">{error}</p>}
  </section>;
+ if(section==='memory')return <Suspense fallback={<section className="a-panel" role="status">Abriendo memoria…</section>}><AdminStorageSummary token={session.token} onExpired={onChatExpired}/></Suspense>;
  if(section==='calendar')return <Suspense fallback={<section className="a-panel" role="status">Abriendo Calendario…</section>}><AdminCalendar token={session.token} members={members} onExpired={onChatExpired}/></Suspense>;
  if(section==='repertoire')return <Suspense fallback={<section className="a-panel" role="status">Abriendo Repertorio…</section>}><AdminRepertoire token={session.token} onExpired={onChatExpired}/></Suspense>;
  if(section==='family')return <Suspense fallback={<section className="a-panel" role="status">Abriendo Familia…</section>}><AdminFamily token={session.token} onExpired={onChatExpired}/></Suspense>;
