@@ -10,6 +10,6 @@ export default React.memo(function NativeStoryPhoto({uri,onError}:{uri:string;on
  </View>;
 });
 const s=StyleSheet.create({
- stage:{...StyleSheet.absoluteFillObject,backgroundColor:'#0b100d'},
+ stage:{position:'absolute',top:0,right:0,bottom:0,left:0,backgroundColor:'#0b100d'},
  image:{width:'100%',height:'100%'},
 });
