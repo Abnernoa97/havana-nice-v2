@@ -7,6 +7,8 @@ const AdminRepertoire=lazy(()=>import('../repertoire/AdminRepertoire'));
 const AdminFamily=lazy(()=>import('../family/AdminFamily'));
 const AdminStorageSummary=lazy(()=>import('./AdminStorageSummary'));
 import AdminMemberDirectory from './AdminMemberDirectory';
+import {restoreAdminDevice,pairAdminDevice,unlinkAdminDevice,isAdminDevicePaired}
+ from '../../services/admin-trusted-device';
 import {adminAvailability,adminLogin,adminLogout,adminVerify,adminOtherSessions,adminRevokeOtherSessions,adminMembers,adminCreateMember,adminMemberHistory,adminDeletionPreview,adminRemoveMember,adminRetryMemberMediaCleanup,adminDuplicateLogins,adminReviewDuplicateLogin,adminReleaseInstallation,openAdminRealtime,
  type AdminSession,type AdminMember,type AdminMemberHistory,type AdminDeletionPreview,type AdminDuplicateLoginAlert,type AdminChatStreamEvent,isAdminUnauthorized} from '../../services/admin-api';
 
@@ -17,6 +19,8 @@ export default function AdminChatAccess({section}:{section:Section}){
  const [readiness,setReadiness]=useState<Readiness>('loading');
  const [session,setSession]=useState<AdminSession|null>(null);
  const [password,setPassword]=useState('');
+ const [devicePhase,setDevicePhase]=useState<'checking'|'paired'|'manual'>('checking');
+ const [deviceBusy,setDeviceBusy]=useState(false);
  const [name,setName]=useState('');
  const [busy,setBusy]=useState(false);
  const [error,setError]=useState('');
@@ -41,6 +45,17 @@ export default function AdminChatAccess({section}:{section:Section}){
  const [releaseBusy,setReleaseBusy]=useState('');
  const [realtime,setRealtime]=useState<'waiting'|'connected'|'reconnecting'>('waiting');
  const [chatEvent,setChatEvent]=useState<AdminChatStreamEvent|null>(null);
+ // A trusted device can silently renew a short-lived Admin session without
+ // storing the old bearer or Administrator password on disk.
+ useEffect(()=>{
+  let active=true;
+  void restoreAdminDevice().then(next=>{
+   if(!active)return;
+   if(next){setSession(next);setDevicePhase('paired');}
+   else setDevicePhase('manual');
+  }).catch(()=>{if(active)setDevicePhase('manual');});
+  return()=>{active=false;};
+ },[]);
  const onChatExpired=useCallback(()=>{rosterRequest.current++;setSession(null);setError('Tu sesión administrativa expiró.');},[]);
  // Prevent frontend updates from interrupting authorized admin sessions.
  // The marker contains no credential; actual tokens stay in React memory only.
@@ -200,7 +215,13 @@ export default function AdminChatAccess({section}:{section:Section}){
  async function login(event:FormEvent){
    event.preventDefault();if(busy||!password)return;
    setBusy(true);setError('');
-   try{const next=await adminLogin(password);setPassword('');setSession(next);}
+   try{
+    const next=await adminLogin(password);setPassword('');setSession(next);
+    // Existing login remains a one-time recovery path; pairing never bypasses it.
+    void pairAdminDevice(next.token).then(ok=>{
+      if(ok){setDevicePhase('paired');setNotice('Este dispositivo ya puede entrar sin contraseña.');}
+    }).catch(()=>setNotice('Sesión iniciada. La autorización sin contraseña está pendiente.'));
+   }
    catch(e){setError(e instanceof Error?e.message:'No se pudo iniciar sesión');}
    finally{setBusy(false);}
  }
@@ -208,7 +229,7 @@ export default function AdminChatAccess({section}:{section:Section}){
    if(!session)return;
    const token=session.token;
    rosterRequest.current++; // a late GET must not restore a logged-out roster
-   setSession(null);setMembers([]);setLoaded(false);setError('');setNotice('');setName('');setOtherSessions(null);
+   setSession(null);setDevicePhase('manual');setMembers([]);setLoaded(false);setError('');setNotice('');setName('');setOtherSessions(null);
    setExpanded('');setHistory({});setHistoryErrors({});setImpact({});setImpactErrors({});setDuplicateAlerts([]);setCleanupRetry(null);
    try{await adminLogout(token);}catch{/* In-memory session is discarded even when offline. */}
  }
@@ -370,14 +391,24 @@ export default function AdminChatAccess({section}:{section:Section}){
    <p className="a-detail">{readiness==='disabled'?'Acceso administrativo todavía no configurado.':'No se pudo verificar la conexión al Administrador.'}</p>
  </section>;
  if(!session)return <section className="a-panel a-admin-lock">
-   <h2>Entrar al Administrador</h2>
-   <p className="a-detail">Inicia sesión para crear y autorizar músicos. La contraseña no se guarda en el teléfono.</p>
-   <form className="a-admin-login" onSubmit={login}>
+   <h2>{devicePhase==='checking'?'Reconociendo tu dispositivo…':'Acceso privado'}</h2>
+   <p className="a-detail">{devicePhase==='checking'?
+    'Verificando el acceso guardado en este dispositivo.':
+    'La primera vez se autoriza tu teléfono. Después podrás entrar sin escribir contraseña.'}</p>
+   {devicePhase!=='checking'&&<form className="a-admin-login" onSubmit={login}>
      <label htmlFor="admin-password">Contraseña de Administrador</label>
      <input id="admin-password" type="password" autoComplete="off" value={password}
        onChange={event=>setPassword(event.target.value)} required minLength={8} maxLength={256}/>
      <button type="submit" disabled={busy}>{busy?'Verificando…':'Entrar'}</button>
-   </form>
+   </form>}
+   {devicePhase==='manual'&&<button type="button" className="hn-admin-device-retry" disabled={deviceBusy}
+    onClick={()=>{setDeviceBusy(true);
+     void restoreAdminDevice().then(next=>{
+      if(next){setSession(next);setDevicePhase('paired');setError('');}
+      else setError('Todavía no has autorizado este dispositivo.');
+     }).catch(()=>setError('Este dispositivo necesita una autorización inicial.'))
+      .finally(()=>setDeviceBusy(false));
+    }}>{deviceBusy?'Verificando…':'Entrar con este dispositivo'}</button>}
    {error&&<p role="alert" className="a-admin-error">{error}</p>}
  </section>;
  if(section==='memory')return <Suspense fallback={<section className="a-panel" role="status">Abriendo memoria…</section>}><AdminStorageSummary token={session.token} onExpired={onChatExpired}/></Suspense>;
@@ -398,6 +429,22 @@ export default function AdminChatAccess({section}:{section:Section}){
        </div>
      </div>
      <div className="a-admin-session-security">
+      <span>Acceso sin contraseña: <strong>{devicePhase==='paired'?'Activado en este dispositivo':'Pendiente'}</strong></span>
+      <button type="button" disabled={deviceBusy} onClick={()=>{
+       setDeviceBusy(true);
+       void (async()=>{
+        try{
+         if(await isAdminDevicePaired()){
+          await unlinkAdminDevice(session.token);setDevicePhase('manual');
+          setNotice('Este dispositivo ya no tendrá entrada automática.');
+         }else{
+          const ok=await pairAdminDevice(session.token);
+          if(ok){setDevicePhase('paired');setNotice('Acceso sin contraseña activado.');}
+         }
+        }catch(e){setError(e instanceof Error?e.message:'No se pudo actualizar este dispositivo.');}
+        finally{setDeviceBusy(false);}
+       })();
+      }}>{deviceBusy?'Verificando…':devicePhase==='paired'?'Desvincular dispositivo':'Activar en este dispositivo'}</button>
        <span>Otras sesiones administrativas: <strong>{otherSessions===null?'Verificando…':otherSessions}</strong></span>
        {otherSessions!==null&&otherSessions>0&&<button type="button"
           disabled={sessionsBusy} onClick={()=>void closeOtherSessions()}>
