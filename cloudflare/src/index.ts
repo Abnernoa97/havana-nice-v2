@@ -1,4 +1,5 @@
 import { handleAdminSessionApi, verifyAdminSession } from './modules/admin/admin-auth.js';
+import {handleAdminStorageSummary} from './modules/admin/admin-storage-summary.js';
 import { adminSocketToken, adminTokenRequest, notifyAdminClients } from './modules/admin/admin-realtime.js';
 import {handleAdminChat} from './modules/admin/admin-chat.js';
 import {claimFirstInstallation,auditDuplicateInstallation,handleSingleInstallationAdmin} from './modules/admin/single-installation.js';
@@ -191,6 +192,8 @@ export default {
       ).bind(Date.now()).all();
       return respond({members:members.results||[]},200,origin);
     }
+    if(url.pathname==='/api/chat/admin/storage/summary')
+      return handleAdminStorageSummary(request,env,url,origin,respond);
     if (url.pathname.startsWith('/api/chat/admin/auth/')) {
       return handleAdminSessionApi(request,env,url,origin,respond);
     }
