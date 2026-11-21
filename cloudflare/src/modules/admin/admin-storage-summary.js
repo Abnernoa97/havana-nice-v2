@@ -14,15 +14,19 @@ const GROUPS=[
   COALESCE(SUM(size_bytes+optimized_size_bytes),0) bytes FROM book_pages`},
  {id:'calendar',name:'Calendario',sql:`SELECT COUNT(*) count,
   COALESCE(SUM(size_bytes+optimized_size_bytes),0) bytes FROM calendar_event_photos`},
- {id:'stories',name:'Estados',sql:`SELECT COUNT(*) count,
+ {id:'audio',name:'Audio',sql:`SELECT COUNT(*) count,
+  COALESCE(SUM(size_bytes+cover_size_bytes),0) bytes FROM audio_tracks`},
+  {id:'stories',name:'Estados',sql:`SELECT COUNT(*) count,
   COALESCE(SUM(byte_size),0) bytes FROM member_stories`},
  {id:'profiles',name:'Perfiles',sql:`SELECT COUNT(*) count,
   COALESCE(SUM(photo_size),0) bytes FROM member_profiles WHERE photo_key IS NOT NULL`},
  {id:'cleanup',name:'Pendiente de limpieza',sql:`SELECT
-  ((SELECT COUNT(*) FROM r2_member_delete_queue)+
+  ((SELECT COUNT(*) FROM audio_delete_queue)+
+   (SELECT COUNT(*) FROM r2_member_delete_queue)+
    (SELECT COUNT(*) FROM book_delete_queue)+
    (SELECT COUNT(*) FROM calendar_photo_delete_queue)) count,
-  ((SELECT COALESCE(SUM(size_bytes),0) FROM r2_member_delete_queue)+
+  ((SELECT COALESCE(SUM(size_bytes),0) FROM audio_delete_queue)+
+   (SELECT COALESCE(SUM(size_bytes),0) FROM r2_member_delete_queue)+
    (SELECT COALESCE(SUM(size_bytes),0) FROM book_delete_queue)+
    (SELECT COALESCE(SUM(size_bytes),0) FROM calendar_photo_delete_queue)) bytes`},
 ];
