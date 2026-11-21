@@ -19,6 +19,7 @@ function setup(){
  raw.exec(readFileSync(new URL('../migrations/0028_book_optimized_images.sql',import.meta.url),'utf8'));
  for(const name of ['0018_calendar_events.sql','0019_calendar_free_text.sql','0029_calendar_event_memories.sql'])
   raw.exec(readFileSync(new URL('../migrations/'+name,import.meta.url),'utf8'));
+ raw.exec(readFileSync(new URL('../migrations/0036_audio_library.sql',import.meta.url),'utf8'));
  const DB={prepare(sql){return {bind(...args){return {
   async first(){return raw.prepare(sql).get(...args)||null;},
   async all(){return {results:raw.prepare(sql).all(...args)};},
