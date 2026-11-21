@@ -175,7 +175,7 @@ export default function NativeChatSurface({ui}:{ui:ReturnType<typeof useNativeCh
         active={activeScreen} onNavigate={navigateTo}/>}
       {/* Keep one system MediaSession mounted even when the user returns to Chat. */}
       {session&&<NativeAudio token={session.token} visible={activeScreen==='audio'}
-        onClose={()=>navigateTo('home')}/>}
+        onClose={()=>navigateTo('repertoire')}/>}
       {session&&activeScreen==='chat'&&<NativeChatReactionShower burst={reactionBurst}/>}
     </SafeAreaView>
   );
