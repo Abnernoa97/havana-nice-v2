@@ -40,7 +40,7 @@ cloudflare/migrations/ → historial aditivo D1; NUNCA reescribir migraciones us
 tests/ + cloudflare/tests/ + scripts/ → reglas de seguridad y CI
 ```
 
-**HOME social (21/11):** Estados 1–5 JPEG optimizados (720×1280, meta ~450KB), R2 24h. PWA fija grants 8min y foto memoizada: sin repintar al reaccionar. Barra JS 6s. Teclado iPhone: foto mantiene alto y solo el compositor sube. Voz centra sus controles, oculta emojis y texto. CSS móvil único en 4 entradas: inputs 16px y sin zoom por doble toque; Safari puede mantener pellizco. Calendario usa BOOK 3D/WebP persistente; no reutilizar en Estados aún. Android APK pendiente.
+**HOME social (21/11):** PWA: fotos JPG 720×1280 objetivo ~450KB, 24h, URLs 8min, barra 6s, voz/comentarios y ❤️/👏/😂. Android: React Native nativo separado, mismo backend D1/R2, JPEG 720px, Animated 6s, voz AAC/M4A mediante expo-audio, misma conversación, sin WebView ni otro Chat. Lote APK 0.0.23 autorizado; publicable solo si supera firma incremental de 0.0.21 y pruebas. BOOK 3D intacto. Safari sin zoom por doble toque y campos 16px, pellizco depende del SO.
 
 **Separación de carga PWA:** `React.lazy`/`Suspense` en HOME, Calendario, Repertorio, Familia, BOOK y pestañas Admin. La PWA tiene cuatro entradas HTML históricas, pero **no URLs HTML diferentes por módulo**; cada componente pesado se descarga bajo demanda. Comprobación con manifiesto real de Vite. Usuario aprobó navegación de iPhone el 08/11; pruebas físicas adicionales sin red siguen pendientes.
 

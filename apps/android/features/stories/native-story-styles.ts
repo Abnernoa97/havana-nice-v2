@@ -1,6 +1,6 @@
 import {StyleSheet} from 'react-native';
 
-// Fixed 80px columns and 76px avatar slots: identical native/iPhone rhythm.
+// HOME-only circular strip. Viewer, conversation, audio and reactions own styles.
 export const storyStyles=StyleSheet.create({
  row:{marginHorizontal:-9,minHeight:129},
  scroller:{paddingVertical:13,paddingHorizontal:3,gap:11,alignItems:'flex-start'},
@@ -18,22 +18,4 @@ export const storyStyles=StyleSheet.create({
  plusText:{color:'#fff',fontSize:19,lineHeight:20},
  name:{width:80,height:18,lineHeight:18,fontSize:11,textAlign:'center',color:'#333'},
  error:{fontSize:12,color:'#9d4d40',paddingVertical:6},
- viewerBackdrop:{flex:1,backgroundColor:'rgba(7,14,12,.97)',justifyContent:'center',alignItems:'center',padding:12},
- viewer:{width:'100%',flex:1,backgroundColor:'#111814',borderRadius:16,overflow:'hidden'},
- progressRow:{paddingHorizontal:14,paddingTop:12,flexDirection:'row',gap:3},
- progressTrack:{flex:1,height:3,backgroundColor:'rgba(255,255,255,.34)',
-  borderRadius:2,overflow:'hidden'},
- progressFill:{width:'100%',height:'100%',backgroundColor:'#fff'},
- imageStage:{flex:1,minHeight:0,backgroundColor:'#0b100d'},
- imageTouch:{flex:1,width:'100%'},
- toolbar:{paddingHorizontal:18,paddingVertical:14,flexDirection:'row',
-  justifyContent:'space-between',alignItems:'center'},
- viewerName:{color:'#fff',fontSize:16,fontWeight:'700'},
- viewerInfo:{color:'#cdd1cb',fontSize:11,marginTop:4},
- close:{color:'#fff',fontSize:30},
- image:{flex:1,width:'100%',backgroundColor:'#101810'},
- controls:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',
-  minHeight:66,paddingHorizontal:19,gap:10},
- control:{color:'#fff',fontSize:34,paddingHorizontal:6},
- delete:{color:'#efcfc8',fontSize:12,textDecorationLine:'underline'},
 });

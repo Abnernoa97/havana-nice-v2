@@ -46,7 +46,9 @@ test('Android uses the same story backend, a separate NativeStories UI and a sin
  assert.match(home,/NativeStories token=\{token\}/);
  assert.match(stories,/onPress=\{\(\)=>void states\.publish\(\)\}/);
  assert.match(stories,/setViewerActor/);
+ assert.match(stories,/NativeStoryViewer/);
  assert.match(nativeHook,/\/api\/stories\/me\/batch/);
+ assert.match(nativeHook,/ImageManipulator\.manipulateAsync/);
  assert.match(nativeHook,/getMemberStories\(token\)/);
  assert.match(profileHook,/openFamilyRealtime\(token,false/);
  assert.match(profileHook,/setLiveVersion\(n=>n\+1\)/);
@@ -62,6 +64,7 @@ test('Five-photo selection, stable image and timer stay independent of the 3D BO
  const styles=read('apps/pwa/src/features/stories/stories.css');
  const hook=read('apps/pwa/src/features/stories/useMemberStories.ts');
  const native=read('apps/android/features/stories/NativeStories.tsx');
+ const nativeViewer=read('apps/android/features/stories/NativeStoryViewer.tsx');
  const nativeHook=read('apps/android/features/stories/useNativeStories.ts');
  assert.match(shared,/STORY_BATCH_MAX=5/);
  assert.match(shared,/STORY_PLAYBACK_MS=6000/);
@@ -82,7 +85,7 @@ test('Five-photo selection, stable image and timer stay independent of the 3D BO
  assert.doesNotMatch(player+styles,/page-flip|PageFlip|react-pageflip|WebGL|new WebSocket/);
  assert.match(nativeHook,/selectionLimit:STORY_BATCH_MAX/);
  assert.match(nativeHook,/\/api\/stories\/me\/batch/);
- assert.match(native,/STORY_PLAYBACK_MS/);
- assert.match(native,/Animated.timing\(progress/);
- assert.match(native,/newestStory\?\.photoUrl\|\|person.photoUrl/);
+ assert.match(nativeViewer,/STORY_PLAYBACK_MS/);
+ assert.match(nativeViewer,/Animated.timing\(progress/);
+ assert.match(native,/last\?\.photoUrl\|\|person.photoUrl/);
 });

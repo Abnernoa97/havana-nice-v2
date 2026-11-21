@@ -38,7 +38,7 @@
 - Worker refactor: una clase Durable Object y un `index.ts` delgado. Worker de carátulas publicado desde el 12/11; siete bindings preservados. El control del 20/11 validó las fuentes y pruebas, sin subir otro Worker ni compilar nueva APK. Los smoke tests históricos de v66 siguen documentados en Git.
 - No confundir compilación + pruebas con experiencia física. En iPhone la navegación modular fue confirmada por usuario; el lector BOOK 3D Android/PWA también fue confirmado después de la corrección. Siguen pendientes modo avión, Recuerdos y QA integral de Chat/Familia/Calendario.
 
-**21/11 · Estado iPhone:** foto memoizada, enlaces temporales fijados 8min ante reacciones, JPEG 720×1280 meta 450KB. CSS global 4 entradas (inputs 16px y touch-action:manipulation), sin garantizar bloqueo de pellizco Safari. Alto del visor fijo, composer se desplaza con visualViewport al abrir teclado; voz como acción única. BOOK de recuerdos: persistent PageFlip + WebP optimizado, no incorporar a Estado hasta QA real. Android APK sin modificar.
+**21/11 · Android paridad en main:** PWA ya tiene Estados 24h con voz, comentarios, ❤️/👏/😂 y 6s/foto. Android candidato 0.0.23 code23 implementado en módulos nativos (React Native y expo-audio AAC/M4A, expo-image-manipulator JPG 720px, álbum hasta 5, misma API D1/R2). No cambia Chat/BOOK ni introduce WebView. La nueva APK solo se entrega si workflow verifica build standalone, `versionCode` superior y certificado idéntico a 0.0.21; QA física aún pendiente.
 
 ## Próximos pasos en orden
 

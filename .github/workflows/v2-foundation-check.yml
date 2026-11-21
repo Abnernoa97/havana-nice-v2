@@ -130,6 +130,9 @@ jobs:
       - name: Test PWA viewport, stable photo and native-like story controls
         run: node --test tests/pwa-viewport-and-stories.test.mjs
 
+      - name: Test native Android Stories same 24h, reactions, voice and image contracts
+        run: node --test tests/android-stories-parity.test.mjs tests/member-stories-parity.test.mjs
+
       - name: Test authenticated and expiring profile photographs in private R2
         run: node --test cloudflare/tests/member-profile.test.mjs tests/member-profile-parity.test.mjs
 

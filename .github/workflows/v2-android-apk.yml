@@ -60,6 +60,15 @@ jobs:
         working-directory: .
         run: npm ci
 
+      - name: Verify shared native contracts, exact Android types and social parity
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm run check:structure
+          npm run audit:guard
+          npm run typecheck --workspaces --if-present
+          node --test tests/member-stories-parity.test.mjs tests/android-stories-parity.test.mjs
+
       - name: Generate native Android project
         working-directory: apps/android
         env:
