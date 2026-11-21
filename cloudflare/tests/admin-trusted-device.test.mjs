@@ -58,7 +58,7 @@ test('The bound non-extractable browser key signs an expiring one-use challenge'
  const signature=await crypto.subtle.sign({name:'ECDSA',hash:'SHA-256'},pair.privateKey,message);
  const payload={deviceId,...challenge,signature:b64(signature)};
  assert.equal((await req('/api/chat/admin/auth/device/session',{...payload,
-  challenge:'altered-challenge'})).status,401);
+  challenge:'A'.repeat(43)})).status,401);
  // Invalid attempt consumed the challenge, protecting against reuse.
  assert.equal((await req('/api/chat/admin/auth/device/session',payload)).status,401);
  const second=await (await req('/api/chat/admin/auth/device/challenge',{deviceId})).json();
