@@ -3,13 +3,14 @@ import AdminChatAccess from '../features/admin/AdminChatAccess';
 
 // The admin-only navigation is deliberately flat. Authentication/session,
 // permissions and every destructive action stay in their original modules.
-type Tab='home'|'chat'|'repertoire'|'calendar'|'family'|'access'|'memory';
+type Tab='home'|'chat'|'repertoire'|'calendar'|'family'|'access'|'memory'|'audio';
 type WorkTab=Exclude<Tab,'home'>;
 const tabs:{id:WorkTab;name:string;icon:string;description:string}[]=[
  {id:'chat',name:'Chat',icon:'◉',description:'Conversación del equipo y moderación'},
  {id:'repertoire',name:'Repertorio',icon:'♫',description:'Canciones y repertorio por evento'},
  {id:'calendar',name:'Calendario',icon:'▦',description:'Fechas, horarios y músicos asignados'},
  {id:'family',name:'Familia',icon:'▣',description:'Fotografías, videos y BOOK'},
+ {id:'audio',name:'Audio',icon:'♪',description:'Canciones y portadas del reproductor HAVANA NICE'},
  {id:'access',name:'Acceso a músicos',icon:'♙',description:'Integrantes y dispositivos autorizados'},
  {id:'memory',name:'Resumen de memoria',icon:'◫',description:'Archivos, almacenamiento y espacio disponible'},
 ];
@@ -79,7 +80,7 @@ export default function AdminApp(){
    </main>
   </div>
   <nav className="a-bottom visual-bottom-nav" aria-label="Funciones del Administrador">
-   {tabs.map(navButton)}
+   {tabs.filter(item=>item.id!=='audio').map(navButton)}
   </nav>
  </div>;
 }
