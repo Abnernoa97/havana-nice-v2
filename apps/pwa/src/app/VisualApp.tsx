@@ -58,10 +58,7 @@ function VisualApp({displayName,active,onNavigate,preview=false,token}:Props){
       <main className="visual-content" id="visual-content">
         {screen==='home'?<Suspense fallback={<div className="visual-empty" role="status">Abriendo Inicio…</div>}>
           <MemberHome displayName={displayName} preview={preview} onNavigate={navigate}/>
-        </Suspense>:<> ›</span>
-            </button>)}
-          </div>
-        </>:<>
+        </Suspense>:<>
           <div className="visual-section-header">
             <button className="visual-back" type="button" onClick={()=>navigate('home')}>‹ Inicio</button>
             <span className="visual-overline">HAVANA NICE / {selected?.label.toUpperCase()}</span>
