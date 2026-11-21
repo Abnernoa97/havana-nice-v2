@@ -51,8 +51,6 @@ function VisualApp({displayName,active,onNavigate,preview=false,token,actorId}:P
   return <div className={screen==='home'?'visual-shell hn-home-route':'visual-shell'}>
     <header className="visual-header">
       <div><div className="visual-brand">HAVANA NICE</div><div className="visual-subtitle">ESPACIO DEL EQUIPO</div></div>
-      <button type="button" className="hn-header-notices" onClick={()=>navigate('notices')}
-       aria-label="Abrir notificaciones" aria-current={screen==='notices'?'page':undefined}>◌</button>
       <button type="button" className="visual-account" disabled={preview||profile.phase==='legacy'||profile.phase==='offline'||profile.phase==='checking'} onClick={()=>setProfileOpen(true)}
         aria-label={'Abrir perfil de '+(displayName||'integrante')}>
         <span className="visual-account-avatar"><PrivateProfileAvatar photoUrl={own?.photoUrl} name={preview?'H':displayName||'H'} onImageFailure={()=>profile.retryPhoto(own?.actorId||'')}/></span>
@@ -83,6 +81,8 @@ function VisualApp({displayName,active,onNavigate,preview=false,token,actorId}:P
             <span className="visual-overline">HAVANA NICE / {selected?.label.toUpperCase()}</span>
             <h1>{selected?.label}</h1>
             <p className="visual-intro">{selected?.description}</p>
+            {screen==='repertoire'&&<button type="button" className="hn-open-audio"
+              onClick={()=>navigate('audio')}>♫ Abrir Audio HAVANA NICE</button>}
           </div>
           <Suspense fallback={<div className="visual-empty" role="status" aria-live="polite">Abriendo módulo…</div>}>
            {screen==='calendar'&&token?<CalendarAccordion token={token}/>:
@@ -104,7 +104,7 @@ function VisualApp({displayName,active,onNavigate,preview=false,token,actorId}:P
       </main>
     </div>
     <nav className="visual-bottom-nav" aria-label="Navegación principal">
-      {(['home','chat','calendar','repertoire','family','audio'] as MemberScreen[]).map(item=>{
+      {(['home','chat','calendar','repertoire','family','notices'] as MemberScreen[]).map(item=>{
         const module=MEMBER_MODULES.find(module=>module.id===item);
         return <button key={item} type="button" disabled={preview&&item==='chat'}
           className={screen===item?'active':''} aria-current={screen===item?'page':undefined}
