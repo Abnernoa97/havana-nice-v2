@@ -69,7 +69,7 @@ assert.match(pwaHome,/className="hn-home-stage"/);
 assert.match(pwaHome,/MemberStories/);
 assert.match(readFileSync(join(rootDir,'apps/pwa/src/features/home/TeamStoriesStrip.tsx'),'utf8'),/hn-moment-add/);
 assert.match(pwaShell,/MemberProfilePanel/);
-assert.match(pwaShell,/\['home','chat','calendar','repertoire','family','notices'\]/);
+assert.match(pwaShell,/\['home','chat','calendar','repertoire','family','audio'\]/);
 assert.doesNotMatch(pwaHome,/visual-welcome|visual-grid|Todo lo que necesitas/);
 assert.doesNotMatch(pwaHome,/new WebSocket|startNamedChatSession|restoreNamedChatSession|saveLocalChat|fetch\(/);
 assert.doesNotMatch(pwaView,/startNamedChatSession|restoreNamedChatSession|openChatSocket|saveLocalChat|new WebSocket/);
@@ -81,7 +81,7 @@ assert.deepEqual(children('apps/android'),
 // source of each module. Moved source files cannot survive as compatibility copies.
 assert.deepEqual(children('apps/android/app'),['NativeApp.tsx','NativeMemberHome.tsx']);
 assert.deepEqual(children('apps/android/features'),
- ['book','calendar','chat','family','musicians','notices','profile','repertoire','stories']);
+ ['audio','book','calendar','chat','family','musicians','notices','profile','repertoire','stories']);
 assert.deepEqual(children('apps/android/hooks'),['useNativeKeyboardVisibility.ts','useNativeMemberNavigation.ts']);
 assert.deepEqual(children('apps/android/storage'),['chatPendingMedia.ts','chatPhotoCache.ts','chatStorage.ts']);
 assert.deepEqual(children('apps/android/styles'),['chat-styles.ts']);
@@ -116,10 +116,10 @@ assert.deepEqual(children('cloudflare/src'),
 for(const name of ['calendar','chat','family','repertoire'])
  assert.ok(existsSync(join(rootDir,'apps/pwa/src/features',name)),
   'Missing PWA feature: '+name);
-for(const name of ['book','calendar','chat','family','musicians','notices','repertoire','stories'])
+for(const name of ['audio','book','calendar','chat','family','musicians','notices','repertoire','stories'])
  assert.ok(existsSync(join(rootDir,'apps/android/features',name)),
   'Missing native feature: '+name);
-for(const name of ['admin','calendar','chat','family','notices','repertoire','stories'])
+for(const name of ['admin','audio','calendar','chat','family','notices','repertoire','stories'])
  assert.ok(existsSync(join(rootDir,'cloudflare/src/modules',name)),
   'Missing Worker domain: '+name);
 
