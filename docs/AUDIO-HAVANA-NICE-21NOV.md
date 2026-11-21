@@ -11,7 +11,7 @@
 
 ## Publicación controlada pendiente
 1. Build `npm run build -w @havana/pwa` y tests `audio-api` + `audio-player-parity` + cuota general R2.
-2. Respaldar/bookmark D1. Migración idempotente `0036_audio_library.sql` en la D1 existente: `audio_tracks`, `audio_media_grants`, `audio_delete_queue`.
+2. **Completado el 21/11:** bookmark de D1 verificado antes del cambio y migración aditiva `0036_audio_library.sql` aplicada: tablas `audio_tracks`, `audio_media_grants`, `audio_delete_queue` e índices confirmados. No se tocó ninguna tabla de Chat, Familia ni BOOK. Reconciliar registro del historial de migraciones de Wrangler antes del siguiente despliegue.
 3. Publicar el **Worker completo construido del mismo main** a `havana-nice-v2-dev` con bindings D1, R2 y Durable Objects actuales. No sobrescribir con JS parcial; guardar versión rollback. Este paso también habilitará funcionalidades pendientes de otros módulos si comparten Worker.
 4. QA: subir MP3 con portada incrustada, confirmar que la misma carátula aparece en PWA, Android y Android Quick Settings; probar seek, play/pause, cambios de pista, multimedia en background, actualización de portada, borrado, permisos y consumo R2.
 5. Sólo cuando se apruebe QA nativo generar y firmar la siguiente APK encima de la **0.0.23**. **No** incrementar `versionCode` ni modificar la liberación Android en este lote.
