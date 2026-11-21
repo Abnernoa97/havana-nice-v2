@@ -1,6 +1,6 @@
 import {useCallback,useEffect,useRef,useState,type ChangeEvent} from 'react';
 import {getAudioTracks,privateAudioUrl,uploadAudioTrack,uploadAudioCover,removeAudioTrack,
- type AudioTrack} from '@havana/shared';
+ type AudioTrack,AudioApiError} from '@havana/shared';
 import {detectAudioTags,compactCover} from './audio-tags';
 import './admin-audio.css';
 
@@ -20,7 +20,7 @@ export default function AdminAudio({token,onExpired}:{token:string;onExpired:()=
  const refresh=useCallback(async()=>{
   try{setItems(await getAudioTracks(token,true));setError('');}
   catch(e){
-   if(e instanceof Error&&/No autorizado|401/i.test(e.message))onExpired();
+   if(e instanceof AudioApiError&&e.status===401)onExpired();
    else setError(e instanceof Error?e.message:'La biblioteca no está disponible.');
   }
  },[token,onExpired]);
@@ -60,13 +60,15 @@ export default function AdminAudio({token,onExpired}:{token:string;onExpired:()=
    const id=await uploadAudioTrack(token,file,{
     title:title.trim(),artist:artist.trim()||'HAVANA NICE',album:album.trim()||'HAVANA NICE'
    });
+   let coverSaved=true;
    if(cover){
     try{await uploadAudioCover(token,id,cover);}
-    catch{setNotice('Audio guardado, pero la portada no pudo subirse.');}
+    catch{coverSaved=false;}
    }
    setFile(null);setCover(null);setTitle('');setArtist('HAVANA NICE');setAlbum('HAVANA NICE');
    await refresh();
-   setNotice('Audio disponible para los músicos, con su portada si fue guardada.');
+   setNotice(coverSaved?'Audio y portada disponibles para el equipo.':
+    'Audio guardado. La portada no pudo subirse; puedes cambiarla en la lista.');
   }catch(e){setError(e instanceof Error?e.message:'No se pudo subir el audio.');}
   finally{setBusy(false);}
  };
@@ -117,6 +119,18 @@ export default function AdminAudio({token,onExpired}:{token:string;onExpired:()=
      {privateAudioUrl(item.coverUrl)?<img src={privateAudioUrl(item.coverUrl)!} alt="" loading="lazy"/>:
       <span>♫</span>}
      <div><strong>{item.title}</strong><small>{item.artist} · {(item.sizeBytes/1e6).toFixed(1)} MB</small></div>
+     <label className="hn-audio-inline-cover">Portada
+      <input type="file" accept="image/jpeg,image/png,image/webp" disabled={busy}
+       onChange={event=>{
+        const selected=event.target.files?.[0];event.target.value='';
+        if(!selected)return;
+        setBusy(true);setError('');
+        void compactCover(selected).then(blob=>uploadAudioCover(token,item.id,blob))
+         .then(()=>refresh()).then(()=>setNotice('Portada actualizada.'))
+         .catch(e=>setError(e instanceof Error?e.message:'No se pudo cambiar la portada.'))
+         .finally(()=>setBusy(false));
+       }}/>
+     </label>
      <button type="button" onClick={()=>void remove(item)} disabled={busy}>Borrar</button>
     </article>)}
   </div>
