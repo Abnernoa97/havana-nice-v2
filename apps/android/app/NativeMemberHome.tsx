@@ -1,5 +1,5 @@
 import React,{useState} from 'react';
-import {ActivityIndicator,Image,Modal,Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
+import {ActivityIndicator,Image,Modal,Platform,Pressable,ScrollView,StatusBar,StyleSheet,Text,View} from 'react-native';
 import {MEMBER_MODULES,type MemberScreen} from '@havana/shared';
 import NativeCalendar from '../features/calendar/NativeCalendar';
 import NativeRepertoire from '../features/repertoire/NativeRepertoire';
@@ -90,10 +90,12 @@ const styles=StyleSheet.create({
  screen:{flex:1,backgroundColor:'#fff'},root:{flex:1},
  content:{paddingHorizontal:20,paddingTop:10,paddingBottom:24,flexGrow:1},
  familyViewport:{flex:1,minHeight:0,paddingBottom:0},
- top:{backgroundColor:'#0D2A23',padding:16,marginHorizontal:-20,marginTop:-10,
+ top:{backgroundColor:'#0D2A23',paddingHorizontal:20,paddingBottom:22,
+  paddingTop:Platform.OS==='android'?(StatusBar.currentHeight||24)+20:20,
+  minHeight:112,marginHorizontal:-20,marginTop:-10,
   marginBottom:10,flexDirection:'row',justifyContent:'space-between',alignItems:'center'},
- brand:{fontFamily:'serif',fontSize:16,fontWeight:'700',letterSpacing:2.2,color:'#DBC59A'},
- subheading:{fontSize:10,letterSpacing:1.5,color:'#D3DED5',marginTop:7},
+ brand:{fontFamily:'serif',fontSize:19,fontWeight:'700',letterSpacing:2,color:'#DBC59A'},
+ subheading:{fontSize:11,letterSpacing:1.4,color:'#D3DED5',marginTop:8},
  myProfile:{padding:2},headerAvatar:{width:40,height:40,borderRadius:20,
   borderWidth:2,borderColor:'#DBC59A',backgroundColor:'#f2f4ec',alignItems:'center',justifyContent:'center',overflow:'hidden'},
  initial:{fontSize:20,color:'#285343',fontWeight:'700'},
