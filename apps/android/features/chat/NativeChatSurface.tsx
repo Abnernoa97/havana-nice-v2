@@ -11,9 +11,15 @@ import NativeChatMediaQueuePreview from './NativeChatMediaQueuePreview';
 import NativeMemberHome from '../../app/NativeMemberHome';
 import {styles} from '../../styles/chat-styles';
 import type {useNativeChatController} from './useNativeChatController';
+import type {ChatEmoji,ChatMessage} from '@havana/shared';
 
 export default function NativeChatSurface({ui}:{ui:ReturnType<typeof useNativeChatController>}){
   const {iosBackPan,keyboardOpen,session,activeScreen,restoringAccess,name,setName,join,joining,error,messages,onlineActorIds,connection,reactions,receipts,hasMore,loadingOlder,scroll,onTimelineContentChange,onTimelineScrollBeginDrag,onTimelineScroll,onTimelineScrollEndDrag,onTimelineLoadOlder,onTimelineReply,onTimelineLongPress,onTimelineRetry,menuMessage,menuLeft,menuTop,menuWidth,setMenuMessage,setReactionBurst,reactionBurstId,react,retryAttempts,connect,editing,savingEdit,finishEditing,replyTo,setReplyTo,typing,selectedMedia,mediaUploading,mediaProgress,mediaReady,removeSelectedMedia,mediaError,draft,draftFieldHeight,setDraftFieldHeight,typeText,mediaPicking,chooseNativeMedia,sendSelectedMedia,send,composerPanel,setComposerPanel,navigateTo,reactionBurst}=ui;
+  const reactWithEffect=(message:ChatMessage,emoji:ChatEmoji,origin:{x:number;y:number})=>{
+    setReactionBurst({id:++reactionBurstId.current,emoji,...origin});
+    react(message.seq,emoji);
+    setMenuMessage(null);
+  };
   return (
     <SafeAreaView {...(Platform.OS==='ios'?iosBackPan.panHandlers:{})}
       style={[styles.screen,keyboardOpen && styles.screenKeyboard]}>
@@ -55,16 +61,14 @@ export default function NativeChatSurface({ui}:{ui:ReturnType<typeof useNativeCh
               onScroll={onTimelineScroll}
               onScrollEndDrag={onTimelineScrollEndDrag}
               onLoadOlder={onTimelineLoadOlder} onReply={onTimelineReply}
-              onMessageLongPress={onTimelineLongPress} onRetry={onTimelineRetry}
+              onMessageLongPress={onTimelineLongPress}
+              onQuickReact={reactWithEffect} onRetry={onTimelineRetry}
             />
             <NativeChatMessageMenu message={menuMessage} actorId={session.actorId}
               connection={connection} reactions={reactions}
               left={menuLeft} top={menuTop} width={menuWidth}
               onClose={()=>setMenuMessage(null)}
-              onReact={(m,emoji,origin)=>{
-                setReactionBurst({id:++reactionBurstId.current,emoji,...origin});
-                react(m.seq,emoji);setMenuMessage(null);
-              }}
+              onReact={reactWithEffect}
             />
             {error ? <Text style={styles.errorBanner}>{error}</Text> : null}
             {connection !== 'en vivo' ? (
