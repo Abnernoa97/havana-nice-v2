@@ -69,7 +69,7 @@ assert.match(pwaHome,/className="hn-home-stage"/);
 assert.match(pwaHome,/MemberStories/);
 assert.match(readFileSync(join(rootDir,'apps/pwa/src/features/home/TeamStoriesStrip.tsx'),'utf8'),/hn-moment-add/);
 assert.match(pwaShell,/MemberProfilePanel/);
-assert.match(pwaShell,/\['home','chat','calendar','repertoire','family','audio'\]/);
+assert.match(pwaShell,/\['home','chat','calendar','repertoire','family','notices'\]/);
 assert.doesNotMatch(pwaHome,/visual-welcome|visual-grid|Todo lo que necesitas/);
 assert.doesNotMatch(pwaHome,/new WebSocket|startNamedChatSession|restoreNamedChatSession|saveLocalChat|fetch\(/);
 assert.doesNotMatch(pwaView,/startNamedChatSession|restoreNamedChatSession|openChatSocket|saveLocalChat|new WebSocket/);
