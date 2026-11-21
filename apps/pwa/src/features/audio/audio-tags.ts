@@ -44,8 +44,8 @@ export async function detectAudioTags(file:File):Promise<AudioTags>{
   if(!size||i+10+size>tagSize)break;
   const value=data.subarray(i+10,i+10+size);
   if(name==='TIT2'&&value.length)info.title=text(value.subarray(1),value[0]??0)||info.title;
-  if(name==='TPE1'&&value.length)info.artist=text(value.subarray(1),value[0])||info.artist;
-  if(name==='TALB'&&value.length)info.album=text(value.subarray(1),value[0])||info.album;
+  if(name==='TPE1'&&value.length)info.artist=text(value.subarray(1),value[0]??0)||info.artist;
+  if(name==='TALB'&&value.length)info.album=text(value.subarray(1),value[0]??0)||info.album;
   if(name==='APIC'&&!info.cover)info.cover=extractCover(value);
   i+=10+size;
  }
