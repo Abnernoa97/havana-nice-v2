@@ -9,8 +9,8 @@ test('The administrator uses the musician HOME editorial system, not a separate 
  const entry=read('apps/pwa/src/app/admin-main.tsx');
  const shared=read('apps/pwa/src/styles/home/home.css');
  const ui=read('apps/pwa/src/styles/admin/admin-editorial.css');
- assert.match(admin,/className="a-shell visual-shell hn-admin-editorial"/);
- assert.match(admin,/className="a-header visual-header"/);
+ assert.match(admin,/className="a-shell visual-shell hn-admin-editorial hn-admin-minimal"/);
+ assert.match(admin,/className="a-header visual-header hn-admin-minimal-header"/);
  assert.match(admin,/className="a-layout visual-layout"/);
  assert.match(admin,/className="a-main visual-content"/);
  assert.match(admin,/className="a-bottom visual-bottom-nav"/);
@@ -18,14 +18,17 @@ test('The administrator uses the musician HOME editorial system, not a separate 
  assert.match(entry,/import '\.\.\/styles\/admin\/admin-editorial.css'/);
  assert.match(shared,/\.visual-bottom-nav/);
  assert.match(ui,/grid-template-columns:repeat\(6,minmax\(0,1fr\)\)/);
+ assert.doesNotMatch(admin,/Tu espacio de trabajo|visual-welcome|Servidor conectado/);
 });
 
 test('The six navigation destinations are real; Admin retains the only secure management channel',()=>{
  const admin=read('apps/pwa/src/app/AdminApp.tsx');
  const access=read('apps/pwa/src/features/admin/AdminChatAccess.tsx');
  const server=read('cloudflare/src/modules/admin/admin-auth.js');
- assert.match(admin,/\['home','chat','calendar','repertoire','family','access'\]/);
+ assert.match(admin,/type WorkTab=Exclude<Tab,'home'>/);
  assert.match(admin,/AdminChatAccess section=\{tab==='home'\?'access':tab\}/);
+ assert.match(admin,/id:'memory'/);
+ assert.match(admin,/id:'access'/);
  assert.match(access,/adminLogin\(password\)/);
  assert.match(access,/if\(!session\)return/);
  assert.match(server,/verifyAdminSession/);
