@@ -15,12 +15,13 @@ function makeDb(){
  db.exec('PRAGMA foreign_keys=ON');
  db.exec('CREATE TABLE chat_admin_sessions(token_hash TEXT PRIMARY KEY,created_at INTEGER NOT NULL,expires_at INTEGER NOT NULL,revoked_at INTEGER)');
  db.exec(readFileSync(new URL('../migrations/0035_admin_trusted_devices.sql',import.meta.url),'utf8'));
+ const statement=(sql,params)=>({
+  first:async()=>db.prepare(sql).get(...params)||null,
+  run:async()=>({meta:{changes:db.prepare(sql).run(...params).changes}}),
+  all:async()=>({results:db.prepare(sql).all(...params)})
+ });
  const env={V2_ADMIN_LOGIN_MODE:'enabled',V2_ADMIN_LOGIN_SECRET:'test-only-strong-private-secret',
-  DB:{prepare:sql=>({bind:(...params)=>({
-   first:async()=>db.prepare(sql).get(...params)||null,
-   run:async()=>({meta:{changes:db.prepare(sql).run(...params).changes}}),
-   all:async()=>({results:db.prepare(sql).all(...params)})
-  })})}};
+  DB:{prepare:sql=>({...statement(sql,[]),bind:(...params)=>statement(sql,params)})}};
  const req=async(path,data,token='',otherOrigin=ORIGIN)=>{
   const request=new Request(HOST+path,{method:'POST',
    headers:{Origin:otherOrigin,'Content-Type':'application/json',...(token?{Authorization:'Bearer '+token}:{})},
