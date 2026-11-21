@@ -13,8 +13,9 @@ type ReaderPhase='opening-page'|'html-loaded'|'script-started'|'session-received
 const REFRESH_JS='(function(){if(location.origin==='+JSON.stringify(ORIGIN)+
  '&&location.pathname==="/book")window.dispatchEvent(new Event("havana-v2-book-refresh"));})();true;';
 
-export default function NativeBook({token,refreshKey,onClose,calendarEventId,calendarTitle}:{
- token:string;refreshKey:number;onClose:()=>void;calendarEventId?:string;calendarTitle?:string;
+export default function NativeBook({token,refreshKey,onClose,calendarEventId,calendarTitle,embedded=false}:{
+ token:string;refreshKey:number;onClose?:()=>void;calendarEventId?:string;calendarTitle?:string;
+ embedded?:boolean;
 }){
  const view=useRef<WebView<object>>(null);
  const lastRefresh=useRef(refreshKey);
@@ -93,14 +94,12 @@ export default function NativeBook({token,refreshKey,onClose,calendarEventId,cal
   readerPhase==='html-loaded'?'Iniciando lector web…':
   readerPhase==='script-started'?'Conectando sesión autorizada…':
   'Preparando páginas de la revista…';
- return <Modal visible animationType="fade" onRequestClose={onClose}
-  statusBarTranslucent presentationStyle="fullScreen">
-  <View style={styles.root}>
-   <View style={styles.toolbar}>
+ const reader=<View style={[styles.root,embedded&&styles.inlineRoot]}>
+   {!embedded&&<View style={styles.toolbar}>
     <Pressable accessibilityRole="button" accessibilityLabel="Volver al módulo"
      onPress={onClose} style={styles.back}><Text style={styles.backText}>‹ Volver</Text></Pressable>
     <Text style={styles.title}>{calendarEventId?'RECUERDOS · HAVANA NICE':'BOOK HAVANA NICE'}</Text>
-   </View>
+   </View>}
    <WebView<object> key={viewKey} ref={view}
     source={{uri:READER}}
     originWhitelist={[ORIGIN]}
@@ -125,7 +124,7 @@ export default function NativeBook({token,refreshKey,onClose,calendarEventId,cal
     }}
     onRenderProcessGone={()=>{clearReaderWatchdog();setFailed('Android cerró el lector para liberar memoria.');}}
    />
-   {!readerReady&&!failed&&<View style={styles.loading} pointerEvents="none">
+   {!readerReady&&!failed&&<View style={[styles.loading,embedded&&styles.inlineLoading]} pointerEvents="none">
     <ActivityIndicator size="large" color="#315843"/>
     <Text style={styles.loadingText}>{loadingLabel}</Text>
    </View>}
@@ -135,11 +134,16 @@ export default function NativeBook({token,refreshKey,onClose,calendarEventId,cal
      <Text style={styles.retry}>Reintentar</Text>
     </Pressable>
    </View>}
-  </View>
- </Modal>;
+  </View>;
+ // Calendar opens the SAME trusted BOOK reader directly inside the event sheet.
+ // The ordinary BOOK module retains its existing full-screen native modal.
+ return embedded?reader:<Modal visible animationType="fade" onRequestClose={onClose}
+  statusBarTranslucent presentationStyle="fullScreen">{reader}</Modal>;
 }
 const styles=StyleSheet.create({
  root:{flex:1,backgroundColor:'#f3eddf',paddingTop:32},
+ inlineRoot:{height:490,flex:0,paddingTop:0,borderRadius:10,overflow:'hidden'},
+ inlineLoading:{top:12},
  toolbar:{minHeight:50,flexDirection:'row',alignItems:'center',paddingHorizontal:13,gap:15,
   borderBottomWidth:1,borderColor:'#d8d0c2',backgroundColor:'#f8f5ee'},
  back:{paddingHorizontal:10,paddingVertical:12},
