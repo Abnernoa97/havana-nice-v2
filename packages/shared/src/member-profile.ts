@@ -9,7 +9,7 @@ export async function getTeamProfiles(token:string,base=API):Promise<MemberProfi
  const res=await fetch(base+'/api/profile/team',{
   cache:'no-store',headers:{Authorization:'Bearer '+token}
  });
- const data=await res.json() as {profiles?:MemberProfile[];error?:string};
+ const data=await res.json().catch(()=>({error:'Servicio de perfiles pendiente.'})) as {profiles?:MemberProfile[];error?:string};
  if(!res.ok)throw new MemberProfileApiError(data.error||'No se pudieron cargar los perfiles.',res.status);
  return data.profiles||[];
 }
