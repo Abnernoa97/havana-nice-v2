@@ -1,6 +1,16 @@
 # HAVANA NICE V2 — PLAN MAESTRO ÚNICO
 
-**Estado verificado: 20 de noviembre de 2026.** Fuente de verdad: repositorio [Abnernoa97/havana-nice-v2](https://github.com/Abnernoa97/havana-nice-v2), rama `main`. Este documento describe lo **vigente**; las versiones anteriores están en el historial de Git, sin copiar expedientes obsoletos dentro del árbol actual. Actualizar este archivo en el mismo commit de cada bloque concluido.
+**Estado de desarrollo: 21 de noviembre de 2026.** Fuente de verdad: repositorio [Abnernoa97/havana-nice-v2](https://github.com/Abnernoa97/havana-nice-v2), rama `main`. Este documento describe lo **vigente**; las versiones anteriores están en el historial de Git, sin copiar expedientes obsoletos dentro del árbol actual. Actualizar este archivo en el mismo commit de cada bloque concluido.
+
+## Lote acumulativo en `main` · 21/11 · SIN nueva APK
+
+- **APK 0.0.23**: compilación, firma y publicación CI aprobadas (#16, run 44878578050). El usuario ya mostró capturas de ejecución física; eso confirma instalación, no QA completa. **NO** crear 0.0.24 ni tocar el manifiesto `releases/android-batch.json` hasta nuevo pedido expreso.
+- **Android · Inicio**: encabezado más abajo y marca proporcionada respecto a la barra de estado. **Estados**: 48 px de separación inferior para los botones del SO; segmentos de progreso pulsables y flechas de foto anterior/siguiente, conservando misma galería de cinco fotos, 6 segundos, API y R2.
+- **Android · Chat**: reacción visible en cada burbuja y toque sobre emojis existentes; ambos reutilizan la única función nativa `react(seq,emoji)`, la conexión Chat vigente y la lluvia visual. Validación física pendiente.
+- **Calendario/Recuerdos Android**: al expandir fecha pasada, mostrar de inmediato el **mismo BOOK híbrido 3D PWA**, dentro de la ficha, sin pulsar «Abrir recuerdo». `NativeBook` añade modo inline pero preserva URL canónica, sesión in-memory, PageFlip y modal de BOOK principal. Revisar scroll/gestos en vivo y altura real en teléfonos.
+- **Notificaciones, fase inicial en código**: módulo privado `notices` para Android y PWA y contrato compartido; D1 añade solo `0034_member_notifications.sql`, sin borrar tablas. `story-conversation.js` prepara avisos dirigidos exclusivamente al autor del Estado por ❤️/👏/😂, comentarios y audio; deduplicación de reacciones, propia actividad excluida, lectura por destinatario, un solo WS existente de Familia cuando la sección Notificaciones está abierta.
+- **NO activar backend de notificaciones sin** aplicar de forma controlada migración 0034, probar lectura/aislamiento/rollback y desplegar Worker desde el **bundle canónico Wrangler construido de main**. Las interfaces están preparadas, pero los avisos NO deben considerarse activos en producción todavía. No añadir sockets Chat alternativos, no almacenar tokens/notificaciones en localStorage y no realizar cambios a R2.
+- **Pendientes de extensión**: avisos Chat/Calendario/Familia/Repertorio usando el emisor compartido, indicador de sin leer en menú, acceso al elemento relevante y notificaciones push OS Android/PWA iPhone (permisos/consentimiento por dispositivo). Estas últimas no están implementadas. Ningún cambio Android de este lote está dentro de una APK publicada.
 
 ## 1. Contrato irrenunciable
 
