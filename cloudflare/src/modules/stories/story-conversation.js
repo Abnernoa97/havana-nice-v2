@@ -41,7 +41,7 @@ async function conversation(env,id,url,origin){
  const reactionRows=(await env.DB.prepare(
   'SELECT emoji,SUM(count) AS total FROM member_story_reactions WHERE story_id=? GROUP BY emoji'
  ).bind(id).all()).results||[];
- const reactions=Object.fromEntries(['❤️','👏'].map(emoji=>[
+ const reactions=Object.fromEntries(['❤️','👏','😂'].map(emoji=>[
   emoji,Number(reactionRows.find(row=>row.emoji===emoji)?.total||0)
  ]));
  return json({storyId:id,comments,reactions,serverNow:Date.now()},200,origin);
@@ -95,7 +95,7 @@ async function postVoice(request,env,actor,id,origin,ctx){
 async function postReaction(request,env,actor,id,origin,ctx){
  let body;
  try{body=await request.json();}catch{return fail('Reacción inválida.',400,origin);}
- if(body?.emoji!=='❤️'&&body?.emoji!=='👏')return fail('Reacción inválida.',400,origin);
+ if(body?.emoji!=='❤️'&&body?.emoji!=='👏'&&body?.emoji!=='😂')return fail('Reacción inválida.',400,origin);
  await env.DB.prepare(
   'INSERT INTO member_story_reactions(story_id,actor_id,emoji,count,updated_at) VALUES(?,?,?,1,?) '+
   'ON CONFLICT(story_id,actor_id,emoji) DO UPDATE SET count=MIN(200,count+1),updated_at=excluded.updated_at'

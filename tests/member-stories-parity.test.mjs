@@ -73,11 +73,11 @@ test('One five-photo selection, latest-state thumbnail, timed segments and light
  assert.match(hook,/uploadMyStoriesBatch\(token,images\)/);
  assert.match(strip,/story\?\.photoUrl\|\|person.photoUrl/);
  assert.match(strip,/onStoryPhotoError\(story.id\)/);
- assert.match(player,/className="hn-story-progress-fill playing"/);
- assert.match(player,/STORY_PLAYBACK_MS\+'ms'/);
- assert.match(player,/onAnimationEnd=/);
- assert.match(styles,/@keyframes hn-story-turn-next/);
- assert.match(styles,/@media\(prefers-reduced-motion:reduce\)/);
+ assert.match(player,/className="hn-story-progress-fill"/);
+ assert.match(player,/useStoryPlayback\(item\?\.id,paused,next\)/);
+ assert.match(player,/className="hn-story-photo"/);
+ assert.match(styles,/\.hn-story-photo\{position:absolute/);
+ assert.doesNotMatch(player+styles,/rotateY|perspective|hn-story-turn-next/);
  assert.doesNotMatch(player+styles,/page-flip|PageFlip|react-pageflip|WebGL|new WebSocket/);
  assert.match(nativeHook,/selectionLimit:STORY_BATCH_MAX/);
  assert.match(nativeHook,/\/api\/stories\/me\/batch/);

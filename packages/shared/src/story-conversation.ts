@@ -1,6 +1,6 @@
 import {HAVANA_V2_DEV_API_BASE_URL as API} from './api-base';
 
-export type StoryEmoji='❤️'|'👏';
+export type StoryEmoji='❤️'|'👏'|'😂';
 export type StoryComment={
  id:string;actorId:string;name:string;kind:'text'|'voice';
  text:string;createdAt:number;voiceUrl:string|null;
@@ -52,7 +52,7 @@ export async function sendStoryVoice(token:string,id:string,blob:Blob,base=API):
  }));
 }
 export async function reactToStory(token:string,id:string,emoji:StoryEmoji,base=API):Promise<void>{
- if(emoji!=='❤️'&&emoji!=='👏')throw Error('Reacción no admitida.');
+ if(emoji!=='❤️'&&emoji!=='👏'&&emoji!=='😂')throw Error('Reacción no admitida.');
  await responseJson(await fetch(base+'/api/stories/'+assertId(id)+'/reaction',{
   method:'POST',cache:'no-store',headers:{...headers(token),'content-type':'application/json'},
   body:JSON.stringify({emoji})

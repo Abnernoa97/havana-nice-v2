@@ -38,7 +38,7 @@
 - Worker refactor: una clase Durable Object y un `index.ts` delgado. Worker de carátulas publicado desde el 12/11; siete bindings preservados. El control del 20/11 validó las fuentes y pruebas, sin subir otro Worker ni compilar nueva APK. Los smoke tests históricos de v66 siguen documentados en Git.
 - No confundir compilación + pruebas con experiencia física. En iPhone la navegación modular fue confirmada por usuario; el lector BOOK 3D Android/PWA también fue confirmado después de la corrección. Siguen pendientes modo avión, Recuerdos y QA integral de Chat/Familia/Calendario.
 
-**21/11 · Estados sociales:** círculo 1:1, barras visibles de 6 s, hojeada 3D 72°. Comentarios texto, audio iPhone 45 s y reacciones ❤️/👏 visibles PARA TODO EL EQUIPO. D1 0032: member_story_comments, member_story_voice_grants, member_story_reactions; voz R2 privado, grants 10 min y limpieza junto a estado 24 h. Componentes separados StoryConversationPanel/useStoryConversation/StoryVoiceRecorder/StoryReactionShower; existente WebSocket Familia, sin Chat extra. Android conversación por preparar antes de APK. QA física iPhone pendiente.
+**21/11 · Estado iPhone:** eliminada hojeada 3D y capas múltiples. Una sola imagen CSS fija, barras JS de 6s y minicompositor flotante (texto, voz, ❤️/👏/😂). Comentarios públicos solo al abrir panel superpuesto; nunca desplazan la imagen. D1 0033 conserva ❤️/👏 y agrega 😂; D1 0032, R2 y caducidad 24h permanecen. Sin nuevos WebSockets. Android APK todavía anterior. QA real Safari pendiente.
 
 ## Próximos pasos en orden
 

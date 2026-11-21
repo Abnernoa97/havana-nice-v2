@@ -1,113 +1,137 @@
-/* State composer and viewer. Never style profile, Chat, Calendar or BOOK. */
+/* HAVANA NICE V2 · standalone 24h stories only. No BOOK, Chat or Profile selectors. */
 .hn-story-file{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
-.hn-story-overlay{position:fixed;inset:0;z-index:10000;background:rgba(7,14,12,.94);
- display:flex;align-items:center;justify-content:center;padding:env(safe-area-inset-top) 10px env(safe-area-inset-bottom)}
-.hn-story-viewer,.hn-story-publish{position:relative;width:min(100%,410px);height:min(100dvh,840px);
- display:flex;flex-direction:column;overflow:hidden;border-radius:18px;background:#131a17;color:#fff}
-.hn-story-progress{position:relative;flex:none;z-index:9;display:flex;gap:4px;
- padding:12px 14px 2px;width:100%;box-sizing:border-box;background:#101a15}
-.hn-story-progress-track{flex:1;height:4px;border-radius:3px;overflow:hidden;background:rgba(255,255,255,.34)}
-.hn-story-progress-fill{display:block;width:100%;height:100%;background:#fff;transform-origin:left;transform:scaleX(0)}
-.hn-story-progress-fill.done{transform:scaleX(1)}
-.hn-story-progress-fill.playing{animation:hn-story-countdown linear forwards}
-@keyframes hn-story-countdown{from{transform:scaleX(0)}to{transform:scaleX(1)}}
-.hn-story-toolbar{display:flex;flex:none;align-items:center;justify-content:space-between;
- padding:10px 14px 10px;position:relative;z-index:3;background:#101a15}
-.hn-story-toolbar div{display:flex;flex-direction:column;gap:4px}
-.hn-story-toolbar strong{font-size:15px;color:#fff}
-.hn-story-toolbar small{font-size:11px;color:#ccc}
-.hn-story-toolbar button,.hn-story-x{background:transparent;border:0;color:#fff;font-size:31px;min-height:42px;min-width:42px}
-.hn-story-image-stage{flex:1;min-height:0;display:flex;align-items:stretch;overflow:hidden;
- perspective:850px;background:#0b100d;cursor:pointer;touch-action:pan-y;transform-style:preserve-3d}
-.hn-story-image{width:100%;height:100%;object-fit:contain;flex:none;background:#0b100d;
- backface-visibility:hidden;will-change:transform,opacity}
-.hn-story-image-stage.page-next .hn-story-image{animation:hn-story-turn-next .57s cubic-bezier(.16,.72,.19,1) both;transform-origin:left center}
-.hn-story-image-stage.page-previous .hn-story-image{animation:hn-story-turn-previous .57s cubic-bezier(.16,.72,.19,1) both;transform-origin:right center}
-@keyframes hn-story-turn-next{0%{opacity:.55;transform:rotateY(-72deg) scale(.94)}100%{opacity:1;transform:rotateY(0) scale(1)}}
-@keyframes hn-story-turn-previous{0%{opacity:.55;transform:rotateY(72deg) scale(.94)}100%{opacity:1;transform:rotateY(0) scale(1)}}
-.hn-story-unavailable{flex:1;display:grid;place-items:center;text-align:center;padding:30px;color:#eee}
-.hn-story-controls{display:flex;align-items:center;justify-content:space-between;min-height:66px;padding:0 14px;gap:10px}
-.hn-story-controls button{background:transparent;border:0;color:#fff;font-size:34px;min-width:42px;min-height:42px}
-.hn-story-controls button:disabled{opacity:.3}
-.hn-story-controls .hn-story-delete{font-size:12px;color:#efcfc8;width:auto;text-decoration:underline}
-.hn-story-publish{background:#fff;color:#152f26;height:auto;max-height:92dvh;padding:21px}
-.hn-story-publish .hn-story-x{position:absolute;top:6px;right:7px;color:#233b30;z-index:1}
-.hn-story-publish h2{margin:8px 0 3px;font-size:23px}
+.hn-story-overlay{position:fixed;inset:0;z-index:10000;background:rgba(5,12,9,.98);
+ display:flex;align-items:center;justify-content:center;overflow:hidden;padding:0}
+
+/* Static image plane: ONE image, ONE geometry, NO Safari 3D layer snapshots. */
+.hn-story-viewer{position:relative;isolation:isolate;flex:none;
+ width:min(100%,460px);height:100%;height:100dvh;overflow:hidden;
+ background:#0b100d;color:#fff;box-sizing:border-box}
+.hn-story-canvas{position:absolute;inset:0;z-index:1;overflow:hidden;background:#0a100d}
+.hn-story-photo{position:absolute;inset:0;display:block;width:100%;height:100%;
+ background-color:#0a100d;background-size:contain;background-repeat:no-repeat;
+ background-position:center;transform:none;animation:none}
+.hn-story-unavailable{position:absolute;inset:0;display:grid;place-items:center;
+ padding:32px;text-align:center;color:#d6e0d9}
+.hn-story-viewer::after{content:'';position:absolute;inset:0;z-index:2;pointer-events:none;
+ background:linear-gradient(to bottom,rgba(0,0,0,.64) 0%,transparent 24%,transparent 65%,rgba(0,0,0,.25) 100%)}
+
+/* Always visible ABOVE the photo and its header; one track per actual state. */
+.hn-story-progress{position:absolute;left:13px;right:13px;top:calc(10px + env(safe-area-inset-top));
+ z-index:20;display:flex;flex-direction:row;gap:4px;align-items:center;height:5px}
+.hn-story-progress-track{display:block;position:relative;flex:1 1 0;min-width:0;
+ height:4px;border-radius:5px;overflow:hidden;background:rgba(255,255,255,.42)}
+.hn-story-progress-fill{display:block;height:100%;min-width:0;border-radius:5px;
+ background:#fff;transition:none;transform:none;animation:none}
+.hn-story-toolbar{position:absolute;left:16px;right:16px;
+ top:calc(25px + env(safe-area-inset-top));z-index:15;
+ display:flex;justify-content:space-between;align-items:center;gap:10px;
+ padding:0;margin:0;background:transparent}
+.hn-story-toolbar>div:first-child{display:flex;flex-direction:column;gap:2px;min-width:0}
+.hn-story-toolbar strong{font-size:15px;font-weight:750;color:#fff}
+.hn-story-toolbar small{font-size:11px;color:rgba(255,255,255,.82)}
+.hn-story-toolbar-actions{display:flex;gap:8px;align-items:center}
+.hn-story-toolbar-actions button{border:0;background:rgba(0,0,0,.25);color:#fff;
+ min-height:40px;min-width:40px;border-radius:22px}
+.hn-story-toolbar-actions .hn-story-delete{font-size:11px;min-width:57px;padding:0 9px}
+.hn-story-toolbar-actions .hn-story-close{font-size:31px;line-height:1}
+.hn-story-tap-zones{position:absolute;z-index:4;left:0;right:0;top:25%;
+ bottom:143px;display:flex;justify-content:space-between;pointer-events:none}
+.hn-story-tap-zones button{pointer-events:auto;width:31%;border:0;
+ background:transparent;opacity:0;touch-action:manipulation}
+.hn-story-tap-zones button:disabled{pointer-events:none}
+
+/* Reactions and composer FLOAT OVER the photo, never reserve layout height. */
+.hn-story-conversation{position:absolute;bottom:0;left:0;right:0;z-index:18;
+ display:flex;flex-direction:column;gap:5px;box-sizing:border-box;
+ padding:8px 12px calc(12px + env(safe-area-inset-bottom));
+ background:linear-gradient(to top,rgba(1,13,8,.94),rgba(1,13,8,.70) 70%,transparent);
+ color:#fff}
+.hn-story-mini-actions{display:flex;align-items:center;gap:8px;min-height:37px}
+.hn-story-reactions{display:flex;gap:6px;align-items:center}
+.hn-story-reactions button{display:flex;align-items:center;justify-content:center;gap:2px;
+ min-width:38px;height:36px;padding:3px 7px;border-radius:20px;
+ border:1px solid rgba(255,255,255,.26);background:rgba(16,44,32,.66);
+ color:#fff;font-size:21px;line-height:1;backdrop-filter:blur(6px)}
+.hn-story-reactions button span{font-size:10px}
+.hn-story-comments-open{min-height:34px;margin-left:auto;padding:3px 7px;
+ border:0;border-radius:12px;background:rgba(0,0,0,.25);
+ color:#fff;font-size:11px;white-space:nowrap}
+.hn-story-composer{display:flex;align-items:center;gap:6px;width:100%;min-width:0;
+ max-width:100%;box-sizing:border-box}
+.hn-story-composer input{display:block;box-sizing:border-box;flex:1 1 auto;
+ min-width:0;width:0;min-height:39px;padding:9px 13px;border-radius:22px;
+ border:1px solid rgba(255,255,255,.45);outline:none;background:rgba(13,34,27,.74);
+ color:#fff;font-size:13px}
+.hn-story-composer input::placeholder{color:#e3e9e4}
+.hn-story-composer .hn-story-send{flex:none;width:39px;height:39px;
+ display:grid;place-items:center;padding:0;border:0;border-radius:50%;
+ background:#e0c99b;color:#143429;font-size:19px}
+.hn-story-composer .hn-story-send:disabled{opacity:.48}
+.hn-story-voice{flex:none;display:flex;align-items:center;gap:4px}
+.hn-story-voice button{min-width:39px;min-height:39px;padding:4px 8px;border-radius:20px;
+ border:1px solid rgba(255,255,255,.24);background:rgba(16,44,32,.82);
+ color:#fff;font-size:12px}
+.hn-story-voice .hn-story-microphone{font-size:19px;padding:2px 8px}
+.hn-story-composer.is-recording input,.hn-story-composer.is-recording .hn-story-send{display:none}
+.hn-story-voice .hn-story-recording{color:#ffc5be;font-size:12px;white-space:nowrap}
+.hn-story-voice small{color:#ffd2cc;font-size:10px}
+.hn-story-comment-error{font-size:11px;color:#ffcbc5}
+.hn-story-sr-only{position:absolute;width:1px;height:1px;overflow:hidden;
+ clip:rect(0,0,0,0);white-space:nowrap}
+
+/* Full-team conversation only opens after the user touches Comments. */
+.hn-story-comments-sheet{position:absolute;left:10px;right:10px;bottom:calc(100% + 7px);
+ display:flex;flex-direction:column;max-height:37dvh;min-height:70px;
+ padding:12px;border-radius:15px;border:1px solid rgba(255,255,255,.22);
+ background:rgba(8,28,19,.95);box-shadow:0 10px 25px #0007;
+ box-sizing:border-box;backdrop-filter:blur(12px)}
+.hn-story-sheet-heading{flex:none;display:flex;align-items:center;
+ justify-content:space-between;gap:8px;font-size:13px;padding-bottom:8px}
+.hn-story-sheet-heading button{border:0;background:transparent;color:#fff;
+ font-size:24px;min-width:32px;min-height:32px}
+.hn-story-comments{min-height:0;overflow-y:auto;overscroll-behavior:contain;
+ display:flex;flex-direction:column;gap:9px}
+.hn-story-comment{display:flex;flex-wrap:wrap;align-items:center;gap:5px;
+ font-size:12px;line-height:1.4}
+.hn-story-comment strong{flex:none;font-size:12px;color:#edd7ac}
+.hn-story-comment span{overflow-wrap:anywhere;white-space:normal}
+.hn-story-comment audio{width:min(250px,100%);max-width:100%;height:32px}
+.hn-story-no-comments{font-size:12px;color:#bec9c1;margin:4px 0}
+
+/* Publish composer remains separate from the viewer. */
+.hn-story-publish{position:relative;display:flex;flex-direction:column;
+ width:min(calc(100% - 22px),410px);max-height:92dvh;overflow:hidden;
+ padding:22px;box-sizing:border-box;border-radius:18px;background:#fff;color:#152f26}
+.hn-story-publish .hn-story-x{position:absolute;right:8px;top:5px;
+ border:0;background:transparent;color:#233b30;font-size:30px;
+ width:40px;height:40px}
+.hn-story-publish h2{margin:4px 0 2px;font-size:23px}
 .hn-story-publish p{font-size:13px;color:#69736c}
-.hn-story-preview-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;
- width:100%;max-height:55dvh;overflow-y:auto;margin:12px 0;padding:2px}
+.hn-story-preview-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));
+ gap:8px;max-height:55dvh;overflow-y:auto;margin:12px 0;padding:2px}
 .hn-story-preview-item{position:relative;aspect-ratio:9/14;border-radius:10px;
  background:#101810;overflow:hidden}
 .hn-story-preview-item img{width:100%;height:100%;display:block;object-fit:cover}
 .hn-story-preview-item span{position:absolute;top:6px;left:6px;width:22px;height:22px;
- display:grid;place-items:center;background:#153d31;color:white;border-radius:50%;font-size:12px;font-weight:700}
+ display:grid;place-items:center;background:#153d31;color:#fff;border-radius:50%;
+ font-size:12px;font-weight:700}
 .hn-story-preview-grid.is-single{display:flex;justify-content:center;max-height:53dvh}
 .hn-story-preview-grid.is-single .hn-story-preview-item{width:min(100%,260px);max-height:51dvh}
 .hn-story-preparing{font-size:12px;font-weight:600;color:#153d31}
-.hn-story-publish-button{background:#153d31;color:#fff;border:0;border-radius:12px;padding:14px;font-size:15px;font-weight:700}
+.hn-story-publish-button{border:0;border-radius:12px;background:#153d31;color:#fff;
+ padding:14px;font-size:15px;font-weight:700}
 .hn-story-publish-button:disabled{opacity:.55}
 .hn-story-error{font-size:12px;color:#9d4d40;padding:2px 4px}
 .hn-story-publish .hn-story-error{color:#9d4d40;font-weight:650}
-@media(min-width:500px){.hn-story-overlay{padding:25px}}
 
-@media(prefers-reduced-motion:reduce){
- .hn-story-image-stage.page-next .hn-story-image,.hn-story-image-stage.page-previous .hn-story-image{
- animation:none;will-change:auto}
-}
-
-/* State public team conversation. Never imports or styles Chat's composer. */
-.hn-story-toolbar-actions{display:flex;align-items:center;gap:7px}
-.hn-story-toolbar-actions .hn-story-delete{font-size:12px;min-width:55px;color:#ebd3cb;
- background:transparent;border:0;text-decoration:underline}
-.hn-story-conversation{flex:none;z-index:3;min-height:132px;max-height:46dvh;
- background:#0f1e18;color:#f7f8f4;padding:9px 13px calc(10px + env(safe-area-inset-bottom));
- border-top:1px solid rgba(255,255,255,.12)}
-.hn-story-conversation-heading{display:flex;align-items:center;justify-content:space-between;gap:10px;
- font-size:11px;color:#e7e6df}
-.hn-story-conversation-heading button{font-size:11px;background:transparent;color:#c6d5cc;
- border:0;min-height:26px;text-decoration:underline}
-.hn-story-comments{max-height:55px;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;
- margin:2px 0 5px;display:flex;flex-direction:column;gap:3px}
-.hn-story-comments.expanded{max-height:27dvh}
-.hn-story-comment{display:flex;align-items:center;gap:7px;font-size:12px;min-height:20px;line-height:1.4}
-.hn-story-comment strong{color:#eadbbd;font-size:12px;flex:none}
-.hn-story-comment span{white-space:normal;overflow-wrap:anywhere}
-.hn-story-comment audio{height:31px;width:min(260px,72%);max-width:100%;accent-color:#c5af83}
-.hn-story-no-comments{margin:3px 0;color:#9bada4;font-size:11px}
-.hn-story-reactions{display:flex;align-items:center;gap:8px;margin:4px 0 6px}
-.hn-story-reactions button{display:flex;align-items:center;gap:4px;padding:5px 9px;
- border:1px solid rgba(255,255,255,.16);border-radius:20px;background:#223c30;color:white;
- font-size:20px;min-height:35px}
-.hn-story-reactions button span{font-size:10px}
-.hn-story-public-label{font-size:10px;color:#aabbb0;margin-left:auto;text-align:right}
-.hn-story-composer{display:flex;align-items:center;gap:6px}
-.hn-story-composer input{min-width:0;flex:1;border:1px solid rgba(255,255,255,.22);
- border-radius:22px;background:#1e3028;color:white;min-height:37px;
- padding:8px 12px;outline:none;font-size:13px}
-.hn-story-composer input::placeholder{color:#9eafa5}
-.hn-story-composer>button{border:0;background:#d4b887;color:#18332a;border-radius:18px;
- padding:7px 10px;font-size:12px;font-weight:700;min-height:35px}
-.hn-story-composer>button:disabled{opacity:.45}
-.hn-story-voice{display:flex;align-items:center;gap:4px}
-.hn-story-voice button{min-width:33px;min-height:34px;border:1px solid rgba(255,255,255,.2);
- border-radius:18px;background:#263d32;color:#fff;font-size:11px;padding:4px 7px}
-.hn-story-voice .hn-story-microphone{font-size:18px}
-.hn-story-recording{font-size:11px;color:#ffb4a7;white-space:nowrap}
-.hn-story-voice small{font-size:10px;color:#fbb2a6}
-.hn-story-comment-error{font-size:11px;color:#ffb4a7;margin-top:5px}
-.hn-story-step-controls{position:absolute;z-index:4;top:38%;left:12px;right:12px;
- display:flex;align-items:center;justify-content:space-between;pointer-events:none}
-.hn-story-step-controls button{pointer-events:auto;color:white;background:rgba(0,0,0,.18);
- border:0;border-radius:22px;font-size:27px;min-width:32px;min-height:37px}
-.hn-story-step-controls button:disabled{opacity:0;pointer-events:none}
+/* Same pure Chat particle geometry; only a scoped animation, no Chat state. */
 .hn-story-shower{position:fixed;inset:0;z-index:20000;pointer-events:none;overflow:hidden}
-.hn-story-particle{position:absolute;animation:hn-story-particle-rise ease-out forwards;will-change:transform,opacity}
+.hn-story-particle{position:absolute;animation:hn-story-particle-rise ease-out forwards}
 @keyframes hn-story-particle-rise{
  0%{opacity:0;transform:translate3d(0,0,0) scale(.7)}
- 12%{opacity:1}
- 75%{opacity:1}
+ 12%{opacity:1}75%{opacity:1}
  100%{opacity:0;transform:translate3d(var(--dx),var(--dy),0) scale(1.2)}
 }
-@media(max-height:650px){.hn-story-conversation{padding-top:5px;padding-bottom:6px}
- .hn-story-comments:not(.expanded){max-height:25px}}
 @media(prefers-reduced-motion:reduce){.hn-story-particle{animation-duration:.4s!important}}
+@media(min-width:480px){.hn-story-viewer{border-radius:18px;height:min(100dvh,840px)}}

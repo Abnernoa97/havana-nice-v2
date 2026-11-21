@@ -13,7 +13,7 @@ function setup(){
  raw.exec('PRAGMA foreign_keys=ON');
  raw.exec('CREATE TABLE chat_members(actor_id TEXT PRIMARY KEY,display_name TEXT NOT NULL,active INTEGER NOT NULL)');
  raw.exec('CREATE TABLE r2_member_delete_queue(object_key TEXT PRIMARY KEY,actor_id TEXT NOT NULL,multipart_upload_id TEXT,size_bytes INTEGER,queued_at INTEGER)');
- for(const id of ['0031_member_stories.sql','0032_story_conversation.sql'])
+ for(const id of ['0031_member_stories.sql','0032_story_conversation.sql','0033_story_laugh_reaction.sql'])
   raw.exec(readFileSync(new URL('../migrations/'+id,import.meta.url),'utf8'));
  raw.prepare('INSERT INTO chat_members VALUES(?,?,1)').run(FER,'Fer');
  raw.prepare('INSERT INTO chat_members VALUES(?,?,1)').run(NOA,'Noa');
@@ -67,7 +67,7 @@ test('Comments are public within authorized team, not private Chat messages',asy
  assert.equal(doc.comments[0].name,'Noa');
  assert.equal(doc.comments[0].text,'Wow, increíble!');
  assert.equal(doc.comments[0].kind,'text');
- assert.deepEqual(doc.reactions,{'❤️':0,'👏':0});
+ assert.deepEqual(doc.reactions,{'❤️':0,'👏':0,'😂':0});
  assert.equal(e.raw.prepare('SELECT COUNT(*) AS n FROM member_story_comments').get().n,1);
 });
 test('Hearts and claps are persisted once per tap and read by other members',async()=>{
@@ -76,9 +76,10 @@ test('Hearts and claps are persisted once per tap and read by other members',asy
  assert.equal((await e.api(path+'/reaction','POST','noa',{emoji:'❤️'})).status,200);
  assert.equal((await e.api(path+'/reaction','POST','noa',{emoji:'❤️'})).status,200);
  assert.equal((await e.api(path+'/reaction','POST','fer',{emoji:'👏'})).status,200);
+ assert.equal((await e.api(path+'/reaction','POST','fer',{emoji:'😂'})).status,200);
  assert.equal((await e.api(path+'/reaction','POST','fer',{emoji:'not-allowed'})).status,400);
  const doc=await (await e.api(path+'/conversation','GET','fer')).json();
- assert.deepEqual(doc.reactions,{'❤️':2,'👏':1});
+ assert.deepEqual(doc.reactions,{'❤️':2,'👏':1,'😂':1});
 });
 test('Voice notes are visible to the team and support Safari byte ranges',async()=>{
  const e=setup(),id=await e.story(),path='/api/stories/'+id;

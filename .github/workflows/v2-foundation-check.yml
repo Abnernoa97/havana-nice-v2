@@ -124,8 +124,8 @@ jobs:
       - name: Verify private BOOK publishing and genuine R2 page grants on isolated SQLite
         run: node --test cloudflare/tests/book.test.mjs
 
-      - name: Test team story conversation and 24h voice retention
-        run: node --test cloudflare/tests/story-conversation.test.mjs tests/story-conversation-ux.test.mjs
+      - name: Test state viewer, public conversation, 24h audio and laugh migration
+        run: node --test cloudflare/tests/story-conversation.test.mjs tests/story-conversation-ux.test.mjs tests/story-viewer-regression.test.mjs cloudflare/tests/story-laugh-migration.test.mjs
 
       - name: Test authenticated and expiring profile photographs in private R2
         run: node --test cloudflare/tests/member-profile.test.mjs tests/member-profile-parity.test.mjs

@@ -40,7 +40,7 @@ cloudflare/migrations/ → historial aditivo D1; NUNCA reescribir migraciones us
 tests/ + cloudflare/tests/ + scripts/ → reglas de seguridad y CI
 ```
 
-**HOME social (21/11):** círculo foto/estado 1:1, 1–5 fotos/lote, 24 h y cron 15 min. Barras de 6 s y hojeada 3D de 72°. Conversación de texto/voz iPhone (45 s), corazones/aplausos animados con geometría de Chat; comentarios visibles a TODO el equipo mediante Family realtime. D1 0032 guarda mensajes y reacciones aparte; R2 privado y grants 10 min para audio, borrado al expirar. Chat y Perfil intactos. Android conversación pendiente de APK; QA física iPhone pendiente.
+**HOME social (21/11):** círculo 1:1, lotes de 1–5 fotos, 24h, cron 15min. iPhone: UNA foto fija sin 3D; barra JS superior 6s/foto con pausa al comentar. Controles mínimos SOBRE la imagen: comentar, enviar, voz, ❤️/👏/😂; comentarios públicos en panel flotante, sin cambiar altura de imagen. D1 0032+0033 conserva reacciones anteriores, voz R2 privado y grants temporales. Sin nuevo Chat/WS, Perfil ni BOOK; Android APK y QA Safari pendientes.
 
 **Separación de carga PWA:** `React.lazy`/`Suspense` en HOME, Calendario, Repertorio, Familia, BOOK y pestañas Admin. La PWA tiene cuatro entradas HTML históricas, pero **no URLs HTML diferentes por módulo**; cada componente pesado se descarga bajo demanda. Comprobación con manifiesto real de Vite. Usuario aprobó navegación de iPhone el 08/11; pruebas físicas adicionales sin red siguen pendientes.
 
