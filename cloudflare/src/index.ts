@@ -9,6 +9,7 @@ export {CalendarRoom};
 import {handleRepertoireApi} from './modules/repertoire/repertoire.js';
 import {handleFamilyApi} from './modules/family/family.js';
 import {handleProfileApi} from './modules/profile/profile.js';
+import {handleStoriesApi,cleanupExpiredStories} from './modules/stories/stories.js';
 import {handleBookApi} from './modules/book/book.js';
 import {notifyFamilyClients} from './modules/family/family-realtime.js';
 import {handleChatMedia,readChatMedia,decorateChatMessages} from './modules/chat/chat-media.js';
@@ -121,6 +122,9 @@ export default {
     // Member profile photos: private R2, separate from Chat/Familia, same one session.
     if(url.pathname.startsWith('/api/profile/'))
       return handleProfileApi(request,env,url,origin,verifySession,ctx);
+    // Ephemeral photo stories have independent storage, reads and 24h expiry.
+    if(url.pathname.startsWith('/api/stories/'))
+      return handleStoriesApi(request,env,url,origin,verifySession,ctx);
     // Familia HAVANA NICE: private team albums and original R2 media.
     if(url.pathname.startsWith('/api/family/'))
       return handleFamilyApi(request,env,url,origin,respond,verifySession,ctx);
@@ -269,5 +273,9 @@ export default {
       return env.CHAT_ROOMS.get(env.CHAT_ROOMS.idFromName(ROOM)).fetch(request);
     }
     return respond({ error: 'Not found' }, 404, origin);
+  },
+  async scheduled(_event:ScheduledEvent,env:V2Env,ctx:ExecutionContext){
+    // Reclaim expired stories independently of any musician opening HOME.
+    ctx.waitUntil(cleanupExpiredStories(env,80));
   },
 };

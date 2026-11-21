@@ -31,6 +31,7 @@ const notes:Record<Exclude<MemberScreen,'chat'|'home'>,string>={
 // /visual.html remains presentation-only; it cannot open Chat or issue a session.
 function VisualApp({displayName,active,onNavigate,preview=false,token,actorId}:Props){
   const [profileOpen,setProfileOpen]=useState(false);
+  const [storyEpoch,setStoryEpoch]=useState(0);
   const profile=usePwaMemberProfiles(token,actorId);
   const own=profile.own;
   const [previewScreen,setPreviewScreen]=useState<MemberScreen>('home');
@@ -68,7 +69,7 @@ function VisualApp({displayName,active,onNavigate,preview=false,token,actorId}:P
       </aside>
       <main className="visual-content" id="visual-content">
         {screen==='home'?<Suspense fallback={<div className="visual-empty" role="status">Abriendo Inicio…</div>}>
-          <MemberHome displayName={displayName} actorId={actorId} profiles={profile.profiles} preview={preview} canEditProfile={profile.phase==='ready'||profile.phase==='missing'} onPhotoError={profile.retryPhoto} onOpenProfile={()=>setProfileOpen(true)}/>
+          <MemberHome token={token} displayName={displayName} actorId={actorId} profiles={profile.profiles} preview={preview} canEditProfile={profile.phase==='ready'||profile.phase==='missing'} onPhotoError={profile.retryPhoto} refreshVersion={storyEpoch}/>
         </Suspense>:<>
           <div className="visual-section-header">
             <button className="visual-back" type="button" onClick={()=>navigate('home')}>‹ Inicio</button>
@@ -100,7 +101,7 @@ function VisualApp({displayName,active,onNavigate,preview=false,token,actorId}:P
         </button>;
       })}
     </nav>
-    {!preview&&token&&(screen==='home'||profileOpen||profile.phase==='missing')&&<PwaProfileLive token={token} onChange={()=>{void profile.refresh();}}/>}
+    {!preview&&token&&(screen==='home'||profileOpen||profile.phase==='missing')&&<PwaProfileLive token={token} onChange={()=>{void profile.refresh();setStoryEpoch(n=>n+1);}}/>}
     {!preview&&token&&profile.phase==='checking'&&<div className="hn-profile-overlay" role="status">
       <div className="hn-profile-card">Comprobando tu perfil…</div>
     </div>}

@@ -1,16 +1,21 @@
 import type {MemberProfile} from '@havana/shared';
 import {memo} from 'react';
-import TeamStoriesStrip from './TeamStoriesStrip';
+import MemberStories from '../stories/MemberStories';
 import './home-stage.css';
 
+// Independent HOME: social states own their data and 24h lifecycle.
+// The profile photograph and editor live exclusively in the header's Profile.
 type Props={
- displayName:string|undefined;actorId:string|undefined;profiles:readonly MemberProfile[];
- preview:boolean;canEditProfile:boolean;onPhotoError:(memberId:string)=>void;onOpenProfile:()=>void;
+ token:string|undefined;displayName:string|undefined;actorId:string|undefined;
+ profiles:readonly MemberProfile[];preview:boolean;canEditProfile:boolean;
+ onPhotoError:(memberId:string)=>void;refreshVersion:number;
 };
-function MemberHome({displayName,actorId,profiles,preview,canEditProfile,onPhotoError,onOpenProfile}:Props){
+function MemberHome({token,displayName,actorId,profiles,preview,canEditProfile,
+ onPhotoError,refreshVersion}:Props){
  return <section className="hn-home-stage" aria-label="Inicio del equipo">
-  <TeamStoriesStrip displayName={displayName} actorId={actorId} profiles={profiles}
-   preview={preview} canEditProfile={canEditProfile} onPhotoError={onPhotoError} onOpenProfile={onOpenProfile}/>
+  <MemberStories token={token} displayName={displayName} actorId={actorId} profiles={profiles}
+   preview={preview} canEditProfile={canEditProfile} onPhotoError={onPhotoError}
+   refreshVersion={refreshVersion}/>
   <div className="hn-home-blank" aria-hidden="true"/>
  </section>;
 }

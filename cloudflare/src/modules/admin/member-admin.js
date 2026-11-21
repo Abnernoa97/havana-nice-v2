@@ -147,6 +147,10 @@ export async function handleAdminMemberManagement(request,env,url,origin,respond
    ).bind(queuedAt,actorId),
    env.DB.prepare(
      'INSERT OR IGNORE INTO r2_member_delete_queue(object_key,actor_id,multipart_upload_id,size_bytes,queued_at) '+
+     'SELECT object_key,actor_id,NULL,byte_size,? FROM member_stories WHERE actor_id=?'
+   ).bind(queuedAt,actorId),
+   env.DB.prepare(
+     'INSERT OR IGNORE INTO r2_member_delete_queue(object_key,actor_id,multipart_upload_id,size_bytes,queued_at) '+
      'SELECT poster_key,actor_id,NULL,poster_size_bytes,? FROM family_media '+
      'WHERE actor_id=? AND poster_key IS NOT NULL'
    ).bind(queuedAt,actorId),

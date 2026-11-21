@@ -6,6 +6,7 @@ import NativeRepertoire from '../features/repertoire/NativeRepertoire';
 import NativeMusicians from '../features/musicians/NativeMusicians';
 import NativeFamily from '../features/family/NativeFamily';
 import {useNativeMemberProfile} from '../features/profile/useNativeMemberProfile';
+import NativeStories from '../features/stories/NativeStories';
 
 type Props={displayName:string;actorId:string;token:string;
  active:Exclude<MemberScreen,'chat'>;onNavigate:(screen:MemberScreen)=>void;};
@@ -27,24 +28,9 @@ function NativeMemberHome({displayName,actorId,token,active,onNavigate}:Props){
     <View style={styles.headerAvatar}>{avatar(profile.own?.photoUrl,displayName,36)}</View>
    </Pressable>
   </View>
-  {active==='home'?<View style={styles.storyRow}>
-   <ScrollView horizontal showsHorizontalScrollIndicator={false}
-    contentContainerStyle={styles.storyScroller}>
-    <Pressable style={styles.story} accessibilityRole="button" onPress={()=>setProfileOpen(true)}
-     accessibilityLabel="Mi perfil" disabled={profile.phase==='legacy'||profile.phase==='offline'}>
-     <View style={[styles.storyCircle,styles.ownCircle]}>
-      {avatar(profile.own?.photoUrl,displayName,64)}
-      <View style={styles.plusCircle}><Text style={styles.plus}>+</Text></View>
-     </View><Text style={styles.storyName}>{displayName}</Text>
-    </Pressable>
-    {profile.profiles.filter(p=>p.actorId!==actorId).map(member=>
-     <View key={member.actorId} style={styles.story}>
-      <View style={styles.storyCircle}>
-       {avatar(member.photoUrl,member.name,64)}
-      </View><Text numberOfLines={1} style={styles.storyName}>{member.name}</Text>
-     </View>)}
-   </ScrollView>
-  </View>:<>
+  {active==='home'?<NativeStories token={token} actorId={actorId}
+   displayName={displayName} profiles={profile.profiles}
+   canPublish={profile.phase==='ready'} refreshVersion={profile.liveVersion}/>:<>
    <Pressable accessibilityRole="button" accessibilityLabel="Volver a Inicio"
     style={styles.back} onPress={()=>onNavigate('home')}><Text style={styles.backLabel}>‹ Inicio</Text></Pressable>
    <Text style={styles.title}>{selected?.label||'Módulo'}</Text>
@@ -111,15 +97,6 @@ const styles=StyleSheet.create({
  myProfile:{padding:2},headerAvatar:{width:40,height:40,borderRadius:20,
   borderWidth:2,borderColor:'#DBC59A',backgroundColor:'#f2f4ec',alignItems:'center',justifyContent:'center',overflow:'hidden'},
  initial:{fontSize:20,color:'#285343',fontWeight:'700'},
- storyRow:{marginHorizontal:-10},storyScroller:{paddingVertical:16,paddingHorizontal:8,gap:17},
- story:{width:73,alignItems:'center',gap:8},
- storyCircle:{width:68,height:68,borderRadius:34,borderWidth:2,borderColor:'#dedede',
-  backgroundColor:'#f2f2f2',alignItems:'center',justifyContent:'center'},
- ownCircle:{borderColor:'#cbb28e'},storyName:{fontSize:11,color:'#393939',maxWidth:74},
- plusCircle:{position:'absolute',bottom:-3,right:-3,width:23,height:23,
-  borderRadius:12,backgroundColor:'#153d31',borderColor:'#fff',borderWidth:2,
-  justifyContent:'center',alignItems:'center'},
- plus:{color:'#fff',fontSize:18,lineHeight:19},
  bottomNav:{flexDirection:'row',backgroundColor:'#FFFCF7',borderTopWidth:1,borderColor:'#E4DDD1',paddingVertical:8},
  bottomTab:{flex:1,alignItems:'center',borderRadius:9,paddingVertical:6,marginHorizontal:1},
  activeTab:{backgroundColor:'#E7EEE6'},bottomGlyph:{fontSize:20,color:'#708077'},

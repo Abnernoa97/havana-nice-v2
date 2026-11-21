@@ -12,6 +12,7 @@ export function useNativeMemberProfile(token:string,actorId:string,watchHome:boo
  const [phase,setPhase]=useState<Phase>('checking');
  const [error,setError]=useState('');
  const [saving,setSaving]=useState(false);
+ const [liveVersion,setLiveVersion]=useState(0);
  const request=useRef(0),active=useRef(true);
  const refresh=useCallback(async()=>{
   const id=++request.current;
@@ -58,8 +59,9 @@ export function useNativeMemberProfile(token:string,actorId:string,watchHome:boo
    clear();
    try{
     const next=openFamilyRealtime(token,false,event=>{
-     if(alive&&socket===next&&(event.type==='family.ready'||event.type==='family.invalidate'))
-      void refresh();
+     if(alive&&socket===next&&(event.type==='family.ready'||event.type==='family.invalidate')){
+      void refresh();setLiveVersion(n=>n+1);
+     }
     });
     socket=next;
     watchdog=setTimeout(()=>{
@@ -121,5 +123,5 @@ export function useNativeMemberProfile(token:string,actorId:string,watchHome:boo
   finally{setSaving(false);}
  },[token,saving,refresh]);
  const own=profiles.find(p=>p.actorId===actorId);
- return {profiles,own,phase,error,saving,choosePhoto,refresh};
+ return {profiles,own,phase,error,saving,choosePhoto,refresh,liveVersion};
 }

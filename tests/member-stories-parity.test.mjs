@@ -1,0 +1,54 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
+
+test('Stories are a separate 24h API, never a new Chat session or permanent avatar',()=>{
+ const shared=read('packages/shared/src/member-stories.ts');
+ const worker=read('cloudflare/src/modules/stories/stories.js');
+ const migration=read('cloudflare/migrations/0031_member_stories.sql');
+ const entry=read('cloudflare/src/index.ts');
+ assert.match(shared,/STORY_DURATION_MS=24\*60\*60\*1000/);
+ assert.match(worker,/STORY_DURATION_MS=24\*60\*60\*1000/);
+ assert.match(worker,/expires_at>\?/);
+ assert.match(worker,/s\.expires_at>\?/);
+ assert.match(migration,/expires_at=created_at\+86400000/);
+ assert.match(entry,/handleStoriesApi\(/);
+ assert.match(entry,/async scheduled\(/);
+ assert.match(entry,/cleanupExpiredStories/);
+ assert.doesNotMatch(worker,/startNamedChatSession|restoreNamedChatSession|\/api\/profile\/me\/photo/);
+ assert.match(read('cloudflare/wrangler.jsonc'),/\*\/15 \* \* \* \*/);
+});
+test('The avatar photo and + state publisher are separate interactive targets on iPhone',()=>{
+ const strip=read('apps/pwa/src/features/home/TeamStoriesStrip.tsx');
+ const home=read('apps/pwa/src/features/home/MemberHome.tsx');
+ const stories=read('apps/pwa/src/features/stories/MemberStories.tsx');
+ const viewer=read('apps/pwa/src/features/stories/MemberStoryViewer.tsx');
+ const css=read('apps/pwa/src/features/home/home-stage.css');
+ assert.match(strip,/className="hn-moment-add" onClick=\{onAddStory\}/);
+ assert.match(strip,/onOpenStory\(person\.actorId\)/);
+ assert.doesNotMatch(strip,/onOpenProfile/);
+ assert.match(stories,/input\.current\?\.click\(\)/);
+ assert.match(stories,/Publicar estado/);
+ assert.match(viewer,/Eliminar mi estado/);
+ assert.match(home,/MemberStories/);
+ assert.match(css,/\.hn-moment-person\{[^\n]*width:80px;min-width:80px/);
+ assert.match(css,/\.hn-moment-avatar-slot\{width:76px;height:76px/);
+ assert.match(css,/\.hn-moment-circle\{[^\n]*width:70px;height:70px/);
+ assert.doesNotMatch(stories,/uploadMyProfilePhoto|MemberProfilePanel/);
+ assert.match(read('apps/pwa/src/app/VisualApp.tsx'),/MemberProfilePanel/);
+});
+test('Android uses the same story backend, a separate NativeStories UI and a single Family live connection',()=>{
+ const home=read('apps/android/app/NativeMemberHome.tsx');
+ const stories=read('apps/android/features/stories/NativeStories.tsx');
+ const nativeHook=read('apps/android/features/stories/useNativeStories.ts');
+ const profileHook=read('apps/android/features/profile/useNativeMemberProfile.ts');
+ assert.match(home,/NativeStories token=\{token\}/);
+ assert.match(stories,/onPress=\{\(\)=>void states\.publish\(\)\}/);
+ assert.match(stories,/setViewerActor/);
+ assert.match(nativeHook,/\/api\/stories\/me\/photo/);
+ assert.match(nativeHook,/getMemberStories\(token\)/);
+ assert.match(profileHook,/openFamilyRealtime\(token,false/);
+ assert.match(profileHook,/setLiveVersion\(n=>n\+1\)/);
+ assert.doesNotMatch(nativeHook+stories,/openFamilyRealtime|new WebSocket|startNamedChatSession|saveNativeLocalChat/);
+});

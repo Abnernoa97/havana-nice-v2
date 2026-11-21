@@ -14,9 +14,13 @@ test('PWA HOME uses a scoped lightweight emerald-gold theme without affecting Ch
  const home=read('apps/pwa/src/features/home/MemberHome.tsx');
  assert.match(app,/const MemberHome=lazy\(\(\)=>import\('\.\.\/features\/home\/MemberHome'\)\)/);
  assert.match(home,/className="hn-home-stage"/);
- assert.match(home,/<TeamStoriesStrip displayName=\{displayName\}/);
+ assert.match(home,/<MemberStories token=\{token\}/);
  assert.doesNotMatch(home,/visual-welcome|visual-grid|Todo lo que necesitas/);
- assert.match(read('apps/pwa/src/features/home/TeamStoriesStrip.tsx'),/person.photoUrl/);
+ const strip=read('apps/pwa/src/features/home/TeamStoriesStrip.tsx');
+ assert.match(strip,/person.photoUrl/);
+ assert.match(strip,/onAddStory/);
+ assert.match(strip,/onOpenStory/);
+ assert.doesNotMatch(strip,/onOpenProfile|choosePhoto/,'Publishing a story must not enter the Profile editor');
  assert.match(app,/MemberProfilePanel/);
  assert.match(app,/aria-current=\{screen===item.id\?'page':undefined\}/);
  assert.doesNotMatch(app+'\n'+home,/new WebSocket|startNamedChatSession|uploadChatMediaBatch/);
@@ -29,5 +33,6 @@ test('Android HOME presentation keeps one session and direct native modules',()=
  assert.match(app,/active==='calendar'\?<NativeCalendar token=\{token\}/);
  assert.match(app,/onPress=\{\(\)=>onNavigate\(dest\)\}/);
  assert.match(app,/useNativeMemberProfile\(token,actorId,active==='home'\)/);
+ assert.match(app,/NativeStories token=\{token\}/);
  assert.doesNotMatch(app,/new WebSocket|startNamedChatSession|WebView|AsyncStorage/);
 });

@@ -180,6 +180,8 @@ export {MEMBER_MODULES} from './memberModules';
 export {getMusicianDirectory} from './musicians';
 export {getTeamProfiles,uploadMyProfilePhoto,MemberProfileApiError} from './member-profile';
 export type {MemberProfile} from './member-profile';
+export {getMemberStories,uploadMyStory,deleteMyStory,MemberStoryApiError,STORY_DURATION_MS} from './member-stories';
+export type {MemberStory} from './member-stories';
 export type {MusicianDirectoryEntry} from './musicians';
 export type {MemberModule,MemberScreen} from './memberModules';
 
