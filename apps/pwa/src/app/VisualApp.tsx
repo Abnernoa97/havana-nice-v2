@@ -20,7 +20,7 @@ const notes:Record<Exclude<MemberScreen,'chat'|'home'>,string>={
   repertoire:'Las canciones y listas estarán disponibles cuando se conecten los datos reales.',
   musicians:'La lista de integrantes requiere la sesión autorizada del equipo.',
   family:'Las fotografías y los videos privados se muestran al entrar con una sesión autorizada. BOOK HAVANA NICE muestra las páginas que publique Administración.',
-  notices:'Los avisos se mostrarán cuando exista almacenamiento y permisos para cada músico.',
+  notices:'Las notificaciones estarán disponibles cuando activemos su sistema privado.',
   settings:'Las preferencias se habilitarán cuando podamos guardarlas de forma segura.',
 };
 // Reuses the existing visual shell for the member HOME after successful login.
@@ -35,10 +35,13 @@ function VisualApp({displayName,active,onNavigate,preview=false,token}:Props){
   };
   const selected=MEMBER_MODULES.find(item=>item.id===screen);
   const tabs=MEMBER_MODULES;
-  return <div className="visual-shell">
+  return <div className={screen==='home'?'visual-shell hn-home-route':'visual-shell'}>
     <header className="visual-header">
       <div><div className="visual-brand">HAVANA NICE</div><div className="visual-subtitle">ESPACIO DEL EQUIPO</div></div>
-      <span className="visual-preview">{preview?'Vista preliminar':displayName||'Mi espacio'}</span>
+      <span className="visual-account" aria-label={preview?'Vista preliminar':'Perfil de '+(displayName||'integrante')}>
+        <span className="visual-account-avatar">{preview?'H':(displayName||'H').charAt(0).toUpperCase()}</span>
+        <span className="visual-account-label">{preview?'Vista previa':displayName||'Mi perfil'}</span>
+      </span>
     </header>
     <div className="visual-layout">
       <aside className="visual-side" aria-label="Módulos de HAVANA NICE">
@@ -57,7 +60,7 @@ function VisualApp({displayName,active,onNavigate,preview=false,token}:Props){
       </aside>
       <main className="visual-content" id="visual-content">
         {screen==='home'?<Suspense fallback={<div className="visual-empty" role="status">Abriendo Inicio…</div>}>
-          <MemberHome displayName={displayName} preview={preview} onNavigate={navigate}/>
+          <MemberHome displayName={displayName} token={token} preview={preview}/>
         </Suspense>:<>
           <div className="visual-section-header">
             <button className="visual-back" type="button" onClick={()=>navigate('home')}>‹ Inicio</button>

@@ -65,7 +65,9 @@ assert.match(pwaMedia,/uploadChatMediaBatch\(/);
 const pwaHome=readFileSync(join(rootDir,'apps/pwa/src/features/home/MemberHome.tsx'),'utf8');
 const pwaShell=readFileSync(join(rootDir,'apps/pwa/src/app/VisualApp.tsx'),'utf8');
 assert.match(pwaShell,/const MemberHome=lazy\(/);
-assert.match(pwaHome,/className="visual-tile"/);
+assert.match(pwaHome,/className="hn-home-stage"/);
+assert.match(pwaHome,/TeamStoriesStrip/);
+assert.doesNotMatch(pwaHome,/visual-welcome|visual-grid|Todo lo que necesitas/);
 assert.doesNotMatch(pwaHome,/new WebSocket|startNamedChatSession|restoreNamedChatSession|saveLocalChat|fetch\(/);
 assert.doesNotMatch(pwaView,/startNamedChatSession|restoreNamedChatSession|openChatSocket|saveLocalChat|new WebSocket/);
 

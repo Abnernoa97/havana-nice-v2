@@ -13,9 +13,10 @@ test('PWA HOME uses a scoped lightweight emerald-gold theme without affecting Ch
  const app=read('apps/pwa/src/app/VisualApp.tsx');
  const home=read('apps/pwa/src/features/home/MemberHome.tsx');
  assert.match(app,/const MemberHome=lazy\(\(\)=>import\('\.\.\/features\/home\/MemberHome'\)\)/);
- assert.match(home,/className="visual-tile"/);
- assert.match(home,/onClick=\{\(\)=>navigate\(item.id\)\}/);
- assert.match(home,/disabled=\{preview&&item.id==='chat'\}/);
+ assert.match(home,/className="hn-home-stage"/);
+ assert.match(home,/<TeamStoriesStrip token=\{token\}/);
+ assert.doesNotMatch(home,/visual-welcome|visual-grid|Todo lo que necesitas/);
+ assert.match(read('apps/pwa/src/features/home/TeamStoriesStrip.tsx'),/getMusicianDirectory/);
  assert.match(app,/aria-current=\{screen===item.id\?'page':undefined\}/);
  assert.doesNotMatch(app+'\n'+home,/new WebSocket|startNamedChatSession|uploadChatMediaBatch/);
 });

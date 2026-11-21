@@ -40,6 +40,8 @@ cloudflare/migrations/ → historial aditivo D1; NUNCA reescribir migraciones us
 tests/ + cloudflare/tests/ + scripts/ → reglas de seguridad y CI
 ```
 
+**HOME social, fase visual (20/11):** HOME blanco, sin tarjetas, franja de perfiles reales. Iniciales y símbolo + solo visuales hasta activar fotos/estados R2 con permisos. Foto obligatoria, estados 24 h y radio (solo Admin sube) requieren nuevos contratos D1/R2/Worker; no bloquear sesión ni habilitar subidas sin backend. Chat/BOOK intactos.
+
 **Separación de carga PWA:** `React.lazy`/`Suspense` en HOME, Calendario, Repertorio, Familia, BOOK y pestañas Admin. La PWA tiene cuatro entradas HTML históricas, pero **no URLs HTML diferentes por módulo**; cada componente pesado se descarga bajo demanda. Comprobación con manifiesto real de Vite. Usuario aprobó navegación de iPhone el 08/11; pruebas físicas adicionales sin red siguen pendientes.
 
 **Worker y comunicación:** mismo `havana-nice-v2-dev`, D1 único, R2 privado único `MEDIA_BUCKET` y dos Durable Objects: `CHAT_ROOMS` → `ChatRoom`; `CALENDAR_ROOMS` → `CalendarRoom`. Siete bindings efectivos (incluido secreto Admin). No hay puente a Google Drive/Supabase ni Worker segundo.

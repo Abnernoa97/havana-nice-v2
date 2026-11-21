@@ -26,7 +26,7 @@ test('A01: HOME lists the same modules from a single shared contract',()=>{
   assert.deepEqual(ids,['chat','calendar','repertoire','musicians','family','notices','settings']);
   assert.match(read('apps/android/app/NativeMemberHome.tsx'),/MEMBER_MODULES\.map/);
   assert.match(read('apps/pwa/src/app/VisualApp.tsx'),/MEMBER_MODULES/);
-   assert.match(read('apps/pwa/src/features/home/MemberHome.tsx'),/MEMBER_MODULES/);
+   assert.match(read('apps/pwa/src/features/home/MemberHome.tsx'),/TeamStoriesStrip/);
    assert.doesNotMatch(read('apps/pwa/src/features/home/MemberHome.tsx'),/WebSocket|startNamedChatSession|saveLocalChat|fetch\(/);
   assert.match(read('apps/android/app/NativeApp.tsx'),/session&&activeScreen!=='chat'&&<NativeMemberHome/);
   assert.match(read('apps/pwa/src/app/App.tsx'),/session&&activeScreen!=='chat'&&<Suspense/);
