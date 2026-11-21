@@ -81,7 +81,7 @@ assert.deepEqual(children('apps/android'),
 // source of each module. Moved source files cannot survive as compatibility copies.
 assert.deepEqual(children('apps/android/app'),['NativeApp.tsx','NativeMemberHome.tsx']);
 assert.deepEqual(children('apps/android/features'),
- ['book','calendar','chat','family','musicians','profile','repertoire','stories']);
+ ['book','calendar','chat','family','musicians','notices','profile','repertoire','stories']);
 assert.deepEqual(children('apps/android/hooks'),['useNativeKeyboardVisibility.ts','useNativeMemberNavigation.ts']);
 assert.deepEqual(children('apps/android/storage'),['chatPendingMedia.ts','chatPhotoCache.ts','chatStorage.ts']);
 assert.deepEqual(children('apps/android/styles'),['chat-styles.ts']);
@@ -116,10 +116,10 @@ assert.deepEqual(children('cloudflare/src'),
 for(const name of ['calendar','chat','family','repertoire'])
  assert.ok(existsSync(join(rootDir,'apps/pwa/src/features',name)),
   'Missing PWA feature: '+name);
-for(const name of ['book','calendar','chat','family','musicians','repertoire','stories'])
+for(const name of ['book','calendar','chat','family','musicians','notices','repertoire','stories'])
  assert.ok(existsSync(join(rootDir,'apps/android/features',name)),
   'Missing native feature: '+name);
-for(const name of ['admin','calendar','chat','family','repertoire','stories'])
+for(const name of ['admin','calendar','chat','family','notices','repertoire','stories'])
  assert.ok(existsSync(join(rootDir,'cloudflare/src/modules',name)),
   'Missing Worker domain: '+name);
 
