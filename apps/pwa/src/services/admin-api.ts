@@ -183,3 +183,12 @@ export function adminReorderEventItems(token:string,eventId:string,itemIds:strin
  return api<{items:RepertoireEventItem[]}>('/api/repertoire/admin/events/'+encodeURIComponent(eventId)+'/order',
   authenticated(token,{method:'POST',body:JSON.stringify({itemIds})}));
 }
+
+export type AdminStorageSummary={
+ storage:{usedBytes:number;pendingBytes:number;maxBytes:number;remainingBytes:number;warning:boolean;stopped:boolean};
+ rows:{id:string;name:string;count:number;bytes:number}[];
+ indexedFiles:number;indexedBytes:number;outsideQuotaBytes:number;note:string;
+};
+export function adminStorageSummary(token:string){
+ return api<AdminStorageSummary>('/api/chat/admin/storage/summary',authenticated(token));
+}
