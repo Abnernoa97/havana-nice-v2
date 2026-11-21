@@ -4,7 +4,7 @@ import {getMusicianDirectory,type MusicianDirectoryEntry} from '@havana/shared';
 // Only the existing authorized roster. No fabricated avatars, extra login,
 // WebSocket, R2 mutations or state publication until the social API is live.
 export default function TeamStoriesStrip({token,displayName,preview}:{
- token?:string;displayName?:string;preview:boolean
+ token:string|undefined;displayName:string|undefined;preview:boolean
 }){
  const [members,setMembers]=useState<MusicianDirectoryEntry[]>([]);
  const [error,setError]=useState('');
