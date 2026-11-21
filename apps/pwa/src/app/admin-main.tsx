@@ -2,6 +2,8 @@ import React from 'react';
 import {createRoot} from 'react-dom/client';
 import AdminApp from './AdminApp';
 import '../styles/admin/admin.css';
+import '../styles/home/home.css'; // Reuse the musician HOME visual system.
+import '../styles/admin/admin-editorial.css';
 import '../styles/mobile-viewport.css';
 
 // One administrator PWA from the same HAVANA NICE V2 source and deployment.
