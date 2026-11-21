@@ -67,12 +67,16 @@ export default function NativeStoryViewer({stories,actorId,token,version,onClose
     <NativeStoryPhoto key={current.id} uri={current.photoUrl} onError={photoFailed}/>
     <View pointerEvents="none" style={s.topShade}/>
     <View style={s.progressRow} accessibilityLabel={'Estado '+(position+1)+' de '+stories.length}>
-     {stories.map((story,i)=><View key={story.id} style={s.progressTrack}>
-      {i<position?<View style={s.complete}/>:
-       i===position?<Animated.View style={[s.complete,{
-        transform:[{scaleX:progress}],transformOrigin:'left center'
-       }]}/>:null}
-     </View>)}
+     {stories.map((story,i)=><Pressable key={story.id} accessibilityRole="button"
+      accessibilityLabel={'Ver foto '+(i+1)+' de '+stories.length}
+      onPress={()=>setPosition(i)} style={s.progressTouch}>
+      <View style={s.progressTrack}>
+       {i<position?<View style={s.complete}/>:
+        i===position?<Animated.View style={[s.complete,{
+         transform:[{scaleX:progress}],transformOrigin:'left center'
+        }]}/>:null}
+      </View>
+     </Pressable>)}
     </View>
     <View style={s.toolbar}>
      <View>
@@ -89,10 +93,14 @@ export default function NativeStoryViewer({stories,actorId,token,version,onClose
      </View>
     </View>
     <View style={s.tapZones} pointerEvents="box-none">
-     <Pressable accessibilityRole="button" accessibilityLabel="Estado anterior"
-      disabled={position===0} onPress={previous} style={s.tapZone}/>
-     <Pressable accessibilityRole="button" accessibilityLabel="Siguiente estado"
-      onPress={goNext} style={s.tapZone}/>
+     <Pressable accessibilityRole="button" accessibilityLabel="Foto anterior"
+      disabled={position===0} onPress={previous} style={s.tapZone}>
+      <Text style={s.tapArrow}>‹</Text>
+     </Pressable>
+     <Pressable accessibilityRole="button" accessibilityLabel="Foto siguiente"
+      onPress={goNext} style={[s.tapZone,s.tapRight]}>
+      <Text style={s.tapArrow}>›</Text>
+     </Pressable>
     </View>
     <NativeStoryConversation key={current.id} token={token} storyId={current.id}
      version={version} onPause={setPaused} onBurst={setBurst}/>
@@ -103,12 +111,14 @@ export default function NativeStoryViewer({stories,actorId,token,version,onClose
 }
 const s=StyleSheet.create({
  screen:{flex:1,backgroundColor:'#080f0a',
-  paddingTop:Platform.OS==='android'?(StatusBar.currentHeight||0):0},
+  paddingTop:Platform.OS==='android'?(StatusBar.currentHeight||24)+6:0,
+  paddingBottom:Platform.OS==='android'?48:0},
  frame:{flex:1,position:'relative',overflow:'hidden',backgroundColor:'#0b100d'},
  topShade:{position:'absolute',top:0,left:0,right:0,height:115,
   backgroundColor:'rgba(0,0,0,.65)',zIndex:5},
- progressRow:{position:'absolute',left:12,right:12,top:10,height:4,
+ progressRow:{position:'absolute',left:12,right:12,top:2,height:23,
   flexDirection:'row',gap:4,zIndex:12},
+ progressTouch:{flex:1,height:23,justifyContent:'center'},
  progressTrack:{flex:1,height:4,borderRadius:3,backgroundColor:'#ffffff66',overflow:'hidden'},
  complete:{width:'100%',height:4,backgroundColor:'#fff',borderRadius:3},
  toolbar:{position:'absolute',top:23,left:16,right:13,zIndex:11,
@@ -118,7 +128,10 @@ const s=StyleSheet.create({
  toolbarActions:{flexDirection:'row',alignItems:'center',gap:18},
  remove:{fontSize:12,color:'#fff'},
  close:{fontSize:30,color:'#fff',lineHeight:37,minWidth:40,textAlign:'center'},
- tapZones:{position:'absolute',top:'21%',bottom:150,left:0,right:0,zIndex:7,
+ tapZones:{position:'absolute',top:'21%',bottom:158,left:0,right:0,zIndex:7,
   flexDirection:'row',justifyContent:'space-between'},
- tapZone:{width:'33%',height:'100%'},
+ tapZone:{width:'34%',height:'100%',justifyContent:'center',paddingHorizontal:12},
+ tapRight:{alignItems:'flex-end'},
+ tapArrow:{fontSize:31,color:'rgba(255,255,255,.68)',fontWeight:'300',
+  textShadowColor:'rgba(0,0,0,.35)',textShadowRadius:8},
 });
