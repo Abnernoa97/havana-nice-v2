@@ -39,7 +39,7 @@ export default function StoryVoiceRecorder({disabled,onSend,onRecording}:{
     const discard=cancel.current;clear();
     recorder.current=null;setRecording(false);onRecording(false);
     if(discard)return;
-    const audio=new Blob(chunks,{type:selected.split(';')[0]});
+    const audio=new Blob(chunks,{type:selected.split(';')[0]!});
     if(audio.size>3_000_000){setError('El mensaje de voz supera 3 MB.');return;}
     if(!audio.size){setError('El audio está vacío.');return;}
     void onSend(audio);
