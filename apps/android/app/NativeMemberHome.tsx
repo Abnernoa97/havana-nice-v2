@@ -24,10 +24,17 @@ function NativeMemberHome({displayName,actorId,token,active,onNavigate}:Props){
   <View style={styles.top}>
    <View><Text style={styles.brand}>HAVANA NICE</Text>
     <Text style={styles.subheading}>ESPACIO DEL EQUIPO</Text></View>
-   <Pressable accessibilityRole="button" accessibilityLabel="Abrir mi perfil"
-    onPress={()=>setProfileOpen(true)} disabled={profile.phase==='legacy'||profile.phase==='offline'||checking} style={styles.myProfile}>
-    <View style={styles.headerAvatar}>{avatar(profile.own?.photoUrl,displayName,36)}</View>
-   </Pressable>
+   <View style={styles.topActions}>
+    <Pressable accessibilityRole="button" accessibilityLabel="Abrir notificaciones"
+     onPress={()=>onNavigate('notices')} style={styles.noticesShortcut}>
+     <Text style={styles.noticesSymbol}>◌</Text>
+    </Pressable>
+    <Pressable accessibilityRole="button" accessibilityLabel="Abrir mi perfil"
+     onPress={()=>setProfileOpen(true)}
+     disabled={profile.phase==='legacy'||profile.phase==='offline'||checking} style={styles.myProfile}>
+     <View style={styles.headerAvatar}>{avatar(profile.own?.photoUrl,displayName,36)}</View>
+    </Pressable>
+   </View>
   </View>
   {active==='home'?<NativeStories token={token} actorId={actorId}
    displayName={displayName} profiles={profile.profiles}
@@ -53,7 +60,7 @@ function NativeMemberHome({displayName,actorId,token,active,onNavigate}:Props){
   {active==='family'?<View style={[styles.root,styles.content,styles.familyViewport]}>{content}</View>:
    <ScrollView style={styles.root} contentContainerStyle={styles.content}>{content}</ScrollView>}
   <View style={styles.bottomNav} accessibilityRole="tablist">
-   {(['home','chat','calendar','repertoire','family','notices'] as MemberScreen[]).map(dest=>{
+   {(['home','chat','calendar','repertoire','family','audio'] as MemberScreen[]).map(dest=>{
     const item=MEMBER_MODULES.find(m=>m.id===dest),isActive=active===dest;
     const label=dest==='home'?'Inicio':dest==='family'?'Familia':item?.label||dest;
     return <Pressable key={dest} accessibilityRole="tab" accessibilityState={{selected:isActive}}
@@ -98,6 +105,9 @@ const styles=StyleSheet.create({
   marginBottom:10,flexDirection:'row',justifyContent:'space-between',alignItems:'center'},
  brand:{fontFamily:'serif',fontSize:19,fontWeight:'700',letterSpacing:2,color:'#DBC59A'},
  subheading:{fontSize:11,letterSpacing:1.4,color:'#D3DED5',marginTop:8},
+ topActions:{flexDirection:'row',alignItems:'center',gap:13},
+ noticesShortcut:{width:38,height:38,borderRadius:20,backgroundColor:'#ffffff16',alignItems:'center',justifyContent:'center'},
+ noticesSymbol:{fontSize:24,color:'#e8dabc'},
  myProfile:{padding:2},headerAvatar:{width:40,height:40,borderRadius:20,
   borderWidth:2,borderColor:'#DBC59A',backgroundColor:'#f2f4ec',alignItems:'center',justifyContent:'center',overflow:'hidden'},
  initial:{fontSize:20,color:'#285343',fontWeight:'700'},
