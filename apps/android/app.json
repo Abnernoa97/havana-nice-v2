@@ -25,7 +25,8 @@
       [
         "expo-audio",
         {
-          "microphonePermission": "Permitir a HAVANA NICE grabar mensajes de voz en los Estados."
+          "microphonePermission": "Permitir a HAVANA NICE grabar mensajes de voz en los Estados.",
+          "enableBackgroundPlayback": true
         }
       ]
     ]
