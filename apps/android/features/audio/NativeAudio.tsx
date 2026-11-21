@@ -1,6 +1,6 @@
-import React,{useCallback,useEffect,useRef,useState} from 'react';
+import React,{useCallback,useEffect,useState} from 'react';
 import {Image,Modal,Pressable,ScrollView,StatusBar,StyleSheet,Text,View} from 'react-native';
-import {setAudioModeAsync,useAudioPlayer,useAudioPlayerStatus} from 'expo-audio';
+import {setAudioModeAsync,useAudioPlaylist,useAudioPlaylistStatus} from 'expo-audio';
 import {getAudioTracks,privateAudioUrl,type AudioTrack} from '@havana/shared';
 
 const clock=(value:number)=>!Number.isFinite(value)?'0:00':
@@ -11,19 +11,18 @@ export default function NativeAudio({token,visible,onClose}:{
  token:string;visible:boolean;onClose:()=>void;
 }){
  const [tracks,setTracks]=useState<AudioTrack[]>([]);
- const [index,setIndex]=useState(0);
  const [loading,setLoading]=useState(true);
  const [seekWidth,setSeekWidth]=useState(270);
  const [error,setError]=useState('');
- const player=useAudioPlayer(null,{updateInterval:400});
- const status=useAudioPlayerStatus(player);
- const startOnChange=useRef(false);
+ const player=useAudioPlaylist({sources:[],loop:'all'});
+ const status=useAudioPlaylistStatus(player);
+ const index=status.currentIndex;
  const current=tracks[index]||null;
  const refresh=useCallback(async()=>{
   try{
    const result=await getAudioTracks(token);
    setTracks(result);
-   setIndex(value=>Math.min(value,Math.max(0,result.length-1)));setError('');
+   setError('');
   }catch(e){setError(e instanceof Error?e.message:'El audio todavía no está disponible.');}
   finally{setLoading(false);}
  },[token]);
@@ -34,22 +33,23 @@ export default function NativeAudio({token,visible,onClose}:{
  },[]);
  useEffect(()=>{if(visible)void refresh();},[visible,refresh]);
  useEffect(()=>{
-  if(!current)return;
-  const source=privateAudioUrl(current.audioUrl);
-  if(!source)return;
-  player.replace({uri:source});
-  if(startOnChange.current){
-   startOnChange.current=false;
-   try{
-    player.setActiveForLockScreen(true,{
-     title:current.title,artist:current.artist,
-     albumTitle:current.album,
-     ...(privateAudioUrl(current.coverUrl)?{artworkUrl:privateAudioUrl(current.coverUrl)!}:{})
-    },{showSeekBackward:false,showSeekForward:false});
-    player.play();
-   }catch{setError('No se pudo abrir el audio.');}
+  // One OS-owned playlist enables actual Next/Previous media actions, not
+  // simulated seek buttons. Refresh replaces only this catalog's own queue.
+  const wasPlaying=player.playing;
+  player.clear();
+  for(const track of tracks){
+   const source=privateAudioUrl(track.audioUrl);
+   if(source)player.add({uri:source});
   }
- },[current?.id]);
+  if(wasPlaying&&tracks.length)player.play();
+ },[tracks]);
+ useEffect(()=>{
+  if(!current)return;
+  try{player.updateLockScreenMetadata({
+   title:current.title,artist:current.artist,albumTitle:current.album,
+   ...(privateAudioUrl(current.coverUrl)?{artworkUrl:privateAudioUrl(current.coverUrl)!}:{})
+  });}catch{/* Lock-screen metadata becomes available on first Play. */}
+ },[current?.id,current?.coverUrl]);
  const play=()=>{
   if(!current)return;
   if(status.playing){player.pause();return;}
@@ -57,20 +57,14 @@ export default function NativeAudio({token,visible,onClose}:{
    player.setActiveForLockScreen(true,{
     title:current.title,artist:current.artist,albumTitle:current.album,
     ...(privateAudioUrl(current.coverUrl)?{artworkUrl:privateAudioUrl(current.coverUrl)!}:{})
-   },{showSeekBackward:false,showSeekForward:false});
+   },{showPreviousTrack:true,showNextTrack:true,showSeekBackward:false,showSeekForward:false});
    player.play();
   }catch{setError('No se pudo iniciar la reproducción.');}
  };
  const next=(direction:number)=>{
   if(!tracks.length)return;
-  const position=(index+direction+tracks.length)%tracks.length;
-  if(position===index){void player.seekTo(0);return;}
-  startOnChange.current=status.playing;
-  setIndex(position);
+  if(direction>0)player.next();else player.previous();
  };
- useEffect(()=>{
-  if(status.didJustFinish&&tracks.length){startOnChange.current=true;next(1);}
- },[status.didJustFinish]);
  const cover=privateAudioUrl(current?.coverUrl||null);
  const progress=Math.min(1,Math.max(0,(status.currentTime||0)/Math.max(1,status.duration||0)));
  return <Modal visible={visible} animationType="slide" presentationStyle="fullScreen"
@@ -120,7 +114,7 @@ export default function NativeAudio({token,visible,onClose}:{
        {tracks.map((track,n)=><Pressable key={track.id} accessibilityRole="button"
         accessibilityLabel={'Reproducir '+track.title} onPress={()=>{
          if(index===n){play();return;}
-         startOnChange.current=true;setIndex(n);
+         player.skipTo(n);if(!player.playing)play();
         }} style={[s.row,n===index&&s.rowActive]}>
         {privateAudioUrl(track.coverUrl)?
          <Image source={{uri:privateAudioUrl(track.coverUrl)!}} style={s.thumb}/>:
