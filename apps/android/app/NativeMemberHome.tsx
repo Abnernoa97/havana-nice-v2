@@ -7,6 +7,7 @@ import NativeMusicians from '../features/musicians/NativeMusicians';
 import NativeFamily from '../features/family/NativeFamily';
 import {useNativeMemberProfile} from '../features/profile/useNativeMemberProfile';
 import NativeStories from '../features/stories/NativeStories';
+import NativeNotices from '../features/notices/NativeNotices';
 
 type Props={displayName:string;actorId:string;token:string;
  active:Exclude<MemberScreen,'chat'>;onNavigate:(screen:MemberScreen)=>void;};
@@ -38,7 +39,8 @@ function NativeMemberHome({displayName,actorId,token,active,onNavigate}:Props){
    {active==='calendar'?<NativeCalendar token={token}/>:
     active==='repertoire'?<NativeRepertoire token={token}/>:
     active==='musicians'?<NativeMusicians token={token}/>:
-    active==='family'?<NativeFamily token={token}/>:<View style={styles.pending}>
+    active==='family'?<NativeFamily token={token}/>:
+    active==='notices'?<NativeNotices token={token}/>:<View style={styles.pending}>
      <Text style={styles.pendingTitle}>{active==='notices'?'Notificaciones':'Módulo en preparación'}</Text>
      <Text style={styles.pendingDescription}>
       {active==='notices'?'Las notificaciones del equipo aparecerán aquí cuando se activen.':
