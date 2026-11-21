@@ -92,7 +92,7 @@ export default function AdminCalendar({token,members,onExpired}:Props){
   }catch(e){if(isAdminUnauthorized(e))onExpired();setError(e instanceof Error?e.message:'No se pudo borrar.');}
   finally{setBusy(false);}
  }
- return <section className="a-panel a-calendar" aria-label="Calendario del Administrador">
+ return <section className="a-panel a-calendar hn-calendar" aria-label="Calendario del Administrador">
   <div className="a-cal-toolbar">
    <div><h2>Calendario de eventos</h2><p className="a-detail">Crea cada fecha y elige quién la recibe.</p></div>
    <div className="a-cal-actions"><button type="button" onClick={()=>void refresh()} disabled={busy}>Actualizar</button>
@@ -135,8 +135,8 @@ export default function AdminCalendar({token,members,onExpired}:Props){
   </form>}
   <div className="a-cal-list" aria-label="Todas las fechas">
    {loading?<p>Cargando fechas…</p>:!events.length?<p>No hay eventos en Calendario V2.</p>:
-    events.map(item=>{const past=calendarEventCompleted(item);return <article key={item.id} className={'a-cal-event'+(past?' a-cal-completed':'')}>
-     <button type="button" className="a-cal-summary"
+    events.map(item=>{const past=calendarEventCompleted(item);return <article key={item.id} className={'a-cal-event hn-cal-event'+(past?' a-cal-completed':'')}>
+     <button type="button" className="a-cal-summary hn-cal-event-head"
       aria-expanded={expanded===item.id} onClick={()=>setExpanded(v=>v===item.id?null:item.id)}>
       <span className="a-cal-summary-main"><small>{calendarDate(item.date)}</small><strong>{item.title}</strong>
        <small>{item.venue||item.city||'Lugar por definir'} · {item.recipientIds?.length||0} músico(s)</small>
@@ -144,7 +144,7 @@ export default function AdminCalendar({token,members,onExpired}:Props){
       </span>
       <b aria-hidden="true">{expanded===item.id?'−':'+'}</b>
      </button>
-     {expanded===item.id&&<div className="a-cal-event-body">
+     {expanded===item.id&&<div className="a-cal-event-body hn-cal-details">
       <p>{[item.callTime&&'Llamada: '+item.callTime,item.soundcheckTime&&'Sonido: '+item.soundcheckTime,
        item.showTime&&'Show: '+item.showTime].filter(Boolean).join(' · ')}</p>
       {item.wardrobe&&<p>Vestuario: {item.wardrobe}</p>}
