@@ -2,7 +2,7 @@ import React,{memo,useMemo,type RefObject} from 'react';
 import {FlatList,View,Text,Pressable,type NativeScrollEvent,type NativeSyntheticEvent} from 'react-native';
 import {
  buildChatDisplayIndex,messageDeliveryLabel,
- type ChatMessage,type ChatReaction,type ChatReadReceipt,type ChatSession,
+ type ChatMessage,type ChatReaction,type ChatReadReceipt,type ChatSession,type ChatEmoji,
 } from '@havana/shared';
 import SwipeableBubble,{type BubbleAnchor} from './SwipeableBubble';
 import NativeChatMediaView from './NativeChatMediaView';
@@ -28,12 +28,13 @@ type Props={
  onLoadOlder:()=>void;
  onReply:(message:ChatMessage)=>void;
  onMessageLongPress:(message:ChatMessage,anchor:BubbleAnchor)=>void;
+ onQuickReact:(message:ChatMessage,emoji:ChatEmoji,origin:{x:number;y:number})=>void;
  onRetry:(clientMessageId:string)=>void;
 };
 function NativeChatTimeline({
  messages,session,onlineActorIds,connected,reactions,receipts,hasMore,loadingOlder,
  scrollRef,onContentSizeChange,onLayout,onScrollBeginDrag,onScroll,onScrollEndDrag,
- onLoadOlder,onReply,onMessageLongPress,onRetry,
+ onLoadOlder,onReply,onMessageLongPress,onQuickReact,onRetry,
 }:Props){
  const display=useMemo(()=>buildChatDisplayIndex(messages,reactions,receipts,session.actorId),
    [messages,reactions,receipts,session.actorId]);
@@ -93,10 +94,23 @@ function NativeChatTimeline({
                     {message.seq>0 && !message.deletedAt && badges.length>0 ? (
                       <View style={styles.reactionBadges}>
                         {badges.map(({emoji,count})=>(
-                          <Text key={emoji} style={styles.reactionBadge}>{emoji}{count}</Text>
+                          <Pressable key={emoji} accessibilityRole="button" accessibilityLabel={'Reaccionar con '+emoji}
+                           disabled={!connected}
+                           onPress={event=>onQuickReact(message,emoji as ChatEmoji,{
+                            x:event.nativeEvent.pageX,y:event.nativeEvent.pageY
+                           })}>
+                           <Text style={styles.reactionBadge}>{emoji}{count}</Text>
+                          </Pressable>
                         ))}
                       </View>
                     ):null}
+                    {message.seq>0&&!message.deletedAt&&connected&&<Pressable
+                     accessibilityRole="button" accessibilityLabel={'Elegir reacción para mensaje de '+message.senderName}
+                     style={styles.reactionTrigger} onPress={event=>onMessageLongPress(message,{
+                      x:event.nativeEvent.pageX-20,y:event.nativeEvent.pageY-20,width:40,height:40
+                     })}>
+                     <Text style={styles.reactionTriggerText}>♡ +</Text>
+                    </Pressable>}
                     <Text style={[styles.messageTime,mine && styles.mineMeta,online&&styles.onlineMeta]}>
                       {new Date(message.sentAt).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}
                       {message.editedAt&&!message.deletedAt?' · editado':''}
