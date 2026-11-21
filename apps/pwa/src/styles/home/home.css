@@ -117,3 +117,8 @@
 @media(max-width:750px){.visual-bottom-nav{grid-template-columns:repeat(6,minmax(0,1fr));padding-left:4px;padding-right:4px}
  .visual-bottom-nav button{min-width:0;gap:3px}
  .visual-bottom-nav button small{font-size:9px;letter-spacing:-.035em}}
+
+.hn-open-audio{display:inline-flex;align-items:center;justify-content:center;background:#ecf3e9;
+ color:#1f513b;border:1px solid #bbceb7;border-radius:13px;font:700 13px/1.4 system-ui;
+ padding:13px 17px;margin:-10px 0 23px;cursor:pointer}
+.hn-open-audio:focus-visible{outline:2px solid var(--hn-gold);outline-offset:3px}
