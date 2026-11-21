@@ -133,7 +133,9 @@ test('Calendar uses one private push protocol in native Android and PWA, without
  assert.match(nativeTransport,/calendar\.invalidate/);
  assert.match(nativeTransport,/watchdog=setTimeout\(/);
  assert.match(nativeTransport,/socket.readyState!==WebSocket.OPEN/);
- assert.match(native,/setArchive\(previous=>previous\?next.find\(/);
+ assert.match(native,/<NativeBook embedded token=\{token\}/);
+ assert.match(native,/open===item.id&&\(past\?/);
+ assert.doesNotMatch(native,/setArchive\(|Abrir recuerdo con efecto BOOK/);
  assert.doesNotMatch(native,/setInterval\(/);
  assert.doesNotMatch(nativeTransport,/setInterval\(/);
 });
