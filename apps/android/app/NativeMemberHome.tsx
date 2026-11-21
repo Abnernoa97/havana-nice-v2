@@ -47,13 +47,11 @@ function NativeMemberHome({displayName,actorId,token,active,onNavigate}:Props){
     active==='repertoire'?<NativeRepertoire token={token}/>:
     active==='musicians'?<NativeMusicians token={token}/>:
     active==='family'?<NativeFamily token={token}/>:
-    active==='notices'?<NativeNotices token={token}/>:<View style={styles.pending}>
-     <Text style={styles.pendingTitle}>{active==='notices'?'Notificaciones':'Módulo en preparación'}</Text>
-     <Text style={styles.pendingDescription}>
-      {active==='notices'?'Las notificaciones del equipo aparecerán aquí cuando se activen.':
-       'Esta sección estará disponible próximamente.'}
-     </Text>
-    </View>}
+    active==='notices'?<NativeNotices token={token}/>:
+    active==='audio'?null:<View style={styles.pending}>
+     <Text style={styles.pendingTitle}>Módulo en preparación</Text>
+     <Text style={styles.pendingDescription}>Esta sección estará disponible próximamente.</Text>
+    </View>
   </>}
  </>;
  return <View style={styles.screen}>
