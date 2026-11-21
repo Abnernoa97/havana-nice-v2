@@ -182,6 +182,8 @@ export {getTeamProfiles,uploadMyProfilePhoto,MemberProfileApiError} from './memb
 export type {MemberProfile} from './member-profile';
 export {getMemberStories,uploadMyStory,uploadMyStoriesBatch,deleteMyStory,MemberStoryApiError,STORY_DURATION_MS,STORY_PLAYBACK_MS,STORY_BATCH_MAX} from './member-stories';
 export type {MemberStory} from './member-stories';
+export {getMemberNotices,markMemberNoticesRead,memberNoticeMessage,MemberNoticeApiError} from './member-notifications';
+export type {MemberNotice,MemberNoticeInbox,MemberNoticeKind} from './member-notifications';
 export {getStoryConversation,sendStoryText,sendStoryVoice,reactToStory} from './story-conversation';
 export type {StoryConversation,StoryComment,StoryEmoji} from './story-conversation';
 export type {MusicianDirectoryEntry} from './musicians';
