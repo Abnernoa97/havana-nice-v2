@@ -44,6 +44,7 @@ function dynamicReachable(root,target){
  return seen.has(target);
 }
 const home=nodeFor('src/app/VisualApp.tsx');
+const homeContent=nodeFor('src/features/home/MemberHome.tsx');
 const member=[
  'src/features/calendar/CalendarAccordion.tsx',
  'src/features/repertoire/MemberRepertoire.tsx',
@@ -61,6 +62,9 @@ test('main Chat bootstrap downloads no Calendar, Repertoire, Family or HOME feat
  const initial=staticClosure(key);
  assert.equal(initial.has(home[0]),false,'HOME must not be eager inside Chat bootstrap');
  assert.equal(dynamicReachable(key,home[0]),true,'Authorized HOME must remain reachable');
+ assert.equal(initial.has(homeContent[0]),false,'HOME content must not enter Chat startup');
+ assert.equal(homeContent[1].isDynamicEntry,true,'HOME view should have its own lazy chunk');
+ assert.equal(dynamicReachable(home[0],homeContent[0]),true,'HOME must load its content on demand');
  for(const item of member){
   const [key,chunk]=nodeFor(item);
   assert.equal(chunk.isDynamicEntry,true,item+' must compile as a lazy chunk');
@@ -72,6 +76,8 @@ test('visual preview has lightweight shell but does not eagerly download member 
  const [entry]=nodeFor('visual.html');
  const initial=staticClosure(entry);
  assert.equal(initial.has(home[0]),true,'Visual shell must still render normally');
+ assert.equal(initial.has(homeContent[0]),false,'Visual preview keeps HOME content lazy');
+ assert.equal(dynamicReachable(home[0],homeContent[0]),true,'Visual preview opens HOME content');
  for(const path of member)assert.equal(initial.has(nodeFor(path)[0]),false,path+' eagerly loaded in preview');
 });
 test('Admin access remains mounted while Chat, Calendar, Repertoire and Family download on selection',()=>{

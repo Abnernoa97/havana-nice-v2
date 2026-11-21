@@ -11,10 +11,13 @@ test('PWA HOME uses a scoped lightweight emerald-gold theme without affecting Ch
  assert.match(css,/@media\(prefers-reduced-motion:reduce\)/);
  assert.doesNotMatch(css,/(?:^|\n):root\{/,'HOME theme must not change Chat CSS root tokens');
  const app=read('apps/pwa/src/app/VisualApp.tsx');
- assert.match(app,/className="visual-tile"/);
- assert.match(app,/onClick=\{\(\)=>navigate\(item.id\)\}/);
+ const home=read('apps/pwa/src/features/home/MemberHome.tsx');
+ assert.match(app,/const MemberHome=lazy\(\(\)=>import\('\.\.\/features\/home\/MemberHome'\)\)/);
+ assert.match(home,/className="visual-tile"/);
+ assert.match(home,/onClick=\{\(\)=>navigate\(item.id\)\}/);
+ assert.match(home,/disabled=\{preview&&item.id==='chat'\}/);
  assert.match(app,/aria-current=\{screen===item.id\?'page':undefined\}/);
- assert.doesNotMatch(app,/new WebSocket|startNamedChatSession|uploadChatMediaBatch/);
+ assert.doesNotMatch(app+'\n'+home,/new WebSocket|startNamedChatSession|uploadChatMediaBatch/);
 });
 test('Android HOME presentation keeps one session and direct native modules',()=>{
  const app=read('apps/android/app/NativeMemberHome.tsx');

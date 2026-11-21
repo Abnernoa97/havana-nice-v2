@@ -6,6 +6,7 @@ const CalendarAccordion=lazy(()=>import('../features/calendar/CalendarAccordion'
 const MemberRepertoire=lazy(()=>import('../features/repertoire/MemberRepertoire'));
 const MemberMusicians=lazy(()=>import('../features/musicians/MemberMusicians'));
 const MemberFamily=lazy(()=>import('../features/family/MemberFamily'));
+const MemberHome=lazy(()=>import('../features/home/MemberHome'))
 
 type Props={
   displayName?:string;
@@ -55,28 +56,9 @@ function VisualApp({displayName,active,onNavigate,preview=false,token}:Props){
         <div className="visual-side-note">Una sola identidad autorizada para HOME y Chat.</div>
       </aside>
       <main className="visual-content" id="visual-content">
-        {screen==='home'?<>
-          <div className="visual-section-header">
-            <span className="visual-overline">HAVANA NICE / EQUIPO</span>
-            <h1>Inicio</h1>
-            <p className="visual-intro">Todo lo que necesitas, en un solo espacio.</p>
-          </div>
-          <div className="visual-welcome">
-            <div><span className="visual-overline">TU ESPACIO PRIVADO</span>
-              <h2>{preview?'Espacio de trabajo':`Hola, ${displayName||'integrante'}.`}</h2>
-              <p>Eventos, repertorio y archivos del equipo. Todo aquí.</p></div>
-            <span className="visual-mark" aria-hidden="true">HN</span>
-          </div>
-          <div className="visual-grid">
-            {tabs.map(item=><button key={item.id} className="visual-tile" type="button"
-              disabled={preview&&item.id==='chat'} onClick={()=>navigate(item.id)}>
-              <span className="visual-tile-top">
-                <span className="visual-tile-icon" aria-hidden="true">{item.glyph}</span>
-                <span className="visual-tile-status">{item.ready?'DISPONIBLE':'EN PREPARACIÓN'}</span>
-              </span>
-              <strong>{item.label}</strong>
-              <span>{item.description}</span>
-              <span className="visual-tile-open" aria-hidden="true">Abrir ›</span>
+        {screen==='home'?<Suspense fallback={<div className="visual-empty" role="status">Abriendo Inicio…</div>}>
+          <MemberHome displayName={displayName} preview={preview} onNavigate={navigate}/>
+        </Suspense>:<> ›</span>
             </button>)}
           </div>
         </>:<>
