@@ -46,6 +46,12 @@ async function clientHash(request,env){
  const ip=request.headers.get('cf-connecting-ip')||'unknown';
  return sha256Hex(env.V2_ADMIN_LOGIN_SECRET+':'+ip);
 }
+export async function issueAdminSession(env){
+ const now=Date.now(),token=opaque(),expiresAt=now+SESSION_DURATION;
+ await env.DB.prepare('INSERT INTO chat_admin_sessions(token_hash,created_at,expires_at) VALUES(?,?,?)')
+  .bind(await sha256Hex(token),now,expiresAt).run();
+ return {token,expiresAt:new Date(expiresAt).toISOString(),role:'chat-admin'};
+}
 export async function handleAdminSessionApi(request,env,url,origin,respond){
  const reply=(body,status=200)=>respond(body,status,origin);
  if(url.pathname==='/api/chat/admin/auth/status'&&request.method==='GET'){
@@ -108,9 +114,7 @@ export async function handleAdminSessionApi(request,env,url,origin,respond){
    return reply({error:'Credencial no válida'},401);
  }
  await env.DB.prepare('DELETE FROM chat_admin_login_limits WHERE client_hash=?').bind(client).run();
- const token=opaque(),expiresAt=now+SESSION_DURATION;
- await env.DB.prepare('INSERT INTO chat_admin_sessions(token_hash,created_at,expires_at) VALUES(?,?,?)')
-   .bind(await sha256Hex(token),now,expiresAt).run();
+ const session=await issueAdminSession(env);
  // Only on a successful Administrator login: prune dead credentials and stale
  // rate-limit counters. Never prune musician sessions, Chat, or access history.
  // A transient cleanup error must not turn a valid login into a failure.
@@ -120,5 +124,5 @@ export async function handleAdminSessionApi(request,env,url,origin,respond){
      env.DB.prepare('DELETE FROM chat_admin_login_limits WHERE window_start<?').bind(now-24*HOUR),
    ]);
  }catch{/* Credential expiry remains enforced during verification. */}
- return reply({token,expiresAt:new Date(expiresAt).toISOString(),role:'chat-admin'});
+ return reply(session);
 }
