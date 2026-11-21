@@ -12,6 +12,12 @@
 - **NO activar backend de notificaciones sin** aplicar de forma controlada migración 0034, probar lectura/aislamiento/rollback y desplegar Worker desde el **bundle canónico Wrangler construido de main**. Las interfaces están preparadas, pero los avisos NO deben considerarse activos en producción todavía. No añadir sockets Chat alternativos, no almacenar tokens/notificaciones en localStorage y no realizar cambios a R2.
 - **Pendientes de extensión**: avisos Chat/Calendario/Familia/Repertorio usando el emisor compartido, indicador de sin leer en menú, acceso al elemento relevante y notificaciones push OS Android/PWA iPhone (permisos/consentimiento por dispositivo). Estas últimas no están implementadas. Ningún cambio Android de este lote está dentro de una APK publicada.
 
+## Administrador con interfaz del músico · 21/11
+
+- [x] Pantalla administrativa reutiliza `visual-shell`, `visual-header`, `visual-layout`, `visual-bottom-nav` y CSS `home.css` de los músicos. Navegación móvil: Inicio, Chat, Calendario, Repertorio, Familia, Equipo; acceso a Equipo siempre disponible desde la cabecera, manteniendo login y sesión Admin en memoria.
+- [x] Chat sigue siendo la conversación real de D1 con mismas vistas multimedia y botón individual para borrar mensajes para todo el equipo; **no** simular envío en nombre de músicos. Repertorio muestra listas como el músico, permite editar y borrar canciones, marcar realizados, reordenar y añadir especiales desde secciones desplegables. Calendario usa tarjetas de eventos comunes con controles Admin para editar, asignar o borrar y galería de recuerdos. Familia usa el mismo diseño de álbumes y conserva carga, portada, limpieza y BOOK.
+- [x] Cambios exclusivamente de interfaz de la **PWA Administración V2**, sin migrar datos ni tocar Supabase original, firma APK, D1, R2 o ChatRoom. Prueba permanente `tests/admin-editorial-parity.test.mjs` agregada al postbuild de Pages. **Pendiente** revisión visual física en Android/iPhone y verificación de compilación de Pages tras el último commit.
+
 ## 1. Contrato irrenunciable
 
 - **Una sola rama `main`**, un solo repositorio V2. Sin parches temporales, duplicar rutas o dejar motores alternativos. Borrar lógica verdaderamente sustituida solo después de verificar referencias y equivalencia funcional.
