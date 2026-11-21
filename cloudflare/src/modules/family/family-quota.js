@@ -14,8 +14,11 @@ const BOOK_SQL=`(SELECT COALESCE(SUM(size_bytes+optimized_size_bytes),0) FROM bo
 const BOOK_DELETE_PENDING_SQL=`(SELECT COALESCE(SUM(size_bytes),0) FROM book_delete_queue)`;
 const CALENDAR_PHOTOS_SQL=`(SELECT COALESCE(SUM(size_bytes+optimized_size_bytes),0) FROM calendar_event_photos)`;
 const CALENDAR_PHOTOS_PENDING_SQL=`(SELECT COALESCE(SUM(size_bytes),0) FROM calendar_photo_delete_queue)`;
+const AUDIO_SQL=`(SELECT COALESCE(SUM(size_bytes+cover_size_bytes),0) FROM audio_tracks)`;
+const AUDIO_DELETE_SQL=`(SELECT COALESCE(SUM(size_bytes),0) FROM audio_delete_queue)`;
 const GLOBAL_SQL=USAGE_SQL+'+'+CHAT_SQL+'+'+MEMBER_DELETE_PENDING_SQL+
- '+'+BOOK_SQL+'+'+BOOK_DELETE_PENDING_SQL+'+'+CALENDAR_PHOTOS_SQL+'+'+CALENDAR_PHOTOS_PENDING_SQL;
+ '+'+BOOK_SQL+'+'+BOOK_DELETE_PENDING_SQL+'+'+CALENDAR_PHOTOS_SQL+'+'+CALENDAR_PHOTOS_PENDING_SQL+
+ '+'+AUDIO_SQL+'+'+AUDIO_DELETE_SQL;
 const ACTIVE_SQL=`(SELECT COALESCE(SUM(size_bytes),0) FROM family_upload_sessions)`;
 const RESERVED_SQL=`(SELECT COALESCE(SUM(size_bytes),0) FROM family_upload_reservations)`;
 
