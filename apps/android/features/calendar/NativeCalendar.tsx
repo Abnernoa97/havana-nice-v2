@@ -8,7 +8,6 @@ export default function NativeCalendar({token}:{token:string}){
  const [events,setEvents]=useState<CalendarEvent[]>([]);
  const [open,setOpen]=useState<string|null>(null);
  const [loading,setLoading]=useState(true);
- const [archive,setArchive]=useState<CalendarEvent|null>(null);
  const [revision,setRevision]=useState(0);
  const [error,setError]=useState('');
  const pending=useRef<AbortController|null>(null);
@@ -20,8 +19,8 @@ export default function NativeCalendar({token}:{token:string}){
    const next=await getCalendarEvents(token,HAVANA_V2_DEV_API_BASE_URL,false,controller.signal);
    if(!controller.signal.aborted){
     setEvents(next);
-    // Do not leave an already-open private BOOK for an event that was removed or unassigned.
-    setArchive(previous=>previous?next.find(item=>item.id===previous.id&&calendarEventCompleted(item))||null:null);
+    // Collapse events that the musician can no longer access.
+    setOpen(previous=>previous&&next.some(item=>item.id===previous)?previous:null);
     setRevision(n=>n+1);setError('');
    }
   }catch(e){
@@ -70,11 +69,11 @@ export default function NativeCalendar({token}:{token:string}){
       </Text>}
       {!!item.showTime&&<Text style={styles.memoryFact}><Text style={styles.memoryBold}>Presentación  </Text>{item.showTime}</Text>}
      </View>
-     {item.memoryCount?<Pressable accessibilityRole="button"
-       style={styles.memoryButton} onPress={()=>setArchive(item)}>
-       <Text style={styles.memoryButtonTitle}>FOTOGRAFÍAS DEL EVENTO · {item.memoryCount}</Text>
-       <Text style={styles.memoryButtonSubtitle}>Abrir recuerdo con efecto BOOK ›</Text>
-      </Pressable>:<Text style={styles.memoryEmpty}>Administración incorporará aquí las fotografías de este día.</Text>}
+     {item.memoryCount?<View style={styles.memoryGallery}>
+       <Text style={styles.memoryGalleryTitle}>RECUERDOS DE ESTE DÍA · {item.memoryCount}</Text>
+       <NativeBook embedded token={token} calendarEventId={item.id} calendarTitle={item.title}
+        refreshKey={revision}/>
+      </View>:<Text style={styles.memoryEmpty}>Administración incorporará aquí las fotografías de este día.</Text>}
     </View>:<View style={styles.details}>
      <View style={styles.hours}>
       {([['Llamada',item.callTime],['Sonido',item.soundcheckTime],['Llegada',item.arrivalTime],
@@ -90,8 +89,6 @@ export default function NativeCalendar({token}:{token:string}){
      {(!!item.statusText||item.status!=='confirmed')&&<Text style={styles.info}>Estado: {item.statusText|| (item.status==='tentative'?'Tentativo':'Cancelado')}</Text>}
     </View>)}
    </View>})}
-  {archive?<NativeBook token={token} calendarEventId={archive.id} calendarTitle={archive.title}
-   refreshKey={revision} onClose={()=>setArchive(null)}/>:null}
  </View>;
 }
 const styles=StyleSheet.create({
@@ -119,10 +116,8 @@ const styles=StyleSheet.create({
  memoryFacts:{gap:9,paddingVertical:8},
  memoryFact:{fontSize:13,lineHeight:22,color:'#4F4030'},
  memoryBold:{fontWeight:'800',color:'#7B593A'},
- memoryButton:{padding:20,borderColor:'#D2B58B',borderWidth:1,borderRadius:8,
-  alignItems:'center',gap:10,backgroundColor:'#F9F0DA'},
- memoryButtonTitle:{fontSize:11,letterSpacing:1,color:'#785436',fontWeight:'800'},
- memoryButtonSubtitle:{fontSize:14,color:'#375942',fontWeight:'700'},
+ memoryGallery:{marginTop:3,gap:10},
+ memoryGalleryTitle:{textAlign:'center',fontSize:11,letterSpacing:1,color:'#785436',fontWeight:'800'},
  memoryEmpty:{padding:15,textAlign:'center',fontSize:12,color:'#826749'},
 
 });
