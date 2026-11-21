@@ -112,3 +112,10 @@
  .hn-family-cover-text{padding:27px 23px}
 }
 @media(prefers-reduced-motion:reduce){.hn-family-album:hover .hn-family-album-art{filter:none}}
+
+/* Keep six useful module targets; activity remains available from the header. */
+.visual-header .hn-header-notices{margin-left:auto;border:1px solid #a9977144;background:#ffffff14;
+ color:#e7dcc9;border-radius:50%;width:40px;height:40px;font-size:23px;display:grid;place-items:center;cursor:pointer}
+@media(max-width:750px){.visual-bottom-nav{grid-template-columns:repeat(6,minmax(0,1fr));padding-left:4px;padding-right:4px}
+ .visual-bottom-nav button{min-width:0;gap:3px}
+ .visual-bottom-nav button small{font-size:9px;letter-spacing:-.035em}}
