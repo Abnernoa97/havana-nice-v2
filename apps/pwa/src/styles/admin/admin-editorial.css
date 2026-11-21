@@ -120,3 +120,26 @@
 @media(prefers-reduced-motion:reduce){
  .hn-admin-editorial *,.hn-admin-editorial *::before,.hn-admin-editorial *::after{transition:none!important}
 }
+
+/* Only one operation panel is opened at a time. Songs stay readable first. */
+.hn-admin-editorial .hn-rep-admin-section .a-cal-summary{width:100%}
+.hn-admin-editorial .hn-rep-group{background:#fffcf7;border-radius:12px;padding:3px 5px 7px}
+.hn-admin-editorial .hn-rep-group>h3{font-size:12px;font-weight:750;letter-spacing:.13em;color:#795f3d;margin:16px 0 5px}
+.hn-admin-editorial .hn-admin-add-repertoire{justify-self:start;align-self:flex-start;background:#173d31;border:1px solid #173d31;color:#fff9ed;padding:11px 15px;border-radius:12px;font-size:12px;font-weight:750}
+.hn-admin-editorial .hn-admin-rep-editor{display:grid;gap:12px;background:#f5f1e7;border:1px solid #dfd6c7;padding:15px;border-radius:13px}
+.hn-admin-editorial .hn-admin-rep-editor>h3{font-size:15px;margin:9px 0 0}
+.hn-admin-editorial .hn-admin-rep-editor>input{width:100%;min-width:0;border:1px solid #d4c8b8;background:#fffefa;border-radius:10px;padding:12px;font-size:13px}
+.hn-admin-editorial .hn-admin-rep-row{display:flex;align-items:center;flex-wrap:wrap;gap:9px;min-width:0}
+.hn-admin-editorial .hn-admin-rep-row>div:not(.hn-admin-rep-actions){flex:1 1 150px;min-width:0;display:grid;gap:5px}
+.hn-admin-editorial .hn-admin-rep-actions{display:flex;flex-direction:row;flex-wrap:nowrap;gap:5px;align-items:center;flex:0 0 auto}
+.hn-admin-editorial .hn-admin-rep-actions button{min-height:33px;padding:7px 10px;font-size:11px;background:#edf2e9;border:1px solid #c6d4c5;border-radius:10px;color:#315a42}
+.hn-admin-editorial .hn-admin-rep-actions button.hn-admin-danger{background:#fff3ec;color:#935147;border-color:#e0c9bb}
+.hn-admin-editorial .hn-admin-rep-actions button:disabled{opacity:.4}
+.hn-admin-editorial .hn-admin-rep-event-items{display:grid;gap:2px}
+.hn-admin-editorial .hn-admin-rep-event-items input[type=checkbox]{width:23px;height:23px;accent-color:#315f48;flex:0 0 auto}
+@media(max-width:550px){
+ .hn-admin-editorial .hn-admin-rep-actions{width:auto;flex-wrap:wrap}
+ .hn-admin-editorial .hn-admin-rep-row>div:not(.hn-admin-rep-actions){flex:1 1 160px}
+ .hn-admin-editorial .hn-admin-rep-row>a{font-size:10px}
+ .hn-admin-editorial .hn-admin-rep-editor{padding:12px}
+}
