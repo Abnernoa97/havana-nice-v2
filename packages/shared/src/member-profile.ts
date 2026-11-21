@@ -11,7 +11,11 @@ export async function getTeamProfiles(token:string,base=API):Promise<MemberProfi
  });
  const data=await res.json().catch(()=>({error:'Servicio de perfiles pendiente.'})) as {profiles?:MemberProfile[];error?:string};
  if(!res.ok)throw new MemberProfileApiError(data.error||'No se pudieron cargar los perfiles.',res.status);
- return data.profiles||[];
+ return (data.profiles||[]).map(profile=>({
+  ...profile,
+  photoUrl:typeof profile.photoUrl==='string'&&/^\/api\/profile\/photo\/[a-f0-9]{32}$/.test(profile.photoUrl)
+   ?new URL(profile.photoUrl,base).toString():null,
+ }));
 }
 export async function uploadMyProfilePhoto(
  token:string,file:Blob,base=API

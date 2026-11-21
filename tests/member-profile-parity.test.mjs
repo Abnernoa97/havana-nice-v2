@@ -11,6 +11,8 @@ test('iPhone and Android share the same member profile contract, no new identity
  const shell=read('apps/pwa/src/app/VisualApp.tsx');
  const android=read('apps/android/app/NativeMemberHome.tsx');
  assert.match(contract,/\/api\/profile\/team/);
+ assert.match(contract,/new URL\(profile\.photoUrl,base\)\.toString\(\)/);
+ assert.match(contract,/photoUrl:typeof profile\.photoUrl/);
  assert.match(contract,/\/api\/profile\/me\/photo/);
  assert.match(server,/verifySession\(env,token\)/);
  assert.match(server,/member_profiles/);

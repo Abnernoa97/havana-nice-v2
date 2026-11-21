@@ -40,7 +40,7 @@ cloudflare/migrations/ → historial aditivo D1; NUNCA reescribir migraciones us
 tests/ + cloudflare/tests/ + scripts/ → reglas de seguridad y CI
 ```
 
-**HOME social, perfil (21/11):** Inicio blanco, bolitas del directorio real, foto personal obligatoria tras autorizar el nombre y editable desde Perfil; Notificaciones es sexta pestaña y Ajustes vive dentro de Perfil. API privada /api/profile/team y PUT /api/profile/me/photo, D1 0030 y R2 existente; grants 10 min, limpieza R2 al eliminar músico. La PWA tolera 404 durante despliegue Worker sin bloquear Chat; no afirmar función activa hasta migración + Worker + QA.
+**HOME social, perfil (21/11):** foto inicial y edición desde Perfil; Notificaciones es sexta pestaña y Ajustes queda en Perfil. API /api/profile/team y PUT /api/profile/me/photo privadas; Worker v69 activado al 100% (Wrangler), D1 0030 aplicada, R2 y 7 bindings conservados; grants 10 min y baja con cola R2. La PWA transforma URLs de avatar en rutas absolutas del Worker. QA fotográfico en dispositivo y APK Android pendientes; Chat/BOOK intactos.
 
 **Separación de carga PWA:** `React.lazy`/`Suspense` en HOME, Calendario, Repertorio, Familia, BOOK y pestañas Admin. La PWA tiene cuatro entradas HTML históricas, pero **no URLs HTML diferentes por módulo**; cada componente pesado se descarga bajo demanda. Comprobación con manifiesto real de Vite. Usuario aprobó navegación de iPhone el 08/11; pruebas físicas adicionales sin red siguen pendientes.
 
