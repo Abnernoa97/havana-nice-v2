@@ -127,6 +127,9 @@ jobs:
       - name: Test state viewer, public conversation, 24h audio and laugh migration
         run: node --test cloudflare/tests/story-conversation.test.mjs tests/story-conversation-ux.test.mjs tests/story-viewer-regression.test.mjs cloudflare/tests/story-laugh-migration.test.mjs
 
+      - name: Test PWA viewport, stable photo and native-like story controls
+        run: node --test tests/pwa-viewport-and-stories.test.mjs
+
       - name: Test authenticated and expiring profile photographs in private R2
         run: node --test cloudflare/tests/member-profile.test.mjs tests/member-profile-parity.test.mjs
 

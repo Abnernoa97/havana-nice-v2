@@ -40,7 +40,7 @@ cloudflare/migrations/ → historial aditivo D1; NUNCA reescribir migraciones us
 tests/ + cloudflare/tests/ + scripts/ → reglas de seguridad y CI
 ```
 
-**HOME social (21/11):** círculo 1:1, lotes de 1–5 fotos, 24h, cron 15min. iPhone: UNA foto fija sin 3D; barra JS superior 6s/foto con pausa al comentar. Controles mínimos SOBRE la imagen: comentar, enviar, voz, ❤️/👏/😂; comentarios públicos en panel flotante, sin cambiar altura de imagen. D1 0032+0033 conserva reacciones anteriores, voz R2 privado y grants temporales. Sin nuevo Chat/WS, Perfil ni BOOK; Android APK y QA Safari pendientes.
+**HOME social (21/11):** Estados 1–5 JPEG optimizados (720×1280, meta ~450KB), R2 24h. PWA fija grants 8min y foto memoizada: sin repintar al reaccionar. Barra JS 6s. Teclado iPhone: foto mantiene alto y solo el compositor sube. Voz centra sus controles, oculta emojis y texto. CSS móvil único en 4 entradas: inputs 16px y sin zoom por doble toque; Safari puede mantener pellizco. Calendario usa BOOK 3D/WebP persistente; no reutilizar en Estados aún. Android APK pendiente.
 
 **Separación de carga PWA:** `React.lazy`/`Suspense` en HOME, Calendario, Repertorio, Familia, BOOK y pestañas Admin. La PWA tiene cuatro entradas HTML históricas, pero **no URLs HTML diferentes por módulo**; cada componente pesado se descarga bajo demanda. Comprobación con manifiesto real de Vite. Usuario aprobó navegación de iPhone el 08/11; pruebas físicas adicionales sin red siguen pendientes.
 

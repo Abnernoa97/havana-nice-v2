@@ -7,10 +7,13 @@ const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
 test('Only one photo layer is rendered, independently of the number of uploaded states',()=>{
  const component=read('apps/pwa/src/features/stories/MemberStoryViewer.tsx');
  const style=read('apps/pwa/src/features/stories/stories.css');
- assert.equal((component.match(/className="hn-story-photo"/g)||[]).length,1);
+ const surface=read('apps/pwa/src/features/stories/StoryPhotoSurface.tsx');
+ assert.equal((surface.match(/className="hn-story-photo"/g)||[]).length,1);
+ assert.match(surface,/memo\(function StoryPhotoSurface/);
+ assert.match(component,/StoryPhotoSurface id=\{item.id\}/);
  assert.doesNotMatch(component,/<img\b|rotateY|page-next|page-previous|hn-story-image-stage/);
  assert.match(component,/new Image\(\)/); // background preload is not a visible DOM photo
- assert.match(component,/className="hn-story-canvas"/);
+ assert.match(surface,/className="hn-story-canvas"/);
  assert.match(style,/\.hn-story-canvas\{position:absolute;inset:0/);
  assert.match(style,/\.hn-story-photo\{position:absolute;inset:0/);
  assert.match(style,/background-size:contain/);
@@ -40,7 +43,7 @@ test('No footer occupies image height; small comments, text, voice and 3 reactio
  const component=read('apps/pwa/src/features/stories/MemberStoryViewer.tsx');
  const panel=read('apps/pwa/src/features/stories/StoryConversationPanel.tsx');
  const css=read('apps/pwa/src/features/stories/stories.css');
- assert.match(css,/\.hn-story-conversation\{position:absolute;bottom:0/);
+ assert.match(css,/\.hn-story-conversation\{position:absolute;bottom:var\(--hn-story-keyboard-inset,0px\)/);
  assert.match(css,/\.hn-story-comments-sheet\{position:absolute/);
  assert.match(css,/bottom:calc\(100% \+ 7px\)/);
  assert.match(css,/\.hn-story-composer\{display:flex/);
@@ -61,4 +64,18 @@ test('Other sections keep their own entry and no additional Chat connection is c
   assert.doesNotMatch(part,/new WebSocket|openChatSocket|startNamedChatSession|saveLocalChat|page-flip|PageFlip/);
  assert.match(read('apps/pwa/src/app/VisualApp.tsx'),/const MemberHome=lazy/);
  assert.match(read('apps/pwa/src/features/stories/StoryReactionShower.tsx'),/makeChatReactionParticles/);
+});
+
+test('Reactions reuse the same photo grant and a memoized canvas, never a new image',()=>{
+ const controller=read('apps/pwa/src/features/stories/useMemberStories.ts');
+ const surface=read('apps/pwa/src/features/stories/StoryPhotoSurface.tsx');
+ const viewport=read('apps/pwa/src/features/stories/useStoryKeyboardViewport.ts');
+ assert.match(controller,/photoGrants=useRef\(new Map/);
+ assert.match(controller,/now-saved\.issuedAt<8\*60\*1000/);
+ assert.match(controller,/return \{\.\.\.story,photoUrl:saved\.url\}/);
+ assert.match(controller,/photoGrants\.current\.delete\(id\)/);
+ assert.match(surface,/memo\(function StoryPhotoSurface/);
+ assert.doesNotMatch(surface,/useStoryConversation|useStoryPlayback|useState|refreshVersion/);
+ assert.match(viewport,/window\.visualViewport/);
+ assert.match(viewport,/viewport\.addEventListener\('resize',update\)/);
 });

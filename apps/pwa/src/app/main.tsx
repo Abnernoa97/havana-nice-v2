@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import App from './App';
 import '../styles/chat/chat.css';
 import '../styles/home/home.css';
+import '../styles/mobile-viewport.css';
 
 createRoot(document.getElementById('root')!).render(
   <React.StrictMode>

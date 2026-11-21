@@ -20,7 +20,8 @@ test('One full-screen photo and independently timed, visible 6s progress segment
  assert.match(css,/\.hn-story-photo\{position:absolute/);
  assert.match(css,/background-size:contain/);
  assert.match(css,/\.hn-story-conversation\{position:absolute/);
- assert.match(viewer,/className="hn-story-photo"/);
+ assert.match(viewer,/StoryPhotoSurface id=\{item\.id\}/);
+ assert.match(read('apps/pwa/src/features/stories/StoryPhotoSurface.tsx'),/className="hn-story-photo"/);
  assert.match(viewer,/className="hn-story-progress-track"/);
  assert.match(viewer,/style=\{\{width:\(index<position\?100:index===position\?progress:0\)/);
  assert.match(viewer,/useStoryPlayback\(item\?\.id,paused,next\)/);

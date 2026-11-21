@@ -1,11 +1,11 @@
 /* HAVANA NICE V2 · standalone 24h stories only. No BOOK, Chat or Profile selectors. */
 .hn-story-file{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
 .hn-story-overlay{position:fixed;inset:0;z-index:10000;background:rgba(5,12,9,.98);
- display:flex;align-items:center;justify-content:center;overflow:hidden;padding:0}
+ display:flex;align-items:flex-start;justify-content:center;overflow:hidden;padding:0}
 
 /* Static image plane: ONE image, ONE geometry, NO Safari 3D layer snapshots. */
 .hn-story-viewer{position:relative;isolation:isolate;flex:none;
- width:min(100%,460px);height:100%;height:100dvh;overflow:hidden;
+ width:min(100%,460px);height:var(--hn-story-fixed-height,100dvh);overflow:hidden;
  background:#0b100d;color:#fff;box-sizing:border-box}
 .hn-story-canvas{position:absolute;inset:0;z-index:1;overflow:hidden;background:#0a100d}
 .hn-story-photo{position:absolute;inset:0;display:block;width:100%;height:100%;
@@ -42,7 +42,7 @@
 .hn-story-tap-zones button:disabled{pointer-events:none}
 
 /* Reactions and composer FLOAT OVER the photo, never reserve layout height. */
-.hn-story-conversation{position:absolute;bottom:0;left:0;right:0;z-index:18;
+.hn-story-conversation{position:absolute;bottom:var(--hn-story-keyboard-inset,0px);left:0;right:0;z-index:18;
  display:flex;flex-direction:column;gap:5px;box-sizing:border-box;
  padding:8px 12px calc(12px + env(safe-area-inset-bottom));
  background:linear-gradient(to top,rgba(1,13,8,.94),rgba(1,13,8,.70) 70%,transparent);
@@ -62,7 +62,7 @@
 .hn-story-composer input{display:block;box-sizing:border-box;flex:1 1 auto;
  min-width:0;width:0;min-height:39px;padding:9px 13px;border-radius:22px;
  border:1px solid rgba(255,255,255,.45);outline:none;background:rgba(13,34,27,.74);
- color:#fff;font-size:13px}
+ color:#fff;font-size:16px}
 .hn-story-composer input::placeholder{color:#e3e9e4}
 .hn-story-composer .hn-story-send{flex:none;width:39px;height:39px;
  display:grid;place-items:center;padding:0;border:0;border-radius:50%;
@@ -134,4 +134,17 @@
  100%{opacity:0;transform:translate3d(var(--dx),var(--dy),0) scale(1.2)}
 }
 @media(prefers-reduced-motion:reduce){.hn-story-particle{animation-duration:.4s!important}}
-@media(min-width:480px){.hn-story-viewer{border-radius:18px;height:min(100dvh,840px)}}
+@media(min-width:480px){.hn-story-overlay{align-items:center}.hn-story-viewer{border-radius:18px;max-height:840px}}
+
+
+/* Exactly one activity: recording hides reactions, comments and typing.
+   Keep the SAME microphone component mounted or Safari stops its MediaRecorder. */
+.hn-story-conversation.is-recording{gap:0;background:linear-gradient(to top,#071b13e8,transparent)}
+.hn-story-conversation.is-recording .hn-story-mini-actions,
+.hn-story-conversation.is-recording .hn-story-comments-sheet{display:none}
+.hn-story-conversation.is-recording .hn-story-composer{justify-content:center;align-items:center}
+.hn-story-conversation.is-recording .hn-story-voice{display:flex;justify-content:center;
+ align-items:center;gap:8px;max-width:100%;padding:9px 10px;border-radius:20px;
+ border:1px solid #b3bbaa57;background:#123629e8;box-shadow:0 5px 16px #0003}
+.hn-story-conversation.is-recording .hn-story-voice button{background:#234b38}
+.hn-story-conversation.is-recording .hn-story-recording{font-size:13px;font-weight:700}

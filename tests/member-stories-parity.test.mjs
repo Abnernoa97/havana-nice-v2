@@ -53,7 +53,7 @@ test('Android uses the same story backend, a separate NativeStories UI and a sin
  assert.doesNotMatch(nativeHook+stories,/openFamilyRealtime|new WebSocket|startNamedChatSession|saveNativeLocalChat/);
 });
 
-test('One five-photo selection, latest-state thumbnail, timed segments and light 3D stay independent of BOOK',()=>{
+test('Five-photo selection, stable image and timer stay independent of the 3D BOOK',()=>{
  const shared=read('packages/shared/src/member-stories.ts');
  const worker=read('cloudflare/src/modules/stories/stories.js');
  const strip=read('apps/pwa/src/features/home/TeamStoriesStrip.tsx');
@@ -75,7 +75,8 @@ test('One five-photo selection, latest-state thumbnail, timed segments and light
  assert.match(strip,/onStoryPhotoError\(story.id\)/);
  assert.match(player,/className="hn-story-progress-fill"/);
  assert.match(player,/useStoryPlayback\(item\?\.id,paused,next\)/);
- assert.match(player,/className="hn-story-photo"/);
+ assert.match(player,/StoryPhotoSurface id=\{item\.id\}/);
+ assert.match(read('apps/pwa/src/features/stories/StoryPhotoSurface.tsx'),/className="hn-story-photo"/);
  assert.match(styles,/\.hn-story-photo\{position:absolute/);
  assert.doesNotMatch(player+styles,/rotateY|perspective|hn-story-turn-next/);
  assert.doesNotMatch(player+styles,/page-flip|PageFlip|react-pageflip|WebGL|new WebSocket/);

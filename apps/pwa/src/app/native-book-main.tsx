@@ -2,6 +2,7 @@ import React,{lazy,Suspense,useEffect,useState} from 'react';
 import {createRoot} from 'react-dom/client';
 import {parseNativeBookContext,type NativeBookContext} from './native-book-context';
 import './native-book-reader.css';
+import '../styles/mobile-viewport.css';
 
 // The exact same lazily loaded PageFlip renderer as the authorized PWA.
 // No browser login, second renderer, URL token or persistent browser storage.

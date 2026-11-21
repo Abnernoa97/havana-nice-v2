@@ -1,0 +1,11 @@
+/* HAVANA NICE V2 · all four PWA entrypoints, one mobile viewport policy.
+ * Safari focus zooms controls with font-size below 16px. Text is kept legible
+ * at the actual size rather than scaling a 12px box with CSS transforms.
+ * touch-action:manipulation disables browser double-tap zoom without breaking
+ * ordinary swipes, page scrolling, BOOK turns or OS accessibility zoom. */
+@media (hover:none) and (pointer:coarse) {
+ html,body{touch-action:manipulation;-webkit-text-size-adjust:100%;text-size-adjust:100%}
+ button,a,[role="button"]{touch-action:manipulation}
+ input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]),
+ textarea,select{font-size:16px!important}
+}

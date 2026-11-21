@@ -61,7 +61,7 @@ export default function StoryVoiceRecorder({disabled,onSend,onRecording}:{
  };
  return <div className="hn-story-voice">
   {recording?<>
-   <span className="hn-story-recording">● {seconds}s / 45s</span>
+   <span className="hn-story-recording">● Grabando voz · {seconds}s / 45s</span>
    <button type="button" onClick={()=>stop(true)} aria-label="Cancelar audio">Cancelar</button>
    <button type="button" onClick={()=>stop()} aria-label="Enviar mensaje de voz">Enviar voz</button>
   </>:<button type="button" disabled={disabled} onClick={()=>void start()}

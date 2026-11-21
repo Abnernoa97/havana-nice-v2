@@ -1,8 +1,10 @@
-import {useCallback,useEffect,useState} from 'react';
+import {useCallback,useEffect,useState,type CSSProperties} from 'react';
 import type {MemberStory} from '@havana/shared';
 import StoryConversationPanel from './StoryConversationPanel';
 import StoryReactionShower,{type StoryReactionBurst} from './StoryReactionShower';
 import {useStoryPlayback} from './useStoryPlayback';
+import {useStoryKeyboardViewport} from './useStoryKeyboardViewport';
+import StoryPhotoSurface from './StoryPhotoSurface';
 
 type Props={items:MemberStory[];myId:string|undefined;token:string;refreshVersion:number;
  onClose:()=>void;onDelete:(id:string)=>Promise<boolean>;onPhotoError:(id:string)=>void};
@@ -19,6 +21,7 @@ export default function MemberStoryViewer({items,myId,token,refreshVersion,
  const [commentPaused,setCommentPaused]=useState(false);
  const [hidden,setHidden]=useState(typeof document!=='undefined'&&document.hidden);
  const [burst,setBurst]=useState<StoryReactionBurst|null>(null);
+ const viewport=useStoryKeyboardViewport();
  const item=items[Math.min(position,items.length-1)];
  const failedPhoto=!!item&&failed.includes(item.photoUrl);
  const paused=deleting||held||hidden||commentPaused||(loadedUrl!==item?.photoUrl&&!failedPhoto);
@@ -28,6 +31,11 @@ export default function MemberStoryViewer({items,myId,token,refreshVersion,
   return()=>document.removeEventListener('visibilitychange',change);
  },[]);
  useEffect(()=>{if(!item||item.expiresAt<=Date.now())onClose();},[item,onClose]);
+ useEffect(()=>{
+  const previous=document.body.style.overflow;
+  document.body.style.overflow='hidden';
+  return()=>{document.body.style.overflow=previous;};
+ },[]);
  // Load outside the DOM: only ONE CSS background is mounted. Avoids Safari's
  // accumulated WebKit image layers and keeps playback paused until loaded.
  useEffect(()=>{
@@ -70,13 +78,12 @@ export default function MemberStoryViewer({items,myId,token,refreshVersion,
    if(!typing&&event.key==='ArrowRight')next();
    if(!typing&&event.key==='ArrowLeft')previous();
   }}>
-  <div className="hn-story-viewer">
-   <div className="hn-story-canvas" aria-label={'Foto '+(position+1)+' de '+items.length}>
-    {failedPhoto?<div className="hn-story-unavailable">No se pudo cargar esta fotografía.</div>:
-     <div key={item.id} className="hn-story-photo" role="img"
-      aria-label={'Estado de '+item.name}
-      style={{backgroundImage:'url("'+item.photoUrl+'")'}}/>}
-   </div>
+  <div className="hn-story-viewer" style={{
+   '--hn-story-fixed-height':viewport.fixedHeight+'px',
+   '--hn-story-keyboard-inset':viewport.keyboardInset+'px'
+  } as CSSProperties}>
+   <StoryPhotoSurface id={item.id} name={item.name}
+    url={item.photoUrl} failed={failedPhoto}/>
    <div className="hn-story-progress" role="progressbar" aria-label="Avance del estado"
     aria-valuemin={0} aria-valuemax={items.length*100} aria-valuenow={position*100+Math.round(progress)}>
     {items.map((story,index)=><span key={story.id} className="hn-story-progress-track">

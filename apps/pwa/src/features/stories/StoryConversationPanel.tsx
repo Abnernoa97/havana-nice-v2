@@ -36,7 +36,7 @@ export default function StoryConversationPanel({story,token,refreshVersion,onPau
   void data.react(emoji);
  };
  const reactions:StoryEmoji[]=['❤️','👏','😂'];
- return <section className="hn-story-conversation"
+ return <section className={"hn-story-conversation"+(recording?" is-recording":"")}
   aria-label={'Reacciones y comentarios públicos del estado de '+story.name}>
   {expanded&&<div className="hn-story-comments-sheet" aria-label="Comentarios públicos del equipo">
    <div className="hn-story-sheet-heading">

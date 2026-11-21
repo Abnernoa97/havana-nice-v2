@@ -23,9 +23,18 @@ export async function prepareStoryPhoto(input:File):Promise<Blob>{
   const contain=Math.min(720/img.naturalWidth,1280/img.naturalHeight);
   const w=img.naturalWidth*contain,h=img.naturalHeight*contain;
   ctx.drawImage(img,(720-w)/2,(1280-h)/2,w,h);
-  const photo=await new Promise<Blob>((resolve,reject)=>{
-   canvas.toBlob(blob=>blob?resolve(blob):reject(Error('No se pudo preparar el estado.')),'image/jpeg',0.78);
+  // Store ONLY the 720px optimized JPEG in private R2, never the full original.
+  // Safari can decode 5 short stories rapidly when individual files are ~400 KB.
+  const encode=(quality:number)=>new Promise<Blob>((resolve,reject)=>{
+   canvas.toBlob(blob=>blob?resolve(blob):reject(Error('No se pudo preparar el estado.')),
+    'image/jpeg',quality);
   });
+  let photo=await encode(0.74);
+  for(const quality of [0.63,0.53,0.44]){
+   if(photo.size<=450_000)break;
+   photo=await encode(quality);
+  }
+  canvas.width=0;canvas.height=0; // Release pixels immediately before the next of 5 photos.
   if(!photo.size||photo.size>1_500_000)throw new Error('La imagen supera 1.5 MB.');
   return photo;
  }finally{URL.revokeObjectURL(url);}

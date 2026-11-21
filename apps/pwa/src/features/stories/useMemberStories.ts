@@ -10,13 +10,39 @@ export function useMemberStories(token:string|undefined,refreshVersion:number){
  const [preparing,setPreparing]=useState(0);
  const requestId=useRef(0);
  const retryIds=useRef(new Set<string>());
+ // Server mints a fresh 10-minute R2 photo grant on EACH team refresh.
+ // Reactions trigger Family invalidation, but the actual photo never changed.
+ // Pin that photo URL for eight minutes so ❤️/👏/😂 never repaint the canvas.
+ const photoGrants=useRef(new Map<string,{url:string;issuedAt:number;createdAt:number;expiresAt:number}>());
+ const previousToken=useRef(token);
+ if(previousToken.current!==token){
+  previousToken.current=token;
+  photoGrants.current.clear();
+  retryIds.current.clear();
+ }
+ // A different musician session must not show the previous user's photo data.
+ useEffect(()=>{setStories([]);setError('');},[token]);
  const refresh=useCallback(async()=>{
   if(!token){setStories([]);return;}
   const id=++requestId.current;
   try{
    const items=await getMemberStories(token);
    if(id!==requestId.current)return;
-   setStories(items);setError('');
+   const now=Date.now(),validIds=new Set(items.map(s=>s.id));
+   for(const oldId of photoGrants.current.keys()){
+    if(!validIds.has(oldId))photoGrants.current.delete(oldId);
+   }
+   const stable=items.map(story=>{
+    const saved=photoGrants.current.get(story.id);
+    if(saved&&saved.createdAt===story.createdAt&&saved.expiresAt===story.expiresAt&&
+     now-saved.issuedAt<8*60*1000)
+     return {...story,photoUrl:saved.url};
+    photoGrants.current.set(story.id,{
+     url:story.photoUrl,issuedAt:now,createdAt:story.createdAt,expiresAt:story.expiresAt
+    });
+    return story;
+   });
+   setStories(stable);setError('');
   }catch(e){
    if(id!==requestId.current)return;
    setError(e instanceof Error?e.message:'No se pudieron cargar los estados.');
@@ -69,7 +95,10 @@ export function useMemberStories(token:string|undefined,refreshVersion:number){
  },[token,saving,refresh]);
  const retryPhoto=useCallback((id:string)=>{
   if(!id||retryIds.current.has(id))return;
-  retryIds.current.add(id);void refresh();
+  retryIds.current.add(id);
+  // Invalid or expired grant: allow the next GET to mint a replacement.
+  photoGrants.current.delete(id);
+  void refresh();
  },[refresh]);
  return {stories,error,saving,preparing,publish,remove,retryPhoto,refresh,clearError:()=>setError('')};
 }
