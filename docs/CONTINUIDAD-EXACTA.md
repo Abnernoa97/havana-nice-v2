@@ -38,7 +38,7 @@
 - Worker refactor: una clase Durable Object y un `index.ts` delgado. Worker de carátulas publicado desde el 12/11; siete bindings preservados. El control del 20/11 validó las fuentes y pruebas, sin subir otro Worker ni compilar nueva APK. Los smoke tests históricos de v66 siguen documentados en Git.
 - No confundir compilación + pruebas con experiencia física. En iPhone la navegación modular fue confirmada por usuario; el lector BOOK 3D Android/PWA también fue confirmado después de la corrección. Siguen pendientes modo avión, Recuerdos y QA integral de Chat/Familia/Calendario.
 
-**21/11 · Estados:** nueva sección social independiente de Perfil. + agrega foto temporal, círculo con anillo abre visor; perfil superior edita foto permanente. Expira exactamente tras 24h, D1 0031, R2 privado, grants cortos, limpieza cron cada 15 min. Módulo propio iPhone/Android; sin nuevo Chat ni conexión de WebSocket. Verificar compilación/Worker, QA fotos en iPhone; APK Android pendiente. Reacciones y radio después.
+**21/11 · Estados lote:** máximo cinco fotos en una selección/publicación atómica; última foto de estado visible en círculo mientras siga activa, luego vuelve avatar de Perfil. Barra segmentada automática de 6 segundos/foto y paso 3D ligero sin cargar BOOK; foto horizontal en fondo difuminado. iPhone PWA publicada tras tests; Android módulo nativo preparado sin APK, mismo Worker. Caducidad 24h y cron 15m sin cambios.
 
 ## Próximos pasos en orden
 

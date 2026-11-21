@@ -40,7 +40,7 @@ cloudflare/migrations/ → historial aditivo D1; NUNCA reescribir migraciones us
 tests/ + cloudflare/tests/ + scripts/ → reglas de seguridad y CI
 ```
 
-**HOME social (21/11):** HOME blanco y círculos simétricos. Avatar permanente solo en Perfil; botón + independiente publica fotografía de estado por 24h exactas. D1 0031, R2 privado, /api/stories, grants temporales y borrado automático cada 15 min; mismo Chat autorizado y canal Familia de invalidación, sin nuevas sesiones. Estado para iPhone PWA y Android nativo, Android sin nueva APK hasta QA. Reacciones/respuestas y radio quedan para fase posterior.
+**HOME social (21/11):** círculos simétricos; muestra la última foto del estado activo, si no hay estado muestra avatar del Perfil. + permite seleccionar 1–5 fotos en un solo lote R2/D1, sin mezcla con avatar ni Chat. Visor por integrante con barras automáticas de 6 s/foto, pausa en segundo plano, transición CSS 3D ligera (no PageFlip/BOOK), iPhone con fondo difuminado; Android nativo preparado sin APK. Estados siguen caducando a 24h exactas y cron 15m; revisión física iPhone pendiente.
 
 **Separación de carga PWA:** `React.lazy`/`Suspense` en HOME, Calendario, Repertorio, Familia, BOOK y pestañas Admin. La PWA tiene cuatro entradas HTML históricas, pero **no URLs HTML diferentes por módulo**; cada componente pesado se descarga bajo demanda. Comprobación con manifiesto real de Vite. Usuario aprobó navegación de iPhone el 08/11; pruebas físicas adicionales sin red siguen pendientes.
 

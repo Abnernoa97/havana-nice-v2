@@ -96,6 +96,73 @@ async function uploadStory(request,env,actor,origin,ctx){
  return respond({ok:true,id,createdAt:now,expiresAt:now+STORY_DURATION_MS},201,origin);
 }
 
+// One multipart request, one D1 transaction: choose up to 5 photos in one action.
+// R2 is written first; any failure is rolled back and queued for durable deletion.
+async function uploadStoryBatch(request,env,actor,origin,ctx){
+ const type=(request.headers.get('content-type')||'').toLowerCase();
+ if(!type.startsWith('multipart/form-data;'))
+  return respond({error:'Selecciona entre 1 y 5 fotografías.'},415,origin);
+ const declared=Number(request.headers.get('content-length'));
+ if(request.headers.has('content-length')&&
+  (!Number.isSafeInteger(declared)||declared<=0||declared>8_000_000))
+  return respond({error:'El lote supera el tamaño permitido.'},413,origin);
+ let form;
+ try{form=await request.formData();}
+ catch{return respond({error:'No se pudieron leer las fotografías.'},400,origin);}
+ const files=form.getAll('photos');
+ if(files.length<1||files.length>5||[...form.keys()].some(k=>k!=='photos'))
+  return respond({error:'Selecciona entre 1 y 5 fotografías.'},400,origin);
+ const now=Date.now();
+ const existing=await env.DB.prepare(
+  'SELECT COUNT(*) AS n FROM member_stories WHERE actor_id=? AND expires_at>?'
+ ).bind(actor.actorId,now).first();
+ if(Number(existing?.n||0)+files.length>MAX_ACTIVE_PER_MEMBER)
+  return respond({error:'El límite es de 12 estados activos por integrante.'},409,origin);
+ const contents=[];
+ for(const part of files){
+  if(!(part instanceof Blob)||part.type.toLowerCase()!=='image/jpeg'||
+   part.size<4||part.size>MAX_BYTES)
+   return respond({error:'Cada foto debe ser JPG y pesar menos de 1.5 MB.'},415,origin);
+  const bytes=await part.arrayBuffer(),head=new Uint8Array(bytes);
+  if(head[0]!==255||head[1]!==216||head[head.length-2]!==255||head[head.length-1]!==217)
+   return respond({error:'Una fotografía JPG está dañada.'},415,origin);
+  contents.push(bytes);
+ }
+ const records=contents.map((bytes,i)=>{
+  const id=crypto.randomUUID();
+  return {id,actorId:actor.actorId,object_key:
+   'stories/'+encodeURIComponent(actor.actorId)+'/'+id+'.jpg',
+   byte_size:bytes.byteLength,createdAt:now+i,expiresAt:now+i+STORY_DURATION_MS,
+   bytes};
+ });
+ const uploaded=[];
+ try{
+  for(const item of records){
+   await env.MEDIA_BUCKET.put(item.object_key,item.bytes,{httpMetadata:{contentType:'image/jpeg'}});
+   uploaded.push(item);
+  }
+  await env.DB.batch(records.map(item=>env.DB.prepare(
+   'INSERT INTO member_stories(id,actor_id,object_key,byte_size,created_at,expires_at) '+
+   'VALUES(?,?,?,?,?,?)'
+  ).bind(item.id,item.actorId,item.object_key,item.byte_size,item.createdAt,item.expiresAt)));
+ }catch{
+  // Track every uploaded key before attempting cleanup, including R2 outages.
+  for(const item of uploaded){
+   try{
+    await env.DB.prepare(
+     'INSERT OR IGNORE INTO r2_member_delete_queue(object_key,actor_id,multipart_upload_id,size_bytes,queued_at) '+
+     'VALUES(?,?,NULL,?,?)'
+    ).bind(item.object_key,item.actorId,item.byte_size,Date.now()).run();
+   }catch{}
+   await discardObject(env,item);
+  }
+  return respond({error:'No se pudo publicar el lote completo. Ninguna foto se ha añadido.'},503,origin);
+ }
+ if(ctx?.waitUntil)ctx.waitUntil(notifyFamilyClients(env));
+ return respond({ok:true,count:records.length,
+  ids:records.map(x=>x.id),expiresAt:records.map(x=>x.expiresAt)},201,origin);
+}
+
 async function discardObject(env,row){
  try{
   await env.MEDIA_BUCKET.delete(row.object_key);
@@ -157,6 +224,8 @@ export async function handleStoriesApi(request,env,url,origin,verifySession,ctx)
    return listStories(env,url,origin,ctx);
   if(url.pathname==='/api/stories/me/photo'&&request.method==='PUT')
    return uploadStory(request,env,actor,origin,ctx);
+  if(url.pathname==='/api/stories/me/batch'&&request.method==='POST')
+   return uploadStoryBatch(request,env,actor,origin,ctx);
   if(url.pathname.startsWith('/api/stories/me/')&&request.method==='DELETE')
    return removeOwnStory(request,env,actor,url,origin,ctx);
   return respond({error:'Ruta no encontrada'},404,origin);

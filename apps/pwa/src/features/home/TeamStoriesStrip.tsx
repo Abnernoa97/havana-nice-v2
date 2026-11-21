@@ -1,46 +1,46 @@
 import type {MemberProfile,MemberStory} from '@havana/shared';
 import PrivateProfileAvatar from '../profile/PrivateProfileAvatar';
 
+// The circle belongs to the newest 24h story. The header photo belongs to Profile.
 export default function TeamStoriesStrip({displayName,actorId,profiles,preview,canEditProfile,
- onPhotoError,stories,onOpenStory,onAddStory}:{
+ onPhotoError,onStoryPhotoError,stories,onOpenStory,onAddStory}:{
  displayName:string|undefined;actorId:string|undefined;profiles:readonly MemberProfile[];
  preview:boolean;canEditProfile:boolean;onPhotoError:(memberId:string)=>void;
- stories:readonly MemberStory[];onOpenStory:(actorId:string)=>void;onAddStory:()=>void;
+ onStoryPhotoError:(storyId:string)=>void;stories:readonly MemberStory[];
+ onOpenStory:(actorId:string)=>void;onAddStory:()=>void;
 }){
  const me=displayName?.trim()||'Mi perfil';
  const mine=profiles.find(p=>p.actorId===actorId);
  const visible=profiles.filter(person=>person.actorId!==actorId&&person.name.toLowerCase()!==me.toLowerCase());
- const hasStory=(id:string|undefined)=>!!id&&stories.some(story=>story.actorId===id);
+ const newest=(id:string|undefined)=>id?stories.filter(s=>s.actorId===id&&s.expiresAt>Date.now())
+  .reduce<MemberStory|null>((recent,story)=>!recent||story.createdAt>recent.createdAt||
+   (story.createdAt===recent.createdAt&&story.id>recent.id)?story:recent,null):null;
+ const circle=(person:{actorId:string;name:string;photoUrl:string|null},own=false)=>{
+  const story=newest(person.actorId);
+  const count=stories.filter(s=>s.actorId===person.actorId).length;
+  return <div className={'hn-moment-person'+(own?' hn-moment-self':'')} key={person.actorId}>
+   <div className="hn-moment-avatar-slot">
+    <button type="button" className={'hn-moment-circle'+(story?' hn-moment-has-story':'')}
+     onClick={()=>onOpenStory(person.actorId)} disabled={!story}
+     aria-label={story?'Ver '+count+' estados de '+person.name:'Sin estados de '+person.name}>
+     <span className="hn-moment-photo">
+      <PrivateProfileAvatar photoUrl={story?.photoUrl||person.photoUrl} name={person.name}
+       fallbackClassName="hn-moment-initial" onImageFailure={()=>{
+        if(story)onStoryPhotoError(story.id);
+        else onPhotoError(person.actorId);
+       }}/>
+     </span>
+    </button>
+    {own&&<button type="button" className="hn-moment-add" onClick={onAddStory}
+     disabled={preview||!canEditProfile} aria-label="Publicar hasta 5 fotos en estados de 24 horas">+</button>}
+   </div>
+   <span className="hn-moment-name">{own&&preview?'Mi estado':person.name}</span>
+  </div>;
+ };
  return <div className="hn-moments-wrap">
   <div className="hn-moments-strip" aria-label="Estados del equipo">
-   <div className="hn-moment-person hn-moment-self">
-    <div className="hn-moment-avatar-slot">
-     <button type="button" className={'hn-moment-circle'+(hasStory(actorId)?' hn-moment-has-story':'')}
-      onClick={()=>actorId&&onOpenStory(actorId)} disabled={!hasStory(actorId)}
-      aria-label={hasStory(actorId)?'Ver mis estados':'Todavía no tengo estados'}>
-      <span className="hn-moment-photo">
-       <PrivateProfileAvatar photoUrl={mine?.photoUrl} name={me} fallbackClassName="hn-moment-initial"
-        onImageFailure={()=>onPhotoError(mine?.actorId||'')}/>
-      </span>
-     </button>
-     <button type="button" className="hn-moment-add" onClick={onAddStory}
-      disabled={preview||!canEditProfile} aria-label="Publicar estado de 24 horas">+</button>
-    </div>
-    <span className="hn-moment-name">{preview?'Mi estado':me}</span>
-   </div>
-   {visible.map(person=><div className="hn-moment-person" key={person.actorId}>
-    <div className="hn-moment-avatar-slot">
-     <button type="button" className={'hn-moment-circle'+(hasStory(person.actorId)?' hn-moment-has-story':'')}
-      onClick={()=>onOpenStory(person.actorId)} disabled={!hasStory(person.actorId)}
-      aria-label={hasStory(person.actorId)?'Ver estados de '+person.name:'Sin estados de '+person.name}>
-      <span className="hn-moment-photo">
-       <PrivateProfileAvatar photoUrl={person.photoUrl} name={person.name} fallbackClassName="hn-moment-initial"
-        onImageFailure={()=>onPhotoError(person.actorId)}/>
-      </span>
-     </button>
-    </div>
-    <span className="hn-moment-name">{person.name}</span>
-   </div>)}
+   {circle({actorId:actorId||'preview',name:me,photoUrl:mine?.photoUrl||null},true)}
+   {visible.map(person=>circle(person))}
   </div>
  </div>;
 }

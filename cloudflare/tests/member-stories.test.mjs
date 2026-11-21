@@ -32,7 +32,7 @@ function setup(){
  const env={DB,MEDIA_BUCKET};
  async function api(path,method='GET',who='fer',data=null,mime='image/jpeg'){
   const headers=who?{Authorization:'Bearer '+who}:{};
-  if(data){headers['content-type']=mime;headers['content-length']=String(data.byteLength);}
+  if(data&&!(data instanceof FormData)){headers['content-type']=mime;headers['content-length']=String(data.byteLength);}
   const req=new Request(new URL(path,BASE),{method,headers,body:data});
   return handleStoriesApi(req,env,new URL(req.url),'',async(_,token)=>{
    if(token==='fer')return {actorId:FER,displayName:'Fer'};
@@ -111,4 +111,59 @@ test('An inactive member loses the ability to expose stories',async()=>{
  assert.equal((await e.api(result.stories[0].photoUrl,'GET','')).status,404);
  const roster=await (await e.api('/api/stories/team','GET','noa')).json();
  assert.equal(roster.stories.length,0);
+});
+
+function batch(count,invalidAt=-1){
+ const form=new FormData();
+ for(let i=0;i<count;i++){
+  const bytes=i===invalidAt?new Uint8Array([1,2,3,4]):
+   new Uint8Array([255,216,255,224,i,2,3,255,217]);
+  form.append('photos',new Blob([bytes],{type:'image/jpeg'}),'estado-'+i+'.jpg');
+ }
+ return form;
+}
+test('One upload publishes five photos in order with exactly 24h lifetime',async()=>{
+ const e=setup();
+ const reply=await e.api('/api/stories/me/batch','POST','fer',batch(5));
+ assert.equal(reply.status,201);
+ const payload=await reply.json();
+ assert.equal(payload.count,5);
+ assert.equal(e.objects.size,5);
+ const items=(await (await e.api('/api/stories/team')).json()).stories;
+ assert.equal(items.length,5);
+ assert.deepEqual(items.map(x=>x.id),payload.ids,'Gallery selection order must be preserved');
+ assert.ok(items.every(x=>x.expiresAt-x.createdAt===STORY_DURATION_MS));
+ for(let i=1;i<items.length;i++)assert.ok(items[i].createdAt>items[i-1].createdAt);
+});
+test('Six photos, mixed invalid format, and exceeding the active limit reject the entire batch',async()=>{
+ const e=setup();
+ assert.equal((await e.api('/api/stories/me/batch','POST','fer',batch(6))).status,400);
+ assert.equal((await e.api('/api/stories/me/batch','POST','fer',batch(3,1))).status,415);
+ assert.equal(e.objects.size,0);
+ const now=Date.now();
+ for(let i=0;i<10;i++)e.db.prepare('INSERT INTO member_stories VALUES(?,?,?,?,?,?)').run(
+  '123e4567-e89b-42d3-a456-'+String(i).padStart(12,'0'),FER,'stories/test/'+i,9,now,now+STORY_DURATION_MS
+ );
+ assert.equal((await e.api('/api/stories/me/batch','POST','fer',batch(3))).status,409);
+ assert.equal(e.objects.size,0);
+ assert.equal(e.db.prepare('SELECT COUNT(*) AS n FROM member_stories').get().n,10);
+});
+test('R2 failure on the third photo rolls back earlier uploads without creating states',async()=>{
+ const e=setup();
+ const original=e.env.MEDIA_BUCKET.put.bind(e.env.MEDIA_BUCKET);
+ let calls=0;
+ e.env.MEDIA_BUCKET.put=async(...args)=>{
+  calls++;if(calls===3)throw Error('R2 temporarily unavailable');
+  return original(...args);
+ };
+ const reply=await e.api('/api/stories/me/batch','POST','fer',batch(5));
+ assert.equal(reply.status,503);
+ assert.equal(e.objects.size,0);
+ assert.equal(e.db.prepare('SELECT COUNT(*) AS n FROM member_stories').get().n,0);
+ assert.equal(e.db.prepare('SELECT COUNT(*) AS n FROM r2_member_delete_queue').get().n,0);
+});
+test('Bulk upload requires the same authorized musician identity as single photo upload',async()=>{
+ const e=setup();
+ assert.equal((await e.api('/api/stories/me/batch','POST','',batch(2))).status,401);
+ assert.equal(e.objects.size,0);
 });

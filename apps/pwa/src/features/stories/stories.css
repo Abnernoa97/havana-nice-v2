@@ -5,15 +5,25 @@
 .hn-story-viewer,.hn-story-publish{position:relative;width:min(100%,410px);height:min(100dvh,840px);
  display:flex;flex-direction:column;overflow:hidden;border-radius:18px;background:#131a17;color:#fff}
 .hn-story-progress{position:absolute;left:14px;right:14px;top:11px;z-index:2;display:flex;gap:3px}
-.hn-story-progress span{flex:1;height:3px;border-radius:2px;background:rgba(255,255,255,.34)}
-.hn-story-progress span.completed{background:#fff}
+.hn-story-progress-track{flex:1;height:3px;border-radius:3px;overflow:hidden;background:rgba(255,255,255,.34)}
+.hn-story-progress-fill{display:block;width:100%;height:100%;background:#fff;transform-origin:left;transform:scaleX(0)}
+.hn-story-progress-fill.done{transform:scaleX(1)}
+.hn-story-progress-fill.playing{animation:hn-story-countdown linear forwards}
+@keyframes hn-story-countdown{from{transform:scaleX(0)}to{transform:scaleX(1)}}
 .hn-story-toolbar{display:flex;align-items:center;justify-content:space-between;
  padding:23px 19px 13px;position:relative;z-index:2;background:#161d1b}
 .hn-story-toolbar div{display:flex;flex-direction:column;gap:4px}
 .hn-story-toolbar strong{font-size:15px;color:#fff}
 .hn-story-toolbar small{font-size:11px;color:#ccc}
 .hn-story-toolbar button,.hn-story-x{background:transparent;border:0;color:#fff;font-size:31px;min-height:42px;min-width:42px}
-.hn-story-image{width:100%;flex:1;min-height:0;object-fit:contain;background:#0b100d}
+.hn-story-image-stage{flex:1;min-height:0;display:flex;align-items:stretch;overflow:hidden;
+ perspective:1100px;background:#0b100d;cursor:pointer;touch-action:pan-y}
+.hn-story-image{width:100%;height:100%;object-fit:contain;flex:none;background:#0b100d;
+ backface-visibility:hidden;will-change:transform,opacity}
+.hn-story-image-stage.page-next .hn-story-image{animation:hn-story-turn-next .36s cubic-bezier(.18,.65,.24,1) both;transform-origin:right center}
+.hn-story-image-stage.page-previous .hn-story-image{animation:hn-story-turn-previous .36s cubic-bezier(.18,.65,.24,1) both;transform-origin:left center}
+@keyframes hn-story-turn-next{from{opacity:.7;transform:rotateY(-22deg) translateX(10px)}to{opacity:1;transform:rotateY(0) translateX(0)}}
+@keyframes hn-story-turn-previous{from{opacity:.7;transform:rotateY(22deg) translateX(-10px)}to{opacity:1;transform:rotateY(0) translateX(0)}}
 .hn-story-unavailable{flex:1;display:grid;place-items:center;text-align:center;padding:30px;color:#eee}
 .hn-story-controls{display:flex;align-items:center;justify-content:space-between;min-height:66px;padding:0 14px;gap:10px}
 .hn-story-controls button{background:transparent;border:0;color:#fff;font-size:34px;min-width:42px;min-height:42px}
@@ -23,9 +33,23 @@
 .hn-story-publish .hn-story-x{position:absolute;top:6px;right:7px;color:#233b30;z-index:1}
 .hn-story-publish h2{margin:8px 0 3px;font-size:23px}
 .hn-story-publish p{font-size:13px;color:#69736c}
-.hn-story-publish img{display:block;width:100%;height:min(53dvh,460px);object-fit:contain;background:#101810;border-radius:12px;margin:10px 0}
+.hn-story-preview-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;
+ width:100%;max-height:55dvh;overflow-y:auto;margin:12px 0;padding:2px}
+.hn-story-preview-item{position:relative;aspect-ratio:9/14;border-radius:10px;
+ background:#101810;overflow:hidden}
+.hn-story-preview-item img{width:100%;height:100%;display:block;object-fit:cover}
+.hn-story-preview-item span{position:absolute;top:6px;left:6px;width:22px;height:22px;
+ display:grid;place-items:center;background:#153d31;color:white;border-radius:50%;font-size:12px;font-weight:700}
+.hn-story-preview-grid.is-single{display:flex;justify-content:center;max-height:53dvh}
+.hn-story-preview-grid.is-single .hn-story-preview-item{width:min(100%,260px);max-height:51dvh}
+.hn-story-preparing{font-size:12px;font-weight:600;color:#153d31}
 .hn-story-publish-button{background:#153d31;color:#fff;border:0;border-radius:12px;padding:14px;font-size:15px;font-weight:700}
 .hn-story-publish-button:disabled{opacity:.55}
 .hn-story-error{font-size:12px;color:#9d4d40;padding:2px 4px}
 .hn-story-publish .hn-story-error{color:#9d4d40;font-weight:650}
 @media(min-width:500px){.hn-story-overlay{padding:25px}}
+
+@media(prefers-reduced-motion:reduce){
+ .hn-story-image-stage.page-next .hn-story-image,.hn-story-image-stage.page-previous .hn-story-image{
+ animation:none;will-change:auto}
+}

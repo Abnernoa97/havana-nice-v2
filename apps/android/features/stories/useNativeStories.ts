@@ -1,8 +1,8 @@
 import {useCallback,useEffect,useRef,useState} from 'react';
 import {AppState} from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
-import {File,UploadType} from 'expo-file-system';
-import {deleteMyStory,getMemberStories,type MemberStory,
+import {File} from 'expo-file-system';
+import {deleteMyStory,getMemberStories,STORY_BATCH_MAX,type MemberStory,
  HAVANA_V2_DEV_API_BASE_URL as API} from '@havana/shared';
 
 // Native state controller is separate from Chat, Profile, and Family.
@@ -42,32 +42,30 @@ export function useNativeStories(token:string,refreshVersion:number){
    const permission=await ImagePicker.requestMediaLibraryPermissionsAsync();
    if(!permission.granted)throw Error('Permite el acceso a tus fotografías.');
    const result=await ImagePicker.launchImageLibraryAsync({
-    mediaTypes:['images'],allowsMultipleSelection:false,allowsEditing:true,
-    aspect:[9,16],quality:0.14
+    mediaTypes:['images'],allowsMultipleSelection:true,selectionLimit:STORY_BATCH_MAX,
+    orderedSelection:true,quality:0.14
    });
    if(result.canceled||!result.assets.length)return;
-   const asset=result.assets[0]!;
-   const file=new File(asset.uri);
-   if(!file.exists)throw Error('No se pudo abrir la fotografía.');
-   if((asset.mimeType||'image/jpeg').toLowerCase()!=='image/jpeg')
-    throw Error('Elige una fotografía JPG.');
-   if(!file.size||file.size>1_500_000)
-    throw Error('La fotografía supera 1.5 MB. Elige otra.');
+   if(result.assets.length>STORY_BATCH_MAX)throw Error('Selecciona máximo cinco fotografías.');
+   const form=new FormData();
+   for(let i=0;i<result.assets.length;i++){
+    const asset=result.assets[i]!;
+    const file=new File(asset.uri);
+    if(!file.exists||!file.size||file.size>1_500_000)
+     throw Error('Una fotografía supera 1.5 MB. Elige otra.');
+    if((asset.mimeType||'image/jpeg').toLowerCase()!=='image/jpeg')
+     throw Error('Elige fotografías JPG.');
+    // React Native's FormData serializer streams gallery URIs as multipart files.
+    form.append('photos',{uri:asset.uri,name:'estado-'+(i+1)+'.jpg',type:'image/jpeg'} as unknown as Blob);
+   }
    setSaving(true);
-   const task=file.createUploadTask(API+'/api/stories/me/photo',{
-    httpMethod:'PUT',uploadType:UploadType.BINARY_CONTENT,
-    headers:{Authorization:'Bearer '+token,'Content-Type':'image/jpeg','Content-Length':String(file.size)}
+   const reply=await fetch(API+'/api/stories/me/batch',{
+    method:'POST',headers:{Authorization:'Bearer '+token},body:form
    });
-   try{
-    const reply=await task.uploadAsync();
-    if(reply.status<200||reply.status>=300){
-     let message='No se pudo publicar el estado.';
-     try{message=JSON.parse(reply.body).error||message;}catch{}
-     throw Error(message);
-    }
-   }finally{task.release();}
+   const parsed=await reply.json().catch(()=>({error:'No se pudieron publicar los estados.'})) as {error?:string};
+   if(!reply.ok)throw Error(parsed.error||'No se pudieron publicar los estados.');
    await refresh();
-  }catch(e){setError(e instanceof Error?e.message:'No se pudo publicar el estado.');}
+  }catch(e){setError(e instanceof Error?e.message:'No se pudieron publicar los estados.');}
   finally{setSaving(false);}
  },[token,saving,refresh]);
  const remove=useCallback(async(id:string)=>{

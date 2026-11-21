@@ -12,10 +12,16 @@ export async function prepareStoryPhoto(input:File):Promise<Blob>{
   canvas.width=720;canvas.height=1280;
   const ctx=canvas.getContext('2d');
   if(!ctx)throw new Error('No se pudo preparar la fotografía.');
-  // Preserve the entire picture, including landscape images, on a dark stage.
-  ctx.fillStyle='#111814';ctx.fillRect(0,0,720,1280);
-  const scale=Math.min(720/img.naturalWidth,1280/img.naturalHeight);
-  const w=img.naturalWidth*scale,h=img.naturalHeight*scale;
+  // Fill tall story stage with a dim, blurred copy, never black letterboxing.
+  const cover=Math.max(720/img.naturalWidth,1280/img.naturalHeight);
+  const bw=img.naturalWidth*cover,bh=img.naturalHeight*cover;
+  ctx.save();
+  ctx.filter='blur(22px) brightness(0.47)';
+  ctx.drawImage(img,(720-bw)/2-30,(1280-bh)/2-30,bw+60,bh+60);
+  ctx.restore();
+  ctx.fillStyle='rgba(9,18,13,.14)';ctx.fillRect(0,0,720,1280);
+  const contain=Math.min(720/img.naturalWidth,1280/img.naturalHeight);
+  const w=img.naturalWidth*contain,h=img.naturalHeight*contain;
   ctx.drawImage(img,(720-w)/2,(1280-h)/2,w,h);
   const photo=await new Promise<Blob>((resolve,reject)=>{
    canvas.toBlob(blob=>blob?resolve(blob):reject(Error('No se pudo preparar el estado.')),'image/jpeg',0.78);

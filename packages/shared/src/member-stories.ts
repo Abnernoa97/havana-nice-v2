@@ -1,6 +1,8 @@
 import {HAVANA_V2_DEV_API_BASE_URL as API} from './api-base';
 
 export const STORY_DURATION_MS=24*60*60*1000;
+export const STORY_PLAYBACK_MS=6000;
+export const STORY_BATCH_MAX=5;
 export type MemberStory={
  id:string;actorId:string;name:string;
  createdAt:number;expiresAt:number;photoUrl:string;
@@ -41,6 +43,22 @@ export async function uploadMyStory(token:string,photo:Blob,base=API):Promise<vo
  });
  const data=await res.json().catch(()=>({error:'No se pudo publicar.'})) as {error?:string};
  if(!res.ok)throw new MemberStoryApiError(data.error||'No se pudo publicar el estado.',res.status);
+}
+/** One action publishes 1-5 prepared JPEGs atomically to the private story store. */
+export async function uploadMyStoriesBatch(token:string,photos:readonly Blob[],base=API):Promise<void>{
+ if(!photos.length||photos.length>STORY_BATCH_MAX)
+  throw new Error('Selecciona entre 1 y 5 fotografías.');
+ for(const photo of photos){
+  if(photo.type!=='image/jpeg'||photo.size<4||photo.size>1_500_000)
+   throw new Error('Cada foto debe ser JPG y pesar menos de 1.5 MB.');
+ }
+ const form=new FormData();
+ for(let i=0;i<photos.length;i++)form.append('photos',photos[i]!, 'estado-'+(i+1)+'.jpg');
+ const res=await fetch(base+'/api/stories/me/batch',{
+  method:'POST',cache:'no-store',headers:{Authorization:'Bearer '+token},body:form
+ });
+ const data=await res.json().catch(()=>({error:'No se pudieron publicar las fotografías.'})) as {error?:string};
+ if(!res.ok)throw new MemberStoryApiError(data.error||'No se pudo publicar el lote de estados.',res.status);
 }
 export async function deleteMyStory(token:string,id:string,base=API):Promise<void>{
  if(!/^[a-f0-9-]{36}$/i.test(id))throw new Error('Estado inválido.');

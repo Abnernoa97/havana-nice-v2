@@ -1,5 +1,5 @@
 import {useCallback,useEffect,useRef,useState} from 'react';
-import {deleteMyStory,getMemberStories,uploadMyStory,type MemberStory} from '@havana/shared';
+import {deleteMyStory,getMemberStories,uploadMyStoriesBatch,STORY_BATCH_MAX,type MemberStory} from '@havana/shared';
 import {prepareStoryPhoto} from './prepareStoryPhoto';
 
 // HOME-only story controller: no Chat connection, no profile mutation, no storage owner.
@@ -7,6 +7,7 @@ export function useMemberStories(token:string|undefined,refreshVersion:number){
  const [stories,setStories]=useState<MemberStory[]>([]);
  const [error,setError]=useState('');
  const [saving,setSaving]=useState(false);
+ const [preparing,setPreparing]=useState(0);
  const requestId=useRef(0);
  const retryIds=useRef(new Set<string>());
  const refresh=useCallback(async()=>{
@@ -37,14 +38,24 @@ export function useMemberStories(token:string|undefined,refreshVersion:number){
   const timer=setTimeout(()=>{setStories(prev=>prev.filter(s=>s.expiresAt>Date.now()));void refresh();},delay);
   return()=>clearTimeout(timer);
  },[stories,refresh]);
- const publish=useCallback(async(file:File)=>{
+ const publish=useCallback(async(files:readonly File[])=>{
   if(!token||saving)return false;
-  setSaving(true);setError('');
+  if(files.length<1||files.length>STORY_BATCH_MAX){
+   setError('Selecciona entre 1 y 5 fotografías.');return false;
+  }
+  setSaving(true);setError('');setPreparing(0);
   try{
-   await uploadMyStory(token,await prepareStoryPhoto(file));
+   // Sequential local image preparation avoids decoding five huge iPhone photos at once.
+   const images:Blob[]=[];
+   for(const file of files){
+    images.push(await prepareStoryPhoto(file));
+    setPreparing(images.length);
+   }
+   await uploadMyStoriesBatch(token,images);
    await refresh();return true;
-  }catch(e){setError(e instanceof Error?e.message:'No se pudo publicar.');return false;}
-  finally{setSaving(false);}
+  }catch(e){
+   setError(e instanceof Error?e.message:'No se pudieron publicar los estados.');return false;
+  }finally{setSaving(false);setPreparing(0);}
  },[token,saving,refresh]);
  const remove=useCallback(async(id:string)=>{
   if(!token||saving)return false;
@@ -60,5 +71,5 @@ export function useMemberStories(token:string|undefined,refreshVersion:number){
   if(!id||retryIds.current.has(id))return;
   retryIds.current.add(id);void refresh();
  },[refresh]);
- return {stories,error,saving,publish,remove,retryPhoto,refresh,clearError:()=>setError('')};
+ return {stories,error,saving,preparing,publish,remove,retryPhoto,refresh,clearError:()=>setError('')};
 }
