@@ -26,3 +26,7 @@
 .hn-audio-admin-row button{background:#fff4ee;border:1px solid #ebd5c8;color:#8f4c3e;padding:9px;border-radius:9px;font-size:11px}
 .hn-audio-upload-error,.hn-audio-upload-notice{padding:13px;border-radius:12px;font-size:12px;background:#fff5ed;color:#a43d34}
 .hn-audio-upload-notice{background:#eff5eb;color:#356746}
+
+.hn-audio-inline-cover{position:relative;cursor:pointer;border:1px solid #d4dccc;border-radius:9px;
+ background:#f0f4eb;color:#345642;padding:9px;font-size:11px;font-weight:650}
+.hn-audio-inline-cover input{position:absolute;width:1px;height:1px;opacity:0}
