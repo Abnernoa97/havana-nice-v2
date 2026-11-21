@@ -13,6 +13,7 @@ export default function NativeAudio({token,visible,onClose}:{
  const [tracks,setTracks]=useState<AudioTrack[]>([]);
  const [index,setIndex]=useState(0);
  const [loading,setLoading]=useState(true);
+ const [seekWidth,setSeekWidth]=useState(270);
  const [error,setError]=useState('');
  const player=useAudioPlayer(null,{updateInterval:400});
  const status=useAudioPlayerStatus(player);
@@ -97,10 +98,11 @@ export default function NativeAudio({token,visible,onClose}:{
         <Text style={s.title}>{current.title}</Text><Text style={s.artist}>{current.artist}</Text>
        </View>
        <Pressable accessibilityRole="adjustable" accessibilityLabel="Avanzar en el audio"
+        onLayout={event=>setSeekWidth(event.nativeEvent.layout.width)}
         onPress={event=>{
          const position=event.nativeEvent.locationX;
-         const width=event.nativeEvent.target?270:270;
-         if(status.duration>0)void player.seekTo(status.duration*Math.max(0,Math.min(1,position/width)));
+         if(status.duration>0&&seekWidth>0)
+          void player.seekTo(status.duration*Math.max(0,Math.min(1,position/seekWidth)));
         }} style={s.progressTouch}>
         <View style={s.progress}><View style={[s.progressFill,{width:(progress*100)+'%'}]}/></View>
        </Pressable>
