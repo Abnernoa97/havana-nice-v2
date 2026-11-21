@@ -43,7 +43,7 @@ test('Android OS player uses the same cover and MediaSession with audio backgrou
  assert.match(native,/setAudioModeAsync/);
  assert.match(native,/shouldPlayInBackground:true/);
  assert.match(native,/getAudioTracks\(token\)/);
- assert.match(native,/onClose=\{onClose\}/);
+ assert.match(native,/onRequestClose=\{onClose\}/);
  const audio=app.expo.plugins.find(p=>Array.isArray(p)&&p[0]==='expo-audio');
  assert.equal(audio[1].enableBackgroundPlayback,true);
  assert.equal(app.expo.version,'0.0.23','do not generate an Android version bump during the feature batch');
