@@ -9,6 +9,7 @@ import NativeChatReactionShower from './NativeChatReactionShower';
 import NativeComposerIcon from './ChatComposerIcon';
 import NativeChatMediaQueuePreview from './NativeChatMediaQueuePreview';
 import NativeMemberHome from '../../app/NativeMemberHome';
+import NativeAudio from '../audio/NativeAudio';
 import {styles} from '../../styles/chat-styles';
 import type {useNativeChatController} from './useNativeChatController';
 import type {ChatEmoji,ChatMessage} from '@havana/shared';
@@ -172,6 +173,9 @@ export default function NativeChatSurface({ui}:{ui:ReturnType<typeof useNativeCh
       </KeyboardAvoidingView>}
       {session&&activeScreen!=='chat'&&<NativeMemberHome token={session.token} actorId={session.actorId} displayName={session.displayName}
         active={activeScreen} onNavigate={navigateTo}/>}
+      {/* Keep one system MediaSession mounted even when the user returns to Chat. */}
+      {session&&<NativeAudio token={session.token} visible={activeScreen==='audio'}
+        onClose={()=>navigateTo('home')}/>}
       {session&&activeScreen==='chat'&&<NativeChatReactionShower burst={reactionBurst}/>}
     </SafeAreaView>
   );
