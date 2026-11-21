@@ -14,8 +14,10 @@ function fixture(){
  CREATE TABLE calendar_event_photos(size_bytes INTEGER,optimized_size_bytes INTEGER);
  CREATE TABLE member_profiles(photo_key TEXT,photo_size INTEGER);
  CREATE TABLE member_stories(byte_size INTEGER);
+ CREATE TABLE audio_tracks(size_bytes INTEGER,cover_size_bytes INTEGER);
  CREATE TABLE r2_member_delete_queue(size_bytes INTEGER);
  CREATE TABLE book_delete_queue(size_bytes INTEGER);
+ CREATE TABLE audio_delete_queue(size_bytes INTEGER);
  CREATE TABLE calendar_photo_delete_queue(size_bytes INTEGER);
  CREATE TABLE family_upload_sessions(size_bytes INTEGER);
  CREATE TABLE family_upload_reservations(size_bytes INTEGER);
@@ -26,6 +28,7 @@ function fixture(){
  INSERT INTO calendar_event_photos VALUES(200,50);
  INSERT INTO member_profiles VALUES('private-key',70);
  INSERT INTO member_stories VALUES(80);
+ INSERT INTO audio_tracks VALUES(120,30);
  INSERT INTO book_delete_queue VALUES(40);
  INSERT INTO family_upload_sessions VALUES(60);
  INSERT INTO family_upload_reservations VALUES(90);
@@ -50,12 +53,12 @@ test('Storage summary rejects unauthenticated requests and never returns private
  const response=await get(session.token);
  assert.equal(response.status,200);
  const data=await response.json();
- assert.equal(data.storage.usedBytes,1940);
+ assert.equal(data.storage.usedBytes,2090);
  assert.equal(data.storage.pendingBytes,150);
  assert.equal(data.outsideQuotaBytes,150);
- assert.equal(data.indexedFiles,6);
+ assert.equal(data.indexedFiles,7);
  assert.deepEqual(data.rows.map(x=>x.id),[
-  'family','chat','book','calendar','stories','profiles','cleanup'
+  'family','chat','book','calendar','audio','stories','profiles','cleanup'
  ]);
  assert.equal(data.rows.find(x=>x.id==='chat').bytes,1000);
  assert.equal(data.rows.find(x=>x.id==='cleanup').bytes,40);
