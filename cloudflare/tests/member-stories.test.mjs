@@ -14,6 +14,7 @@ function setup(){
  db.exec('CREATE TABLE chat_members(actor_id TEXT PRIMARY KEY,display_name TEXT NOT NULL,active INTEGER NOT NULL)');
  db.exec('CREATE TABLE r2_member_delete_queue(object_key TEXT PRIMARY KEY,actor_id TEXT NOT NULL,multipart_upload_id TEXT,size_bytes INTEGER,queued_at INTEGER)');
  db.exec(readFileSync(new URL('../migrations/0031_member_stories.sql',import.meta.url),'utf8'));
+ db.exec(readFileSync(new URL('../migrations/0032_story_conversation.sql',import.meta.url),'utf8'));
  db.prepare('INSERT INTO chat_members VALUES(?,?,1)').run(FER,'Fer');
  db.prepare('INSERT INTO chat_members VALUES(?,?,1)').run(NOA,'Noa');
  const statement=(sql,args)=>({

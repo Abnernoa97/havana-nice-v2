@@ -2,6 +2,7 @@
 // Uses existing musician authorization, private R2 and lightweight Family invalidation.
 import {sha256Hex} from '../../shared/crypto-helpers.js';
 import {notifyFamilyClients} from '../family/family-realtime.js';
+import {handleStoryConversation} from './story-conversation.js';
 
 export const STORY_DURATION_MS=24*60*60*1000;
 const GRANT_MAX_MS=10*60*1000;
@@ -170,14 +171,23 @@ async function discardObject(env,row){
  }catch{/* Durable queue retains failed R2 objects for next cleanup cycle. */}
 }
 async function retireStory(env,row,now){
- // A queued key is never lost if D1 succeeds but R2 deletion fails.
+ // Queue audio before deleting the parent story: its comments cascade in D1.
+ const voices=(await env.DB.prepare(
+  "SELECT voice_key AS object_key,actor_id,voice_size AS byte_size "+
+  "FROM member_story_comments WHERE story_id=? AND kind='voice'"
+ ).bind(row.id).all()).results||[];
  await env.DB.batch([
+  ...voices.map(voice=>env.DB.prepare(
+   'INSERT OR IGNORE INTO r2_member_delete_queue(object_key,actor_id,multipart_upload_id,size_bytes,queued_at) '+
+   'VALUES(?,?,NULL,?,?)'
+  ).bind(voice.object_key,voice.actor_id,voice.byte_size,now)),
   env.DB.prepare(
    'INSERT OR IGNORE INTO r2_member_delete_queue(object_key,actor_id,multipart_upload_id,size_bytes,queued_at) '+
    'VALUES(?,?,NULL,?,?)'
   ).bind(row.object_key,row.actor_id,row.byte_size,now),
   env.DB.prepare('DELETE FROM member_stories WHERE id=?').bind(row.id)
  ]);
+ for(const voice of voices)await discardObject(env,voice);
  await discardObject(env,row);
 }
 export async function cleanupExpiredStories(env,limit=40){
@@ -197,6 +207,7 @@ export async function cleanupExpiredStories(env,limit=40){
  ).all()).results||[];
  for(const row of pending)await discardObject(env,row);
  await env.DB.prepare('DELETE FROM member_story_grants WHERE expires_at<=?').bind(now).run();
+ await env.DB.prepare('DELETE FROM member_story_voice_grants WHERE expires_at<=?').bind(now).run();
  return {cleaned:rows.length};
 }
 
@@ -217,6 +228,10 @@ export async function handleStoriesApi(request,env,url,origin,verifySession,ctx)
  try{
   if(url.pathname.startsWith(PHOTO_PREFIX))
    return readPhoto(request,env,url,origin);
+  // One authorization for public-to-team responses, voice and reactions, not Chat.
+  if(url.pathname.startsWith('/api/stories/voice/')||
+   /^\/api\/stories\/[a-f0-9-]{36}\/(conversation|text|voice|reaction)$/i.test(url.pathname))
+   return handleStoryConversation(request,env,url,origin,verifySession,ctx);
   const token=(request.headers.get('authorization')||'').replace(/^Bearer\s+/i,'');
   const actor=await verifySession(env,token);
   if(!actor)return respond({error:'No autorizado'},401,origin);

@@ -72,7 +72,7 @@ export default function MemberStories({token,displayName,actorId,profiles,previe
     </button>
    </div>
   </div>}
-  {viewActor&&viewing.length>0&&<MemberStoryViewer items={viewing} myId={actorId}
+  {viewActor&&viewing.length>0&&token&&<MemberStoryViewer items={viewing} myId={actorId} token={token} refreshVersion={refreshVersion}
    onClose={()=>setViewActor(null)} onDelete={data.remove} onPhotoError={data.retryPhoto}/>}
  </>;
 }

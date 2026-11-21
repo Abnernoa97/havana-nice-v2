@@ -122,8 +122,9 @@ test('member data removal queues Chat and Familia originals/posters before the F
  const firstMemberDelete=sql.findIndex(x=>x.startsWith('DELETE FROM chat_members'));
  const chatMediaDelete=sql.findIndex(x=>x.startsWith('DELETE FROM chat_media_objects'));
  const enqueue=sql.filter(x=>x.startsWith('INSERT OR IGNORE INTO r2_member_delete_queue'));
- assert.equal(enqueue.length,7,'Chat, Familia, Profile and Stories media queued atomically');
+ assert.equal(enqueue.length,8,'Chat, Familia, Profile, Stories and story voice files queued atomically');
  assert.ok(sql.some(x=>x.includes('FROM member_stories WHERE actor_id=?')),'Story photos must be queued before a musician is deleted');
+ assert.ok(sql.some(x=>x.includes('FROM member_story_comments c')),'Voice replies must be queued before musician deletion');
  assert.ok(chatMediaDelete>0 && chatMediaDelete<firstMemberDelete,'resolve Chat media FK before deleting a musician');
  assert.ok(sql.some(x=>x.includes("object_key||'.poster.jpg'")),'queue video covers before member deletion');
  assert.ok(sql.findIndex(x=>x.startsWith('DELETE FROM family_media'))<firstMemberDelete);

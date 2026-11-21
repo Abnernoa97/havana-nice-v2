@@ -1,19 +1,24 @@
 import {useCallback,useEffect,useState} from 'react';
 import {STORY_PLAYBACK_MS,type MemberStory} from '@havana/shared';
+import StoryConversationPanel from './StoryConversationPanel';
+import StoryReactionShower,{type StoryReactionBurst} from './StoryReactionShower';
 
-type Props={items:MemberStory[];myId:string|undefined;
+type Props={items:MemberStory[];myId:string|undefined;token:string;refreshVersion:number;
  onClose:()=>void;onDelete:(id:string)=>Promise<boolean>;onPhotoError:(id:string)=>void};
-export default function MemberStoryViewer({items,myId,onClose,onDelete,onPhotoError}:Props){
+export default function MemberStoryViewer({items,myId,token,refreshVersion,
+ onClose,onDelete,onPhotoError}:Props){
  const [position,setPosition]=useState(0);
  const [deleting,setDeleting]=useState(false);
  const [failed,setFailed]=useState<string[]>([]);
  const [loadedUrl,setLoadedUrl]=useState('');
  const [held,setHeld]=useState(false);
+ const [commentPaused,setCommentPaused]=useState(false);
  const [hidden,setHidden]=useState(typeof document!=='undefined'&&document.hidden);
  const [direction,setDirection]=useState<'next'|'previous'>('next');
+ const [burst,setBurst]=useState<StoryReactionBurst|null>(null);
  const item=items[Math.min(position,items.length-1)];
  const failedPhoto=!!item&&failed.includes(item.photoUrl);
- const paused=deleting||held||hidden||(loadedUrl!==item?.photoUrl&&!failedPhoto);
+ const paused=deleting||held||hidden||commentPaused||(loadedUrl!==item?.photoUrl&&!failedPhoto);
  useEffect(()=>{
   const change=()=>setHidden(document.hidden);
   document.addEventListener('visibilitychange',change);
@@ -33,12 +38,10 @@ export default function MemberStoryViewer({items,myId,onClose,onDelete,onPhotoEr
  const deleteCurrent=async()=>{
   if(deleting||!item)return;
   setDeleting(true);
-  try{
-   if(await onDelete(item.id)){
-    if(items.length===1)onClose();
-    else setPosition(p=>Math.min(p,items.length-2));
-   }
-  }finally{setDeleting(false);}
+  try{if(await onDelete(item.id)){
+   if(items.length===1)onClose();
+   else setPosition(p=>Math.min(p,items.length-2));
+  }}finally{setDeleting(false);}
  };
  if(!item)return null;
  return <div className="hn-story-overlay" role="dialog" aria-modal="true"
@@ -58,9 +61,13 @@ export default function MemberStoryViewer({items,myId,onClose,onDelete,onPhotoEr
    </div>
    <div className="hn-story-toolbar">
     <div><strong>{item.name}</strong><small>Estado · {position+1} de {items.length}</small></div>
-    <button type="button" aria-label="Cerrar estado" onClick={onClose}>×</button>
+    <div className="hn-story-toolbar-actions">
+     {item.actorId===myId&&<button type="button" className="hn-story-delete"
+      disabled={deleting} onClick={()=>void deleteCurrent()} aria-label="Eliminar mi estado">Eliminar</button>}
+     <button type="button" aria-label="Cerrar estado" onClick={onClose}>×</button>
+    </div>
    </div>
-   <div className={'hn-story-image-stage '+(direction==='previous'?'page-previous':'page-next')}
+   <div key={item.id} className={'hn-story-image-stage '+(direction==='previous'?'page-previous':'page-next')}
     role="button" tabIndex={0} aria-label="Toca para pasar al siguiente estado"
     onPointerDown={()=>setHeld(true)} onPointerUp={()=>setHeld(false)}
     onPointerCancel={()=>setHeld(false)} onPointerLeave={()=>setHeld(false)}
@@ -71,8 +78,7 @@ export default function MemberStoryViewer({items,myId,onClose,onDelete,onPhotoEr
     }} onKeyDown={event=>{
      if(event.key==='Enter'||event.key===' '){event.preventDefault();next();}
     }}>
-    {failedPhoto?
-     <div className="hn-story-unavailable">No se pudo cargar esta fotografía.</div>:
+    {failedPhoto?<div className="hn-story-unavailable">No se pudo cargar esta fotografía.</div>:
      <img key={item.id+item.photoUrl} className="hn-story-image" src={item.photoUrl}
       alt={'Estado de '+item.name} onLoad={()=>setLoadedUrl(item.photoUrl)}
       onError={()=>{
@@ -80,14 +86,14 @@ export default function MemberStoryViewer({items,myId,onClose,onDelete,onPhotoEr
        onPhotoError(item.id);
       }}/>}
    </div>
-   <div className="hn-story-controls">
-    <button type="button" onClick={previous} disabled={position===0}
-     aria-label="Estado anterior">‹</button>
-    {item.actorId===myId&&<button type="button" disabled={deleting} className="hn-story-delete"
-     onClick={()=>void deleteCurrent()}>Eliminar mi estado</button>}
+   <StoryConversationPanel key={item.id} story={item} token={token}
+    refreshVersion={refreshVersion} onPause={setCommentPaused} onBurst={setBurst}/>
+   <div className="hn-story-step-controls">
+    <button type="button" onClick={previous} disabled={position===0} aria-label="Estado anterior">‹</button>
     <button type="button" onClick={next}
      aria-label={position===items.length-1?'Cerrar estados':'Siguiente estado'}>›</button>
    </div>
   </div>
+  <StoryReactionShower burst={burst}/>
  </div>;
 }

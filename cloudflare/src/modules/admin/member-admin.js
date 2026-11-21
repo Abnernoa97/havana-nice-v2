@@ -149,6 +149,13 @@ export async function handleAdminMemberManagement(request,env,url,origin,respond
      'INSERT OR IGNORE INTO r2_member_delete_queue(object_key,actor_id,multipart_upload_id,size_bytes,queued_at) '+
      'SELECT object_key,actor_id,NULL,byte_size,? FROM member_stories WHERE actor_id=?'
    ).bind(queuedAt,actorId),
+   // Queue voice notes authored by the revoked member OR attached to their states.
+   env.DB.prepare(
+     'INSERT OR IGNORE INTO r2_member_delete_queue(object_key,actor_id,multipart_upload_id,size_bytes,queued_at) '+
+     'SELECT c.voice_key,c.actor_id,NULL,c.voice_size,? FROM member_story_comments c '+
+     'JOIN member_stories s ON s.id=c.story_id '+
+     'WHERE c.voice_key IS NOT NULL AND (c.actor_id=? OR s.actor_id=?)'
+   ).bind(queuedAt,actorId,actorId),
    env.DB.prepare(
      'INSERT OR IGNORE INTO r2_member_delete_queue(object_key,actor_id,multipart_upload_id,size_bytes,queued_at) '+
      'SELECT poster_key,actor_id,NULL,poster_size_bytes,? FROM family_media '+
