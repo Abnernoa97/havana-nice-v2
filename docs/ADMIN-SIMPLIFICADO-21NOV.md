@@ -9,8 +9,8 @@
 - Migración agregada `0035_admin_trusted_devices.sql`, no cambia sesiones ni cuentas antiguas.
 
 ## Pendiente para activar el login sin contraseña y desglose
-1. Confirmar compilación Pages + tests `admin-editorial-parity`, `admin-trusted-device`, `admin-storage-summary`.
-2. Aplicar migración D1 0035 después de respaldar/bookmark y probar esquema; registrar versión sin tocar tablas existentes.
+1. **Completado**: compilación Pages `a4b10c0e` y 63 pruebas sin fallos, incluyendo paridad visual, firma por dispositivo y memoria privada.
+2. **Aplicado y verificado el 21/11**: D1 0035 creó únicamente `chat_admin_trusted_devices`, `chat_admin_device_challenges` y su índice, tras comprobar el bookmark previo. Las tablas existentes siguen intactas. El historial de Wrangler debe reconciliar esta migración idempotente en el siguiente despliegue.
 3. Preparar bundle canónico con Wrangler desde el mismo commit `main`, ejecutar pruebas de regresión de Worker (sessions, DO, Calendar, Chat, R2). Publicar **únicamente** si el hash y los bindings actuales son compatibles; conservar versión rollback.
 4. Validar en el teléfono oficial: primer login con contraseña, vinculación, cerrar/salir, recargar, auto-login, desvincular, revocación y acceso no autorizado con navegador nuevo.
-5. Hasta entonces **no declarar activo el ingreso sin contraseña** y no quitar el login por contraseña. El frontend mantiene fallback seguro.
+5. Hasta entonces **no declarar activo el ingreso sin contraseña** y no quitar el login por contraseña. El frontend mantiene fallback seguro; el resumen muestra la cuota total real del endpoint existente de Familia mientras espera el detalle del nuevo Worker.
