@@ -231,15 +231,21 @@ export default function AdminFamily({token,onExpired}:{token:string;onExpired:()
     <p className="a-detail">{album.mediaReady?'Este álbum todavía no tiene fotos ni videos.':'La carga privada estará disponible cuando se publique el nuevo Worker y su esquema D1.'}</p>}
   </>:<>
    <p className="a-detail">Los integrantes se administran desde «Acceso a músicos». Aquí aparecen únicamente los nombres autorizados; no se crean cuentas paralelas.</p>
-   {!data&&!error?<p>Cargando integrantes…</p>:<div className="a-family-list">
-    {data?.albums.map(item=><button type="button" key={item.actorId} className="a-family-person"
-     onClick={()=>{setBookOpen(false);setSelected(item.actorId);}}
-     aria-label={'Abrir álbum de '+item.name}>
-     <span className="a-family-avatar" aria-hidden="true">{item.name.slice(0,1).toUpperCase()}</span>
-     <span className="a-family-person-details"><strong>{item.name}</strong>
-      <small>{familyAlbumCount(item)}</small></span>
-     <span className="a-family-status">Ver álbum ›</span>
-    </button>)}
+   {!data&&!error?<p>Cargando integrantes…</p>:<div className="a-family-list hn-family-grid">
+    {data?.albums.map(item=>{
+     const photo=item.mediaReady?familyPrivateMediaUrl(item.coverUrl):null;
+     return <button type="button" key={item.actorId} className="hn-family-album"
+      onClick={()=>{setBookOpen(false);setSelected(item.actorId);}}
+      aria-label={'Abrir álbum de '+item.name}>
+      <span className="hn-family-album-art" aria-hidden="true">
+       {photo?<img className="hn-family-album-photo" src={photo} alt="" loading="lazy" decoding="async"/>:
+        <span className="hn-family-monogram">{item.name.slice(0,1).toUpperCase()}</span>}
+       <span className="hn-family-album-caption">
+        <strong>{item.name}</strong><small>{familyAlbumCount(item)}</small>
+       </span>
+      </span>
+     </button>;
+    })}
     {data?.albums.length===0?<p className="a-detail">No hay integrantes autorizados.</p>:null}
    </div>}
    <button type="button" className="a-family-book" onClick={()=>{setSelected(null);setBookOpen(true);}}
