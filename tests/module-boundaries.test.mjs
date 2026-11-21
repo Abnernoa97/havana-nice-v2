@@ -22,8 +22,8 @@ const screens=[
 
 test('A01: HOME lists the same modules from a single shared contract',()=>{
   const list=read('packages/shared/src/memberModules.ts');
-  const ids=[...list.matchAll(/\bid:'(chat|calendar|repertoire|musicians|family|notices)'/g)].map(x=>x[1]);
-  assert.deepEqual(ids,['chat','calendar','repertoire','musicians','family','notices']);
+  const ids=[...list.matchAll(/\bid:'(chat|calendar|repertoire|musicians|family|audio|notices)'/g)].map(x=>x[1]);
+  assert.deepEqual(ids,['chat','calendar','repertoire','musicians','family','audio','notices']);
   assert.match(read('apps/android/app/NativeMemberHome.tsx'),/MEMBER_MODULES\.find/);
   assert.match(read('apps/pwa/src/app/VisualApp.tsx'),/MEMBER_MODULES/);
    assert.match(read('apps/pwa/src/features/home/MemberHome.tsx'),/MemberStories/);
