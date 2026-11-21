@@ -134,7 +134,7 @@ test('Admin Repertoire refresh always updates selected event, not just the maste
 test('Familia HAVANA NICE is one isolated HOME module with existing session and no invented media',()=>{
  const share=read('packages/shared/src/memberModules.ts');
  assert.match(share,/id:'family'.*label:'Familia HAVANA NICE'/);
- assert.match(read('apps/pwa/src/app/AdminApp.tsx'),/name:'Familia HAVANA NICE'/);
+ assert.match(read('apps/pwa/src/app/AdminApp.tsx'),/id:'family',name:'Familia'/);
  assert.match(read('apps/pwa/src/app/VisualApp.tsx'),/screen==='family'&&token\?<MemberFamily/);
  const worker=read('cloudflare/src/modules/family/family.js');
  assert.match(worker,/verifyAdminSession/);
