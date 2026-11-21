@@ -28,14 +28,16 @@ test('iPhone and Android share the same member profile contract, no new identity
  for(const file of [contract,pwa,native,android])
   assert.doesNotMatch(file,/startNamedChatSession|restoreNamedChatSession|\/api\/chat\/session/);
 });
-test('Notifications are the sixth bottom tab on both platforms, profile contains settings',()=>{
+test('Audio is the sixth bottom tab, Notifications remain in header, and profile contains settings',()=>{
  const shared=read('packages/shared/src/memberModules.ts');
  const pwa=read('apps/pwa/src/app/VisualApp.tsx');
  const native=read('apps/android/app/NativeMemberHome.tsx');
  assert.match(shared,/id:'notices',label:'Notificaciones'/);
  assert.doesNotMatch(shared,/id:'settings'/);
- assert.match(pwa,/\['home','chat','calendar','repertoire','family','notices'\]/);
- assert.match(native,/\['home','chat','calendar','repertoire','family','notices'\]/);
+ assert.match(pwa,/\['home','chat','calendar','repertoire','family','audio'\]/);
+ assert.match(pwa,/hn-header-notices/);
+ assert.match(native,/\['home','chat','calendar','repertoire','family','audio'\]/);
+ assert.match(native,/noticesShortcut/);
  assert.match(read('apps/pwa/src/features/profile/MemberProfilePanel.tsx'),/Ajustes del perfil/);
  assert.match(native,/Ajustes del perfil/);
  const avatar=read('apps/pwa/src/features/profile/PrivateProfileAvatar.tsx');
