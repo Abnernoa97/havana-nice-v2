@@ -2,7 +2,7 @@ import React,{useEffect,useRef,useState} from 'react';
 import {Pressable,StyleSheet,Text,View} from 'react-native';
 import {AudioModule,RecordingPresets,setAudioModeAsync,useAudioRecorder} from 'expo-audio';
 
-// Android microphone is native, NOT WebView/MediaRecorder/Chat.
+// Android microphone uses Expo audio, independent of browser capture and Chat.
 // 45 seconds max; output .m4a/AAC, sent to the same private R2 voice API.
 export default function NativeStoryVoiceRecorder({disabled,onRecording,onSend}:{
  disabled:boolean;onRecording:(active:boolean)=>void;onSend:(uri:string)=>Promise<boolean>;
