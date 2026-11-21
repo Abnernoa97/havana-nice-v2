@@ -2,6 +2,7 @@
 // One conversation per 24h photo, with short-lived R2 voice grants and two reactions.
 import {sha256Hex} from '../../shared/crypto-helpers.js';
 import {notifyFamilyClients} from '../family/family-realtime.js';
+import {notifyStoryOwner} from '../notices/member-notifications.js';
 
 const STORY_PATH=/^\/api\/stories\/([a-f0-9-]{36})\/(conversation|text|voice|reaction)$/i;
 const VOICE_PATH=/^\/api\/stories\/voice\/([a-f0-9]{32})$/;
@@ -57,6 +58,10 @@ async function postText(request,env,actor,id,origin,ctx){
  await env.DB.prepare('INSERT INTO member_story_comments '+
   '(id,story_id,actor_id,kind,body,created_at) VALUES(?,?,?,\'text\',?,?)'
  ).bind(commentId,id,actor.actorId,text,Date.now()).run();
+ // Notification failure must never roll back an already-saved comment.
+ try{await notifyStoryOwner(env,id,actor,'story.comment',{
+  preview:text,dedupeKey:'story.comment:'+commentId
+ });}catch{}
  if(ctx?.waitUntil)ctx.waitUntil(notifyFamilyClients(env));
  return json({ok:true,id:commentId},201,origin);
 }
@@ -89,6 +94,9 @@ async function postVoice(request,env,actor,id,origin,ctx){
    'DELETE FROM r2_member_delete_queue WHERE object_key=?').bind(key).run();}catch{}
   return fail('No se pudo guardar el audio.',503,origin);
  }
+ try{await notifyStoryOwner(env,id,actor,'story.voice',{
+  preview:'Nota de voz',dedupeKey:'story.voice:'+commentId
+ });}catch{}
  if(ctx?.waitUntil)ctx.waitUntil(notifyFamilyClients(env));
  return json({ok:true,id:commentId},201,origin);
 }
@@ -100,6 +108,9 @@ async function postReaction(request,env,actor,id,origin,ctx){
   'INSERT INTO member_story_reactions(story_id,actor_id,emoji,count,updated_at) VALUES(?,?,?,1,?) '+
   'ON CONFLICT(story_id,actor_id,emoji) DO UPDATE SET count=MIN(200,count+1),updated_at=excluded.updated_at'
  ).bind(id,actor.actorId,body.emoji,Date.now()).run();
+ try{await notifyStoryOwner(env,id,actor,'story.reaction',{
+  emoji:body.emoji,dedupeKey:'story.reaction:'+id+':'+actor.actorId+':'+body.emoji
+ });}catch{}
  if(ctx?.waitUntil)ctx.waitUntil(notifyFamilyClients(env));
  return json({ok:true},200,origin);
 }
