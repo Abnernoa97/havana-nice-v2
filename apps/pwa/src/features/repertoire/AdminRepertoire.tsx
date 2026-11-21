@@ -28,7 +28,9 @@ export default function AdminRepertoire({token,onExpired}:{token:string;onExpire
  const [loading,setLoading]=useState(true);
  const [error,setError]=useState('');
  const [notice,setNotice]=useState('');
- const [open,setOpen]=useState<'event'|'general'|null>('event');
+ const [open,setOpen]=useState<'event'|'general'|null>('general');
+ const [eventTools,setEventTools]=useState(false);
+ const [generalTools,setGeneralTools]=useState(false);
  const capture=(e:unknown)=>{if(isAdminUnauthorized(e)||(e instanceof CalendarHttpError&&e.status===401))onExpired();
   setError(e instanceof Error?e.message:'No se pudo guardar Repertorio.');};
  const refresh=useCallback(async()=>{
@@ -128,97 +130,132 @@ export default function AdminRepertoire({token,onExpired}:{token:string;onExpire
  }
  const available=songs.filter(s=>s.active&&!items.some(x=>x.songId===s.id)&&
   (s.title+' '+s.artist).toLocaleLowerCase('es').includes(query.toLocaleLowerCase('es')));
- return <section className="a-panel a-repertoire" aria-label="Repertorio Administrador">
-  <div className="a-cal-toolbar">
-   <div><h2>Repertorio</h2><p className="a-detail">General y listas independientes por evento.</p></div>
+ return <section className="a-panel a-repertoire hn-repertoire" aria-label="Repertorio Administrador">
+  <div className="a-cal-toolbar hn-rep-toolbar">
+   <div><h2>Repertorio del equipo</h2>
+    <p className="a-detail">Las mismas canciones de los músicos, con controles de Administración.</p></div>
    <button type="button" onClick={()=>void refreshAll()} disabled={busy}>Actualizar</button>
   </div>
   {!!error&&<p className="a-admin-error" role="alert">{error}</p>}
   {!!notice&&<p className="a-cal-notice" role="status">{notice}</p>}
   {loading?<p>Cargando repertorio…</p>:<>
-   <article className="a-rep-section">
-    <button type="button" className="a-cal-summary" aria-expanded={open==='event'}
+   <article className="a-rep-section hn-rep-admin-section">
+    <button type="button" className="a-cal-summary hn-cal-event-head" aria-expanded={open==='general'}
+     onClick={()=>setOpen(v=>v==='general'?null:'general')}>
+     <span><strong>Repertorio general</strong><small>{songs.length} canciones del equipo</small></span>
+     <b aria-hidden="true">{open==='general'?'−':'+'}</b>
+    </button>
+    {open==='general'&&<div className="a-rep-body">
+     <button type="button" className="hn-admin-add-repertoire" aria-expanded={generalTools||!!editing}
+      onClick={()=>{if(editing){setEditing(null);setForm(empty());}
+       setGeneralTools(v=>!v);}}>
+       {generalTools||editing?'Cerrar editor':'+ Añadir canción'}
+     </button>
+     {(generalTools||editing)&&<div className="hn-admin-rep-editor">
+      <h3>{editing?'Editar canción':'Añadir canción al repertorio general'}</h3>
+      <form onSubmit={e=>void saveSong(e)} className="a-rep-fields">
+       <input type="text" required value={form.title} placeholder="Nombre de la canción"
+        onChange={e=>setForm(v=>({...v,title:e.target.value}))}/>
+       <input type="text" value={form.artist} placeholder="Artista"
+        onChange={e=>setForm(v=>({...v,artist:e.target.value}))}/>
+       <input type="text" value={form.category} placeholder="ENGLISH o ESPAÑOL"
+        onChange={e=>setForm(v=>({...v,category:e.target.value}))}/>
+       <input type="text" value={form.referenceUrl} placeholder="Link de referencia · https://"
+        onChange={e=>setForm(v=>({...v,referenceUrl:e.target.value}))}/>
+       <label><input type="checkbox" checked={form.active}
+        onChange={e=>setForm(v=>({...v,active:e.target.checked}))}/> Mostrar a músicos</label>
+       <button type="submit" disabled={busy}>{editing?'Guardar cambios':'Añadir canción'}</button>
+       {editing&&<button type="button" onClick={()=>{setEditing(null);setForm(empty());setGeneralTools(false);}}>Cancelar edición</button>}
+      </form>
+     </div>}
+     {[...new Set(songs.map(song=>song.category))].map(category=>
+      <div className="hn-rep-group" key={category}>
+       <h3>{category}</h3>
+       {songs.filter(song=>song.category===category).map(song=>
+        <article className="hn-rep-row hn-admin-rep-row" key={song.id}>
+         <div><strong>{song.title}</strong>
+          <small>{song.artist||'Sin artista'}{song.active?'':' · Oculta para músicos'}</small>
+         </div>
+         {safeRepertoireLink(song.referenceUrl)&&<a href={safeRepertoireLink(song.referenceUrl)!}
+          target="_blank" rel="noopener noreferrer">REVISAR LINK ↗</a>}
+         <div className="hn-admin-rep-actions">
+          <button type="button" disabled={busy} onClick={()=>{setEditing(song);setGeneralTools(true);
+           setForm({title:song.title,artist:song.artist,category:song.category,
+            referenceUrl:song.referenceUrl,position:song.position,active:song.active});}}>
+           Editar
+          </button>
+          <button type="button" className="hn-admin-danger" disabled={busy}
+           onClick={()=>void removeSong(song)}>Borrar</button>
+         </div>
+        </article>)}
+      </div>)}
+    </div>}
+   </article>
+   <article className="a-rep-section hn-rep-admin-section">
+    <button type="button" className="a-cal-summary hn-cal-event-head" aria-expanded={open==='event'}
      onClick={()=>setOpen(v=>v==='event'?null:'event')}>
-     <span><strong>Repertorio del evento</strong><small>Lista del día · canciones y especiales</small></span>
-     <b>{open==='event'?'−':'+'}</b>
+     <span><strong>Repertorio por evento</strong><small>Listas, orden y canciones especiales</small></span>
+     <b aria-hidden="true">{open==='event'?'−':'+'}</b>
     </button>
     {open==='event'&&<div className="a-rep-body">
-     <label className="a-cal-field"><span>Evento del Calendario</span>
+     <label className="a-cal-field"><span>Seleccionar evento</span>
       <select value={eventId} disabled={busy} onChange={e=>{setItems([]);setEventId(e.target.value);}}>
        {events.length===0?<option value="">No hay eventos</option>:
         events.map(e=><option key={e.id} value={e.id}>{calendarDate(e.date)} · {e.title}</option>)}
       </select>
      </label>
      {!eventId?<p>Primero crea una fecha desde Calendario.</p>:<>
-      <h3>Seleccionar canciones del repertorio general</h3>
-      <input type="text" value={query} placeholder="Buscar canción o artista" autoComplete="off"
-       onChange={e=>setQuery(e.target.value)}/>
-      <div className="a-cal-actions">
-       <button type="button" onClick={()=>setChecked(available.map(x=>x.id))}>Marcar visibles</button>
-       <button type="button" onClick={()=>setChecked([])}>Limpiar selección</button>
+      <h3>{items.filter(item=>item.completed).length} de {items.length} realizadas</h3>
+      <div className="hn-admin-rep-event-items">
+       {items.length===0?<p className="a-detail">Este evento todavía no tiene canciones.</p>:
+        items.map((item,index)=><article className="hn-rep-row hn-admin-rep-row" key={item.id}>
+         <input aria-label={'Completar '+item.title} type="checkbox" checked={item.completed}
+          disabled={busy} onChange={()=>void setComplete(item)}/>
+         <div><strong>{index+1}. {item.title}</strong>
+          <small>{item.artist||'Sin artista'} · {item.completed?'Realizada':item.songId?'Pendiente':'Especial'}</small>
+         </div>
+         {safeRepertoireLink(item.referenceUrl)&&<a href={safeRepertoireLink(item.referenceUrl)!}
+          target="_blank" rel="noopener noreferrer">REVISAR LINK ↗</a>}
+         <div className="hn-admin-rep-actions">
+          <button type="button" aria-label={'Subir '+item.title} disabled={busy||index===0}
+           onClick={()=>void move(index,-1)}>↑</button>
+          <button type="button" aria-label={'Bajar '+item.title} disabled={busy||index===items.length-1}
+           onClick={()=>void move(index,1)}>↓</button>
+          <button type="button" className="hn-admin-danger" disabled={busy}
+           onClick={()=>void removeItem(item)}>Quitar</button>
+         </div>
+        </article>)}
       </div>
-      <div className="a-rep-choices">{available.map(s=><label className="a-cal-person" key={s.id}>
-       <input type="checkbox" checked={checked.includes(s.id)}
-        onChange={e=>setChecked(v=>e.target.checked?[...v,s.id]:v.filter(id=>id!==s.id))}/>
-       <span>{s.title}{s.artist&&' · '+s.artist}</span></label>)}</div>
-      <button type="button" disabled={busy||checked.length===0} onClick={()=>void addSelected()}>
-       Añadir {checked.length} seleccionada(s)
-      </button>
-      <h3>Canción nueva / especial</h3>
-      <p className="a-detail">Solo para este evento, no modifica el repertorio general.</p>
-      <form onSubmit={e=>void addSpecial(e)} className="a-rep-fields">
-       <input type="text" required value={special.title} placeholder="Título"
-        onChange={e=>setSpecial(v=>({...v,title:e.target.value}))}/>
-       <input type="text" value={special.artist} placeholder="Artista"
-        onChange={e=>setSpecial(v=>({...v,artist:e.target.value}))}/>
-       <input type="text" value={special.referenceUrl} placeholder="Link de referencia · https://"
-        onChange={e=>setSpecial(v=>({...v,referenceUrl:e.target.value}))}/>
-       <button disabled={busy} type="submit">Añadir especial</button>
-      </form>
-      <h3>{items.filter(x=>x.completed).length} / {items.length} realizadas</h3>
-      <div className="a-rep-items">{items.map((item,index)=><div className="a-rep-item" key={item.id}>
-       <input aria-label={'Completar '+item.title} type="checkbox" checked={item.completed}
-        disabled={busy} onChange={()=>void setComplete(item)}/>
-       <div><strong>{index+1}. {item.title}</strong><small>{item.artist||'Sin artista'}{!item.songId?' · Especial':''}</small>
-        {safeRepertoireLink(item.referenceUrl)&&<a href={safeRepertoireLink(item.referenceUrl)!}
-         target="_blank" rel="noopener noreferrer">Revisar link</a>}</div>
-       <button type="button" aria-label={'Subir '+item.title} disabled={busy||index===0}
-        onClick={()=>void move(index,-1)}>↑</button>
-       <button type="button" aria-label={'Bajar '+item.title} disabled={busy||index===items.length-1}
-        onClick={()=>void move(index,1)}>↓</button>
-       <button type="button" disabled={busy} onClick={()=>void removeItem(item)}>Quitar</button>
-      </div>)}</div>
+      <button className="hn-admin-add-repertoire" type="button" aria-expanded={eventTools}
+       onClick={()=>setEventTools(v=>!v)}>{eventTools?'Cerrar opciones':'+ Añadir canciones al evento'}</button>
+      {eventTools&&<div className="hn-admin-rep-editor">
+       <h3>Seleccionar canciones del repertorio general</h3>
+       <input type="text" value={query} placeholder="Buscar canción o artista" autoComplete="off"
+        onChange={e=>setQuery(e.target.value)}/>
+       <div className="a-cal-actions">
+        <button type="button" onClick={()=>setChecked(available.map(song=>song.id))}>Marcar visibles</button>
+        <button type="button" onClick={()=>setChecked([])}>Limpiar selección</button>
+       </div>
+       <div className="a-rep-choices">{available.map(song=><label className="a-cal-person" key={song.id}>
+        <input type="checkbox" checked={checked.includes(song.id)}
+         onChange={e=>setChecked(old=>e.target.checked?[...old,song.id]:old.filter(id=>id!==song.id))}/>
+        <span>{song.title}{song.artist&&' · '+song.artist}</span>
+       </label>)}</div>
+       <button type="button" disabled={busy||checked.length===0}
+        onClick={()=>void addSelected()}>Añadir {checked.length} seleccionada(s)</button>
+       <h3>Crear canción especial</h3>
+       <p className="a-detail">Solo para esta fecha, sin modificar el repertorio general.</p>
+       <form className="a-rep-fields" onSubmit={e=>void addSpecial(e)}>
+        <input type="text" required value={special.title} placeholder="Título"
+         onChange={e=>setSpecial(v=>({...v,title:e.target.value}))}/>
+        <input type="text" value={special.artist} placeholder="Artista"
+         onChange={e=>setSpecial(v=>({...v,artist:e.target.value}))}/>
+        <input type="text" value={special.referenceUrl} placeholder="Link de referencia · https://"
+         onChange={e=>setSpecial(v=>({...v,referenceUrl:e.target.value}))}/>
+        <button disabled={busy} type="submit">Añadir especial</button>
+       </form>
+      </div>}
      </>}
-    </div>}
-   </article>
-   <article className="a-rep-section">
-    <button type="button" className="a-cal-summary" aria-expanded={open==='general'}
-     onClick={()=>setOpen(v=>v==='general'?null:'general')}>
-     <span><strong>Repertorio general</strong><small>{songs.length} canciones · ENGLISH / ESPAÑOL y más categorías</small></span>
-     <b>{open==='general'?'−':'+'}</b>
-    </button>
-    {open==='general'&&<div className="a-rep-body">
-     <h3>{editing?'Editar canción':'Añadir canción'}</h3>
-     <form onSubmit={e=>void saveSong(e)} className="a-rep-fields">
-      <input type="text" required value={form.title} placeholder="Nombre de la canción"
-       onChange={e=>setForm(v=>({...v,title:e.target.value}))}/>
-      <input type="text" value={form.artist} placeholder="Artista"
-       onChange={e=>setForm(v=>({...v,artist:e.target.value}))}/>
-      <input type="text" value={form.category} placeholder="ENGLISH o ESPAÑOL"
-       onChange={e=>setForm(v=>({...v,category:e.target.value}))}/>
-      <input type="text" value={form.referenceUrl} placeholder="Link de referencia · https://"
-       onChange={e=>setForm(v=>({...v,referenceUrl:e.target.value}))}/>
-      <label><input type="checkbox" checked={form.active}
-       onChange={e=>setForm(v=>({...v,active:e.target.checked}))}/> Mostrar a músicos</label>
-      <button type="submit" disabled={busy}>{editing?'Guardar cambios':'Añadir canción'}</button>
-      {editing&&<button type="button" onClick={()=>{setEditing(null);setForm(empty());}}>Cancelar edición</button>}
-     </form>
-     <div className="a-rep-items">{songs.map(s=><div key={s.id} className="a-rep-item">
-      <div><strong>{s.title}</strong><small>{s.category} · {s.artist||'Sin artista'} · {s.active?'Visible':'Oculta'}</small></div>
-      <button type="button" disabled={busy} onClick={()=>{setEditing(s);setForm({title:s.title,artist:s.artist,
-       category:s.category,referenceUrl:s.referenceUrl,position:s.position,active:s.active});}}>Editar</button>
-      <button type="button" disabled={busy} onClick={()=>void removeSong(s)}>Eliminar</button>
-     </div>)}</div>
     </div>}
    </article>
   </>}
