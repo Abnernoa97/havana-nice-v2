@@ -51,7 +51,7 @@ function NativeMemberHome({displayName,actorId,token,active,onNavigate}:Props){
     active==='audio'?null:<View style={styles.pending}>
      <Text style={styles.pendingTitle}>Módulo en preparación</Text>
      <Text style={styles.pendingDescription}>Esta sección estará disponible próximamente.</Text>
-    </View>
+    </View>}
   </>}
  </>;
  return <View style={styles.screen}>
