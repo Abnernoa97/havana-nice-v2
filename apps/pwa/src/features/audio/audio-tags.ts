@@ -2,8 +2,8 @@
 // entire MP3 merely to discover embedded art. Supports v2.3 and v2.4 APIC.
 // M4A/AAC/FLAC can use an image selected separately in Administration.
 export type AudioTags={title:string;artist:string;album:string;cover:Blob|null};
-const sync=(a:Uint8Array,o:number)=>((a[o]&127)<<21)|((a[o+1]&127)<<14)|((a[o+2]&127)<<7)|(a[o+3]&127);
-const be=(a:Uint8Array,o:number)=>a[o]*0x1000000+(a[o+1]<<16)+(a[o+2]<<8)+a[o+3];
+const sync=(a:Uint8Array,o:number)=>(((a[o]??0)&127)<<21)|(((a[o+1]??0)&127)<<14)|(((a[o+2]??0)&127)<<7)|((a[o+3]??0)&127);
+const be=(a:Uint8Array,o:number)=>(a[o]??0)*0x1000000+((a[o+1]??0)<<16)+((a[o+2]??0)<<8)+(a[o+3]??0);
 const text=(bytes:Uint8Array,encoding:number)=>{
  try{
   if(encoding===1||encoding===2){
@@ -43,7 +43,7 @@ export async function detectAudioTags(file:File):Promise<AudioTags>{
   const size=major===4?sync(data,i+4):be(data,i+4);
   if(!size||i+10+size>tagSize)break;
   const value=data.subarray(i+10,i+10+size);
-  if(name==='TIT2'&&value.length)info.title=text(value.subarray(1),value[0])||info.title;
+  if(name==='TIT2'&&value.length)info.title=text(value.subarray(1),value[0]??0)||info.title;
   if(name==='TPE1'&&value.length)info.artist=text(value.subarray(1),value[0])||info.artist;
   if(name==='TALB'&&value.length)info.album=text(value.subarray(1),value[0])||info.album;
   if(name==='APIC'&&!info.cover)info.cover=extractCover(value);
