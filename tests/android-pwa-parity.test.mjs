@@ -64,7 +64,7 @@ test('Android HOME has same mobile destinations and visual navigation as PWA, no
  assert.match(home,/active==='repertoire'\?<NativeRepertoire token=\{token\}/);
  assert.match(home,/active==='family'\?<NativeFamily token=\{token\}/);
  assert.match(home,/styles\.bottomNav/);
- assert.match(home,/\['home','chat','calendar','repertoire','family'\]/);
+ assert.match(home,/\['home','chat','calendar','repertoire','family','notices'\]/);
  assert.match(home,/width:'100%'/);
  assert.match(pwa,/visual-bottom-nav/);
  assert.doesNotMatch(home,/WebView|startNamedChatSession|restoreNamedChatSession|new WebSocket/);

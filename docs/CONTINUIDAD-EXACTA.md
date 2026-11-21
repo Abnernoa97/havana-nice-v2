@@ -38,6 +38,8 @@
 - Worker refactor: una clase Durable Object y un `index.ts` delgado. Worker de carátulas publicado desde el 12/11; siete bindings preservados. El control del 20/11 validó las fuentes y pruebas, sin subir otro Worker ni compilar nueva APK. Los smoke tests históricos de v66 siguen documentados en Git.
 - No confundir compilación + pruebas con experiencia física. En iPhone la navegación modular fue confirmada por usuario; el lector BOOK 3D Android/PWA también fue confirmado después de la corrección. Siguen pendientes modo avión, Recuerdos y QA integral de Chat/Familia/Calendario.
 
+**21/11 · Perfil:** foto obligatoria tras autorización, edición en foto superior y sincronización por actorId en D1/R2. Notificaciones sexta pestaña; Ajustes dentro de Perfil. API privada nueva con compatibilidad transitoria, migración 0030 y Worker no se consideran activos hasta migración y despliegue verificados; Android fuente nueva sin APK.
+
 ## Próximos pasos en orden
 
 1. **Worker de carátulas activo y alineado con PWA:** conservar siete bindings y v66 como reversión; sin cambios al backend durante el refactor nativo.

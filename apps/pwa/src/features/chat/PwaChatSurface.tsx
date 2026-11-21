@@ -42,7 +42,7 @@ export default function PwaChatSurface({ui}:{ui:PwaChatUI}){
     <>
       {session&&activeScreen!=='chat'&&<Suspense fallback={<div className="visual-shell" role="status">Abriendo espacio del equipo…</div>}>
         {readerRoute?<PwaReaderRoute token={session.token} route={readerRoute} onClose={closeReader}/>:
-         <VisualApp displayName={session.displayName}
+         <VisualApp displayName={session.displayName} actorId={session.actorId}
           active={activeScreen} token={session.token} onNavigate={navigateTo}/>}
       </Suspense>}
       {(!session||activeScreen==='chat')&&<div className="member-chat-visible">

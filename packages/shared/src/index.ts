@@ -178,6 +178,8 @@ export type {CalendarEvent,CalendarEventInput,CalendarEventList,CalendarEventSta
 
 export {MEMBER_MODULES} from './memberModules';
 export {getMusicianDirectory} from './musicians';
+export {getTeamProfiles,uploadMyProfilePhoto,MemberProfileApiError} from './member-profile';
+export type {MemberProfile} from './member-profile';
 export type {MusicianDirectoryEntry} from './musicians';
 export type {MemberModule,MemberScreen} from './memberModules';
 

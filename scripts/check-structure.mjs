@@ -67,6 +67,8 @@ const pwaShell=readFileSync(join(rootDir,'apps/pwa/src/app/VisualApp.tsx'),'utf8
 assert.match(pwaShell,/const MemberHome=lazy\(/);
 assert.match(pwaHome,/className="hn-home-stage"/);
 assert.match(pwaHome,/TeamStoriesStrip/);
+assert.match(pwaShell,/MemberProfilePanel/);
+assert.match(pwaShell,/\['home','chat','calendar','repertoire','family','notices'\]/);
 assert.doesNotMatch(pwaHome,/visual-welcome|visual-grid|Todo lo que necesitas/);
 assert.doesNotMatch(pwaHome,/new WebSocket|startNamedChatSession|restoreNamedChatSession|saveLocalChat|fetch\(/);
 assert.doesNotMatch(pwaView,/startNamedChatSession|restoreNamedChatSession|openChatSocket|saveLocalChat|new WebSocket/);
@@ -78,7 +80,7 @@ assert.deepEqual(children('apps/android'),
 // source of each module. Moved source files cannot survive as compatibility copies.
 assert.deepEqual(children('apps/android/app'),['NativeApp.tsx','NativeMemberHome.tsx']);
 assert.deepEqual(children('apps/android/features'),
- ['book','calendar','chat','family','musicians','repertoire']);
+ ['book','calendar','chat','family','musicians','profile','repertoire']);
 assert.deepEqual(children('apps/android/hooks'),['useNativeKeyboardVisibility.ts','useNativeMemberNavigation.ts']);
 assert.deepEqual(children('apps/android/storage'),['chatPendingMedia.ts','chatPhotoCache.ts','chatStorage.ts']);
 assert.deepEqual(children('apps/android/styles'),['chat-styles.ts']);

@@ -1,4 +1,7 @@
 import {lazy,Suspense,memo,useState} from 'react';
+import {usePwaMemberProfiles,PwaProfileLive} from '../features/profile/usePwaMemberProfiles';
+import MemberProfilePanel from '../features/profile/MemberProfilePanel';
+import '../features/profile/profile.css';
 import {MEMBER_MODULES,type MemberScreen} from '@havana/shared';
 // Each module is a separate on-demand production chunk. The HOME shell and
 // existing authorized session stay mounted; no routes, APIs or data flow change.
@@ -14,6 +17,7 @@ type Props={
   onNavigate?:(screen:MemberScreen)=>void;
   preview?:boolean;
   token?:string;
+  actorId?:string;
 };
 const notes:Record<Exclude<MemberScreen,'chat'|'home'>,string>={
   calendar:'El Calendario mostrará los eventos reales y sus horarios al conectar el Administrador.',
@@ -21,11 +25,13 @@ const notes:Record<Exclude<MemberScreen,'chat'|'home'>,string>={
   musicians:'La lista de integrantes requiere la sesión autorizada del equipo.',
   family:'Las fotografías y los videos privados se muestran al entrar con una sesión autorizada. BOOK HAVANA NICE muestra las páginas que publique Administración.',
   notices:'Las notificaciones estarán disponibles cuando activemos su sistema privado.',
-  settings:'Las preferencias se habilitarán cuando podamos guardarlas de forma segura.',
 };
 // Reuses the existing visual shell for the member HOME after successful login.
 // /visual.html remains presentation-only; it cannot open Chat or issue a session.
-function VisualApp({displayName,active,onNavigate,preview=false,token}:Props){
+function VisualApp({displayName,active,onNavigate,preview=false,token,actorId}:Props){
+  const [profileOpen,setProfileOpen]=useState(false);
+  const profile=usePwaMemberProfiles(token,actorId);
+  const own=profile.own;
   const [previewScreen,setPreviewScreen]=useState<MemberScreen>('home');
   const screen=active??previewScreen;
   const navigate=(target:MemberScreen)=>{
@@ -38,10 +44,11 @@ function VisualApp({displayName,active,onNavigate,preview=false,token}:Props){
   return <div className={screen==='home'?'visual-shell hn-home-route':'visual-shell'}>
     <header className="visual-header">
       <div><div className="visual-brand">HAVANA NICE</div><div className="visual-subtitle">ESPACIO DEL EQUIPO</div></div>
-      <span className="visual-account" aria-label={preview?'Vista preliminar':'Perfil de '+(displayName||'integrante')}>
-        <span className="visual-account-avatar">{preview?'H':(displayName||'H').charAt(0).toUpperCase()}</span>
+      <button type="button" className="visual-account" disabled={preview||profile.phase==='legacy'||profile.phase==='offline'||profile.phase==='checking'} onClick={()=>setProfileOpen(true)}
+        aria-label={'Abrir perfil de '+(displayName||'integrante')}>
+        <span className="visual-account-avatar">{own?.photoUrl?<img src={own.photoUrl} alt=""/>:preview?'H':(displayName||'H').charAt(0).toUpperCase()}</span>
         <span className="visual-account-label">{preview?'Vista previa':displayName||'Mi perfil'}</span>
-      </span>
+      </button>
     </header>
     <div className="visual-layout">
       <aside className="visual-side" aria-label="Módulos de HAVANA NICE">
@@ -60,7 +67,7 @@ function VisualApp({displayName,active,onNavigate,preview=false,token}:Props){
       </aside>
       <main className="visual-content" id="visual-content">
         {screen==='home'?<Suspense fallback={<div className="visual-empty" role="status">Abriendo Inicio…</div>}>
-          <MemberHome displayName={displayName} token={token} preview={preview}/>
+          <MemberHome displayName={displayName} actorId={actorId} profiles={profile.profiles} preview={preview} canEditProfile={profile.phase==='ready'||profile.phase==='missing'} onOpenProfile={()=>setProfileOpen(true)}/>
         </Suspense>:<>
           <div className="visual-section-header">
             <button className="visual-back" type="button" onClick={()=>navigate('home')}>‹ Inicio</button>
@@ -83,15 +90,23 @@ function VisualApp({displayName,active,onNavigate,preview=false,token}:Props){
       </main>
     </div>
     <nav className="visual-bottom-nav" aria-label="Navegación principal">
-      {(['home','chat','calendar','repertoire','family'] as MemberScreen[]).map(item=>{
+      {(['home','chat','calendar','repertoire','family','notices'] as MemberScreen[]).map(item=>{
         const module=MEMBER_MODULES.find(module=>module.id===item);
         return <button key={item} type="button" disabled={preview&&item==='chat'}
           className={screen===item?'active':''} aria-current={screen===item?'page':undefined}
           onClick={()=>navigate(item)}>
-          <span aria-hidden="true">{module?.glyph||'⌂'}</span><small>{module?.label||'Inicio'}</small>
+          <span aria-hidden="true">{module?.glyph||'⌂'}</span><small>{item==='family'?'Familia':module?.label||'Inicio'}</small>
         </button>;
       })}
     </nav>
+    {!preview&&token&&(screen==='home'||profileOpen||profile.phase==='missing')&&<PwaProfileLive token={token} onChange={()=>{void profile.refresh();}}/>}
+    {!preview&&token&&profile.phase==='checking'&&<div className="hn-profile-overlay" role="status">
+      <div className="hn-profile-card">Comprobando tu perfil…</div>
+    </div>}
+    {!preview&&token&&(profile.phase==='missing'||profileOpen)&&profile.phase!=='checking'&&
+     <MemberProfilePanel name={displayName||'integrante'} photo={own}
+       required={profile.phase==='missing'} saving={profile.saving} error={profile.error}
+       onUpload={profile.upload} onClose={()=>setProfileOpen(false)}/>}
   </div>;
 }
 // Ignore background Chat deliveries when no HOME prop changed.

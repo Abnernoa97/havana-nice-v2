@@ -6,7 +6,7 @@ import {readFileSync} from 'node:fs';
 const read=path=>path==='apps/android/app/NativeApp.tsx'?readNativeSource(import.meta.url):path==='apps/pwa/src/app/App.tsx'?readPwaSource(import.meta.url):readFileSync(new URL('../'+path,import.meta.url),'utf8');
 test('One shared list of member HOME destinations, not a second access mechanism',()=>{
  const modules=read('packages/shared/src/memberModules.ts');
- for(const name of ['chat','calendar','repertoire','musicians','family','notices','settings'])
+ for(const name of ['chat','calendar','repertoire','musicians','family','notices'])
    assert.match(modules,new RegExp("id:'"+name+"'"));
  assert.match(modules,/ready:true/);
  assert.doesNotMatch(modules,/token|password|startNamedChatSession|restoreNamedChatSession/);
@@ -62,6 +62,6 @@ test('PWA and Android availability remain truthful without duplicating HOME',()=
  assert.match(data,/id:'repertoire'[^\n]*ready:true,nativeReady:true/);
  assert.match(data,/id:'calendar'[^\n]*ready:true,nativeReady:true/);
  assert.match(read('apps/pwa/src/features/home/MemberHome.tsx'),/className="hn-home-stage"/);
- assert.match(read('apps/pwa/src/features/home/TeamStoriesStrip.tsx'),/getMusicianDirectory/);
- assert.match(read('apps/android/app/NativeMemberHome.tsx'),/module\.nativeReady\?'Disponible':'En preparación'/);
+ assert.match(read('apps/pwa/src/features/home/TeamStoriesStrip.tsx'),/person.photoUrl/);
+ assert.match(read('apps/android/app/NativeMemberHome.tsx'),/useNativeMemberProfile/);
 });

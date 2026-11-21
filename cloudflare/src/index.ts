@@ -8,6 +8,7 @@ import {CalendarRoom,calendarSocketIdentity,calendarSocketAuthorized,notifyReper
 export {CalendarRoom};
 import {handleRepertoireApi} from './modules/repertoire/repertoire.js';
 import {handleFamilyApi} from './modules/family/family.js';
+import {handleProfileApi} from './modules/profile/profile.js';
 import {handleBookApi} from './modules/book/book.js';
 import {notifyFamilyClients} from './modules/family/family-realtime.js';
 import {handleChatMedia,readChatMedia,decorateChatMessages} from './modules/chat/chat-media.js';
@@ -117,6 +118,9 @@ export default {
     // BOOK: independent editorial pages; shares the canonical Worker, D1, R2 and ChatRoom signal.
     if(url.pathname.startsWith('/api/book/'))
       return handleBookApi(request,env,url,origin,verifySession,ctx);
+    // Member profile photos: private R2, separate from Chat/Familia, same one session.
+    if(url.pathname.startsWith('/api/profile/'))
+      return handleProfileApi(request,env,url,origin,verifySession,ctx);
     // Familia HAVANA NICE: private team albums and original R2 media.
     if(url.pathname.startsWith('/api/family/'))
       return handleFamilyApi(request,env,url,origin,respond,verifySession,ctx);

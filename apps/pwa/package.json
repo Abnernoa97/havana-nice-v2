@@ -4,12 +4,12 @@
   "private": true,
   "scripts": {
     "dev": "vite",
-    "build": "node ../../scripts/check-structure.mjs && node ../../scripts/audit-guard.mjs && npm run typecheck && vite build",
+    "build": "node ../../scripts/check-structure.mjs && node ../../scripts/audit-guard.mjs && npm run typecheck && npm run typecheck -w @havana/android && vite build",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
     "test:sw": "node --test tests/sw.test.mjs",
     "test:admin": "node --test tests/admin.test.mjs",
-    "postbuild": "node --test ../../tests/pwa-access-presentation.test.mjs ../../tests/pwa-lazy-loading.test.mjs"
+    "postbuild": "node --test ../../tests/pwa-access-presentation.test.mjs ../../tests/pwa-lazy-loading.test.mjs ../../tests/home-visual-identity.test.mjs ../../tests/member-home-navigation.test.mjs ../../cloudflare/tests/member-profile.test.mjs ../../tests/member-profile-parity.test.mjs"
   },
   "dependencies": {
     "@havana/shared": "0.0.1",

@@ -166,7 +166,7 @@ export default function NativeChatSurface({ui}:{ui:ReturnType<typeof useNativeCh
               }}><Text style={styles.emojiOptionText}>{emoji}</Text></Pressable>)}
         </View>}
       </KeyboardAvoidingView>}
-      {session&&activeScreen!=='chat'&&<NativeMemberHome token={session.token} displayName={session.displayName}
+      {session&&activeScreen!=='chat'&&<NativeMemberHome token={session.token} actorId={session.actorId} displayName={session.displayName}
         active={activeScreen} onNavigate={navigateTo}/>}
       {session&&activeScreen==='chat'&&<NativeChatReactionShower burst={reactionBurst}/>}
     </SafeAreaView>

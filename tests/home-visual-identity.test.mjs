@@ -14,9 +14,10 @@ test('PWA HOME uses a scoped lightweight emerald-gold theme without affecting Ch
  const home=read('apps/pwa/src/features/home/MemberHome.tsx');
  assert.match(app,/const MemberHome=lazy\(\(\)=>import\('\.\.\/features\/home\/MemberHome'\)\)/);
  assert.match(home,/className="hn-home-stage"/);
- assert.match(home,/<TeamStoriesStrip token=\{token\}/);
+ assert.match(home,/<TeamStoriesStrip displayName=\{displayName\}/);
  assert.doesNotMatch(home,/visual-welcome|visual-grid|Todo lo que necesitas/);
- assert.match(read('apps/pwa/src/features/home/TeamStoriesStrip.tsx'),/getMusicianDirectory/);
+ assert.match(read('apps/pwa/src/features/home/TeamStoriesStrip.tsx'),/person.photoUrl/);
+ assert.match(app,/MemberProfilePanel/);
  assert.match(app,/aria-current=\{screen===item.id\?'page':undefined\}/);
  assert.doesNotMatch(app+'\n'+home,/new WebSocket|startNamedChatSession|uploadChatMediaBatch/);
 });
@@ -26,6 +27,7 @@ test('Android HOME presentation keeps one session and direct native modules',()=
  assert.match(app,/color:'#DBC59A'/);
  assert.match(app,/active==='family'[\s\S]*?familyViewport/);
  assert.match(app,/active==='calendar'\?<NativeCalendar token=\{token\}/);
- assert.match(app,/onPress=\{\(\)=>onNavigate\(module.id\)\}/);
+ assert.match(app,/onPress=\{\(\)=>onNavigate\(dest\)\}/);
+ assert.match(app,/useNativeMemberProfile\(token,actorId\)/);
  assert.doesNotMatch(app,/new WebSocket|startNamedChatSession|WebView|AsyncStorage/);
 });
