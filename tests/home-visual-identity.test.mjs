@@ -28,6 +28,6 @@ test('Android HOME presentation keeps one session and direct native modules',()=
  assert.match(app,/active==='family'[\s\S]*?familyViewport/);
  assert.match(app,/active==='calendar'\?<NativeCalendar token=\{token\}/);
  assert.match(app,/onPress=\{\(\)=>onNavigate\(dest\)\}/);
- assert.match(app,/useNativeMemberProfile\(token,actorId\)/);
+ assert.match(app,/useNativeMemberProfile\(token,actorId,active==='home'\)/);
  assert.doesNotMatch(app,/new WebSocket|startNamedChatSession|WebView|AsyncStorage/);
 });

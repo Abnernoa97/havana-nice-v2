@@ -15,11 +15,12 @@ function setup(){
  raw.exec(readFileSync(new URL('../migrations/0030_member_profiles.sql',import.meta.url),'utf8'));
  raw.prepare('INSERT INTO chat_members VALUES(?,?,?)').run(FER,'Fer',1);
  raw.prepare('INSERT INTO chat_members VALUES(?,?,?)').run(NOA,'Noa',1);
- const prepare=sql=>({bind(...args){return {
+ const statement=(sql,args)=>({
   async first(){return raw.prepare(sql).get(...args)||null;},
   async all(){return {results:raw.prepare(sql).all(...args)};},
   async run(){const meta=raw.prepare(sql).run(...args);return {meta:{changes:meta.changes}};}
- };}});
+ });
+ const prepare=sql=>Object.assign(statement(sql,[]),{bind:(...args)=>statement(sql,args)});
  const DB={prepare,async batch(statements){return Promise.all(statements.map(s=>s.run()));}};
  const objects=new Map(),tasks=[];
  const MEDIA_BUCKET={
