@@ -13,7 +13,7 @@ const migrations=[
  '0021_family_media.sql','0022_family_upload_sessions.sql','0023_family_video_posters.sql',
  '0024_family_storage_budget.sql','0025_chat_media_r2.sql',
  '0026_member_delete_media_cleanup.sql','0027_book_havana_nice.sql',
- '0028_book_optimized_images.sql','0029_calendar_event_memories.sql'
+ '0028_book_optimized_images.sql','0029_calendar_event_memories.sql','0036_audio_library.sql'
 ];
 async function setup(){
  const db=new DatabaseSync(':memory:');
