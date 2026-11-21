@@ -166,6 +166,9 @@ jobs:
       - name: Validate independent administrator authentication
         run: npm run test:admin-auth -w @havana/cloudflare
 
+      - name: Verify passwordless trusted browser never bypasses Admin authorization
+        run: node --test cloudflare/tests/admin-trusted-device.test.mjs cloudflare/tests/admin-storage-summary.test.mjs
+
       - name: Validate private Admin Chat moderation
         run: npm run test:admin-chat -w @havana/cloudflare
 
