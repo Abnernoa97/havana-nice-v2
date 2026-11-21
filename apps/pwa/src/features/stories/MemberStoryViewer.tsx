@@ -48,7 +48,7 @@ export default function MemberStoryViewer({items,myId,onClose,onDelete,onPhotoEr
    if(event.key==='ArrowLeft')previous();
   }}>
   <div className="hn-story-viewer">
-   <div className="hn-story-progress" aria-label={(position+1)+' de '+items.length+' fotografías'>
+   <div className="hn-story-progress" aria-label={(position+1)+' de '+items.length+' fotografías'}>
     {items.map((story,index)=><span key={story.id} className="hn-story-progress-track">
      {index<position?<span className="hn-story-progress-fill done"/>:
       index===position?<span key={item.id} className="hn-story-progress-fill playing"
