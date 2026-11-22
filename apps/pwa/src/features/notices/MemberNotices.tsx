@@ -2,6 +2,7 @@ import {useCallback,useEffect,useRef,useState} from 'react';
 import {getMemberNotices,markMemberNoticesRead,memberNoticeMessage,
  type MemberNotice,MemberNoticeApiError} from '@havana/shared';
 import {useFamilyLive} from '../../services/use-family-live';
+import {usePwaPush} from './usePwaPush';
 import './member-notices.css';
 
 export default function MemberNotices({token,calendarRevision=0}:{token:string;calendarRevision?:number}){
@@ -9,6 +10,7 @@ export default function MemberNotices({token,calendarRevision=0}:{token:string;c
  const [unread,setUnread]=useState(0);
  const [loading,setLoading]=useState(true);
  const [error,setError]=useState('');
+ const push=usePwaPush(token);
  const request=useRef(0);
  const refresh=useCallback(async()=>{
   const id=++request.current;
@@ -39,6 +41,24 @@ export default function MemberNotices({token,calendarRevision=0}:{token:string;c
   <div className="hn-notices-header">
    <div><h2>Tu actividad</h2><p>{unread} {unread===1?'notificación nueva':'notificaciones nuevas'}</p></div>
    <button type="button" onClick={()=>void refresh()}>Actualizar</button>
+  </div>
+  <div className="hn-push-control" role="status">
+   {push.state==='enabled'?<>
+    <span>Notificaciones del teléfono activadas</span>
+    <button type="button" onClick={()=>void push.disable()}>Desactivar</button>
+   </>:push.state==='ready'?<>
+    <span>Recibe las novedades del equipo incluso con la aplicación cerrada.</span>
+    <button type="button" onClick={()=>void push.enable()}>Activar notificaciones</button>
+   </>:push.state==='blocked'?
+    <span>Las notificaciones están bloqueadas. Actívalas en los ajustes del teléfono.</span>:
+    push.state==='unavailable'?
+    <span>Para recibir avisos en iPhone, añade HAVANA NICE a la pantalla de inicio.</span>:
+    push.state==='pending'?
+    <span>La entrega de notificaciones al teléfono está pendiente de configuración.</span>:
+    push.state==='error'?
+    <button type="button" onClick={()=>void push.enable()}>Reintentar activación</button>:
+    <span>Comprobando notificaciones del teléfono…</span>}
+   {push.error&&<small>{push.error}</small>}
   </div>
   {unread>0&&<button className="hn-notices-readall" type="button"
    onClick={()=>void mark()}>Marcar todas como leídas</button>}
