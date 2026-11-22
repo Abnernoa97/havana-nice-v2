@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "33085079931",
+    "project_id": "havana-nice-v2-push",
+    "storage_bucket": "havana-nice-v2-push.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:33085079931:android:cceb173ae0c6e844377dde",
+        "android_client_info": {
+          "package_name": "com.havananice.v2"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD87pFbAk_LAAkwSktbrgbiQokwmCgQkWc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
