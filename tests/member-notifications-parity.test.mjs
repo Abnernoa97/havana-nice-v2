@@ -45,8 +45,8 @@ test('Both notification tabs use one authenticated contract and the existing Fam
  const contract=read('packages/shared/src/member-notifications.ts');
  const worker=read('cloudflare/src/index.ts');
  const handler=read('cloudflare/src/modules/notices/member-notifications.js');
- assert.match(read('apps/android/app/NativeMemberHome.tsx'),/<NativeNotices token=\{token\}/);
- assert.match(read('apps/pwa/src/app/VisualApp.tsx'),/<MemberNotices token=\{token\}/);
+ assert.match(read('apps/android/app/NativeMemberHome.tsx'),/<NativeNotices token=\{token\} calendarRevision=\{calendarRevision\}/);
+ assert.match(read('apps/pwa/src/app/VisualApp.tsx'),/<MemberNotices token=\{token\} calendarRevision=\{calendarRevision\}/);
  assert.match(native,/getMemberNotices\(token\)/);
  assert.match(native,/openFamilyRealtime\(token,false/);
  assert.match(pwa,/getMemberNotices\(token\)/);
