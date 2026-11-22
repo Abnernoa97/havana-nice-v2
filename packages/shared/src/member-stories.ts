@@ -23,15 +23,24 @@ export async function getMemberStories(token:string,base=API):Promise<MemberStor
   cache:'no-store',headers:{Authorization:'Bearer '+token}
  });
  const data=await res.json().catch(()=>({error:'Estados no disponibles.'})) as {
-  error?:string;stories?:MemberStory[]
+  error?:string;stories?:MemberStory[];serverNow?:number
  };
  if(!res.ok)throw new MemberStoryApiError(data.error||'No se pudieron cargar los estados.',res.status);
- const now=Date.now();
- return (data.stories||[]).filter(story=>{
-  return story.expiresAt>now&&story.expiresAt>story.createdAt&&
+ if(!Array.isArray(data.stories))throw new MemberStoryApiError('La lista de Estados está incompleta.',502);
+ const deviceNow=Date.now();
+ // The Worker sends authoritative serverNow. A misconfigured Android clock
+ // must not silently hide 24-hour states that the server still considers live.
+ const serverNow=typeof data.serverNow==='number'&&Number.isFinite(data.serverNow)
+  ?data.serverNow:deviceNow;
+ const skew=deviceNow-serverNow;
+ const adjust= Math.abs(skew)>120_000 ? skew : 0;
+ return data.stories.filter(story=>{
+  return typeof story?.expiresAt==='number'&&story.expiresAt>serverNow&&
+   story.expiresAt>story.createdAt&&
    typeof story.actorId==='string'&&typeof story.id==='string'&&
    privateUrl(story.photoUrl,base)!==null;
- }).map(story=>({...story,photoUrl:privateUrl(story.photoUrl,base)!}));
+ }).map(story=>({...story,photoUrl:privateUrl(story.photoUrl,base)!,
+  createdAt:story.createdAt+adjust,expiresAt:story.expiresAt+adjust}));
 }
 export async function uploadMyStory(token:string,photo:Blob,base=API):Promise<void>{
  if(photo.type!=='image/jpeg'||photo.size<4||photo.size>1_500_000)
