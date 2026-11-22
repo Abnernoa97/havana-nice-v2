@@ -13,7 +13,8 @@
         "foregroundImage": "../pwa/public/icons/havana-nice-512.png",
         "backgroundColor": "#0D2A23"
       },
-      "icon": "../pwa/public/icons/havana-nice-512.png"
+      "icon": "../pwa/public/icons/havana-nice-512.png",
+      "googleServicesFile": "./google-services.json"
     },
     "extra": {
       "environment": "development"
