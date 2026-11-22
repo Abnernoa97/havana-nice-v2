@@ -36,7 +36,7 @@ function NativeMemberHome({displayName,actorId,token,active,onNavigate}:Props){
   {active==='home'?<View style={styles.loungeInline}
    accessibilityLabel="Private Listening Lounge">
     <NativeAudioEditorialView inline/>
-  </View>:<>>
+  </View>:<>
    <Pressable accessibilityRole="button" accessibilityLabel="Volver a Inicio"
     style={styles.back} onPress={()=>onNavigate('home')}><Text style={styles.backLabel}>‹ Inicio</Text></Pressable>
    <Text style={styles.title}>{selected?.label||'Módulo'}</Text>
