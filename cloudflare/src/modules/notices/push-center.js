@@ -47,8 +47,8 @@ export async function handleMemberPushApi(request,env,url,origin,verifySession){
  if(route==='/api/push/devices'&&request.method==='GET'){
   try{
    const row=await env.DB.prepare(
-    'SELECT COUNT(*) AS count FROM member_push_devices WHERE actor_id=? AND revoked_at IS NULL'
-   ).bind(actor.actorId).first();
+    'SELECT COUNT(*) AS count FROM member_push_devices WHERE actor_id=? AND session_hash=? AND revoked_at IS NULL'
+   ).bind(actor.actorId,await sha256Hex(token)).first();
    return json({registered:Number(row?.count||0)},200,origin);
   }catch{return json({registered:0,configured:false},503,origin);}
  }
@@ -62,8 +62,8 @@ export async function handleMemberPushApi(request,env,url,origin,verifySession){
   if(typeof value!=='string'||value.length<32)return json({error:'Dispositivo inválido'},400,origin);
   const hash=await sha256Hex(platform+':'+value);
   await env.DB.prepare(
-   'UPDATE member_push_devices SET revoked_at=?,updated_at=? WHERE actor_id=? AND token_hash=?'
-  ).bind(Date.now(),Date.now(),actor.actorId,hash).run();
+   'UPDATE member_push_devices SET revoked_at=?,updated_at=? WHERE actor_id=? AND session_hash=? AND token_hash=?'
+  ).bind(Date.now(),Date.now(),actor.actorId,await sha256Hex(token),hash).run();
   return json({ok:true},200,origin);
  }
  const platform=data?.platform;
@@ -73,6 +73,7 @@ export async function handleMemberPushApi(request,env,url,origin,verifySession){
   (platform==='android-fcm'&&validFcmToken(endpoint))))
   return json({error:'Suscripción push inválida'},400,origin);
  const hash=await sha256Hex(platform+':'+endpoint);
+ const sessionHash=await sha256Hex(token);
  const now=Date.now();
  try{
   const existing=await env.DB.prepare(
@@ -85,11 +86,11 @@ export async function handleMemberPushApi(request,env,url,origin,verifySession){
    await env.DB.prepare('DELETE FROM member_push_outbox WHERE device_id=?')
     .bind(id).run();
   await env.DB.prepare(
-   'INSERT INTO member_push_devices(id,actor_id,platform,token_hash,endpoint,p256dh,auth_secret,created_at,updated_at,revoked_at) '+
-   'VALUES(?,?,?,?,?,?,?,?,?,NULL) ON CONFLICT(token_hash) DO UPDATE SET '+
-   'actor_id=excluded.actor_id,endpoint=excluded.endpoint,p256dh=excluded.p256dh,'+
+   'INSERT INTO member_push_devices(id,actor_id,session_hash,platform,token_hash,endpoint,p256dh,auth_secret,created_at,updated_at,revoked_at) '+
+   'VALUES(?,?,?,?,?,?,?,?,?,?,NULL) ON CONFLICT(token_hash) DO UPDATE SET '+
+   'actor_id=excluded.actor_id,session_hash=excluded.session_hash,endpoint=excluded.endpoint,p256dh=excluded.p256dh,'+
    'auth_secret=excluded.auth_secret,updated_at=excluded.updated_at,revoked_at=NULL'
-  ).bind(id,actor.actorId,platform,hash,endpoint,keys?.p256dh||null,
+  ).bind(id,actor.actorId,sessionHash,platform,hash,endpoint,keys?.p256dh||null,
    keys?.auth||null,now,now).run();
   // Bounded active devices per musician, oldest beyond the limit retired.
   await env.DB.prepare(
@@ -106,8 +107,11 @@ export async function handleMemberPushApi(request,env,url,origin,verifySession){
 export async function queueNoticePush(env,{noticeId,recipientId,kind,targetId,title,body}){
  try{
   const devices=(await env.DB.prepare(
-   'SELECT id FROM member_push_devices WHERE actor_id=? AND revoked_at IS NULL LIMIT 10'
-  ).bind(recipientId).all()).results||[];
+   'SELECT d.id FROM member_push_devices d '+
+   'JOIN chat_sessions s ON s.token_hash=d.session_hash AND s.actor_id=d.actor_id AND s.expires_at>? '+
+   'JOIN chat_single_device_owners owner ON owner.actor_id=d.actor_id AND owner.token_hash=d.session_hash '+
+   'WHERE d.actor_id=? AND d.revoked_at IS NULL LIMIT 10'
+  ).bind(Date.now(),recipientId).all()).results||[];
   if(!devices.length)return 0;
   const now=Date.now();
   const statements=devices.map(device=>env.DB.prepare(
