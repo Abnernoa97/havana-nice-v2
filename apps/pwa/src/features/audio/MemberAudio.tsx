@@ -42,8 +42,8 @@ export default function MemberAudio({token,active=true}:{token:string;active?:bo
   document.addEventListener('visibilitychange',check);
   return()=>document.removeEventListener('visibilitychange',check);
  },[refresh,current?.id]);
- // Decode private covers once for the vinyl and track list. The OS
- // lock-screen image remains the original signed HTTPS URL, not this Blob.
+ // Decode private covers once for the vinyl and track list. Lock-screen
+ // artwork uses a same-origin HTTPS capability and never this Blob.
  useEffect(()=>{
   const controller=new AbortController(),created:string[]=[];
   let live=true;
@@ -59,11 +59,9 @@ export default function MemberAudio({token,active=true}:{token:string;active?:bo
      const ready=await prepareAudioCover(url,controller.signal);
      if(!live){
       URL.revokeObjectURL(ready.display);
-      if(ready.lockscreen)URL.revokeObjectURL(ready.lockscreen);
       continue;
      }
      created.push(ready.display);
-     if(ready.lockscreen)created.push(ready.lockscreen);
      setPreparedCovers(old=>({...old,[track.id]:ready}));
     }catch{/* Keep the live R2 URL as a visual fallback. */}
    }
@@ -115,21 +113,23 @@ export default function MemberAudio({token,active=true}:{token:string;active?:bo
   playOnChange.current=playing;
   setSelected(next);
  };
- // iOS lock-screen artwork: first give the signed original image, then update
- // once the locally decoded, square 512px JPEG Blob is available. This avoids
- // non-square originals without changing vinyl art or storing public copies.
- // Play/pause must not reinitialize the artwork.
+ // iOS Now Playing fetches artwork from an independent system process.
+ // An opaque Blob or cross-origin workers.dev URL may not load there.
+ // The private grant is proxied on our OWN HTTPS origin; it still expires
+ // and the backend rejects invalid grants. Do not store the grant or log it.
  useEffect(()=>{
   if(!current||!('mediaSession' in navigator)||typeof MediaMetadata==='undefined')return;
   const remoteCover=art(current.coverUrl);
-  const square=preparedCovers[current.id]?.lockscreen;
-  const artwork:MediaImage[]=square?[{src:square,sizes:'512x512',type:'image/jpeg'}]:
-   remoteCover?[{src:remoteCover}]:[];
+  let artworkUrl='';
+  if(remoteCover){
+   const token=new URL(remoteCover).pathname.match(/^\/api\/audio\/media\/([a-f0-9]{32})$/)?.[1];
+   if(token)artworkUrl=new URL('/api/audio/artwork/'+token,window.location.origin).href;
+  }
   navigator.mediaSession.metadata=new MediaMetadata({
-   title:current.title,artist:current.artist,album:current.album,artwork
+   title:current.title,artist:current.artist,album:current.album,
+   artwork:artworkUrl?[{src:artworkUrl}]:[]
   });
- },[current?.id,current?.coverUrl,current?.title,current?.artist,current?.album,
-  preparedCovers[current?.id||'']?.lockscreen]);
+ },[current?.id,current?.coverUrl,current?.title,current?.artist,current?.album]);
  // Controls may change with the selected index, but must never reinitialize
  // lock-screen artwork just because playback or a preloaded cover changed.
  useEffect(()=>{
