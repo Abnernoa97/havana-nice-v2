@@ -133,7 +133,7 @@
 .hn-audio-track small{font:12px/1.3 system-ui,sans-serif;color:#85817a}
 .hn-audio-track>span:last-child{color:#184431;font-size:19px}
 
-.hn-home-route .hn-audio-editorial{max-width:none;margin-top:-12px}
+.hn-home-route .hn-audio-editorial{max-width:none;position:relative;z-index:1;margin-top:0}
 
 @media(max-width:600px){
  .hn-audio-timeline{gap:7px}
@@ -170,8 +170,8 @@
  opacity:.85;
 }
 .hn-home-route .hn-audio-parchment{
- margin-inline:-16px;
- margin-top:0;
+ margin-inline:-16px;margin-top:0;padding-top:43px;
+ min-height:max(720px,calc(100dvh - 185px))
 }
 @media(max-width:600px){
  .hn-audio-parchment{padding:48px 14px 23px}
@@ -182,7 +182,6 @@
   top:-5px
  }
  .hn-audio-record-wrap{width:52%;max-width:220px}
- .hn-audio-paper-tear{height:46px}
  .hn-audio-refresh{top:35px;right:7px;font-size:9px}
  .hn-audio-details h3{font-size:20px}
  .hn-audio-track{min-height:58px}
@@ -197,11 +196,9 @@
   80% 59%,76% 65%,71% 56%,66% 64%,61% 56%,56% 63%,51% 54%,46% 64%,
   41% 56%,36% 62%,31% 53%,26% 63%,21% 56%,16% 65%,11% 55%,7% 63%,3% 54%,0 61%);
 }
-.hn-home-route .hn-audio-editorial{position:relative;z-index:1;margin-top:-18px}
-.hn-home-route .hn-audio-parchment{margin-top:0;padding-top:43px}
+
 .hn-home-route .hn-audio-paper-title{margin-bottom:8px}
 @media(max-width:600px){
- .hn-home-route .hn-audio-editorial{margin-top:-20px}
  .hn-home-route .hn-audio-parchment{padding-top:41px}
  .hn-audio-paper-tear{height:62px}
 }
@@ -214,8 +211,6 @@
  background:conic-gradient(from 14deg,transparent 0deg 316deg,#fff7e927 328deg,
   #fff7e9a6 335deg,transparent 344deg 360deg);
  opacity:.52}
-.hn-home-route .hn-audio-parchment{min-height:max(720px,calc(100dvh - 185px))}
-.hn-home-route .visual-content{background:#f7f0e8}
 
 /* Flower definition: do not blur or stretch the hibiscus decoration. The
    source is transparent; raising local contrast makes petals legible at 2x. */
