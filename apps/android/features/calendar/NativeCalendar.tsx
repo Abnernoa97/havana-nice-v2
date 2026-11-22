@@ -37,7 +37,7 @@ export default function NativeCalendar({token}:{token:string}){
   return()=>{stop();pending.current?.abort();pending.current=null;};
  },[token,refresh]);
  return <View style={styles.root}>
-  <View style={styles.row}><Text style={styles.caption}>EVENTOS · FECHAS DE TRABAJO</Text>
+  <View style={styles.row}>
    <Pressable accessibilityRole="button" onPress={()=>void refresh()}>
     <Text style={styles.link}>Actualizar</Text></Pressable></View>
   {!!error&&<Text style={styles.error}>{error}</Text>}
@@ -92,7 +92,7 @@ export default function NativeCalendar({token}:{token:string}){
  </View>;
 }
 const styles=StyleSheet.create({
- root:{gap:11,paddingBottom:30},row:{flexDirection:'row',justifyContent:'space-between',alignItems:'center'},
+ root:{gap:11,paddingBottom:30},row:{flexDirection:'row',justifyContent:'flex-end',alignItems:'center'},
  caption:{color:'#917252',fontWeight:'700',fontSize:10,letterSpacing:1.5},link:{color:'#856243',fontWeight:'700',fontSize:12},
  error:{color:'#ac3434',fontSize:13},empty:{marginTop:20,color:'#81756b',fontSize:13,textAlign:'center'},
  event:{backgroundColor:'#FFFAF2',borderColor:'#D5CAB8',borderWidth:1,borderRadius:15,overflow:'hidden'},
