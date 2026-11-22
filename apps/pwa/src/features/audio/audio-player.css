@@ -140,3 +140,102 @@
 @media(prefers-reduced-motion:reduce){
  .hn-audio-vinyl.is-playing{animation:none}
 }
+
+/* === Reference-accurate editorial finish · based on the approved concept ===
+   Small, optimized reference crops: 1.1 KiB tear, 4.1 KiB floral, 1.1 KiB corner.
+   Real audio cover is separate and always replaces the reference album image. */
+.hn-audio-parchment{
+ clip-path:none;
+ overflow:hidden;
+ padding:49px clamp(13px,4vw,36px) 24px;
+ background:linear-gradient(103deg,#f9f0e7 0%,#faf5ee 42%,#f3e9de 100%);
+ box-shadow:inset 0 8px 24px #8b705122,0 14px 27px #715b4312;
+}
+.hn-audio-parchment:after{inset:0;z-index:-1;opacity:.28;mix-blend-mode:multiply}
+.hn-audio-paper-tear{
+ top:-2px;left:0;right:0;width:100%;height:50px;
+ transform:none;border-radius:0;filter:none;box-shadow:none;
+ background:url('/audio-lounge/tear.webp') center top / 100% 100% no-repeat;
+}
+.hn-audio-fold{display:none}
+.hn-audio-paper-title{margin:0 auto 11px;gap:3px}
+.hn-audio-paper-title>span{font-size:9px;letter-spacing:.36em}
+.hn-audio-paper-title h2{font-size:clamp(26px,6.1vw,41px);margin:4px 0;line-height:1.1}
+.hn-audio-paper-title p{font:italic clamp(12px,2.8vw,15px)/1.3 Georgia,serif;letter-spacing:.03em}
+.hn-audio-divider{font-size:16px}
+.hn-audio-refresh{
+ position:absolute;z-index:6;right:10px;top:36px;
+ padding:4px 9px;margin:0;background:#fff9f1b8;box-shadow:0 1px 6px #8b78561b;
+ font-size:10px;border-color:#b3a38d55;opacity:.82;
+}
+.hn-audio-player{gap:7px}
+.hn-audio-flowers{
+ position:absolute;z-index:0;left:-18px;top:-7px;
+ width:calc(100% + 36px);height:auto;aspect-ratio:864 / 475;
+ pointer-events:none;
+ background:url('/audio-lounge/floral.webp') center center / 100% 100% no-repeat;
+}
+.hn-audio-silk,.hn-audio-flower{display:none!important}
+.hn-audio-record-wrap{
+ width:min(52%,275px);min-width:0;min-height:0;
+ position:relative;z-index:1;aspect-ratio:1;margin:0 auto 6px;
+ filter:drop-shadow(0 7px 10px #604b3440)
+}
+.hn-audio-vinyl{
+ isolation:isolate;contain:paint;backface-visibility:hidden;
+ -webkit-backface-visibility:hidden;
+ background:#163729;
+ border:2px solid #c6a15e;
+ box-shadow:0 0 0 3px #fff8eac7,0 0 0 5px #d8b57675,
+             0 9px 18px #4b392a54;
+ will-change:transform;
+}
+.hn-audio-vinyl img{
+ position:absolute;inset:0;width:100%;height:100%;z-index:2;
+ object-fit:cover;object-position:center;
+ border-radius:50%;display:block;mix-blend-mode:normal;backface-visibility:hidden;
+}
+.hn-audio-vinyl-grooves{display:none}
+.hn-audio-vinyl-spindle{z-index:4;width:12px;height:12px;border-width:3px}
+.hn-audio-monogram{position:absolute;inset:0;z-index:1}
+.hn-audio-details{position:relative;z-index:2;gap:3px;padding:1px 3px 0}
+.hn-audio-details h3{font-size:clamp(19px,4vw,26px);line-height:1.16;max-width:560px}
+.hn-audio-details p{font-size:13px}
+.hn-audio-seek{position:relative;z-index:3;margin:4px 0 0}
+.hn-audio-controls{position:relative;z-index:3;margin:0 0 2px;gap:clamp(17px,5vw,30px)}
+.hn-audio-controls .hn-audio-main{width:60px;height:60px;font-size:22px}
+.hn-audio-list-title{margin:8px 1% 9px}
+.hn-audio-list-title span{font-size:22px}
+.hn-audio-track-list{gap:7px}
+.hn-audio-track{min-height:59px;border-radius:17px;padding:6px 10px;gap:9px}
+.hn-audio-track img,.hn-audio-track-fallback{
+ width:43px;height:43px;border-radius:11px;flex-basis:43px;
+}
+.hn-audio-paper-corner{
+ left:-2px;bottom:-2px;transform:none;
+ width:120px;height:90px;max-width:32%;
+ border-radius:0;box-shadow:none;
+ background:url('/audio-lounge/corner.webp') left bottom / contain no-repeat;
+ opacity:.85;
+}
+.hn-home-route .hn-audio-parchment{
+ margin-inline:-16px;
+ margin-top:0;
+}
+@media(max-width:600px){
+ .hn-audio-parchment{padding:48px 14px 23px}
+ .hn-audio-paper-title{max-width:97%}
+ .hn-audio-paper-title h2{font-size:clamp(24px,6.3vw,34px)}
+ .hn-audio-paper-title p{font-size:12px}
+ .hn-audio-flowers{
+  top:-6px;left:-15px;width:calc(100% + 30px);
+ }
+ .hn-audio-record-wrap{width:52%;max-width:220px}
+ .hn-audio-paper-tear{height:46px}
+ .hn-audio-refresh{top:35px;right:7px;font-size:9px}
+ .hn-audio-details h3{font-size:20px}
+ .hn-audio-track{min-height:58px}
+}
+@media(prefers-reduced-motion:reduce){
+ .hn-audio-vinyl{animation:none}
+}
