@@ -36,7 +36,11 @@ test('PWA uses artwork from R2 and HTML media session without mock songs',()=>{
  assert.match(pwa,/hn-audio-vinyl is-playing/);
  const cachedArtwork=read('apps/pwa/src/features/audio/audio-cover-cache.ts');
  assert.match(pwa,/prepareAudioCover/);
- assert.match(pwa,/preparedCovers\[current\.id\]\?\.lockscreen/);
+ assert.match(pwa,/const remoteCover=art\(current\.coverUrl\)/);
+ assert.match(pwa,/artwork:remoteCover\?\[\{src:remoteCover\}\]:\[\]/);
+ assert.doesNotMatch(pwa,/src:preparedCovers\[current\.id\]\?\.lockscreen/);
+ assert.match(pwa,/\},\[current\?\.id,current\?\.coverUrl,current\?\.title,current\?\.artist,current\?\.album\]\);/);
+ assert.match(pwa,/\},\[selected,tracks\.length\]\);/);
  assert.match(pwa,/recoverMedia/);
  assert.match(pwa,/recoveryTried/);
  assert.match(pwa,/onLoadedMetadata=/);
