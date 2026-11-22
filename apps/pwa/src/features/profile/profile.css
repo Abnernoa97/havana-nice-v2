@@ -15,5 +15,4 @@
 .hn-profile-close{position:absolute;right:16px;top:12px;border:0;background:transparent;font-size:27px;color:#314a3e}
 .hn-profile-error{color:#a33c32!important}
 .hn-profile-settings{border-top:1px solid #e7e9e6;margin-top:25px;padding-top:15px;font-size:12px!important}
-@media(max-width:750px){.visual-bottom-nav{grid-template-columns:repeat(6,minmax(0,1fr))}.visual-bottom-nav button{min-width:0;font-size:9px}.visual-bottom-nav button small{font-size:9px;letter-spacing:-.025em}}
 @media(max-width:750px){.visual-account-label{font-size:11px}}
