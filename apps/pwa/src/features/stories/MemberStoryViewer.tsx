@@ -5,6 +5,7 @@ import StoryReactionShower,{type StoryReactionBurst} from './StoryReactionShower
 import {useStoryPlayback} from './useStoryPlayback';
 import {useStoryKeyboardViewport} from './useStoryKeyboardViewport';
 import StoryPhotoSurface from './StoryPhotoSurface';
+import {useStoryPhotoCache} from './useStoryPhotoCache';
 
 type Props={items:MemberStory[];myId:string|undefined;token:string;refreshVersion:number;
  onClose:()=>void;onDelete:(id:string)=>Promise<boolean>;onPhotoError:(id:string)=>void};
@@ -15,16 +16,15 @@ export default function MemberStoryViewer({items,myId,token,refreshVersion,
  onClose,onDelete,onPhotoError}:Props){
  const [position,setPosition]=useState(0);
  const [deleting,setDeleting]=useState(false);
- const [failed,setFailed]=useState<string[]>([]);
- const [loadedUrl,setLoadedUrl]=useState('');
  const [held,setHeld]=useState(false);
  const [commentPaused,setCommentPaused]=useState(false);
  const [hidden,setHidden]=useState(typeof document!=='undefined'&&document.hidden);
  const [burst,setBurst]=useState<StoryReactionBurst|null>(null);
  const viewport=useStoryKeyboardViewport();
  const item=items[Math.min(position,items.length-1)];
- const failedPhoto=!!item&&failed.includes(item.photoUrl);
- const paused=deleting||held||hidden||commentPaused||(loadedUrl!==item?.photoUrl&&!failedPhoto);
+ const photo=useStoryPhotoCache(items,position,onPhotoError);
+ const failedPhoto=photo.failed;
+ const paused=deleting||held||hidden||commentPaused||(!photo.url&&!failedPhoto);
  useEffect(()=>{
   const change=()=>setHidden(document.hidden);
   document.addEventListener('visibilitychange',change);
@@ -36,28 +36,14 @@ export default function MemberStoryViewer({items,myId,token,refreshVersion,
   document.body.style.overflow='hidden';
   return()=>{document.body.style.overflow=previous;};
  },[]);
- // Load outside the DOM: only ONE CSS background is mounted. Avoids Safari's
- // accumulated WebKit image layers and keeps playback paused until loaded.
- useEffect(()=>{
-  if(!item)return;
-  let active=true;
-  const loader=new Image();
-  const url=item.photoUrl,id=item.id;
-  loader.onload=()=>{if(active)setLoadedUrl(url);};
-  loader.onerror=()=>{
-   if(!active)return;
-   setFailed(prev=>prev.includes(url)?prev:[...prev,url]);
-   onPhotoError(id);
-  };
-  loader.src=url;
-  return()=>{active=false;loader.onload=null;loader.onerror=null;};
- },[item?.id,item?.photoUrl,onPhotoError]);
+ // The isolated photo cache fetches and decodes once, then supplies a local
+ // Blob URL for the ONE CSS photo layer. No duplicate private image request.
  const previous=()=>{
-  if(position>0){setLoadedUrl('');setPosition(p=>p-1);}
+  if(position>0)setPosition(p=>p-1);
  };
  const next=useCallback(()=>{
   if(position>=items.length-1){onClose();return;}
-  setLoadedUrl('');setPosition(p=>p+1);
+  setPosition(p=>p+1);
  },[position,items.length,onClose]);
  const progress=useStoryPlayback(item?.id,paused,next);
  const deleteCurrent=async()=>{
@@ -66,7 +52,7 @@ export default function MemberStoryViewer({items,myId,token,refreshVersion,
   try{
    if(await onDelete(item.id)){
     if(items.length===1)onClose();
-    else {setLoadedUrl('');setPosition(p=>Math.min(p,items.length-2));}
+    else setPosition(p=>Math.min(p,items.length-2));
    }
   }finally{setDeleting(false);}
  };
@@ -83,7 +69,7 @@ export default function MemberStoryViewer({items,myId,token,refreshVersion,
    '--hn-story-keyboard-inset':viewport.keyboardInset+'px'
   } as CSSProperties}>
    <StoryPhotoSurface id={item.id} name={item.name}
-    url={item.photoUrl} failed={failedPhoto}/>
+    url={photo.url} failed={failedPhoto}/>
    <div className="hn-story-progress" role="progressbar" aria-label="Avance del estado"
     aria-valuemin={0} aria-valuemax={items.length*100} aria-valuenow={position*100+Math.round(progress)}>
     {items.map((story,index)=><span key={story.id} className="hn-story-progress-track">
