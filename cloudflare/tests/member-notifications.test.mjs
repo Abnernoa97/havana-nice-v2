@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {DatabaseSync} from 'node:sqlite';
 import {readFileSync} from 'node:fs';
-import {notifyStoryOwner,handleMemberNotices} from '../src/modules/notices/member-notifications.js';
+import {notifyStoryOwner,notifyCalendarMembers,handleMemberNotices} from '../src/modules/notices/member-notifications.js';
 
 const FER='member:fer',NOA='member:noa',STORY='123e4567-e89b-42d3-a456-426614174000';
 const ROOT='https://havana-nice-v2-dev.soloaplicaciones97.workers.dev';
@@ -12,6 +12,7 @@ function setup(){
  raw.exec('CREATE TABLE chat_members(actor_id TEXT PRIMARY KEY,display_name TEXT NOT NULL,active INTEGER NOT NULL)');
  raw.exec('CREATE TABLE member_stories(id TEXT PRIMARY KEY,actor_id TEXT NOT NULL,expires_at INTEGER NOT NULL)');
  raw.exec(readFileSync(new URL('../migrations/0034_member_notifications.sql',import.meta.url),'utf8'));
+ raw.exec(readFileSync(new URL('../migrations/0037_calendar_member_notifications.sql',import.meta.url),'utf8'));
  raw.prepare('INSERT INTO chat_members VALUES(?,?,1)').run(FER,'Fer');
  raw.prepare('INSERT INTO chat_members VALUES(?,?,1)').run(NOA,'Noa');
  raw.prepare('INSERT INTO member_stories VALUES(?,?,?)').run(STORY,FER,Date.now()+86400000);
@@ -90,4 +91,31 @@ test('Own activity, expired stories and revoked recipients never create an alert
  raw.prepare('UPDATE chat_members SET active=0 WHERE actor_id=?').run(FER);
  assert.equal(await notifyStoryOwner(env,STORY,{actorId:NOA},'story.comment'),false);
  assert.equal((await (await api('noa')).json()).unread,0);
+});
+
+test('Calendar changes create private system inbox notices, never impersonating a musician',async()=>{
+ const {env,raw,api}=setup();
+ const change={eventId:STORY,revision:'rev-1',action:'updated',
+  title:'CUERNAVACA',date:'17 octubre 2026'};
+ assert.equal(await notifyCalendarMembers(env,[FER,FER,NOA],change),2);
+ assert.equal(await notifyCalendarMembers(env,[FER,NOA],change),0,
+  'Retrying the same committed revision must not duplicate notifications');
+ const fer=await (await api('fer')).json();
+ const noa=await (await api('noa')).json();
+ for(const inbox of [fer,noa]){
+  assert.equal(inbox.unread,1);
+  assert.equal(inbox.items.length,1);
+  assert.equal(inbox.items[0].kind,'calendar.event');
+  assert.equal(inbox.items[0].name,'HAVANA NICE');
+  assert.equal(inbox.items[0].actorId,'');
+  assert.match(inbox.items[0].preview,/CUERNAVACA/);
+ }
+ const id=fer.items[0].id;
+ assert.equal((await api('noa','/api/notices/read',{id})).status,200);
+ assert.equal((await (await api('fer')).json()).unread,1,'Other recipient cannot mark this notice as read');
+ await api('fer','/api/notices/read',{id});
+ assert.equal((await (await api('fer')).json()).unread,0);
+ raw.prepare('UPDATE chat_members SET active=0 WHERE actor_id=?').run(NOA);
+ assert.equal(await notifyCalendarMembers(env,[NOA],{...change,revision:'rev-2'}),0);
+ assert.equal((await (await api('fer')).json()).items.length,1);
 });
