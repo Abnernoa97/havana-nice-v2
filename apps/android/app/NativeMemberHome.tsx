@@ -13,6 +13,8 @@ import NativeAudioEditorialView from '../features/audio/NativeAudioEditorialView
 type Props={displayName:string;actorId:string;token:string;
  active:Exclude<MemberScreen,'chat'>;onNavigate:(screen:MemberScreen)=>void;};
 // Native navigation and independent native modules; Chat session never moves here.
+// Tiny embedded alpha gradient keeps the pinned Stories edge soft without a network asset.
+const STORIES_FADE='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAAwCAYAAADQMxCBAAAAOUlEQVR42n2JyQ0AIAzDrO4/MC1H+IEqUT6WnSBJBjQD/OCfbkB8t6gyDOhV9keOfIxsFzPbxTrQBqWZMlwxZHeoAAAAAElFTkSuQmCC';
 function NativeMemberHome({displayName,actorId,token,active,onNavigate}:Props){
  const profile=useNativeMemberProfile(token,actorId,active==='home');
  const [profileOpen,setProfileOpen]=useState(false);
@@ -62,6 +64,8 @@ function NativeMemberHome({displayName,actorId,token,active,onNavigate}:Props){
    <NativeStories token={token} actorId={actorId}
     displayName={displayName} profiles={profile.profiles}
     canPublish={profile.phase==='ready'} refreshVersion={profile.liveVersion}/>
+   <Image pointerEvents="none" source={{uri:STORIES_FADE}}
+    resizeMode="stretch" style={styles.storiesFade}/>
   </View>}
   {active==='family'?<View style={[styles.root,styles.content,styles.familyViewport]}>{content}</View>:
    <ScrollView style={styles.root} contentContainerStyle={styles.content}
@@ -104,7 +108,8 @@ function NativeMemberHome({displayName,actorId,token,active,onNavigate}:Props){
 }
 const styles=StyleSheet.create({
  screen:{flex:1,backgroundColor:'#f7f0e8'},root:{flex:1,minHeight:0},
- storiesFixed:{backgroundColor:'#fff',paddingHorizontal:20,paddingBottom:0,zIndex:2},
+ storiesFixed:{backgroundColor:'#fff',paddingHorizontal:20,paddingBottom:0,zIndex:3},
+  storiesFade:{position:'absolute',left:0,right:0,bottom:-29,height:36,zIndex:4},
  loungeInline:{marginHorizontal:-20,marginTop:0,backgroundColor:'#f7f0e8'},
  content:{paddingHorizontal:20,paddingTop:0,paddingBottom:24,flexGrow:1},
  familyViewport:{flex:1,minHeight:0,paddingBottom:0},
