@@ -133,3 +133,30 @@
   overscroll-behavior-y:contain;-webkit-overflow-scrolling:touch}
  .visual-bottom-nav{z-index:30;flex:0 0 auto}
 }
+
+/* iOS standalone HOME: lock the document, not just the inner panel.
+   This prevents Safari's rubber-band from revealing whitespace above the
+   brand or below the navigation. Other screens (Chat / BOOK) are untouched. */
+@media(max-width:750px){
+ html:has(.hn-home-route),body:has(.hn-home-route),#root:has(.hn-home-route){
+  height:100%;min-height:0;max-height:100%;overflow:hidden!important;
+  overscroll-behavior:none
+ }
+ .hn-home-route.visual-shell{
+  display:flex;flex-direction:column;height:100dvh;max-height:100dvh;
+  min-height:0;overflow:hidden!important;padding-bottom:0;
+  overscroll-behavior:none;background:#f4ece2
+ }
+ .hn-home-route .visual-header{
+  position:relative;z-index:12;flex:0 0 auto;border-bottom:0;
+  background:#0d2a23
+ }
+ .hn-home-route .visual-layout{
+  flex:1 1 auto;min-height:0;overflow:hidden!important;
+  display:flex;flex-direction:column
+ }
+ .hn-home-route .visual-bottom-nav{
+  position:relative;z-index:15;flex:0 0 auto;bottom:auto;
+  background:#fffcf7;box-shadow:0 -4px 14px #17352912
+ }
+}
