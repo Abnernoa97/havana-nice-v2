@@ -75,7 +75,7 @@ assert.doesNotMatch(pwaHome,/new WebSocket|startNamedChatSession|restoreNamedCha
 assert.doesNotMatch(pwaView,/startNamedChatSession|restoreNamedChatSession|openChatSocket|saveLocalChat|new WebSocket/);
 
 assert.deepEqual(children('apps/android'),
- ['App.tsx','app','app.json','features','hooks','package.json','services','storage','styles','tsconfig.json'],
+ ['App.tsx','app','app.json','features','google-services.json','hooks','package.json','services','storage','styles','tsconfig.json'],
  'Android must keep one Expo entry and grouped modules');
 // Android must retain exactly one Expo entry, one navigation owner, and one
 // source of each module. Moved source files cannot survive as compatibility copies.
