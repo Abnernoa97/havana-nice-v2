@@ -6,7 +6,7 @@
 
 - [x] **PWA iPhone/HOME (fuente en `main`):** `VisualApp.tsx` separa `MemberHome` (Estados estáticos bajo la cabecera) de `hn-home-audio-scroll` (único desplazamiento vertical del Lounge y canciones). Eliminado el acoplamiento `sticky` al mismo scroll; capas y degradado blanco→marfil sin franja dura. Sin cambios en tamaño de círculos, navegación inferior, motor de Audio, visor de Estados o BOOK 3D.
 - [x] **Android/HOME (fuente en `main`):** `NativeMemberHome.tsx` mantiene `NativeStories` fuera del `ScrollView` y añade un difuminado PNG alfa embebido como superposición, sin red, sin añadir altura al layout, sin segundo reproductor ni cambios de sesión.
-- [x] **Regresión de estructura:** `tests/audio-player-parity.test.mjs` protege el contenedor estático, el scroll separado y el degradado. **Compilación Pages y validación física en dispositivos pendientes de confirmación para este último bloque.** No generar ni instalar APK adicional sin aprobación de lote; no tocar Worker/D1/R2.
+- [x] **Regresión de estructura:** `tests/audio-player-parity.test.mjs` protege el contenedor estático, el scroll separado y el degradado. **Validación CI/PWA: 74/74 pruebas y build SUCCESS; Pages publicó el commit `5fc9832` con el nuevo HOME.** QA física iPhone/Android pendiente; el código nativo aún no forma parte de una APK nueva. No generar ni instalar APK adicional sin aprobación de lote; no tocar Worker/D1/R2.
 
 ## Lote acumulativo en `main` · 21/11 · SIN nueva APK
 
