@@ -9,6 +9,9 @@ test('Native Chat virtualizes messages instead of creating the complete history 
  assert.match(timeline,/import \{FlatList,/);
  assert.match(timeline,/<FlatList/);
  assert.match(timeline,/data=\{visibleMessages\}/);
+ assert.match(timeline,/\binverted\b/);
+ assert.match(timeline,/\.filter\(message=>!message\.deletedAt\)\.reverse\(\)/);
+ assert.match(timeline,/ListFooterComponent=\{<>/);
  assert.match(timeline,/useMemo\(\s*\(\)=>messages\.filter\(message=>!message\.deletedAt\)/);
  assert.match(timeline,/keyExtractor=\{message=>message.senderId\+':'\+message.clientMessageId\}/);
  assert.match(timeline,/initialNumToRender=\{10\}/);
@@ -32,8 +35,21 @@ test('Virtual list preserves native video surfaces, old-page loading, deletes, r
   /onMomentumScrollEnd=\{onScrollEndDrag\}/,
  ])assert.match(timeline,part);
  assert.match(controller,/const scroll\s*=\s*useRef<FlatList<ChatMessage>\s*\|\s*null>\(null\)/);
- assert.match(controller,/scroll\.current\?\.scrollToEnd\(\{animated:false\}\)/);
+ assert.match(controller,/scroll\.current\?\.scrollToOffset\(\{offset:0,animated:false\}\)/);
+ assert.doesNotMatch(controller,/scroll\.current\?\.scrollToEnd\(\{animated:false\}\)/);
  assert.match(controller,/userHasScrolled\.current=true/);
  assert.match(controller,/onScrollEndDrag=\{onTimelineScrollEndDrag\}/);
  assert.doesNotMatch(timeline,/new WebSocket|AsyncStorage|saveNativeLocalChat|uploadNativeChatFile/);
+});
+
+test('Long pressing native Chat opens emoji actions directly from touch without async measurements',()=>{
+ const gesture=read('apps/android/features/chat/SwipeableBubble.tsx');
+ const menu=read('apps/android/features/chat/NativeChatMessageMenu.tsx');
+ assert.match(gesture,/onLongPress=\{event=>\{/);
+ assert.match(gesture,/event\.nativeEvent/);
+ assert.match(gesture,/callbacks\.current\.onLongPress\(\{/);
+ assert.doesNotMatch(gesture,/measureInWindow/);
+ assert.match(menu,/\['👍','❤️','😂'\]/);
+ assert.match(menu,/onPress=\{event=>onReact\(message,emoji/);
+ assert.match(menu,/visible=\{!!message\}/);
 });
