@@ -80,7 +80,12 @@ test('PWA uses artwork from R2 and HTML media session without mock songs',()=>{
  const homeStage=read('apps/pwa/src/features/home/home-stage.css');
  assert.match(homeStage,/\.hn-home-route \.hn-moments-strip\{padding-top:3px;padding-bottom:4px\}/);
  assert.doesNotMatch(homeStage,/true four-zone mobile layout/);
- assert.match(homeStage,/\.hn-home-route \.hn-home-stage\{position:sticky;top:0/);
+ assert.match(homeStage,/\.hn-home-route \.hn-home-stage\{[\s\S]*?position:relative;top:auto;flex:0 0 auto/);
+ assert.match(homeStage,/\.hn-home-route \.hn-home-audio-scroll\{/);
+ assert.match(homeStage,/overflow-x:hidden;overflow-y:auto/);
+ assert.match(homeStage,/\.hn-home-route \.hn-home-stage:after\{[\s\S]*?linear-gradient/);
+ assert.match(shell,/className=\{screen==='home'\?'visual-content hn-home-viewport':'visual-content'\}/);
+ assert.match(shell,/screen==='home'\?'hn-home-audio-scroll':'hn-audio-route-slot'/);
  assert.doesNotMatch(homeStage,/\.hn-home-route \.hn-audio-paper-tear[\s\S]{0,100}display:none!important/);
  const homeStyles=read('apps/pwa/src/styles/home/home.css');
  assert.doesNotMatch(homeStyles,/html:has\(\.hn-home-route\)/);
@@ -203,4 +208,26 @@ test('Audio remounts on member credential changes without retaining the prior me
  const native=read('apps/android/features/chat/NativeChatSurface.tsx');
  assert.match(shell,/MemberAudio token=\{token\}[\s\S]{0,100}key=\{token\}/);
  assert.match(native,/NativeAudio token=\{session\.token\} key=\{session\.token\}/);
+});
+
+test('HOME keeps the story strip stationary while only Audio moves, in PWA and Android',()=>{
+ const shell=read('apps/pwa/src/app/VisualApp.tsx');
+ const stage=read('apps/pwa/src/features/home/home-stage.css');
+ const frame=read('apps/pwa/src/styles/home/home.css');
+ const native=read('apps/android/app/NativeMemberHome.tsx');
+ const book=read('apps/android/features/book/NativeBook.tsx');
+ assert.match(shell,/hn-home-viewport/);
+ assert.match(shell,/hn-home-audio-scroll/);
+ assert.match(stage,/\.hn-home-route \.visual-layout>\.hn-home-viewport\{[\s\S]*?overflow:hidden/);
+ assert.match(stage,/\.hn-home-route \.hn-home-stage\{[\s\S]*?flex:0 0 auto/);
+ assert.match(stage,/\.hn-home-route \.hn-home-audio-scroll\{[\s\S]*?overflow-x:hidden;overflow-y:auto/);
+ assert.match(stage,/\.hn-home-route \.hn-home-stage:after\{[\s\S]*?pointer-events:none/);
+ assert.match(stage,/rgba\(255,255,255,0\) 100%/);
+ assert.match(frame,/\.visual-bottom-nav\{position:fixed;bottom:0/);
+ assert.match(native,/\{active==='home'&&<View style=\{styles\.storiesFixed\}>/);
+ assert.match(native,/source=\{\{uri:STORIES_FADE\}\}/);
+ assert.match(native,/storiesFade:\{position:'absolute',left:0,right:0,bottom:-29,height:36/);
+ assert.match(native,/<ScrollView style=\{styles\.root\} contentContainerStyle=\{styles\.content\}/);
+ assert.match(native,/accessibilityRole="tablist"/);
+ assert.match(book,/PageFlip|book/);
 });
