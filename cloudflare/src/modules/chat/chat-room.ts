@@ -5,6 +5,7 @@ import {verifyAdminSession} from '../admin/admin-auth.js';
 import {adminSocketToken,adminTokenRequest} from '../admin/admin-realtime.js';
 import {recordMemberEvent,readMemberDevice} from '../admin/member-admin.js';
 import {deleteChatMessageRecord} from './message-removal.js';
+import {notifyTeamChatMessage,notifyChatReaction} from '../notices/member-notifications.js';
 import {decorateChatMessages} from './chat-media.js';
 import {verifySession,websocketSessionToken,mapMessage} from './chat-session.js';
 import {respond} from '../../shared/worker-http.js';
@@ -335,6 +336,10 @@ export class ChatRoom {
           .bind(input.messageSeq,senderId,input.emoji,new Date().toISOString()).run();
       }
       this.broadcast({type:'chat.reaction',messageSeq:input.messageSeq,actorId:senderId,emoji:input.emoji,active:!current});
+      if(!current)this.state.waitUntil((async()=>{
+       await notifyChatReaction(this.env,senderId,input.messageSeq,input.emoji);
+       await this.invalidateFamilyClients();
+      })().catch(()=>{}));
       return;
     }
     if (input.type !== 'chat.send' || typeof input.clientMessageId !== 'string' || !/^[A-Za-z0-9_-]{8,100}$/.test(input.clientMessageId) || typeof input.text !== 'string') {
@@ -356,7 +361,12 @@ export class ChatRoom {
     ).bind(senderId, input.clientMessageId).first<ChatMessageRow>();
     if (!row) throw new Error('Persistence failure');
     const event = { type: 'chat.message', message: mapMessage(row) };
-    if (result.meta?.changes > 0) this.broadcast(event);
-    else this.send(socket, event);
+    if(result.meta?.changes>0){
+      this.broadcast(event);
+      this.state.waitUntil((async()=>{
+       await notifyTeamChatMessage(this.env,senderId,row.seq,text);
+       await this.invalidateFamilyClients();
+      })().catch(()=>{}));
+    }else this.send(socket,event);
   }
 }
