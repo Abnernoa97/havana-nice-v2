@@ -4,7 +4,7 @@ import {getMemberNotices,markMemberNoticesRead,memberNoticeMessage,
 import {useFamilyLive} from '../../services/use-family-live';
 import './member-notices.css';
 
-export default function MemberNotices({token}:{token:string}){
+export default function MemberNotices({token,calendarRevision=0}:{token:string;calendarRevision?:number}){
  const [items,setItems]=useState<MemberNotice[]>([]);
  const [unread,setUnread]=useState(0);
  const [loading,setLoading]=useState(true);
@@ -27,6 +27,8 @@ export default function MemberNotices({token}:{token:string}){
   setItems([]);setLoading(true);void refresh();
   return()=>{++request.current;};
  },[refresh]);
+ // Live Calendar edits refresh the one combined private inbox immediately.
+ useEffect(()=>{if(calendarRevision>0)void refresh();},[calendarRevision,refresh]);
  // Reuse the authenticated Familia invalidation socket only on this active tab.
  useFamilyLive(token,false,()=>{void refresh();});
  const mark=async(id?:string)=>{
