@@ -15,6 +15,7 @@ import {handleProfileApi} from './modules/profile/profile.js';
 import {handleStoriesApi,cleanupExpiredStories} from './modules/stories/stories.js';
 import {handleMemberNotices} from './modules/notices/member-notifications.js';
 import {handleMemberPushApi} from './modules/notices/push-center.js';
+import {dispatchDuePush} from './modules/notices/push-delivery.js';
 import {handleBookApi} from './modules/book/book.js';
 import {notifyFamilyClients} from './modules/family/family-realtime.js';
 import {handleChatMedia,readChatMedia,decorateChatMessages} from './modules/chat/chat-media.js';
@@ -292,7 +293,13 @@ export default {
     }
     return respond({ error: 'Not found' }, 404, origin);
   },
-  async scheduled(_event:ScheduledEvent,env:V2Env,ctx:ExecutionContext){
+  async scheduled(event:ScheduledEvent,env:V2Env,ctx:ExecutionContext){
+    // Push retries run once a minute; housekeeping stays on its original
+    // 15-minute schedule to avoid needless R2/D1 work.
+    if(event.cron==='* * * * *'){
+      ctx.waitUntil(dispatchDuePush(env,{limit:25}));
+      return;
+    }
     // Reclaim expired stories independently of any musician opening HOME.
     ctx.waitUntil(cleanupExpiredStories(env,80));
     // Keep Audio housekeeping outside musician requests and first playback.
