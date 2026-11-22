@@ -106,4 +106,6 @@ test('Cold Android launch uses the real HAVANA NICE icon and branded loading scr
  assert.match(shell,/HAVANA NICE/);
  assert.match(shell,/ESPACIO DEL EQUIPO/);
  assert.match(styles,/brandedLaunch:\{flex:1,backgroundColor:'#0D2A23'/);
+ assert.match(styles,/screenLaunch:\{backgroundColor:'#0D2A23',paddingBottom:0\}/);
+ assert.match(shell,/restoringAccess&&styles\.screenLaunch/);
 });
