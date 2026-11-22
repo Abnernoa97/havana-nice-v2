@@ -2,6 +2,7 @@
 // Existing musician Chat sessions are the ONLY authorization boundary.
 // No private token, Web Push endpoint, VAPID secret, or R2 key leaves the API.
 import {sha256Hex} from '../../shared/crypto-helpers.js';
+import {dispatchDuePush} from './push-delivery.js';
 
 const json=(data,status=200,origin='')=>new Response(JSON.stringify(data),{
  status,headers:{'content-type':'application/json; charset=utf-8',
@@ -117,6 +118,11 @@ export async function queueNoticePush(env,{noticeId,recipientId,kind,targetId,ti
    String(targetId).slice(0,100),String(title).slice(0,80),
    String(body).slice(0,160),now,now));
   await env.DB.batch(statements);
+  // Deliver now, not only when the app is reopened. Unavailable providers
+  // remain pending for the same Worker's scheduled retry; never drop inbox data.
+  if(env.FCM_SERVICE_ACCOUNT_JSON||
+    (env.PUSH_VAPID_PUBLIC_KEY&&env.PUSH_VAPID_PRIVATE_KEY))
+   await dispatchDuePush(env,{recipientId,limit:10}).catch(()=>{});
   return devices.length;
  }catch{
   // Migration not applied yet, or transient D1 trouble: don't undo a
