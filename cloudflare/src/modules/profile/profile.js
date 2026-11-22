@@ -2,6 +2,7 @@
 // Single Chat authorization, private R2, short-lived grants, no parallel login.
 import {sha256Hex} from '../../shared/crypto-helpers.js';
 import {notifyFamilyClients} from '../family/family-realtime.js';
+import {notifyTeamProfilePhoto} from '../notices/member-notifications.js';
 
 const MAX_AVATAR=1_500_000;
 const EXPIRES=10*60*1000;
@@ -103,7 +104,12 @@ async function uploadPhoto(request,env,actor,origin,ctx){
   })();
   if(ctx?.waitUntil)ctx.waitUntil(task);else void task;
  }
- const signal=notifyFamilyClients(env);
+ // Only after the profile image has committed: notify the other authorized
+ // teammates once. Neither the R2 object key nor a temporary grant is shared.
+ const signal=Promise.all([
+  notifyFamilyClients(env),
+  notifyTeamProfilePhoto(env,actor,objectKey)
+ ]).catch(()=>{});
  if(ctx?.waitUntil)ctx.waitUntil(signal);else void signal;
  return json({ok:true,actorId:actor.actorId},200,origin);
 }
