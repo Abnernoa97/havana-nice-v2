@@ -27,9 +27,10 @@ async function bind(token:string,subscription:PushSubscription){
 export function usePwaPush(token:string){
  const [state,setState]=useState<PushState>('checking');
  const [error,setError]=useState('');
+ const [testStatus,setTestStatus]=useState('');
  const [publicKey,setPublicKey]=useState<string|null>(null);
  useEffect(()=>{
-  let active=true;setError('');setPublicKey(null);setState('checking');
+  let active=true;setError('');setTestStatus('');setPublicKey(null);setState('checking');
   if(!supported()){setState('unavailable');return()=>{active=false;};}
   void (async()=>{
    try{
@@ -85,5 +86,15 @@ export function usePwaPush(token:string){
    setState('ready');
   }catch{setError('No se pudieron desactivar las notificaciones.');}
  },[token]);
- return {state,error,enable,disable};
+ const test=useCallback(async()=>{
+  setTestStatus('');
+  try{
+   const reply=await fetch(API+'/api/push/test',{
+    method:'POST',headers:{Authorization:'Bearer '+token}
+   });
+   if(!reply.ok)throw Error('No se pudo programar la prueba.');
+   setTestStatus('Prueba programada. Bloquea el teléfono para comprobarla.');
+  }catch{setTestStatus('No se pudo programar la prueba. Intenta más tarde.');}
+ },[token]);
+ return {state,error,enable,disable,test,testStatus};
 }
