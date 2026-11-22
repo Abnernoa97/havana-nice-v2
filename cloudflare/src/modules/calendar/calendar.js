@@ -17,15 +17,34 @@ function string(value,max,label,required=false){
  if(text.length>max||(required&&!text))throw Error(label+' inválido o demasiado largo');
  return text;
 }
-// The user may enter any date text. Parse known formats for ordering only.
+// Preserve the exact free-form date entered by Admin. Only an unambiguous
+// numeric or named-month date receives a stable ISO order key. Older records
+// without date_sort are recovered in the shared PWA/Android list sorter.
+const MONTHS={
+ enero:1,ene:1,january:1,jan:1,
+ febrero:2,feb:2,february:2,
+ marzo:3,mar:3,march:3,
+ abril:4,abr:4,april:4,apr:4,
+ mayo:5,may:5,
+ junio:6,jun:6,june:6,
+ julio:7,jul:7,july:7,
+ agosto:8,ago:8,august:8,aug:8,
+ septiembre:9,setiembre:9,sep:9,sept:9,set:9,september:9,
+ octubre:10,oct:10,october:10,
+ noviembre:11,nov:11,november:11,
+ diciembre:12,dic:12,dec:12,december:12
+};
 function optionalSortDate(input){
- const value=input.trim();
- let y,m,d;
+ const value=input.trim().normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
+ let y=0,m=0,d=0;
  const iso=/^(\d{4})-(\d{1,2})-(\d{1,2})$/.exec(value);
  const local=/^(\d{1,2})[\/.\-](\d{1,2})[\/.\-](\d{4})$/.exec(value);
+ const words=/^(\d{1,2})\s*(?:(?:de|del|d)\s+)?([a-z]+)\.?\s*(?:(?:de|del|d)\s+)?(\d{2}|\d{4})$/.exec(value);
  if(iso){y=Number(iso[1]);m=Number(iso[2]);d=Number(iso[3]);}
  else if(local){y=Number(local[3]);m=Number(local[2]);d=Number(local[1]);}
+ else if(words){y=Number(words[3]);if(y<100)y+=2000;m=MONTHS[words[2]]||0;d=Number(words[1]);}
  else return null;
+ if(y<1900||y>2100||m<1||m>12||d<1||d>31)return null;
  const date=new Date(Date.UTC(y,m-1,d));
  if(date.getUTCFullYear()!==y||date.getUTCMonth()!==m-1||date.getUTCDate()!==d)return null;
  return String(y).padStart(4,'0')+'-'+String(m).padStart(2,'0')+'-'+String(d).padStart(2,'0');
