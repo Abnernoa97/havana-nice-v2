@@ -34,6 +34,13 @@ test('Holding Android Chat text reliably opens emoji menu without competing resp
  assert.match(bubble,/callbacks\.current\.onLongPress\(\{/);
  assert.match(menu,/\['👍','❤️','😂'\]/);
  assert.match(menu,/visible=\{!!message\}/);
+ // The initial long-press release is not a fresh backdrop tap, and emoji
+ // selection cannot bubble into the dismiss gesture.
+ assert.match(menu,/backdropTouchStarted=React\.useRef\(false\)/);
+ assert.match(menu,/onShow=\{\(\)=>\{backdropTouchStarted\.current=false;\}\}/);
+ assert.match(menu,/onPressIn=\{\(\)=>\{backdropTouchStarted\.current=true;\}\}/);
+ assert.match(menu,/event\.stopPropagation\(\)/);
+ assert.doesNotMatch(menu,/openedAt|Date\.now\(\)-openedAt/);
 });
 
 test('Unread private notification count is visible on both platforms',()=>{
