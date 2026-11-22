@@ -99,7 +99,7 @@ function VisualApp({displayName,active,onNavigate,preview=false,token,actorId}:P
           </Suspense>
         </>}
         {audioOpened&&token&&<Suspense fallback={<div className="visual-empty" role="status">Abriendo Audio…</div>}>
-         <MemberAudio token={token} active={screen==='audio'||screen==='home'}/>
+         <MemberAudio token={token} active={screen==='audio'||screen==='home'} key={token}/>
         </Suspense>}
       </main>
     </div>
