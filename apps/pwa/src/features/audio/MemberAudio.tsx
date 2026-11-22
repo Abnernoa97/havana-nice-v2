@@ -57,8 +57,13 @@ export default function MemberAudio({token,active=true}:{token:string;active?:bo
     if(!track||!url)continue;
     try{
      const ready=await prepareAudioCover(url,controller.signal);
-     if(!live){URL.revokeObjectURL(ready.display);continue;}
+     if(!live){
+      URL.revokeObjectURL(ready.display);
+      if(ready.lockscreen)URL.revokeObjectURL(ready.lockscreen);
+      continue;
+     }
      created.push(ready.display);
+     if(ready.lockscreen)created.push(ready.lockscreen);
      setPreparedCovers(old=>({...old,[track.id]:ready}));
     }catch{/* Keep the live R2 URL as a visual fallback. */}
    }
@@ -110,17 +115,21 @@ export default function MemberAudio({token,active=true}:{token:string;active?:bo
   playOnChange.current=playing;
   setSelected(next);
  };
- // iOS fetches the lock-screen artwork in the OS media process. Give it a
- // real short-lived HTTPS capability URL, not an in-page data: or blob: URL.
- // Keep this metadata stable across play/pause and local cover preparation.
+ // iOS lock-screen artwork: first give the signed original image, then update
+ // once the locally decoded, square 512px JPEG Blob is available. This avoids
+ // non-square originals without changing vinyl art or storing public copies.
+ // Play/pause must not reinitialize the artwork.
  useEffect(()=>{
   if(!current||!('mediaSession' in navigator)||typeof MediaMetadata==='undefined')return;
   const remoteCover=art(current.coverUrl);
+  const square=preparedCovers[current.id]?.lockscreen;
+  const artwork:MediaImage[]=square?[{src:square,sizes:'512x512',type:'image/jpeg'}]:
+   remoteCover?[{src:remoteCover}]:[];
   navigator.mediaSession.metadata=new MediaMetadata({
-   title:current.title,artist:current.artist,album:current.album,
-   artwork:remoteCover?[{src:remoteCover}]:[]
+   title:current.title,artist:current.artist,album:current.album,artwork
   });
- },[current?.id,current?.coverUrl,current?.title,current?.artist,current?.album]);
+ },[current?.id,current?.coverUrl,current?.title,current?.artist,current?.album,
+  preparedCovers[current?.id||'']?.lockscreen]);
  // Controls may change with the selected index, but must never reinitialize
  // lock-screen artwork just because playback or a preloaded cover changed.
  useEffect(()=>{
