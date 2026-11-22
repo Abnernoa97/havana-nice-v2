@@ -45,6 +45,35 @@ export async function notifyTeamStoryPublished(env,actor,storyId,count=1){
  }catch{return 0;}
 }
 
+// Private inbox for real Chat events. The author and recipients come from
+// the authenticated ChatRoom/D1 records, never an untrusted client payload.
+export async function notifyTeamChatMessage(env,actorId,messageSeq,preview=''){
+ if(!actorId||!Number.isSafeInteger(messageSeq)||messageSeq<1)return 0;
+ const recipients=(await env.DB.prepare(
+  'SELECT actor_id FROM chat_members WHERE active=1 AND actor_id<>?'
+ ).bind(actorId).all()).results||[];
+ let created=0;
+ for(const member of recipients){
+  try{
+   if(await notifyMember(env,{recipientId:member.actor_id,actorId,
+    kind:'chat.message',targetId:String(messageSeq),preview:String(preview).slice(0,120),
+    dedupeKey:'chat.message:'+messageSeq+':'+member.actor_id}))created++;
+  }catch{/* A single disabled recipient must never block a saved Chat message. */}
+ }
+ return created;
+}
+export async function notifyChatReaction(env,actorId,messageSeq,emoji){
+ if(!actorId||!Number.isSafeInteger(messageSeq)||messageSeq<1)return false;
+ const target=await env.DB.prepare(
+  'SELECT sender_id FROM chat_messages WHERE seq=? AND deleted_at IS NULL'
+ ).bind(messageSeq).first();
+ if(!target||target.sender_id===actorId)return false;
+ return notifyMember(env,{recipientId:target.sender_id,actorId,
+  kind:'chat.reaction',targetId:String(messageSeq),emoji,
+  preview:'Reacción a tu mensaje',
+  dedupeKey:'chat.reaction:'+messageSeq+':'+actorId+':'+emoji});
+}
+
 export async function notifyStoryOwner(env,storyId,actor,kind,{emoji='',preview='',dedupeKey=null}={}){
  const story=await env.DB.prepare(
   'SELECT s.actor_id FROM member_stories s JOIN chat_members m '+
