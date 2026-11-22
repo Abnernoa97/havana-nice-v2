@@ -62,8 +62,12 @@ test('Native image compression, strict version and incremental signing gate',()=
  assert.match(state,/450_000/);
  assert.match(state,/1_500_000/);
  assert.equal(app.android.package,'com.havananice.v2');
- assert.equal(app.version,'0.0.23');
- assert.equal(app.android.versionCode,23);
+ const approved=JSON.parse(read('releases/android-batch.json'));
+ assert.equal(approved.approved,true);
+ assert.equal(approved.releaseMode,'explicit-batch');
+ assert.equal(app.version,approved.version);
+ assert.equal(app.android.versionCode,approved.versionCode);
+ assert.equal(app.android.package,'com.havananice.v2');
  assert.ok(app.plugins.some(p=>Array.isArray(p)&&p[0]==='expo-audio'));
  for(const d of ['expo-audio','expo-image-manipulator']){
   assert.equal(pkg.dependencies[d],lock.packages['apps/android'].dependencies[d]);
