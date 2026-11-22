@@ -38,7 +38,7 @@ Mantener una sola rama `main`, el mismo Worker, D1, R2 y las sesiones existentes
 | Cambio de foto de perfil | `profile.photo` | Resto del equipo |
 | Foto/video nuevo en Familia por Admin | `family.media` | Todo el equipo incluido propietario del álbum |
 | Fecha creada/modificada/eliminada | `calendar.event` | Destinatarios asignados y anteriores aplicables |
-| Repertorio del evento modificado | `repertoire.updated` | **Por conectar** |
+| Repertorio del evento modificado (añadir, quitar, orden, progreso) | `repertoire.updated` | Integrado para los músicos asignados |
 | Otras acciones futuras | Tipo específico | Según permisos y relevancia |
 
 **No enviar** notificaciones por lecturas, gestos, renders, progreso de subida,
@@ -70,8 +70,10 @@ Son acciones técnicas, no actividad útil del equipo.
 - [ ] Credenciales VAPID configuradas y prueba real PWA iPhone cerrada.
 - [x] Proyecto Firebase `havana-nice-v2-push` registrado; `google-services.json` del paquete `com.havananice.v2` integrado en Expo mediante `android.googleServicesFile`.
 - [ ] Cuenta de servicio FCM HTTP v1 con permisos mínimos, almacenada como secreto de Cloudflare (`FCM_SERVICE_ACCOUNT_JSON`).
-- [ ] Enlace nativo Expo para canal, permisos, rotación de token, click y logout.
-- [ ] Cobertura de repertorio y cualquier evento de Admin adicional.
+- [x] Código fuente nativo `expo-notifications` SDK 58 conectado al Chat shell con permisos, token FCM, renovación, revocación y navegación al tocar un aviso. **No hay APK nueva**.
+- [ ] Verificación de build nativo, firma y recepción real en Android al final del lote autorizado.
+- [x] Notificaciones actorless del Repertorio por evento mediante migración aditiva `0039_member_system_notifications.sql` y destinatarios asignados; falta verificar push en teléfono real.
+- [ ] Revisar cualquier otra acción futura de Admin que deba generar actividad útil, sin notificar acciones técnicas.
 - [ ] Prueba cruzada Android ↔ PWA con pantalla bloqueada, sin red y reconexión.
 - [ ] **Solo entonces** lote nativo nuevo firmado, incremental y probado.
 
