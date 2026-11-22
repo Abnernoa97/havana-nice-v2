@@ -188,7 +188,7 @@ export {getStoryConversation,sendStoryText,sendStoryVoice,reactToStory} from './
 export type {StoryConversation,StoryComment,StoryEmoji} from './story-conversation';
 export type {MusicianDirectoryEntry} from './musicians';
 export type {MemberModule,MemberScreen} from './memberModules';
-export {getAudioTracks,privateAudioUrl,uploadAudioTrack,uploadAudioCover,removeAudioTrack,AudioApiError} from './audio';
+export {getAudioTracks,clearAudioTracksCache,privateAudioUrl,uploadAudioTrack,uploadAudioCover,removeAudioTrack,AudioApiError} from './audio';
 export type {AudioTrack} from './audio';
 
 export {getRepertoireSongs,getEventRepertoire,getAssignedEventRepertoire,safeRepertoireLink} from './repertoire';
