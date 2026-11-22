@@ -151,3 +151,10 @@
  border:1px solid #b3bbaa57;background:#123629e8;box-shadow:0 5px 16px #0003}
 .hn-story-conversation.is-recording .hn-story-voice button{background:#234b38}
 .hn-story-conversation.is-recording .hn-story-recording{font-size:13px;font-weight:700}
+
+/* Low-noise recovery: show only when Story API fails or roster is empty. */
+.hn-story-refresh,.hn-story-error button{appearance:none;border:0;background:transparent;
+ color:#665431;text-decoration:underline;text-underline-offset:3px;font:inherit;
+ font-size:11px;padding:3px 8px;cursor:pointer}
+.hn-story-error button{margin-left:5px}
+.hn-story-refresh{display:block;margin:0 0 5px 6px}
