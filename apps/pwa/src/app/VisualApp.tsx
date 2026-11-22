@@ -72,7 +72,7 @@ function VisualApp({displayName,active,onNavigate,preview=false,token,actorId}:P
         </button>)}
         <div className="visual-side-note">Una sola identidad autorizada para HOME y Chat.</div>
       </aside>
-      <main className="visual-content" id="visual-content">
+      <main className={screen==='home'?'visual-content hn-home-viewport':'visual-content'} id="visual-content">
         {screen==='home'?<Suspense fallback={<div className="visual-empty" role="status">Abriendo Inicio…</div>}>
           <MemberHome token={token} displayName={displayName} actorId={actorId} profiles={profile.profiles} preview={preview} canEditProfile={profile.phase==='ready'||profile.phase==='missing'} onPhotoError={profile.retryPhoto} refreshVersion={storyEpoch}/>
         </Suspense>:<>
@@ -98,9 +98,11 @@ function VisualApp({displayName,active,onNavigate,preview=false,token,actorId}:P
             </div>}
           </Suspense>
         </>}
-        {audioOpened&&token&&<Suspense fallback={<div className="visual-empty" role="status">Abriendo Audio…</div>}>
-         <MemberAudio token={token} active={screen==='audio'||screen==='home'} key={token}/>
-        </Suspense>}
+        {audioOpened&&token&&<div className={screen==='home'?'hn-home-audio-scroll':'hn-audio-route-slot'}>
+         <Suspense fallback={<div className="visual-empty" role="status">Abriendo Audio…</div>}>
+          <MemberAudio token={token} active={screen==='audio'||screen==='home'} key={token}/>
+         </Suspense>
+        </div>}
       </main>
     </div>
     <nav className="visual-bottom-nav" aria-label="Navegación principal">
