@@ -9,6 +9,7 @@ import NativeChatReactionShower from './NativeChatReactionShower';
 import NativeComposerIcon from './ChatComposerIcon';
 import NativeChatMediaQueuePreview from './NativeChatMediaQueuePreview';
 import NativeMemberHome from '../../app/NativeMemberHome';
+import {useNativePush} from '../notices/useNativePush';
 import NativeAudio from '../audio/NativeAudio';
 import {useNativeCalendarSignals} from '../calendar/useNativeCalendarSignals';
 import NativeCalendarToast from '../calendar/NativeCalendarToast';
@@ -19,6 +20,7 @@ import type {ChatEmoji,ChatMessage} from '@havana/shared';
 export default function NativeChatSurface({ui}:{ui:ReturnType<typeof useNativeChatController>}){
   const {iosBackPan,keyboardOpen,session,activeScreen,restoringAccess,name,setName,join,joining,error,messages,onlineActorIds,connection,reactions,receipts,hasMore,loadingOlder,scroll,onTimelineContentChange,onTimelineScrollBeginDrag,onTimelineScroll,onTimelineScrollEndDrag,onTimelineLoadOlder,onTimelineReply,onTimelineLongPress,onTimelineRetry,menuMessage,menuLeft,menuTop,menuWidth,setMenuMessage,setReactionBurst,reactionBurstId,react,retryAttempts,connect,editing,savingEdit,finishEditing,replyTo,setReplyTo,typing,selectedMedia,mediaUploading,mediaProgress,mediaReady,removeSelectedMedia,mediaError,draft,draftFieldHeight,setDraftFieldHeight,typeText,mediaPicking,chooseNativeMedia,sendSelectedMedia,send,composerPanel,setComposerPanel,navigateTo,reactionBurst}=ui;
   const calendarSignals=useNativeCalendarSignals(session?.token);
+  const push=useNativePush(session?.token??null,navigateTo);
   const reactWithEffect=(message:ChatMessage,emoji:ChatEmoji,origin:{x:number;y:number})=>{
     setReactionBurst({id:++reactionBurstId.current,emoji,...origin});
     react(message.seq,emoji);
@@ -180,7 +182,7 @@ export default function NativeChatSurface({ui}:{ui:ReturnType<typeof useNativeCh
         </View>}
       </KeyboardAvoidingView>}
       {session&&activeScreen!=='chat'&&<NativeMemberHome token={session.token} actorId={session.actorId} displayName={session.displayName}
-        active={activeScreen} calendarRevision={calendarSignals.revision} onNavigate={navigateTo}/>}
+        active={activeScreen} calendarRevision={calendarSignals.revision} onNavigate={navigateTo} push={push}/>}
       {session&&<NativeCalendarToast visible={calendarSignals.notice}
        onDismiss={calendarSignals.dismiss}/>}
       {/* Keep one system MediaSession mounted even when the user returns to Chat. */}
