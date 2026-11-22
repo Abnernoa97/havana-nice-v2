@@ -139,8 +139,8 @@ export default function MemberAudio({token,active=true}:{token:string;active?:bo
    <div className="hn-audio-paper-corner" aria-hidden="true"/>
   </div>
   <audio ref={ref} preload="metadata"
-   onPlaying={()=>setPlaying(true)} onPause={()=>setPlaying(false)}
-   onWaiting={()=>setPlaying(false)}
+   onPlay={()=>setPlaying(true)} onPlaying={()=>setPlaying(true)}
+   onPause={()=>setPlaying(false)}
    onTimeUpdate={event=>setElapsed(event.currentTarget.currentTime)}
    onDurationChange={event=>setDuration(event.currentTarget.duration||0)}
    onEnded={()=>step(1)}
