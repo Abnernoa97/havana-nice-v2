@@ -174,6 +174,8 @@
  width:calc(100% + 36px);height:auto;aspect-ratio:864 / 475;
  pointer-events:none;
  background:url('/audio-lounge/floral.webp') center center / 100% 100% no-repeat;
+ -webkit-mask-image:linear-gradient(to bottom,transparent,#000 17%,#000 89%,transparent);
+ mask-image:linear-gradient(to bottom,transparent,#000 17%,#000 89%,transparent);
 }
 .hn-audio-silk,.hn-audio-flower{display:none!important}
 .hn-audio-record-wrap{
