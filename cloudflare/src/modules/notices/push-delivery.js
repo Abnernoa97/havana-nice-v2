@@ -157,7 +157,7 @@ export async function dispatchDuePush(env,{recipientId=null,limit=15}={}){
   // D1 binds in SQL order: active session expiry, due time, age, recipient, limit.
   args.unshift(now);
   rows=(await env.DB.prepare(
-   'SELECT q.id,q.kind,q.target_id,q.title,q.body,q.created_at,q.tries,'+
+   'SELECT q.id,q.notice_id,q.kind,q.target_id,q.title,q.body,q.created_at,q.tries,'+
    'd.id AS device_id,d.platform,d.endpoint,d.p256dh,d.auth_secret '+
    'FROM member_push_outbox q JOIN member_push_devices d ON d.id=q.device_id '+
    'JOIN chat_members m ON m.actor_id=q.recipient_id AND m.active=1 '+
@@ -183,7 +183,7 @@ export async function dispatchDuePush(env,{recipientId=null,limit=15}={}){
   if(Number(lock.meta?.changes||0)!==1)continue;
   let answer;
   try{
-   const msg={title:row.title,body:row.body,kind:row.kind,targetId:row.target_id};
+   const msg={id:row.notice_id,title:row.title,body:row.body,kind:row.kind,targetId:row.target_id};
    answer=row.platform==='webpush'?
     await sendWebPush(env,row,msg):await sendFcmPush(env,row,msg);
   }catch{answer={ok:false,status:0};}
