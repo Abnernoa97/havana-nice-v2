@@ -94,7 +94,7 @@ export function useStoryPhotoCache(
  const current=items[position];
  const cached=current&&cache.current.get(current.id);
  return {
-  url:cached?.grant===current?.photoUrl?cached.objectUrl:'',
+  url:current&&cached&&cached.grant===current.photoUrl?cached.objectUrl:'',
   failed:!!current&&failures.current.has(current.photoUrl)
  };
 }
