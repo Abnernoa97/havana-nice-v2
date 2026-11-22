@@ -80,7 +80,7 @@ self.addEventListener('push',event=>{
  const targetId=typeof data.targetId==='string'?data.targetId.slice(0,100):'';
  event.waitUntil(self.registration.showNotification(title,{
   body,icon:'/icons/havana-nice-192.png',badge:'/icons/havana-nice-192.png',
-  tag:kind+':'+targetId,renotify:false,
+  tag:typeof data.id==='string'?data.id.slice(0,60):kind+':'+targetId,renotify:false,
   data:{kind,targetId,url:'/?push=notices'}
  }));
 });
