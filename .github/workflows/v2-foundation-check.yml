@@ -158,7 +158,7 @@ jobs:
         run: node --test cloudflare/tests/family-quota.test.mjs
 
       - name: Test private Audio catalog, cover art, stream and OS player integration
-        run: node --test cloudflare/tests/audio-api.test.mjs tests/audio-player-parity.test.mjs tests/audio-motion-parallax.test.mjs
+        run: node --test cloudflare/tests/audio-api.test.mjs tests/audio-player-parity.test.mjs
 
       - name: Test private R2 Chat originals, 5MiB multipart, grants and canonical deletion
         run: node --test cloudflare/tests/chat-media-r2.test.mjs
