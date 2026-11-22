@@ -1,6 +1,6 @@
 // HAVANA NICE V2 — static shell only. Never intercept/cache private chat,
 // credentials, cross-origin Worker requests, media, or dynamic endpoints.
-const CACHE = 'havana-nice-v2-static-v4';
+const CACHE = 'havana-nice-v2-static-v5';
 const PREFIX = 'havana-nice-v2-';
 const APP_SHELL = ['/', '/visual.html', '/book.html', '/manifest.webmanifest'];
 const MAX_VERSIONED_ASSETS = 40;
