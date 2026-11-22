@@ -16,7 +16,7 @@ type Props={displayName:string;actorId:string;token:string;
 // Tiny embedded alpha gradient keeps the pinned Stories edge soft without a network asset.
 const STORIES_FADE='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAAwCAYAAADQMxCBAAAAOUlEQVR42n2JyQ0AIAzDrO4/MC1H+IEqUT6WnSBJBjQD/OCfbkB8t6gyDOhV9keOfIxsFzPbxTrQBqWZMlwxZHeoAAAAAElFTkSuQmCC';
 function NativeMemberHome({displayName,actorId,token,active,calendarRevision=0,onNavigate}:Props){
- const profile=useNativeMemberProfile(token,actorId,active==='home');
+ const profile=useNativeMemberProfile(token,actorId,true);
  const [profileOpen,setProfileOpen]=useState(false);
  const selected=MEMBER_MODULES.find(item=>item.id===active);
  const mustAdd=profile.phase==='missing',checking=profile.phase==='checking';
@@ -60,13 +60,16 @@ function NativeMemberHome({displayName,actorId,token,active,calendarRevision=0,o
  </>;
  return <View style={styles.screen}>
   {header}
-  {active==='home'&&<View style={styles.storiesFixed}>
+  {/* The team story strip is a persistent native header on every module,
+      never part of the scrolling Calendar/Audio contents. A musician can open
+      a teammate's status without returning to Inicio. */}
+  <View style={styles.storiesFixed}>
    <NativeStories token={token} actorId={actorId}
     displayName={displayName} profiles={profile.profiles}
     canPublish={profile.phase==='ready'} refreshVersion={profile.liveVersion}/>
    <Image pointerEvents="none" source={{uri:STORIES_FADE}}
     resizeMode="stretch" style={styles.storiesFade}/>
-  </View>}
+  </View>
   {active==='family'?<View style={[styles.root,styles.content,styles.familyViewport]}>{content}</View>:
    <ScrollView style={styles.root} contentContainerStyle={styles.content}
     keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>{content}</ScrollView>}
