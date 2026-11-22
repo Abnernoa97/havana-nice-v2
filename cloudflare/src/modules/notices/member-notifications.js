@@ -8,8 +8,10 @@ const UUID=/^[a-f0-9-]{36}$/i;
 
 // Future modules use this single emitter. The actor and recipient are derived
 // from server-owned records, never from user-supplied notification recipients.
-export async function notifyMember(env,{recipientId,actorId,kind,targetId,emoji='',preview='',dedupeKey=null}){
- if(!recipientId||!actorId||recipientId===actorId)return false;
+export async function notifyMember(env,{recipientId,actorId,kind,targetId,emoji='',preview='',dedupeKey=null,allowSelf=false}){
+ // Admin-managed Familia media is attributed to an album owner, but the owner
+ // must also receive the system activity; all ordinary self-events are excluded.
+ if(!recipientId||!actorId||(!allowSelf&&recipientId===actorId))return false;
  const now=Date.now();
  const response=await env.DB.prepare(
   'INSERT OR IGNORE INTO member_notifications '+
@@ -21,6 +23,41 @@ export async function notifyMember(env,{recipientId,actorId,kind,targetId,emoji=
   String(emoji).slice(0,12),String(preview).slice(0,160),now,dedupeKey,
   actorId,recipientId).run();
  return Number(response.meta?.changes||0)>0;
+}
+
+// Single typed central emitter for every team-wide member activity. No
+// client-supplied recipient list, new identity, socket, or independent inbox.
+// An Admin can add media to a member's album; only that case includes the owner.
+export async function notifyTeamActivity(env,actorId,kind,targetId,{
+ preview='',includeOwner=false
+}={}){
+ if(!actorId||!targetId||!['profile.photo','family.media','repertoire.updated'].includes(kind))
+  return 0;
+ const roster=(await env.DB.prepare(
+  'SELECT actor_id FROM chat_members WHERE active=1'
+ ).all()).results||[];
+ let count=0;
+ for(const row of roster){
+  try{
+   if(await notifyMember(env,{recipientId:row.actor_id,actorId,kind,targetId,
+    preview,dedupeKey:kind+':'+targetId+':'+row.actor_id,
+    allowSelf:includeOwner}))count++;
+  }catch{/* A broken recipient must not undo the committed upload. */}
+ }
+ return count;
+}
+export async function notifyTeamProfilePhoto(env,actor,photoKey){
+ return notifyTeamActivity(env,actor.actorId,'profile.photo',photoKey,{
+  preview:'Actualizó su foto de perfil'
+ });
+}
+export async function notifyTeamFamilyMedia(env,albumActorId,mediaId,kind){
+ // The upload action was performed by Admin; this is an album update,
+ // not a claim that the album owner personally uploaded anything.
+ return notifyTeamActivity(env,albumActorId,'family.media',mediaId,{
+  preview:kind==='video'?'Nuevo video en Familia':'Nueva fotografía en Familia',
+  includeOwner:true
+ });
 }
 
 // New Android/PWA States are team activity, not a private author-only reply.
