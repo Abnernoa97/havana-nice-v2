@@ -207,3 +207,23 @@ export async function dispatchDuePush(env,{recipientId=null,limit=15}={}){
  }
  return {sent,failed,unconfigured};
 }
+
+/** Bounded housekeeping: obsolete deliveries cannot grow D1 forever.
+ * Preserves seven days of diagnostics, never touches the member inbox. */
+export async function prunePushHistory(env,limit=150){
+ try{
+  const cutoff=Date.now()-7*24*60*60*1000;
+  await env.DB.prepare(
+   'DELETE FROM member_push_outbox WHERE id IN ('+
+   'SELECT id FROM member_push_outbox WHERE created_at<? ORDER BY created_at LIMIT ?)'
+  ).bind(cutoff,Math.min(500,limit)).run();
+  // Stale revoked devices are safe to delete only after their 30-day
+  // retention; existing member devices with live sessions stay untouched.
+  await env.DB.prepare(
+   'DELETE FROM member_push_devices WHERE id IN ('+
+   'SELECT id FROM member_push_devices WHERE revoked_at IS NOT NULL AND revoked_at<? '+
+   'ORDER BY revoked_at LIMIT ?)'
+  ).bind(Date.now()-30*24*60*60*1000,Math.min(100,limit)).run();
+  return true;
+ }catch{return false;}
+}
