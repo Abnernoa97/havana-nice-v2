@@ -15,7 +15,7 @@ import {handleProfileApi} from './modules/profile/profile.js';
 import {handleStoriesApi,cleanupExpiredStories} from './modules/stories/stories.js';
 import {handleMemberNotices} from './modules/notices/member-notifications.js';
 import {handleMemberPushApi} from './modules/notices/push-center.js';
-import {dispatchDuePush} from './modules/notices/push-delivery.js';
+import {dispatchDuePush,prunePushHistory} from './modules/notices/push-delivery.js';
 import {handleBookApi} from './modules/book/book.js';
 import {notifyFamilyClients} from './modules/family/family-realtime.js';
 import {handleChatMedia,readChatMedia,decorateChatMessages} from './modules/chat/chat-media.js';
@@ -301,6 +301,7 @@ export default {
       return;
     }
     // Reclaim expired stories independently of any musician opening HOME.
+    ctx.waitUntil(prunePushHistory(env,150));
     ctx.waitUntil(cleanupExpiredStories(env,80));
     // Keep Audio housekeeping outside musician requests and first playback.
     ctx.waitUntil(cleanupExpiredAudioGrants(env,2000));
