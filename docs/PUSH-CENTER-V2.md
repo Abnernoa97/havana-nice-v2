@@ -99,3 +99,5 @@ no prometer tiempo ni entrega absoluta de un proveedor externo.
 - Repertorio: `0039_member_system_notifications.sql` aplicada en D1, avisos de los cambios reales del repertorio de evento a los músicos asignados. Se evita suplantar la identidad de un músico con un evento de Administración.
 - `expo-notifications` 58.1.6 añadido y fijado en el lockfile; compilación Java/Gradle no ejecutada.
 - El cierre del proyecto depende de registrar teléfonos reales, probar Android bloqueado + PWA iPhone instalada y verificar FCM y VAPID, además de la firma de la futura APK única cuando el usuario lo autorice.
+
+- Verificación asistida: `/api/push/test` crea **solo para la sesión autorizada** una notificación de prueba con entrega diferida, límite de una solicitud por minuto y control «Probar aviso» en Android/PWA. La aceptación de la solicitud no demuestra entrega hasta observarla físicamente.
