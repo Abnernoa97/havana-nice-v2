@@ -46,7 +46,13 @@ export function useNativeStories(token:string,refreshVersion:number){
  useEffect(()=>{
   mounted.current=true;void refresh();
   const sub=AppState.addEventListener('change',s=>{if(s==='active')void refresh();});
-  return()=>{mounted.current=false;++latest.current;sub.remove();};
+  // Family websocket can be lost on some Android phones while HOME remains
+  // visible. A foreground-only reconciliation keeps Android/PWA stories in
+  // the same team roster without another socket or constant R2 downloads.
+  const fallback=setInterval(()=>{
+   if(AppState.currentState==='active')void refresh();
+  },45_000);
+  return()=>{mounted.current=false;++latest.current;sub.remove();clearInterval(fallback);};
  },[refresh,refreshVersion]);
  useEffect(()=>{
   if(!stories.length)return;
