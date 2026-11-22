@@ -160,8 +160,8 @@ test('Spanish month names sort chronologically regardless of when Admin added th
   {id:'oct-last',date:'31 oct. 2026',dateSort:null},
   {id:'nov',date:'6-11-2026',dateSort:null}
  ];
- assert.deepEqual(sortCalendarEvents(fixtures).map(e=>e.id),
-  ['september','earlier','later','oct-last','nov','unknown']);
+ assert.equal(sortCalendarEvents(fixtures).map(e=>e.id).join(','),
+  'september,earlier,later,oct-last,nov,unknown');
  for(const [date,expected] of [
   ['9 de Oct 2026','2026-10-09'],['24 d octubre 2026','2026-10-24'],
   ['17 octubre 2026','2026-10-17'],['14dic26','2026-12-14'],
