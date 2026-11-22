@@ -11,7 +11,19 @@ export default function TeamStoriesStrip({displayName,actorId,profiles,preview,c
 }){
  const me=displayName?.trim()||'Mi perfil';
  const mine=profiles.find(p=>p.actorId===actorId);
- const visible=profiles.filter(person=>person.actorId!==actorId&&person.name.toLowerCase()!==me.toLowerCase());
+ // Stories are authoritative even when a teammate's Profile endpoint is
+ // delayed or returns an incomplete roster. Never hide a valid Android/PWA
+ // upload just because the separate profile response missed its author.
+ const members=new Map(profiles.map(person=>[person.actorId,person]));
+ for(const story of stories){
+  if(story.expiresAt>Date.now()&&!members.has(story.actorId)){
+   members.set(story.actorId,{
+    actorId:story.actorId,name:story.name,photoUrl:null
+   });
+  }
+ }
+ const visible=[...members.values()].filter(person=>
+  person.actorId!==actorId&&person.name.toLowerCase()!==me.toLowerCase());
  const newest=(id:string|undefined)=>id?stories.filter(s=>s.actorId===id&&s.expiresAt>Date.now())
   .reduce<MemberStory|null>((recent,story)=>!recent||story.createdAt>recent.createdAt||
    (story.createdAt===recent.createdAt&&story.id>recent.id)?story:recent,null):null;
