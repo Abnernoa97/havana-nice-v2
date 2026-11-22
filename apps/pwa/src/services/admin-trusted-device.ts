@@ -54,6 +54,9 @@ function base64url(buffer:ArrayBuffer):string{
  return btoa(String.fromCharCode(...new Uint8Array(buffer)))
   .replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/g,'');
 }
+class TrustedDeviceError extends Error{
+ constructor(message:string,readonly status:number){super(message);this.name='TrustedDeviceError';}
+}
 async function post<T>(path:string,data:unknown,token?:string):Promise<T>{
  const response=await fetch(API+path,{
   method:'POST',cache:'no-store',
@@ -62,7 +65,7 @@ async function post<T>(path:string,data:unknown,token?:string):Promise<T>{
   body:JSON.stringify(data)
  });
  const json=await response.json().catch(()=>({error:'Acceso no disponible.'})) as T&{error?:string};
- if(!response.ok)throw new Error(json.error||'No se pudo autorizar el dispositivo.');
+ if(!response.ok)throw new TrustedDeviceError(json.error||'No se pudo autorizar el dispositivo.',response.status);
  return json;
 }
 export async function restoreAdminDevice():Promise<AdminSession|null>{
@@ -81,7 +84,21 @@ export async function restoreAdminDevice():Promise<AdminSession|null>{
 }
 export async function pairAdminDevice(token:string):Promise<boolean>{
  if(!supported())return false;
- if(await readDevice())return true;
+ const existing=await readDevice();
+ if(existing){
+  // Local key storage alone is not proof of live server authorization.
+  try{
+   await post<{challengeId:string;challenge:string}>('/api/chat/admin/auth/device/challenge',
+    {deviceId:existing.deviceId});
+   return true;
+  }catch(error){
+   if(!(error instanceof TrustedDeviceError)||
+    (error.status!==401&&error.status!==404))throw error;
+   // Previously revoked device: recover by pairing again with the current
+   // verified Administrator session, never reuse an unrecognized private key.
+   await dropDevice();
+  }
+ }
  const pair=await crypto.subtle.generateKey(
   {name:'ECDSA',namedCurve:'P-256'},false,['sign','verify']
  ) as CryptoKeyPair;
