@@ -8,6 +8,7 @@ import NativeFamily from '../features/family/NativeFamily';
 import {useNativeMemberProfile} from '../features/profile/useNativeMemberProfile';
 import NativeStories from '../features/stories/NativeStories';
 import NativeNotices from '../features/notices/NativeNotices';
+import NativeAudioEditorialView from '../features/audio/NativeAudioEditorialView';
 
 type Props={displayName:string;actorId:string;token:string;
  active:Exclude<MemberScreen,'chat'>;onNavigate:(screen:MemberScreen)=>void;};
@@ -30,9 +31,14 @@ function NativeMemberHome({displayName,actorId,token,active,onNavigate}:Props){
     <View style={styles.headerAvatar}>{avatar(profile.own?.photoUrl,displayName,36)}</View>
    </Pressable>
   </View>
-  {active==='home'?<NativeStories token={token} actorId={actorId}
-   displayName={displayName} profiles={profile.profiles}
-   canPublish={profile.phase==='ready'} refreshVersion={profile.liveVersion}/>:<>
+  {active==='home'?<>
+   <NativeStories token={token} actorId={actorId}
+    displayName={displayName} profiles={profile.profiles}
+    canPublish={profile.phase==='ready'} refreshVersion={profile.liveVersion}/>
+   <View style={styles.loungeInline} accessibilityLabel="Private Listening Lounge">
+    <NativeAudioEditorialView inline/>
+   </View>
+  </>:<>
    <Pressable accessibilityRole="button" accessibilityLabel="Volver a Inicio"
     style={styles.back} onPress={()=>onNavigate('home')}><Text style={styles.backLabel}>‹ Inicio</Text></Pressable>
    <Text style={styles.title}>{selected?.label||'Módulo'}</Text>
@@ -93,6 +99,7 @@ function NativeMemberHome({displayName,actorId,token,active,onNavigate}:Props){
 }
 const styles=StyleSheet.create({
  screen:{flex:1,backgroundColor:'#fff'},root:{flex:1},
+ loungeInline:{marginHorizontal:-20,marginTop:9,backgroundColor:'#faf1e7'},
  content:{paddingHorizontal:20,paddingTop:10,paddingBottom:24,flexGrow:1},
  familyViewport:{flex:1,minHeight:0,paddingBottom:0},
  top:{backgroundColor:'#0D2A23',paddingHorizontal:20,paddingBottom:22,
