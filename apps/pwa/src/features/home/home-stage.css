@@ -46,3 +46,11 @@
 .hn-home-route .hn-home-stage{min-height:0}
 .hn-home-route .hn-home-blank{display:none}
 .hn-home-route .visual-content{padding-bottom:calc(105px + env(safe-area-inset-bottom))}
+
+/* Closing the oversized white strip between member Stories and the parchment.
+   Story circles, hit targets and labels keep their original dimensions. */
+.hn-home-route .hn-moments-wrap{padding-top:2px}
+.hn-home-route .hn-moments-strip{padding-top:3px;padding-bottom:4px}
+@media(max-width:750px){
+ .hn-home-route .visual-content{padding-top:5px}
+}
