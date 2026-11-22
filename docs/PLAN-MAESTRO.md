@@ -2,6 +2,12 @@
 
 **Estado de desarrollo: 21 de noviembre de 2026.** Fuente de verdad: repositorio [Abnernoa97/havana-nice-v2](https://github.com/Abnernoa97/havana-nice-v2), rama `main`. Este documento describe lo **vigente**; las versiones anteriores están en el historial de Git, sin copiar expedientes obsoletos dentro del árbol actual. Actualizar este archivo en el mismo commit de cada bloque concluido.
 
+## HOME · Estados fijos y Audio desplazable · 22/11/2026
+
+- [x] **PWA iPhone/HOME (fuente en `main`):** `VisualApp.tsx` separa `MemberHome` (Estados estáticos bajo la cabecera) de `hn-home-audio-scroll` (único desplazamiento vertical del Lounge y canciones). Eliminado el acoplamiento `sticky` al mismo scroll; capas y degradado blanco→marfil sin franja dura. Sin cambios en tamaño de círculos, navegación inferior, motor de Audio, visor de Estados o BOOK 3D.
+- [x] **Android/HOME (fuente en `main`):** `NativeMemberHome.tsx` mantiene `NativeStories` fuera del `ScrollView` y añade un difuminado PNG alfa embebido como superposición, sin red, sin añadir altura al layout, sin segundo reproductor ni cambios de sesión.
+- [x] **Regresión de estructura:** `tests/audio-player-parity.test.mjs` protege el contenedor estático, el scroll separado y el degradado. **Compilación Pages y validación física en dispositivos pendientes de confirmación para este último bloque.** No generar ni instalar APK adicional sin aprobación de lote; no tocar Worker/D1/R2.
+
 ## Lote acumulativo en `main` · 21/11 · SIN nueva APK
 
 - **APK 0.0.23**: compilación, firma y publicación CI aprobadas (#16, run 44878578050). El usuario ya mostró capturas de ejecución física; eso confirma instalación, no QA completa. **NO** crear 0.0.24 ni tocar el manifiesto `releases/android-batch.json` hasta nuevo pedido expreso.
