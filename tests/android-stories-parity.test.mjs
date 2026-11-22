@@ -88,7 +88,7 @@ test('Every native musician section keeps the team story strip pinned, with Stor
  assert.match(shell,/<NativeStories token=\{token\} actorId=\{actorId\}/);
  assert.match(strip,/for\(const story of states\.stories\)/);
  assert.match(strip,/if\(!members\.has\(story\.actorId\)\)/);
- assert.match(strip,/person\.photoUrl\|\|last\?\.photoUrl/);
+ assert.match(strip,/last\?\.photoUrl\|\|person\.photoUrl/);
  assert.match(profile,/openFamilyRealtime/);
 });
 test('Cold Android launch uses the real HAVANA NICE icon and branded loading screen',()=>{
