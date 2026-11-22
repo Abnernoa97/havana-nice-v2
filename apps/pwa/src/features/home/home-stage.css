@@ -2,16 +2,16 @@
 .hn-home-route,.hn-home-route .visual-layout{background:#fff}
 .hn-home-route .visual-content{background:#f7f0e8}
 .hn-home-route .visual-header{background:#0D2A23}
-.hn-home-stage{background:#fff}
-.hn-moments-wrap{width:100%;padding:8px 0 0}
+.hn-home-stage{background:#fff;min-height:0}
+.hn-moments-wrap{width:100%;padding:2px 0 0}
 .hn-moments-strip{display:flex;align-items:flex-start;gap:11px;overflow-x:auto;
- overscroll-behavior-inline:contain;scrollbar-width:none;padding:6px 0 16px}
+ overscroll-behavior-inline:contain;scrollbar-width:none;padding:3px 0 4px}
 .hn-moments-strip::-webkit-scrollbar{display:none}
 .hn-moment-person{box-sizing:border-box;width:80px;min-width:80px;
  display:flex;flex-direction:column;align-items:center;gap:6px}
 .hn-moment-avatar-slot{width:76px;height:76px;position:relative;display:grid;
  place-items:center;flex:none}
-.hn-moment-circle{appearance:none;box-sizing:border-box;width:70px;height:70px;
+.hn-moment-circle{appearance:none;box-sizing:border-box;overflow:visible;width:70px;height:70px;
  margin:0;padding:2px;border:2px solid #d6d6d6;border-radius:50%;
  display:grid;place-items:center;position:relative;background:#f4f4f4;color:#585858}
 .hn-moment-circle:disabled{opacity:1;cursor:default}
@@ -32,12 +32,9 @@
  height:18px;text-align:center;font-size:11px;line-height:18px;color:#333;
  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 /* The dedicated HOME stage contains only the pinned Stories row. */
-.hn-home-route .hn-home-stage{min-height:0}
 
 /* Closing the oversized white strip between member Stories and the parchment.
    Story circles, hit targets and labels keep their original dimensions. */
-.hn-home-route .hn-moments-wrap{padding-top:2px}
-.hn-home-route .hn-moments-strip{padding-top:3px;padding-bottom:4px}
 /* HOME is split into two siblings: static Stories and the ONLY Audio
    scroller. Safari elastic overscroll must never displace the profile row. */
 @media(max-width:750px){
