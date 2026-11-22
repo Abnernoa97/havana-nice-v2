@@ -2,9 +2,7 @@
 .visual-account-label{color:#f5f1e8;font-size:12px;font-weight:650}
 .visual-account:disabled{cursor:default}
 .visual-account-avatar{display:grid;place-items:center;width:38px;height:38px;border-radius:50%;background:#EDF1E9;color:#193b2f;border:2px solid #DBC59A;font-weight:750;font-size:15px;overflow:hidden}
-.visual-account-avatar img,.hn-moment-circle img{width:100%;height:100%;object-fit:cover;display:block;border-radius:50%}
-.hn-moment-circle{overflow:visible}
-.hn-moment-photo{width:100%;height:100%;border-radius:50%;overflow:hidden;display:grid;place-items:center}
+.visual-account-avatar img{width:100%;height:100%;object-fit:cover;display:block;border-radius:50%}
 .hn-profile-overlay{position:fixed;inset:0;z-index:10001;background:#081810b8;display:flex;align-items:center;justify-content:center;padding:22px}
 .hn-profile-card{position:relative;width:min(100%,380px);max-height:90dvh;overflow:auto;background:#fff;border-radius:23px;padding:32px 25px;text-align:center;box-shadow:0 12px 55px #0005}
 .hn-profile-picture{width:110px;height:110px;border-radius:50%;margin:0 auto 20px;overflow:hidden;background:#ebeee8;border:3px solid #c8aa72;display:grid;place-items:center;color:#173c30;font-size:38px;font-weight:650}
