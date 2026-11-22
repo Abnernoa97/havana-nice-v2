@@ -70,3 +70,47 @@
  .hn-home-route .hn-moments-wrap{background:#fff}
  .hn-home-route .hn-moments-strip{padding-bottom:2px}
 }
+
+/* 22 Nov: true four-zone mobile layout. Stories are an opaque fixed sibling,
+   never a sticky overlay on the player; text cannot bleed through them. */
+@media(max-width:750px){
+ .hn-home-route .visual-content{
+  display:flex;flex-direction:column;overflow:hidden!important;
+  flex:1 1 auto;min-height:0;height:auto;max-height:100%;
+  padding:0 16px!important;background:#f4ece2!important;
+  overscroll-behavior:none
+ }
+ .hn-home-route .hn-home-stage{
+  position:relative!important;top:auto!important;z-index:3;
+  display:block;flex:0 0 auto;min-height:0!important;
+  margin:0 -16px;overflow:hidden!important;isolation:isolate;
+  padding:9px 16px 19px;
+  background:linear-gradient(180deg,#fff 0%,#fff 40%,
+   #fbf8f4 66%,#f4ece2 100%)!important
+ }
+ .hn-home-route .hn-moments-wrap,
+ .hn-home-route .hn-moments-strip{background:transparent!important}
+ .hn-home-route .hn-moments-wrap{padding-top:0}
+ .hn-home-route .hn-moments-strip{padding-top:1px;padding-bottom:0}
+ .hn-home-route .hn-home-stage::after{
+  content:none!important;display:none!important
+ }
+ .hn-home-route .hn-audio-editorial{
+  display:block;flex:1 1 auto;min-height:0!important;
+  width:calc(100% + 32px);max-width:none;
+  margin:0 -16px!important;
+  overflow-x:hidden;overflow-y:auto!important;
+  overscroll-behavior-y:none;overscroll-behavior-x:none;
+  -webkit-overflow-scrolling:touch;
+  background:#f4ece2;
+  padding:0 0 calc(15px + env(safe-area-inset-bottom))
+ }
+ .hn-home-route .hn-audio-parchment{
+  margin:0!important;
+  padding-top:24px!important;
+  min-height:100%!important;
+  background:linear-gradient(180deg,#f4ece2,#f9f4eb 22%,#f5ece3 100%)
+ }
+ .hn-home-route .hn-audio-paper-tear,
+ .hn-home-route .hn-audio-parchment::before{display:none!important}
+}
