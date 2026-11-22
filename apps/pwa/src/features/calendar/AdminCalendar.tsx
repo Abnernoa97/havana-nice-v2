@@ -54,7 +54,7 @@ export default function AdminCalendar({token,members,onExpired}:Props){
   }
  },[token,onExpired]);
  useEffect(()=>{
-  const update=(reason?:'fallback')=>{if(!document.hidden&&navigator.onLine){if(reason!=='fallback')setRevision(n=>n+1);void refresh();}};
+  const update=(reason?:'fallback'|'changed')=>{if(!document.hidden&&navigator.onLine){if(reason!=='fallback')setRevision(n=>n+1);void refresh();}};
   update();
   const stop=watchCalendar(token,true,update);
   return()=>{stop();pending.current?.abort();pending.current=null;requestId.current++;};
