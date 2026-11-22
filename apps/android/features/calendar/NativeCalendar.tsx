@@ -2,9 +2,9 @@ import React,{useCallback,useEffect,useRef,useState} from 'react';
 import {Linking,Pressable,StyleSheet,Text,View} from 'react-native';
 import {getCalendarEvents,calendarDate,calendarEventCompleted,safeCalendarMapUrl,HAVANA_V2_DEV_API_BASE_URL,type CalendarEvent} from '@havana/shared';
 import NativeBook from '../book/NativeBook';
-import {watchNativeCalendar} from '../../services/native-calendar-live';
+
 // One authorized V2 session; no new identity, token persistence, WebView or Chat.
-export default function NativeCalendar({token}:{token:string}){
+export default function NativeCalendar({token,calendarRevision=0}:{token:string;calendarRevision?:number}){
  const [events,setEvents]=useState<CalendarEvent[]>([]);
  const [open,setOpen]=useState<string|null>(null);
  const [loading,setLoading]=useState(true);
@@ -31,11 +31,18 @@ export default function NativeCalendar({token}:{token:string}){
    }
   }
  },[token]);
+ // The authenticated native shell owns the sole CalendarRoom connection.
  useEffect(()=>{
-  // Foreground socket invalidation replaces the obsolete thirty-second timer.
-  const stop=watchNativeCalendar(token,()=>{void refresh();});
-  return()=>{stop();pending.current?.abort();pending.current=null;};
- },[token,refresh]);
+  void refresh();
+  return()=>{pending.current?.abort();pending.current=null;};
+ },[refresh,calendarRevision]);
+ const [clock,setClock]=useState(Date.now());
+ useEffect(()=>{
+  let disposed=false;let timeout:ReturnType<typeof setTimeout>;
+  const tick=()=>{if(disposed)return;setClock(Date.now());timeout=setTimeout(tick,60000);};
+  timeout=setTimeout(tick,60000);
+  return()=>{disposed=true;clearTimeout(timeout);};
+ },[]);
  return <View style={styles.root}>
   <View style={styles.row}>
    <Pressable accessibilityRole="button" onPress={()=>void refresh()}>
@@ -43,7 +50,7 @@ export default function NativeCalendar({token}:{token:string}){
   {!!error&&<Text style={styles.error}>{error}</Text>}
   {loading?<Text style={styles.empty}>Cargando tus fechas…</Text>:!events.length?
    <Text style={styles.empty}>No tienes eventos asignados.</Text>:
-   events.map(item=>{const past=calendarEventCompleted(item);return <View key={item.id} style={styles.event}>
+   events.map(item=>{const past=calendarEventCompleted(item,new Date(clock));return <View key={item.id} style={styles.event}>
     <Pressable accessibilityRole="button" accessibilityLabel={'Detalles de '+item.title}
      accessibilityState={{expanded:open===item.id}}
      onPress={()=>setOpen(value=>value===item.id?null:item.id)} style={styles.head}>
