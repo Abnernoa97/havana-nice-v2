@@ -52,13 +52,14 @@ async function ensureChannel(){
  });
 }
 export type NativePushControl={
- state:PushState;error:string;enable:()=>Promise<void>;
- disable:()=>Promise<void>;openSettings:()=>Promise<void>;
+ state:PushState;error:string;testStatus:string;enable:()=>Promise<void>;
+ disable:()=>Promise<void>;test:()=>Promise<void>;openSettings:()=>Promise<void>;
 };
 
 export function useNativePush(token:string|null,onNavigate:(screen:MemberScreen)=>void):NativePushControl{
  const [state,setState]=useState<PushState>('checking');
  const [error,setError]=useState('');
+ const [testStatus,setTestStatus]=useState('');
  const registered=useRef<{session:string;device:string}|null>(null);
  const navigate=useRef(onNavigate);
  navigate.current=onNavigate;
@@ -81,6 +82,7 @@ export function useNativePush(token:string|null,onNavigate:(screen:MemberScreen)
  useEffect(()=>{
   if(Platform.OS!=='android'){setState('unavailable');return;}
   if(!token){
+   setTestStatus('');
    const prev=registered.current;
    registered.current=null;enabledSession.current=null;setState('checking');
    if(prev)void revokeFcm(prev.session,prev.device).catch(()=>{});
@@ -164,6 +166,14 @@ export function useNativePush(token:string|null,onNavigate:(screen:MemberScreen)
    registered.current=null;enabledSession.current=null;setError('');setState('ready');
   }catch{setError('No se pudo desvincular este teléfono.');}
  },[token]);
+ const test=useCallback(async()=>{
+  if(!token||state!=='enabled')return;
+  setTestStatus('');
+  try{
+   await requestPush(token,'POST','/api/push/test');
+   setTestStatus('Prueba programada. Bloquea el teléfono para comprobarla.');
+  }catch{setTestStatus('No se pudo programar la prueba. Intenta más tarde.');}
+ },[token,state]);
  const openSettings=useCallback(async()=>{await Linking.openSettings();},[]);
- return {state,error,enable,disable,openSettings};
+ return {state,error,testStatus,enable,disable,test,openSettings};
 }
