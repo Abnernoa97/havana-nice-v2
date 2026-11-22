@@ -8,6 +8,7 @@ export const styles = StyleSheet.create({
   // Reserve room for three-button navigation even with Android 16 edge-to-edge.
   screen: { flex: 1, backgroundColor: '#F3EDDF', paddingBottom: Platform.OS === 'android' ? 42 : 0 },
   screenKeyboard: {paddingBottom:0},
+  screenLaunch:{backgroundColor:'#0D2A23',paddingBottom:0},
   login: { flex: 1, justifyContent: 'center', paddingHorizontal: 26 },
   brandedLaunch:{flex:1,backgroundColor:'#0D2A23',alignItems:'center',justifyContent:'center',
    paddingHorizontal:22},
