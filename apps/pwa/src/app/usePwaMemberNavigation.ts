@@ -8,7 +8,9 @@ export function usePwaMemberNavigation({onChatExit}:{onChatExit:()=>void}){
   resetChatUi.current=onChatExit;
   // Existing approved ChatSession is the APP access; HOME adds no login or storage.
   // Only member navigation owns the screen. Camera and unsent photos cannot redirect HOME.
-  const [activeScreen,setActiveScreen]=useState<MemberScreen>('home');
+  const [activeScreen,setActiveScreen]=useState<MemberScreen>(
+   ()=>new URLSearchParams(window.location.search).get('push')==='notices'?
+    'notices':'home');
   const previousScreen=useRef<MemberScreen>('home');
   // Reset stale Chat history on a normal launch; keep a real camera recovery.
   useEffect(()=>{
@@ -25,6 +27,21 @@ export function usePwaMemberNavigation({onChatExit}:{onChatExit:()=>void}){
     }
     setActiveScreen(target);
   },[activeScreen]);
+  // An installed iPhone PWA can be launched from a locked-screen push or
+  // receive a service-worker message while already open. Navigate through
+  // the ONE existing member navigation owner, never a separate router.
+  useEffect(()=>{
+    const url=new URL(window.location.href);
+    if(url.searchParams.get('push')==='notices'){
+      url.searchParams.delete('push');
+      window.history.replaceState(window.history.state,'',url.pathname+url.search+url.hash);
+    }
+    const onPush=(event:MessageEvent)=>{
+      if(event.data?.type==='havana-push-open')navigateTo('notices');
+    };
+    navigator.serviceWorker?.addEventListener('message',onPush);
+    return()=>navigator.serviceWorker?.removeEventListener('message',onPush);
+  },[navigateTo]);
   const closeChat=()=>{
     resetChatUi.current();
     setActiveScreen(previousScreen.current);
