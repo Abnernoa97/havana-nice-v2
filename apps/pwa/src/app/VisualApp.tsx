@@ -89,7 +89,9 @@ function VisualApp({displayName,active,onNavigate,preview=false,token,actorId}:P
         {screen==='home'?<Suspense fallback={<div className="visual-empty" role="status">Abriendo Inicio…</div>}>
           <MemberHome token={token} displayName={displayName} actorId={actorId} profiles={profile.profiles} preview={preview} canEditProfile={profile.phase==='ready'||profile.phase==='missing'} onPhotoError={profile.retryPhoto} refreshVersion={storyEpoch}/>
         </Suspense>:<>
-          {screen!=='audio'&&<div className="visual-section-header">
+          {screen==='calendar'?<div className="visual-section-header visual-calendar-heading">
+            <h1>Calendario</h1>
+          </div>:screen!=='audio'&&<div className="visual-section-header">
             <button className="visual-back" type="button" onClick={()=>navigate('home')}>‹ Inicio</button>
             <span className="visual-overline">HAVANA NICE / {selected?.label.toUpperCase()}</span>
             <h1>{selected?.label}</h1>
