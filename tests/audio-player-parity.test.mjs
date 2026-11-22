@@ -282,3 +282,26 @@ test('iPhone HOME locks only the page shell, preserving independent Audio scroll
  const story=read('apps/pwa/src/features/stories/MemberStories.tsx');
  assert.match(story,/createPortal\(/);
 });
+
+test('Audio editorial CSS keeps one top-level rule per selector',()=>{
+ const source=read('apps/pwa/src/features/audio/audio-player.css');
+ const masked=source.replace(/\/\*[\s\S]*?\*\//g,part=>' '.repeat(part.length));
+ const seen=new Map();
+ let depth=0,start=0;
+ for(let i=0;i<masked.length;i++){
+  if(masked[i]==='{'){
+   const selector=masked.slice(start,i).trim();
+   if(depth===0&&!selector.startsWith('@')){
+    seen.set(selector,(seen.get(selector)||0)+1);
+   }
+   depth++;start=i+1;
+  }else if(masked[i]==='}'){
+   depth--;assert.ok(depth>=0,'Unbalanced CSS braces');
+   start=i+1;
+  }
+ }
+ assert.equal(depth,0,'Unclosed CSS blocks');
+ assert.ok(seen.size>=50,'Expected the actual editorial stylesheet');
+ assert.deepEqual([...seen].filter(([,count])=>count>1),[],
+  'Do not reintroduce layered duplicate global rules in Audio');
+});
