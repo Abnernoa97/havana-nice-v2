@@ -12,6 +12,7 @@ export function useNativeStories(token:string,refreshVersion:number){
  const [stories,setStories]=useState<MemberStory[]>([]);
  const [error,setError]=useState('');
  const [saving,setSaving]=useState(false);
+ const publishing=useRef(false);
  const latest=useRef(0),mounted=useRef(true);
  const grants=useRef(new Map<string,{url:string;createdAt:number;expiresAt:number;issuedAt:number}>());
  // Bounded recovery of expired/failed R2 photo capabilities. Never pin a
@@ -83,8 +84,10 @@ export function useNativeStories(token:string,refreshVersion:number){
   return f;
  },[]);
  const publish=useCallback(async()=>{
-  if(saving)return;
-  setError('');
+  // Lock immediately: image picker + JPEG preprocessing are part of the
+  // same user action. A second tap must never open another picker/upload.
+  if(saving||publishing.current)return;
+  publishing.current=true;setSaving(true);setError('');
   try{
    const permission=await ImagePicker.requestMediaLibraryPermissionsAsync();
    if(!permission.granted)throw Error('Permite el acceso a tus fotografías.');
@@ -103,7 +106,6 @@ export function useNativeStories(token:string,refreshVersion:number){
     // pass that real file directly so 1-5 photos remain ONE atomic batch.
     form.append('photos',file,'estado-'+(i+1)+'.jpg');
    }
-   setSaving(true);
    const reply=await expoFetch(API+'/api/stories/me/batch',{
     method:'POST',headers:{Authorization:'Bearer '+token},body:form
    });
@@ -117,7 +119,7 @@ export function useNativeStories(token:string,refreshVersion:number){
     ?'No se pudo enviar la foto. Comprueba tu conexión e intenta otra vez.'
     :message||'No se pudieron publicar los estados.');
   }
-  finally{setSaving(false);}
+  finally{publishing.current=false;setSaving(false);}
  },[token,saving,refresh,prepare]);
  const remove=useCallback(async(id:string)=>{
   if(saving)return false;
