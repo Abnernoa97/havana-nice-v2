@@ -4,6 +4,7 @@ import {DatabaseSync} from 'node:sqlite';
 import {readFileSync} from 'node:fs';
 import {issueAdminSession} from '../src/modules/admin/admin-auth.js';
 import {handleAudioApi} from '../src/modules/audio/audio.js';
+import {sha256Hex} from '../src/shared/crypto-helpers.js';
 import {familyStorageUsage} from '../src/modules/family/family-quota.js';
 
 const HOST='https://havana-nice-v2-dev.soloaplicaciones97.workers.dev';
@@ -95,4 +96,29 @@ test('Audio catalog is private; admin upload, artwork and streaming use expiring
  assert.equal((await req(file.audioUrl)).status,404);
  assert.equal((await familyStorageUsage(env)).usedBytes,0);
  assert.equal(db.prepare('SELECT COUNT(*) AS n FROM audio_delete_queue').get().n,0);
+});
+
+test('Audio list returns before expiring-grant housekeeping completes',async()=>{
+ const {db,env}=setup();
+ const id='d1808ba2-c85b-4559-88b3-2ef3c2bdf129';
+ db.prepare('INSERT INTO audio_tracks(id,title,artist,album,object_key,mime_type,size_bytes,created_at,position,published) VALUES(?,?,?,?,?,?,?,?,?,1)')
+  .run(id,'Demo','HAVANA NICE','Audio','audio/test', 'audio/mpeg', 1024, Date.now(),100);
+ const token='abcdefabcdefabcdefabcdefabcdefab';
+ db.prepare('INSERT INTO audio_media_grants(token_hash,track_id,variant,expires_at) VALUES(?,?,?,?)')
+  .run(await sha256Hex(token),id,'audio',Date.now()-60000);
+ const requestUrl=new URL(HOST+'/api/audio/tracks');
+ const deniedUrl=new URL(HOST+'/api/audio/media/'+token);
+ const verify=async()=>({actorId:'noa'});
+ const before=await handleAudioApi(new Request(deniedUrl),env,deniedUrl,'https://havana-nice-v2.pages.dev',verify,null);
+ assert.equal(before.status,404,'Expired grants must be rejected even while physically present');
+ const scheduled=[];
+ const ctx={waitUntil(task){scheduled.push(task);}};
+ const result=await handleAudioApi(new Request(requestUrl,{headers:{Authorization:'Bearer noa'}}),
+  env,requestUrl,'https://havana-nice-v2.pages.dev',verify,ctx);
+ assert.equal(result.status,200);
+ assert.equal((await result.json()).tracks.length,1);
+ assert.equal(scheduled.length,1,'Cleanup belongs in Worker waitUntil rather than the catalog response');
+ await Promise.all(scheduled);
+ assert.equal(db.prepare('SELECT COUNT(*) AS total FROM audio_media_grants WHERE expires_at<?')
+  .get(Date.now()).total,0);
 });
