@@ -84,6 +84,45 @@ export async function notifyTeamFamilyMedia(env,albumActorId,mediaId,kind){
  });
 }
 
+// Admin changes to an event's Repertoire are SYSTEM activity, never a
+// counterfeit musician message. Only Calendar-assigned musicians receive it.
+export async function notifyRepertoireMembers(env,eventId,action,changeId){
+ if(!eventId||!changeId)return 0;
+ const preview=action==='added'?'Se agregaron canciones a tu repertorio':
+  action==='removed'?'Se eliminó una canción de tu repertorio':
+  action==='reordered'?'Se actualizó el orden de tu repertorio':
+  action==='completed'?'Se actualizó el avance de tu repertorio':
+  'Se actualizó el repertorio de tu evento';
+ try{
+  const members=(await env.DB.prepare(
+   'SELECT DISTINCT r.actor_id FROM calendar_event_recipients r '+
+   'JOIN chat_members m ON m.actor_id=r.actor_id AND m.active=1 '+
+   'WHERE r.event_id=?'
+  ).bind(eventId).all()).results||[];
+  const now=Date.now();
+  const noticeIds=members.map(()=>crypto.randomUUID());
+  if(!members.length)return 0;
+  const inserts=members.map((person,i)=>env.DB.prepare(
+   'INSERT OR IGNORE INTO member_system_notifications '+
+   '(id,recipient_id,kind,target_id,preview,created_at,dedupe_key) '+
+   "VALUES(?,?,'repertoire.updated',?,?,?,?)"
+  ).bind(noticeIds[i],person.actor_id,eventId,preview,now,
+   'repertoire:'+eventId+':'+changeId+':'+person.actor_id));
+  const results=await env.DB.batch(inserts);
+  let count=0;
+  for(let i=0;i<members.length;i++){
+   if(Number(results[i]?.meta?.changes||0)!==1)continue;
+   count++;
+   await queueNoticePush(env,{noticeId:noticeIds[i],recipientId:members[i].actor_id,
+    kind:'repertoire.updated',targetId:eventId,title:'HAVANA NICE · Repertorio',body:preview});
+  }
+  return count;
+ }catch{
+  // Failed push must never roll back an Admin's committed repertoire change.
+  return 0;
+ }
+}
+
 // New Android/PWA States are team activity, not a private author-only reply.
 // Each published batch creates ONE notice per other authorized musician.
 // The endpoint never trusts recipients supplied by the uploader.
