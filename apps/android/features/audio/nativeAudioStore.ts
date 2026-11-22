@@ -27,6 +27,11 @@ function getSnapshot(){return current;}
 export function useNativeAudioSnapshot(){
  return useSyncExternalStore(subscribe,getSnapshot,getSnapshot);
 }
+export function clearNativeAudio(){
+ handlers=null;
+ current=initial;
+ subscribers.forEach(callback=>callback());
+}
 export function publishNativeAudio(next:NativeAudioSnapshot){
  current=next;
  subscribers.forEach(callback=>callback());
