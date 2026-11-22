@@ -209,7 +209,7 @@ export default function MemberAudio({token,active=true}:{token:string;active?:bo
    </>}
    <div className="hn-audio-paper-corner" aria-hidden="true"/>
   </div>
-  <audio ref={ref} preload="metadata"
+  <audio ref={ref} preload={current&&current.sizeBytes<=8*1024*1024?'auto':'metadata'}
    onPlay={()=>setPlaying(true)} onPlaying={()=>setPlaying(true)}
    onPause={()=>setPlaying(false)}
    onTimeUpdate={event=>setElapsed(event.currentTarget.currentTime)}
