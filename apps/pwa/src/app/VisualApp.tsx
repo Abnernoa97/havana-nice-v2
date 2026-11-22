@@ -3,6 +3,7 @@ import {usePwaMemberProfiles,PwaProfileLive} from '../features/profile/usePwaMem
 import MemberProfilePanel from '../features/profile/MemberProfilePanel';
 import PrivateProfileAvatar from '../features/profile/PrivateProfileAvatar';
 import '../features/profile/profile.css';
+import {usePwaUnreadNotices} from '../features/notices/usePwaUnreadNotices';
 import {MEMBER_MODULES,type MemberScreen} from '@havana/shared';
 // Each module is a separate on-demand production chunk. The HOME shell and
 // existing authorized session stay mounted; no routes, APIs or data flow change.
@@ -37,6 +38,7 @@ function VisualApp({displayName,active,onNavigate,preview=false,token,actorId,ca
   const [profileOpen,setProfileOpen]=useState(false);
   const [audioOpened,setAudioOpened]=useState(active==='audio'||active==='home');
   const [storyEpoch,setStoryEpoch]=useState(0);
+ const unreadNotices=usePwaUnreadNotices(preview?undefined:token,storyEpoch+calendarRevision);
   const profile=usePwaMemberProfiles(token,actorId);
   const own=profile.own;
   const [previewScreen,setPreviewScreen]=useState<MemberScreen>('home');
@@ -83,6 +85,7 @@ function VisualApp({displayName,active,onNavigate,preview=false,token,actorId,ca
           aria-current={screen===item.id?'page':undefined}
           onClick={()=>navigate(item.id)}>
           <span aria-hidden="true">{item.glyph}</span> {item.label}
+          {item.id==='notices'&&unreadNotices>0&&<b className="hn-notices-count" aria-label={unreadNotices+' sin leer'}>{unreadNotices}</b>}
         </button>)}
         <div className="visual-side-note">Una sola identidad autorizada para HOME y Chat.</div>
       </aside>
@@ -128,6 +131,7 @@ function VisualApp({displayName,active,onNavigate,preview=false,token,actorId,ca
           className={screen===item?'active':''} aria-current={screen===item?'page':undefined}
           onClick={()=>navigate(item)}>
           <span aria-hidden="true">{module?.glyph||'⌂'}</span><small>{item==='family'?'Familia':module?.label||'Inicio'}</small>
+           {item==='notices'&&unreadNotices>0&&<b className="hn-notices-count" aria-label={unreadNotices+' sin leer'}>{unreadNotices}</b>}
         </button>;
       })}
     </nav>
