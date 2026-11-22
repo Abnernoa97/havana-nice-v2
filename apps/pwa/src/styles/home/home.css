@@ -133,3 +133,27 @@
   overscroll-behavior-y:contain;-webkit-overflow-scrolling:touch}
  .visual-bottom-nav{z-index:30;flex:0 0 auto}
 }
+
+/* HOME on installed iPhone: lock the DOCUMENT, not its inner reader or media.
+   A pull from the top must never expose a tall white Safari rubber-band gap.
+   Other routes, Chat, BOOK, Administration and profile overlays are untouched. */
+@media(max-width:750px){
+ html.hn-home-viewport-lock,
+ body.hn-home-viewport-lock{
+  height:100%;max-height:100%;overflow:hidden;overscroll-behavior:none
+ }
+ body.hn-home-viewport-lock{
+  position:fixed;inset:0;width:100%;margin:0;background:#0D2A23
+ }
+ body.hn-home-viewport-lock #root,
+ body.hn-home-viewport-lock #visual-root{
+  height:100%;max-height:100%;overflow:hidden
+ }
+ .hn-home-viewport-lock .hn-home-route{
+  height:100%;max-height:100%;min-height:0;box-sizing:border-box;
+  padding-top:env(safe-area-inset-top);padding-bottom:0
+ }
+ .hn-home-viewport-lock .hn-home-route .visual-layout{
+  min-height:0;flex:1 1 auto;overflow:hidden
+ }
+}
