@@ -215,9 +215,14 @@ assert.ok(androidWorkflow.includes('test "$current_code" -gt "$previous_code"'),
   'H01: block non-monotonic Android versionCode');
 present(androidWorkflow,/sha256sum -c -/,'H01: verify hash of preceding released APK');
 
-// C01: both interfaces anchor the long-press menu to a real bubble; do not
-// allow the old centered overlay or inert '+' to regress on Android/iPhone.
-present(nativeBubble,/measureInWindow\(/,'Native Chat must measure held bubble');
+// C01: native Android anchors from the actual held touch (measureInWindow
+// can fail on flattened Pressables). iPhone keeps its DOM bubble geometry.
+present(nativeBubble,/onLongPress=\{event=>\{/,
+  'Native Chat must open emojis from the actual long-press touch');
+present(nativeBubble,/event\.nativeEvent/,
+  'Native Chat must use the native touch location');
+absent(nativeBubble,/\.measureInWindow\(/,
+  'Native Chat must not depend on an unreliable asynchronous view measurement');
 present(android,/onMessageLongPress=\{onTimelineLongPress\}/,
   'Native Chat controller must pass its single contextual-menu action to the timeline');
 present(nativeTimeline,/onLongPress=\{\(anchor\) => onMessageLongPress\(message,anchor\)\}/,
@@ -256,7 +261,8 @@ present(android,/applyChatIncomingEvent\(item,\{/,'Native must use shared incomi
 present(pwa,/applyChatIncomingEvent\(value,\{/,'PWA must use shared incoming event router');
 present(android,/initialHistoryPending\s*=\s*useRef\(true\)/,'Native chat must track initial bottom placement');
 present(android,/requestAnimationFrame\(scheduleInitialBottom\)/,'Native chat must wait for initial snapshot layout');
-present(android,/scrollToEnd\(\{animated:false\}\)/,'Native chat must avoid animated initial scrolling');
+present(android,/scrollToOffset\(\{offset:0,animated:false\}\)/,
+  'Inverted native Chat must anchor its most recent message at offset zero');
 present(android,/onScrollBeginDrag=/,'Native chat must respect manual scroll');
 absent(android,/onContentSizeChange=\{\(\) => \{if\(autoScroll\.current\)scroll\.current\?\.scrollToEnd\(\{animated:true\}\);\}\}/,
   'Native chat must not animate every content size change');
