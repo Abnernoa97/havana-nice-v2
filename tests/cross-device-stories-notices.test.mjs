@@ -23,7 +23,7 @@ test('An Android State appears on PWA even without a matching Profile row',()=>{
  assert.match(shared,/story\.expiresAt>serverNow/);
  assert.match(native,/last\?\.photoUrl\|\|person\.photoUrl/);
  assert.match(native,/onFailure=/);
- assert.match(native,/onPress=\{states\.retryAll\}/);
+ assert.match(native,/states\.retryAll\(\)/);
  for(const hook of [pwa,nativeApi]){
   assert.match(hook,/failedPhotos=useRef\(new Map/);
   assert.match(hook,/failedPhotos\.current\.clear\(\)/);
@@ -32,6 +32,24 @@ test('An Android State appears on PWA even without a matching Profile row',()=>{
  }
  for(const s of [pwa,nativeApi])
   assert.match(s,/45_000/);
+});
+
+test('Android story upload uses actual Expo File blobs, never unsupported URI FormData parts',()=>{
+ const native=read('apps/android/features/stories/useNativeStories.ts');
+ const strip=read('apps/android/features/stories/NativeStories.tsx');
+ const server=read('cloudflare/src/modules/stories/stories.js');
+ assert.match(native,/import \{fetch as expoFetch\} from 'expo\/fetch'/);
+ assert.match(native,/import \{File\} from 'expo-file-system'/);
+ assert.match(native,/const file=await prepare\(asset\.uri\)/);
+ assert.match(native,/form\.append\('photos',file,'estado-'\+\(i\+1\)\+'\.jpg'\)/);
+ assert.match(native,/await expoFetch\(API\+'\/api\/stories\/me\/batch'/);
+ assert.doesNotMatch(native,/form\.append\('photos',\{uri:/);
+ assert.doesNotMatch(native,/as unknown as Blob/);
+ assert.match(server,/form\.getAll\('photos'\)/);
+ assert.match(server,/files\.length<1\|\|files\.length>5/);
+ assert.match(strip,/Aún no tienes estados/);
+ assert.match(strip,/aún no tiene estados/);
+ assert.match(native,/No se pudo enviar la foto/);
 });
 
 test('Holding Android Chat text reliably opens emoji menu without competing responder',()=>{
