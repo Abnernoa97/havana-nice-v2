@@ -157,3 +157,10 @@
   min-height:0;flex:1 1 auto;overflow:hidden
  }
 }
+
+/* Navigation belongs to the member shell. The Administrator has its own
+   typography and must not inherit the musician-only small-screen sizing. */
+@media(max-width:750px){
+ .visual-shell:not(.hn-admin-editorial) .visual-bottom-nav button{font-size:9px}
+ .visual-shell:not(.hn-admin-editorial) .visual-bottom-nav button small{letter-spacing:-.025em}
+}
