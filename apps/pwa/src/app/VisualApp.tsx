@@ -101,7 +101,7 @@ function VisualApp({displayName,active,onNavigate,preview=false,token,actorId,ca
               onClick={()=>navigate('audio')}>♫ Abrir Audio HAVANA NICE</button>}
           </div>}
           <Suspense fallback={<div className="visual-empty" role="status" aria-live="polite">Abriendo módulo…</div>}>
-           {screen==='calendar'&&token?<CalendarAccordion token={token} revision={calendarRevision}/>:
+           {screen==='calendar'&&token?<CalendarAccordion token={token} calendarRevision={calendarRevision}/>:
             screen==='repertoire'&&token?<MemberRepertoire token={token}/>:
             screen==='musicians'&&token?<MemberMusicians token={token}/>:
             screen==='family'&&token?<MemberFamily token={token}/>:
