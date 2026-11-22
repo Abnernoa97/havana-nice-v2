@@ -116,7 +116,7 @@ export default {
       return handleCalendarApi(request,env,url,origin,respond,verifySession);
     // Repertoire is separately routed with the existing session and D1 grants.
     if(url.pathname.startsWith('/api/repertoire/')){
-      const response=await handleRepertoireApi(request,env,url,origin,respond,verifySession);
+      const response=await handleRepertoireApi(request,env,url,origin,respond,verifySession,ctx);
       // Successful authenticated Admin writes invalidate all subscribers via existing DO.
       if(request.method!=='GET'&&url.pathname.startsWith('/api/repertoire/admin/')&&response.ok)
         ctx.waitUntil(notifyRepertoireClients(env));
