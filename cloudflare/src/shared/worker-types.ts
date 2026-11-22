@@ -8,6 +8,10 @@ export interface V2Env{
  HAVANA_ENV?:string;
  V2_ADMIN_LOGIN_MODE?:string;
  V2_ADMIN_LOGIN_SECRET?:string;
+ // Push Center secrets are provisioned only in Cloudflare, never in source.
+ PUSH_VAPID_PUBLIC_KEY?:string;
+ PUSH_VAPID_PRIVATE_KEY?:string;
+ FCM_SERVICE_ACCOUNT_JSON?:string;
 }
 export interface MusicianRow{actor_id:string;display_name:string;username?:string}
 export interface ChatMessageRow{
