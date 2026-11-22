@@ -72,3 +72,30 @@ test('Calendar remembrance 3D uses persistent BookReader and optimized WebP, not
  assert.match(book,/autoSize:false/);
  assert.doesNotMatch(story,/PageFlip|BookReader|rotateY|page-flip/);
 });
+
+test('installed musician PWA remains portrait when an iPhone is turned sideways',()=>{
+ const config=JSON.parse(read('apps/pwa/public/manifest.webmanifest'));
+ const native=JSON.parse(read('apps/android/app.json'));
+ const entry=read('apps/pwa/src/app/main.tsx');
+ const css=read('apps/pwa/src/styles/mobile-viewport.css');
+ assert.equal(config.display,'standalone');
+ assert.equal(config.orientation,'portrait-primary');
+ assert.equal(native.expo.orientation,'portrait');
+ assert.match(entry,/if\(!standalone\)return/);
+ assert.match(entry,/screen\.orientation\?\.lock\?\.\('portrait-primary'\)/);
+ assert.match(entry,/if\(!\/iPhone\|iPod\/\.test\(navigator\.userAgent\)\)return/);
+ assert.match(entry,/window\.addEventListener\('orientationchange',sync\)/);
+ assert.match(entry,/document\.body\.classList\.toggle\('hn-pwa-portrait-landscape',wide\)/);
+ assert.match(css,/@media \(orientation:landscape\) and \(hover:none\) and \(pointer:coarse\)/);
+ assert.match(css,/body\.hn-pwa-portrait-landscape #root\{/);
+ assert.match(css,/width:100dvh;height:100dvw/);
+ assert.match(css,/transform:rotate\(90deg\)/);
+ assert.match(css,/transform:rotate\(-90deg\)/);
+ assert.match(css,/body\.hn-pwa-portrait-landscape #root \.visual-side\{display:none\}/);
+ assert.match(css,/body\.hn-pwa-portrait-landscape #root \.visual-bottom-nav\{/);
+ assert.match(css,/body\.hn-pwa-portrait-landscape #root \.hn-home-route \.hn-home-audio-scroll\{/);
+ assert.match(css,/body\.hn-pwa-portrait-landscape > \.hn-story-overlay/);
+ assert.doesNotMatch(read('apps/pwa/src/app/visual-main.tsx'),/keepMusicianAppPortrait/);
+ assert.doesNotMatch(read('apps/pwa/src/app/native-book-main.tsx'),/keepMusicianAppPortrait/);
+ assert.equal((css.match(/\{/g)||[]).length,(css.match(/\}/g)||[]).length);
+});
