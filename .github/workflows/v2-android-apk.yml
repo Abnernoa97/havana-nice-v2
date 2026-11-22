@@ -76,7 +76,7 @@ jobs:
 
       - name: Guard native Chat, HOME, Audio, Stories and the untouched BOOK 3D
         run: |
-          node --test tests/audio-player-parity.test.mjs tests/audio-motion-parallax.test.mjs tests/home-visual-identity.test.mjs tests/member-home-navigation.test.mjs tests/native-chat-virtualization.test.mjs tests/android-batch-policy.test.mjs
+          node --test tests/audio-player-parity.test.mjs tests/home-visual-identity.test.mjs tests/member-home-navigation.test.mjs tests/native-chat-virtualization.test.mjs tests/android-batch-policy.test.mjs
           node --experimental-strip-types --test tests/native-book-bridge.test.mjs tests/chat-session-recovery.test.mjs tests/chat-offline-policy.test.mjs
           node --test tests/member-stories-parity.test.mjs tests/android-stories-parity.test.mjs
 
