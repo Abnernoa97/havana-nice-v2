@@ -23,11 +23,7 @@
  height:26px;border-radius:50%;pointer-events:none;transform:rotate(-.35deg);
  background:linear-gradient(180deg,#bca79245,#faf4e9c9 40%,transparent);
  box-shadow:0 4px 7px #8e72552f;filter:blur(1.3px)}
-.hn-audio-fold{position:absolute;z-index:0;pointer-events:none;right:-65px;top:-12px;
- width:280px;height:158px;border-radius:10% 0 75% 85%;
- transform:rotate(-17deg);
- background:linear-gradient(145deg,#ead7bf 7%,#fffcf6 24%,#f2e4d0 56%,#b6a0874e 78%,#234e3b 79%,#15372c 94%);
- box-shadow:-10px 13px 19px #745b3c16}
+
 .hn-audio-paper-title{position:relative;z-index:2;text-align:center;display:grid;
  justify-items:center;gap:7px;margin:0 auto 18px;max-width:700px}
 .hn-audio-paper-title>span,.hn-audio-label{font:750 10px/1.5 system-ui,sans-serif;letter-spacing:.35em;color:#976d49}
@@ -48,25 +44,7 @@
  border:0;background:transparent;box-shadow:none}
 .hn-audio-flowers{position:absolute;z-index:-1;pointer-events:none;width:100%;
  height:clamp(260px,52vw,390px);top:-9px;left:0}
-.hn-audio-silk{position:absolute;display:block;width:58%;height:51%;opacity:.8;
- background:linear-gradient(123deg,transparent 12%,#fff9e9d6 28%,#c6ad8c20 41%,#fff9e9af 57%,transparent 81%);
- border-radius:70% 14% 69% 23%;box-shadow:inset 8px 2px 20px #fff9eda3}
-.hn-audio-silk-left{left:-22%;top:15%;transform:rotate(-16deg) skew(19deg,-5deg)}
-.hn-audio-silk-right{right:-22%;top:22%;transform:rotate(17deg) skew(-18deg,5deg)}
-.hn-audio-flower{position:absolute;display:block;width:98px;height:98px;filter:drop-shadow(4px 6px 9px #6c5c452b)}
-.hn-audio-flower-left{left:1%;top:57%;transform:rotate(-28deg) scale(.82)}
-.hn-audio-flower-right{right:-1%;top:20%;transform:rotate(19deg) scale(1.05)}
-.hn-audio-flower i{position:absolute;left:31px;top:2px;display:block;width:36px;height:60px;
- transform-origin:18px 48px;border-radius:70% 67% 55% 50%;
- background:radial-gradient(ellipse at 46% 31%,#fffefd 9%,#f6eee3 46%,#e2d4c3 83%,#bcae994e);
- box-shadow:inset -4px -2px 8px #c5b6a765}
-.hn-audio-flower i:nth-child(1){transform:rotate(0deg)}
-.hn-audio-flower i:nth-child(2){transform:rotate(72deg)}
-.hn-audio-flower i:nth-child(3){transform:rotate(144deg)}
-.hn-audio-flower i:nth-child(4){transform:rotate(216deg)}
-.hn-audio-flower i:nth-child(5){transform:rotate(288deg)}
-.hn-audio-flower:after{content:"";position:absolute;left:43px;top:44px;width:15px;height:15px;
- border-radius:50%;background:radial-gradient(circle,#b5944f,#d8b969 55%,#f1daa1)}
+
 .hn-audio-record-wrap{position:relative;display:grid;place-items:center;min-height:10px;
  width:min(73%,340px);aspect-ratio:1;margin:0 auto 5px}
 .hn-audio-vinyl{position:relative;display:grid;place-items:center;width:100%;height:100%;
@@ -131,13 +109,12 @@
  .hn-audio-paper-title h2{font-size:clamp(26px,7vw,36px)}
  .hn-audio-paper-title p{font-size:13px}
  .hn-audio-record-wrap{width:min(76%,290px)}
- .hn-audio-flower{transform:scale(.7)}
- .hn-audio-flower-right{right:-6%;top:12%}
- .hn-audio-flower-left{left:-7%;top:55%}
+ 
+ 
+ 
  .hn-audio-track{min-height:67px}
  .hn-audio-timeline{gap:7px}
 }
-
 
 /* === Reference-accurate editorial finish · based on the approved concept ===
    Small, optimized reference crops: 1.1 KiB tear, 4.1 KiB floral, 1.1 KiB corner.
@@ -157,7 +134,7 @@
  -webkit-mask-image:linear-gradient(to bottom,transparent 0%,#000 23%,#000 68%,transparent 99%);
  mask-image:linear-gradient(to bottom,transparent 0%,#000 23%,#000 68%,transparent 99%);
 }
-.hn-audio-fold{display:none}
+
 .hn-audio-paper-title{margin:0 auto 11px;gap:3px}
 .hn-audio-paper-title>span{font-size:9px;letter-spacing:.36em}
 .hn-audio-paper-title h2{font-size:clamp(26px,6.1vw,41px);margin:4px 0;line-height:1.1}
@@ -175,7 +152,7 @@
  opacity:1;background:url('/audio-lounge/floral-clean.webp') center center / 100% 100% no-repeat;
  -webkit-mask-image:none;mask-image:none;
 }
-.hn-audio-silk,.hn-audio-flower{display:none!important}
+
 .hn-audio-record-wrap{
  width:min(52%,275px);min-width:0;min-height:0;
  position:relative;z-index:1;aspect-ratio:1;margin:0 auto 6px;
@@ -236,7 +213,6 @@
  .hn-audio-details h3{font-size:20px}
  .hn-audio-track{min-height:58px}
 }
-
 
 /* Stories and lounge touch through a soft, irregular parchment edge. */
 .hn-audio-parchment:before{
