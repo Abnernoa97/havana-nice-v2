@@ -54,7 +54,13 @@ export function useMemberStories(token:string|undefined,refreshVersion:number){
   const resume=()=>{if(!document.hidden&&navigator.onLine)void refresh();};
   window.addEventListener('online',resume);
   document.addEventListener('visibilitychange',resume);
-  return()=>{++requestId.current;window.removeEventListener('online',resume);
+  // Backstop when the realtime Familia socket is interrupted or a story was
+  // published from Android while this iPhone page stayed open.
+  const fallback=window.setInterval(()=>{
+   if(!document.hidden&&navigator.onLine)void refresh();
+  },45_000);
+  return()=>{++requestId.current;window.clearInterval(fallback);
+   window.removeEventListener('online',resume);
    document.removeEventListener('visibilitychange',resume);};
  },[refresh,refreshVersion]);
  useEffect(()=>{
