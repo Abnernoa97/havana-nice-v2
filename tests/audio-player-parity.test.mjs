@@ -34,23 +34,25 @@ test('PWA uses artwork from R2 and HTML media session without mock songs',()=>{
  assert.match(shared,/privateAudioUrl/);
  assert.match(shell,/MemberAudio token=\{token\} active=\{screen==='audio'\|\|screen==='home'\}/);
  assert.match(pwa,/hn-audio-vinyl is-playing/);
+ assert.match(pwa,/onPlay=\{\(\)=>setPlaying\(true\)\}/);
+ assert.doesNotMatch(pwa,/onWaiting=\{\(\)=>setPlaying\(false\)\}/);
  const css=read('apps/pwa/src/features/audio/audio-player.css');
  const html=read('apps/android/features/audio/nativeAudioEditorialHtml.ts');
  assert.match(css,/\.hn-audio-vinyl\.is-playing\{animation-play-state:running/);
  assert.match(css,/hn-audio-parchment/);
  assert.match(css,/url\('\/audio-lounge\/tear\.webp'\)/);
- assert.match(css,/url\('\/audio-lounge\/floral\.webp'\)/);
+ assert.match(css,/url\('\/audio-lounge\/floral-clean\.webp'\)/);
  assert.match(css,/url\('\/audio-lounge\/corner\.webp'\)/);
  assert.match(css,/\.hn-audio-vinyl-grooves\{display:none\}/);
- for(const asset of ['tear','floral','corner']){
+ for(const asset of ['tear','floral','floral-clean','corner']){
   const bytes=readFileSync(new URL('../apps/pwa/public/audio-lounge/'+asset+'.webp',import.meta.url));
   assert.equal(bytes.toString('ascii',0,4),'RIFF');
   assert.equal(bytes.toString('ascii',8,12),'WEBP');
   assert.ok(bytes.length>600&&bytes.length<20000);
  }
- assert.match(html,/havana-nice-v2\.pages\.dev\/audio-lounge\/floral\.webp/);
+ assert.match(html,/havana-nice-v2\.pages\.dev\/audio-lounge\/floral-clean\.webp/);
  assert.match(css,/\.hn-audio-parchment:before\{/);
- assert.match(css,/radial-gradient\(ellipse 65% 68%/);
+ assert.match(css,/\.hn-audio-flowers\{[\s\S]*?-webkit-mask-image:none/);
  assert.match(css,/\.hn-home-route \.hn-audio-editorial\{position:relative;z-index:1;margin-top:-18px\}/);
  const homeStage=read('apps/pwa/src/features/home/home-stage.css');
  assert.match(homeStage,/\.hn-home-route \.hn-moments-strip\{padding-top:3px;padding-bottom:4px\}/);
@@ -78,6 +80,9 @@ test('Android OS player uses the same cover and MediaSession with audio backgrou
  assert.match(visual,/sendNativeAudioCommand/);
  assert.match(bridge,/useSyncExternalStore/);
  assert.match(layout,/<NativeAudioEditorialView inline\/>/);
+ assert.match(layout,/\{header\}/);
+ assert.match(layout,/styles\.storiesFixed/);
+ assert.match(layout,/\{active==='home'&&<View style=\{styles\.storiesFixed\}>/);
  const audio=app.expo.plugins.find(p=>Array.isArray(p)&&p[0]==='expo-audio');
  assert.equal(audio[1].enableBackgroundPlayback,true);
  assert.equal(app.expo.version,'0.0.23','do not generate an Android version bump during the feature batch');
