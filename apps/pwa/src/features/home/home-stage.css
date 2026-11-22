@@ -40,3 +40,9 @@
  .hn-home-stage{min-height:calc(100dvh - 200px)}
  .visual-account-label{font-size:11px}
 }
+
+/* The once-empty home canvas is now the real, persistent Audio Lounge.
+   Keep the Stories row as-is; remove only the old unused white spacer. */
+.hn-home-route .hn-home-stage{min-height:0}
+.hn-home-route .hn-home-blank{display:none}
+.hn-home-route .visual-content{padding-bottom:calc(105px + env(safe-area-inset-bottom))}
