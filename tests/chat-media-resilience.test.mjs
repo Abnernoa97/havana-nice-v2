@@ -33,7 +33,10 @@ test('Startup always opens Home; recovery of old media never changes the destina
  const native=read('apps/android/app/NativeApp.tsx');
  const webPicker=read('apps/pwa/src/features/chat/usePwaMediaSelection.ts');
  const nativePicker=read('apps/android/features/chat/useNativeMediaSelection.ts');
- assert.match(web,/const \[activeScreen,setActiveScreen\]=useState<MemberScreen>\('home'\)/);
+  assert.match(web,/const \[activeScreen,setActiveScreen\]=useState<MemberScreen>\(/);
+  assert.match(web,/new URLSearchParams\(window\.location\.search\)\.get\('push'\)==='notices'/);
+  assert.match(web,/\?\s*'notices':'home'/);
+  assert.match(web,/havana-push-open/);
  assert.match(native,/const \[activeScreen,setActiveScreen\]=useState<MemberScreen>\('home'\)/);
  assert.doesNotMatch(web,/readChatReturnIntent|writeChatReturnIntent|chat-media-return/);
  assert.doesNotMatch(webPicker,/onCameraLaunch|setActiveScreen/);
