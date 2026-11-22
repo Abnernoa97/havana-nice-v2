@@ -41,9 +41,13 @@ function NativeChatTimeline({
  const liveRenderData=useMemo(()=>({display,onlineActorIds,connected}),
    [display,onlineActorIds,connected]);
  const visibleMessages=useMemo(
-  ()=>messages.filter(message=>!message.deletedAt),[messages]);
+  ()=>messages.filter(message=>!message.deletedAt).reverse(),[messages]);
  return (
   <FlatList
+   // Reverse the chronology once and use an inverted list: index zero is the
+   // latest message at the screen bottom, even before Android measures videos.
+   // This is stable for pagination and does not invert the message contents.
+   inverted
    ref={scrollRef} data={visibleMessages}
    extraData={liveRenderData}
    keyExtractor={message=>message.senderId+':'+message.clientMessageId}
@@ -62,7 +66,7 @@ function NativeChatTimeline({
    onScrollEndDrag={onScrollEndDrag}
    onMomentumScrollEnd={onScrollEndDrag}
    scrollEventThrottle={16}
-   ListHeaderComponent={<>
+   ListFooterComponent={<>
     {hasMore?<Pressable style={styles.loadMore} disabled={loadingOlder}
       onPress={()=>void onLoadOlder()}><Text style={styles.loadMoreText}>{loadingOlder?'Cargando…':'Cargar mensajes anteriores'}</Text></Pressable>:null}
    </>}
