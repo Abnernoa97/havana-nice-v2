@@ -1,7 +1,7 @@
 import {HAVANA_V2_DEV_API_BASE_URL as API} from './api-base';
 
 export type MemberNoticeKind=
- 'story.reaction'|'story.comment'|'story.voice'|
+ 'story.created'|'story.reaction'|'story.comment'|'story.voice'|
  'chat.reaction'|'chat.message'|'calendar.event'|'family.media'|'repertoire.updated';
 export interface MemberNotice {
  id:string;actorId:string;name:string;kind:MemberNoticeKind;
@@ -32,6 +32,7 @@ export async function markMemberNoticesRead(token:string,id?:string,base=API):Pr
 }
 export function memberNoticeMessage(item:Pick<MemberNotice,'name'|'kind'|'emoji'>):string{
  switch(item.kind){
+  case 'story.created':return item.name+' publicó un nuevo Estado';
   case 'story.reaction':return item.name+' reaccionó '+(item.emoji||'❤️')+' a tu estado';
   case 'story.comment':return item.name+' comentó tu estado';
   case 'story.voice':return item.name+' te envió una nota de voz en tu estado';
