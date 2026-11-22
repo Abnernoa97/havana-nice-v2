@@ -4,6 +4,18 @@ import {readFileSync} from 'node:fs';
 
 const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
 
+test('Story dialogs escape HOME stacking and scrolling contexts, covering brand and bottom nav',()=>{
+ const stories=read('apps/pwa/src/features/stories/MemberStories.tsx');
+ const css=read('apps/pwa/src/features/stories/stories.css');
+ assert.match(stories,/import \{createPortal\} from 'react-dom'/);
+ assert.match(stories,/createPortal\(<div className="hn-story-overlay"/);
+ assert.match(stories,/createPortal\(\s*<MemberStoryViewer/);
+ assert.equal((stories.match(/document\.body\)/g)||[]).length,2);
+ assert.match(css,/\.hn-story-overlay\{position:fixed;inset:0;z-index:10000/);
+ const home=read('apps/pwa/src/features/home/home-stage.css');
+ assert.doesNotMatch(home,/\.hn-story-overlay\{/);
+});
+
 test('Only one photo layer is rendered, independently of the number of uploaded states',()=>{
  const component=read('apps/pwa/src/features/stories/MemberStoryViewer.tsx');
  const style=read('apps/pwa/src/features/stories/stories.css');
