@@ -69,6 +69,20 @@ jobs:
           npm run typecheck --workspaces --if-present
           node --test tests/member-stories-parity.test.mjs tests/android-stories-parity.test.mjs
 
+      - name: Verify today's Calendar chronology, realtime notices and private backend
+        run: |
+          node --test cloudflare/tests/calendar.test.mjs cloudflare/tests/calendar-realtime.test.mjs cloudflare/tests/member-notifications.test.mjs cloudflare/tests/audio-api.test.mjs
+          node --test tests/calendar-free-text-ui.test.mjs tests/member-notifications-parity.test.mjs tests/android-pwa-parity.test.mjs
+
+      - name: Guard native Chat, HOME, Audio, Stories and the untouched BOOK 3D
+        run: |
+          node --test tests/audio-player-parity.test.mjs tests/home-visual-identity.test.mjs tests/member-home-navigation.test.mjs tests/native-chat-virtualization.test.mjs tests/android-batch-policy.test.mjs
+          node --experimental-strip-types --test tests/native-book-bridge.test.mjs tests/chat-session-recovery.test.mjs tests/chat-offline-policy.test.mjs
+          node --test tests/member-stories-parity.test.mjs tests/android-stories-parity.test.mjs
+
+      - name: Export the actual production Android JS and images before Gradle
+        run: npm run export -w @havana/android
+
       - name: Generate native Android project
         working-directory: apps/android
         env:
