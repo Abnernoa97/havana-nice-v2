@@ -1,6 +1,7 @@
 // HAVANA NICE V2 — Repertoire is a self-contained module sharing the EXISTING
 // admin/musician auth, Calendar event recipient visibility and D1 binding.
 import {verifyAdminSession} from '../admin/admin-auth.js';
+import {notifyRepertoireMembers} from '../notices/member-notifications.js';
 const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const PAGE=250;
 const SONG_COLS='id,title,artist,category,position,active,reference_url,version,updated_at';
@@ -50,8 +51,12 @@ async function itemList(db,eventId,member,admin){
  if(!admin&&!await eventAllowed(db,eventId,member.actorId))return null;
  return loadItems(db,eventId);
 }
-export async function handleRepertoireApi(request,env,url,origin,respond,verifyMusicianSession){
+export async function handleRepertoireApi(request,env,url,origin,respond,verifyMusicianSession,ctx){
  const reply=(value,status=200)=>respond(value,status,origin);
+ const report=(eventId,action)=>{
+  const task=notifyRepertoireMembers(env,eventId,action,crypto.randomUUID()).catch(()=>{});
+  if(ctx?.waitUntil)ctx.waitUntil(task);else void task;
+ };
  const path=url.pathname,admin=path.startsWith('/api/repertoire/admin/');
  let member=null;
  if(admin){
@@ -147,6 +152,7 @@ export async function handleRepertoireApi(request,env,url,origin,respond,verifyM
      .bind(crypto.randomUUID(),eventId,row?.id||null,row?.title||custom.title,row?.artist||custom.artist,
       row?.reference_url||custom.referenceUrl,start+i,now,now));
     await env.DB.batch(statements);
+    report(eventId,'added');
     return reply({added:statements.length,items:await loadItems(env.DB,eventId)},201);
    }
   }
@@ -156,29 +162,45 @@ export async function handleRepertoireApi(request,env,url,origin,respond,verifyM
    const ids=data?.itemIds;
    if(!Array.isArray(ids)||ids.length>250||!ids.every(id=>typeof id==='string'&&UUID.test(id))||
       new Set(ids).size!==ids.length)return reply({error:'Orden inválido'},400);
-   const stored=await env.DB.prepare('SELECT id FROM repertoire_event_items WHERE event_id=?').bind(eventId).all();
+   const stored=await env.DB.prepare('SELECT id FROM repertoire_event_items WHERE event_id=? ORDER BY position,id').bind(eventId).all();
    const existing=(stored.results||[]).map(x=>x.id);
    if(existing.length!==ids.length||!existing.every(id=>ids.includes(id)))return reply({error:'La lista cambió; actualiza antes de ordenarla.'},409);
-   if(ids.length){
+   const changed=existing.some((id,i)=>id!==ids[i]);
+   if(changed&&ids.length){
     const now=new Date().toISOString();
     await env.DB.batch(ids.map((id,i)=>env.DB.prepare(
      'UPDATE repertoire_event_items SET position=?,updated_at=? WHERE event_id=? AND id=?')
       .bind(i,now,eventId,id)));
    }
+   if(changed)report(eventId,'reordered');
    return reply({items:await loadItems(env.DB,eventId)});
   }
   const itemPath=/^\/api\/repertoire\/admin\/items\/([0-9a-f-]+)$/.exec(path);
   if(itemPath&&UUID.test(itemPath[1])){
    if(request.method==='DELETE'){
+    const previous=await env.DB.prepare('SELECT event_id FROM repertoire_event_items WHERE id=?')
+     .bind(itemPath[1]).first();
     const result=await env.DB.prepare('DELETE FROM repertoire_event_items WHERE id=?').bind(itemPath[1]).run();
-    return result.meta?.changes===1?reply({ok:true}):reply({error:'Canción del evento no encontrada'},404);
+    if(result.meta?.changes===1){
+     if(previous?.event_id)report(previous.event_id,'removed');
+     return reply({ok:true});
+    }
+    return reply({error:'Canción del evento no encontrada'},404);
    }
    if(request.method==='POST'){
     const data=await body(request);
     if(typeof data?.completed!=='boolean')return reply({error:'Progreso inválido'},400);
+    const previous=await env.DB.prepare('SELECT event_id,completed FROM repertoire_event_items WHERE id=?')
+     .bind(itemPath[1]).first();
+    if(!previous)return reply({error:'Canción no encontrada'},404);
+    if(Number(previous.completed)===(data.completed?1:0))return reply({ok:true});
     const result=await env.DB.prepare('UPDATE repertoire_event_items SET completed=?,updated_at=? WHERE id=?')
      .bind(data.completed?1:0,new Date().toISOString(),itemPath[1]).run();
-    return result.meta?.changes===1?reply({ok:true}):reply({error:'Canción no encontrada'},404);
+    if(result.meta?.changes===1){
+     report(previous.event_id,'completed');
+     return reply({ok:true});
+    }
+    return reply({error:'Canción no encontrada'},404);
    }
   }
   return reply({error:'Ruta no encontrada'},404);
