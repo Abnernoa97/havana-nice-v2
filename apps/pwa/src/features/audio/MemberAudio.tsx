@@ -110,31 +110,36 @@ export default function MemberAudio({token,active=true}:{token:string;active?:bo
   playOnChange.current=playing;
   setSelected(next);
  };
- // Reuse the album cover in Android/iOS media controls through Media Session.
+ // iOS fetches the lock-screen artwork in the OS media process. Give it a
+ // real short-lived HTTPS capability URL, not an in-page data: or blob: URL.
+ // Keep this metadata stable across play/pause and local cover preparation.
  useEffect(()=>{
-  if(!current||!('mediaSession' in navigator))return;
-  const session=navigator.mediaSession;
-  session.metadata=new MediaMetadata({
+  if(!current||!('mediaSession' in navigator)||typeof MediaMetadata==='undefined')return;
+  const remoteCover=art(current.coverUrl);
+  navigator.mediaSession.metadata=new MediaMetadata({
    title:current.title,artist:current.artist,album:current.album,
-   artwork:art(current.coverUrl)?[{
-    src:preparedCovers[current.id]?.lockscreen||art(current.coverUrl)!,
-    sizes:'512x512',
-    ...(preparedCovers[current.id]?.lockscreen?.startsWith('data:image/jpeg')?{type:'image/jpeg'}:{})
-   }]:[]
+   artwork:remoteCover?[{src:remoteCover}]:[]
   });
-  session.setActionHandler('play',()=>{void ref.current?.play();});
-  session.setActionHandler('pause',()=>ref.current?.pause());
-  session.setActionHandler('previoustrack',()=>step(-1));
-  session.setActionHandler('nexttrack',()=>step(1));
-  session.setActionHandler('seekto',event=>{
-   if(ref.current&&Number.isFinite(event.seekTime))ref.current.currentTime=event.seekTime||0;
-  });
-  return()=>{
-   for(const action of ['play','pause','previoustrack','nexttrack','seekto'] as MediaSessionAction[]){
-    try{session.setActionHandler(action,null);}catch{}
-   }
-  };
- },[current?.id,selected,tracks.length,playing,preparedCovers[current?.id||'']?.lockscreen]);
+ },[current?.id,current?.coverUrl,current?.title,current?.artist,current?.album]);
+ // Controls may change with the selected index, but must never reinitialize
+ // lock-screen artwork just because playback or a preloaded cover changed.
+ useEffect(()=>{
+  if(!('mediaSession' in navigator))return;
+  const session=navigator.mediaSession;
+  const actions:MediaSessionAction[]=['play','pause','previoustrack','nexttrack','seekto'];
+  try{
+   session.setActionHandler('play',()=>{void ref.current?.play();});
+   session.setActionHandler('pause',()=>ref.current?.pause());
+   session.setActionHandler('previoustrack',()=>step(-1));
+   session.setActionHandler('nexttrack',()=>step(1));
+   session.setActionHandler('seekto',event=>{
+    if(ref.current&&Number.isFinite(event.seekTime))ref.current.currentTime=event.seekTime||0;
+   });
+  }catch{/* Older Safari versions offer only some Media Session actions. */}
+  return()=>{for(const action of actions){
+   try{session.setActionHandler(action,null);}catch{}
+  }};
+ },[selected,tracks.length]);
  useEffect(()=>{
   if(!('mediaSession' in navigator))return;
   navigator.mediaSession.playbackState=playing?'playing':'paused';
