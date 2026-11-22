@@ -51,7 +51,13 @@ export default function MemberStories({token,displayName,actorId,profiles,previe
    stories={visible} onStoryPhotoError={data.retryPhoto}
    onOpenStory={setViewActor} onAddStory={()=>{setSelectionError('');input.current?.click();}}/>
   {(data.error||selectionError)&&!selected.length&&
-   <p className="hn-story-error" role="status">{selectionError||data.error}</p>}
+   <p className="hn-story-error" role="status">{selectionError||data.error}
+    {token&&!preview&&<button type="button" onClick={data.retryAll}
+     aria-label="Actualizar estados del equipo">Actualizar estados</button>}
+   </p>}
+  {!preview&&token&&!visible.length&&!data.error&&!selectionError&&!selected.length&&
+   <button type="button" className="hn-story-refresh" onClick={data.retryAll}
+    aria-label="Actualizar estados del equipo">Sin estados activos · Actualizar</button>}
   {selected.length>0&&createPortal(<div className="hn-story-overlay" role="dialog" aria-modal="true" aria-label="Publicar estados">
    <div className="hn-story-publish">
     <button type="button" className="hn-story-x" onClick={discard} disabled={data.saving}
