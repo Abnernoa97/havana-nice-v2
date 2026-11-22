@@ -11,11 +11,11 @@ import NativeNotices from '../features/notices/NativeNotices';
 import NativeAudioEditorialView from '../features/audio/NativeAudioEditorialView';
 
 type Props={displayName:string;actorId:string;token:string;
- active:Exclude<MemberScreen,'chat'>;onNavigate:(screen:MemberScreen)=>void;};
+ active:Exclude<MemberScreen,'chat'>;calendarRevision?:number;onNavigate:(screen:MemberScreen)=>void;};
 // Native navigation and independent native modules; Chat session never moves here.
 // Tiny embedded alpha gradient keeps the pinned Stories edge soft without a network asset.
 const STORIES_FADE='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAAwCAYAAADQMxCBAAAAOUlEQVR42n2JyQ0AIAzDrO4/MC1H+IEqUT6WnSBJBjQD/OCfbkB8t6gyDOhV9keOfIxsFzPbxTrQBqWZMlwxZHeoAAAAAElFTkSuQmCC';
-function NativeMemberHome({displayName,actorId,token,active,onNavigate}:Props){
+function NativeMemberHome({displayName,actorId,token,active,calendarRevision=0,onNavigate}:Props){
  const profile=useNativeMemberProfile(token,actorId,active==='home');
  const [profileOpen,setProfileOpen]=useState(false);
  const selected=MEMBER_MODULES.find(item=>item.id===active);
@@ -47,7 +47,7 @@ function NativeMemberHome({displayName,actorId,token,active,onNavigate}:Props){
      onPress={()=>onNavigate('audio')} style={styles.openAudio}>
      <Text style={styles.openAudioLabel}>♫  Abrir Audio HAVANA NICE</Text>
    </Pressable>}
-   {active==='calendar'?<NativeCalendar token={token}/>:
+   {active==='calendar'?<NativeCalendar token={token} calendarRevision={calendarRevision}/>:
     active==='repertoire'?<NativeRepertoire token={token}/>:
     active==='musicians'?<NativeMusicians token={token}/>:
     active==='family'?<NativeFamily token={token}/>:
