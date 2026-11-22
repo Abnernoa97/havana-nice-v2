@@ -2,7 +2,7 @@ import {useCallback,useEffect,useRef,useState} from 'react';
 import {getMemberNotices,markMemberNoticesRead,memberNoticeMessage,
  type MemberNotice,MemberNoticeApiError} from '@havana/shared';
 import {useFamilyLive} from '../../services/use-family-live';
-import {usePwaPush} from './usePwaPush';
+import {usePwaPush,pwaPushUnavailableMessage} from './usePwaPush';
 import './member-notices.css';
 
 export default function MemberNotices({token,calendarRevision=0}:{token:string;calendarRevision?:number}){
@@ -39,7 +39,7 @@ export default function MemberNotices({token,calendarRevision=0}:{token:string;c
  };
  return <section className="hn-notices" aria-label="Notificaciones privadas del equipo">
   <div className="hn-notices-header">
-   <div><h2>Tu actividad</h2><p>{unread} {unread===1?'notificación nueva':'notificaciones nuevas'}</p></div>
+   <div><h2>Tu actividad</h2><p>{unread} {unread===1?'aviso sin leer':'avisos sin leer'}</p></div>
    <button type="button" onClick={()=>void refresh()}>Actualizar</button>
   </div>
   <div className="hn-push-control" role="status">
@@ -53,7 +53,7 @@ export default function MemberNotices({token,calendarRevision=0}:{token:string;c
    </>:push.state==='blocked'?
     <span>Las notificaciones están bloqueadas. Actívalas en los ajustes del teléfono.</span>:
     push.state==='unavailable'?
-    <span>Para recibir avisos en iPhone, añade HAVANA NICE a la pantalla de inicio.</span>:
+    <span>{pwaPushUnavailableMessage()}</span>:
     push.state==='pending'?
     <span>La entrega de notificaciones al teléfono está pendiente de configuración.</span>:
     push.state==='error'?
