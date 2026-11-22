@@ -1,5 +1,5 @@
 import React,{useEffect,useMemo,useRef,useState} from 'react';
-import {ActivityIndicator,AppState,Modal,Pressable,StyleSheet,Text,View} from 'react-native';
+import {ActivityIndicator,AppState,Modal,Pressable,StyleSheet,Text,useWindowDimensions,View} from 'react-native';
 import {WebView} from 'react-native-webview';
 import {BOOK_ORIGIN,BOOK_READER_URL,bookContextDeliveryScript,trustedBookUrl} from './book-bridge';
 
@@ -17,6 +17,12 @@ export default function NativeBook({token,refreshKey,onClose,calendarEventId,cal
  token:string;refreshKey:number;onClose?:()=>void;calendarEventId?:string;calendarTitle?:string;
  embedded?:boolean;
 }){
+ const {width:screenWidth}=useWindowDimensions();
+ // Calendar previously clipped the WebView at 490 dp while the PageFlip cover
+ // and its navigation needed more room. Size the EMBEDDED viewport instead
+ // of changing the approved 3D engine or the standalone BOOK dimensions.
+ const embeddedHeight=Math.min(740,Math.max(620,
+  Math.round(Math.min(Math.max(240,screenWidth-72),500)*1.42)+196));
  const view=useRef<WebView<object>>(null);
  const lastRefresh=useRef(refreshKey);
  const [viewKey,setViewKey]=useState(0);
@@ -94,7 +100,7 @@ export default function NativeBook({token,refreshKey,onClose,calendarEventId,cal
   readerPhase==='html-loaded'?'Iniciando lector web…':
   readerPhase==='script-started'?'Conectando sesión autorizada…':
   'Preparando páginas de la revista…';
- const reader=<View style={[styles.root,embedded&&styles.inlineRoot]}>
+ const reader=<View style={[styles.root,embedded&&styles.inlineRoot,embedded&&{height:embeddedHeight}]}>
    {!embedded&&<View style={styles.toolbar}>
     <Pressable accessibilityRole="button" accessibilityLabel="Volver al módulo"
      onPress={onClose} style={styles.back}><Text style={styles.backText}>‹ Volver</Text></Pressable>
@@ -142,7 +148,7 @@ export default function NativeBook({token,refreshKey,onClose,calendarEventId,cal
 }
 const styles=StyleSheet.create({
  root:{flex:1,backgroundColor:'#f3eddf',paddingTop:32},
- inlineRoot:{height:490,flex:0,paddingTop:0,borderRadius:10,overflow:'hidden'},
+ inlineRoot:{flex:0,paddingTop:0,borderRadius:10,overflow:'hidden'},
  inlineLoading:{top:12},
  toolbar:{minHeight:50,flexDirection:'row',alignItems:'center',paddingHorizontal:13,gap:15,
   borderBottomWidth:1,borderColor:'#d8d0c2',backgroundColor:'#f8f5ee'},
