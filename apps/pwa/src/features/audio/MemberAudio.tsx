@@ -225,7 +225,6 @@ export default function MemberAudio({token,active=true}:{token:string;active?:bo
        role="img" aria-label={`Vinilo con la portada de ${current.title}`}>
        {cover?<img src={cover} alt="" decoding="async" loading="eager"/>:
         <span className="hn-audio-monogram">HN</span>}
-       <span className="hn-audio-vinyl-grooves" aria-hidden="true"/>
        <span className="hn-audio-vinyl-spindle" aria-hidden="true"/>
       </div>
      </div>
