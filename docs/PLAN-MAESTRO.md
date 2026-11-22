@@ -6,7 +6,7 @@
 
 - [x] **0.0.25:** Estados fijos, Chat invertido, BOOK intacto y splash HN.
 - [x] **Audio:** 3D no autorizado revertido de PWA/Android; Expo Audio y BOOK intactos.
-- [x] **Chat Android · gesto post-0.0.27:** el backdrop del menú ❤️👍😂 solo cierra al recibir un toque nuevo; la suelta de la pulsación prolongada no lo descarta. Prueba de regresión añadida en `tests/cross-device-stories-notices.test.mjs`; commit `f8dafad` y prueba `902e524`. Código en `main`, **no incluido en la APK 0.0.27**. Falta validación física y futura APK autorizada.
+- [x] **Chat Android:** menú de reacciones no se cierra al soltar la pulsación (commits `f8dafad`, `902e524`). Falta APK posterior y prueba física.
 - [x] **APK 0.0.27 firmada:** [run #45054455003](https://github.com/Abnernoa97/havana-nice-v2/actions/runs/45054455003) `SUCCESS`, `versionCode 27`, firma compatible, rollback 0.0.26. [APK](https://github.com/Abnernoa97/havana-nice-v2/releases/download/v2-android-current/HAVANA-NICE-V2-LATEST.apk). QA física pendiente.
 
 - [x] **Estados:** PWA/Android aceptan autores desde API aunque falten en Perfiles, refresco visible 45 s. PWA publicada.
