@@ -97,5 +97,8 @@ test('installed musician PWA remains portrait when an iPhone is turned sideways'
  assert.match(css,/body\.hn-pwa-portrait-landscape > \.hn-story-overlay/);
  assert.doesNotMatch(read('apps/pwa/src/app/visual-main.tsx'),/keepMusicianAppPortrait/);
  assert.doesNotMatch(read('apps/pwa/src/app/native-book-main.tsx'),/keepMusicianAppPortrait/);
+ assert.match(css,/dedicated BOOK reader owns its PageFlip geometry/);
+ assert.match(css,/:has\(#root main\[aria-label="Lector HAVANA NICE"\]\) #root\{/);
+ assert.match(css,/transform:none/);
  assert.equal((css.match(/\{/g)||[]).length,(css.match(/\}/g)||[]).length);
 });
