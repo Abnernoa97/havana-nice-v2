@@ -1,7 +1,7 @@
 // Presentation only: all callbacks are supplied by the one native Chat controller.
 import React from 'react';
 import {
- Alert,Keyboard,KeyboardAvoidingView,Platform,Pressable,SafeAreaView,StatusBar,Text,TextInput,View,
+ ActivityIndicator,Alert,Keyboard,KeyboardAvoidingView,Platform,Pressable,SafeAreaView,StatusBar,Text,TextInput,View,
 } from 'react-native';
 import NativeChatTimeline from './NativeChatTimeline';
 import NativeChatMessageMenu from './NativeChatMessageMenu';
@@ -27,7 +27,8 @@ export default function NativeChatSurface({ui}:{ui:ReturnType<typeof useNativeCh
   return (
     <SafeAreaView {...(Platform.OS==='ios'?iosBackPan.panHandlers:{})}
       style={[styles.screen,keyboardOpen && styles.screenKeyboard]}>
-      <StatusBar barStyle="dark-content" />
+      <StatusBar barStyle={restoringAccess?'light-content':'dark-content'}
+       backgroundColor={restoringAccess?'#0D2A23':'#F3EDDF'}/>
       {/* Android 16 edge-to-edge can draw the composer behind the IME even with
             adjustResize. Height mode keeps the native chat input and Enviar
             visible above the keyboard without changing the PWA or storage. */}
@@ -36,7 +37,12 @@ export default function NativeChatSurface({ui}:{ui:ReturnType<typeof useNativeCh
         keyboardVerticalOffset={0}>
         
 
-        {restoringAccess ? <View style={styles.login}><Text style={styles.description}>Abriendo HAVANA NICE…</Text></View> : !session ? (
+        {restoringAccess ? <View style={styles.brandedLaunch}>
+          <Text style={styles.brandedLaunchTitle}>HAVANA NICE</Text>
+          <Text style={styles.brandedLaunchSub}>ESPACIO DEL EQUIPO</Text>
+          <ActivityIndicator size="large" color="#DBC59A" style={styles.brandedLaunchSpinner}/>
+          <Text style={styles.brandedLaunchHint}>Abriendo tu espacio…</Text>
+         </View> : !session ? (
           <View style={styles.login}>
             <Text style={styles.overline}>ACCESO HAVANA NICE</Text>
             <Text style={styles.loginTitle}>Bienvenido.</Text>
