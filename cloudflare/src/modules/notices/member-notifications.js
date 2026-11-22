@@ -224,22 +224,40 @@ export async function handleMemberNotices(request,env,url,origin,verifySession){
    const base='SELECT n.id,n.actor_id,a.display_name,n.kind,n.target_id,n.emoji,'+
     'n.preview,n.created_at,n.read_at FROM member_notifications n '+
     'JOIN chat_members a ON a.actor_id=n.actor_id WHERE n.recipient_id=?';
-   let rows=[],calendarUnread=0;
+   let rows=[],calendarUnread=0,systemUnread=0;
+   // All three sources share the same chronological inbox. System events
+   // remain actorless rather than pretending the administrator is a musician.
+   const calendar="SELECT c.id,NULL AS actor_id,'HAVANA NICE' AS display_name,c.kind,"+
+    "c.target_id,'' AS emoji,c.preview,c.created_at,c.read_at "+
+    'FROM calendar_member_notifications c WHERE c.recipient_id=?';
+   const system="SELECT s.id,NULL AS actor_id,'HAVANA NICE' AS display_name,s.kind,"+
+    "s.target_id,'' AS emoji,s.preview,s.created_at,s.read_at "+
+    'FROM member_system_notifications s WHERE s.recipient_id=?';
    try{
-    // One chronological inbox; system messages have no impersonated musician.
-    const query='SELECT * FROM ('+base+' UNION ALL '+
-     "SELECT c.id,NULL AS actor_id,'HAVANA NICE' AS display_name,c.kind,"+
-     "c.target_id,'' AS emoji,c.preview,c.created_at,c.read_at "+
-     'FROM calendar_member_notifications c WHERE c.recipient_id=?) '+
-     'ORDER BY created_at DESC,id DESC LIMIT 60';
-    rows=(await env.DB.prepare(query).bind(actor.actorId,actor.actorId).all()).results||[];
-    const count=await env.DB.prepare('SELECT COUNT(*) AS total FROM calendar_member_notifications '+
-     'WHERE recipient_id=? AND read_at IS NULL').bind(actor.actorId).first();
-    calendarUnread=Number(count?.total||0);
+    const query='SELECT * FROM ('+base+' UNION ALL '+calendar+
+     ' UNION ALL '+system+') ORDER BY created_at DESC,id DESC LIMIT 60';
+    rows=(await env.DB.prepare(query).bind(actor.actorId,actor.actorId,actor.actorId).all()).results||[];
+    const [calendarCount,systemCount]=await Promise.all([
+     env.DB.prepare('SELECT COUNT(*) AS total FROM calendar_member_notifications '+
+      'WHERE recipient_id=? AND read_at IS NULL').bind(actor.actorId).first(),
+     env.DB.prepare('SELECT COUNT(*) AS total FROM member_system_notifications '+
+      'WHERE recipient_id=? AND read_at IS NULL').bind(actor.actorId).first()
+    ]);
+    calendarUnread=Number(calendarCount?.total||0);
+    systemUnread=Number(systemCount?.total||0);
    }catch{
-    // Keep existing Story/Chat notices usable until D1 migration 0037 runs.
-    rows=(await env.DB.prepare(base+' ORDER BY n.created_at DESC,n.id DESC LIMIT 60')
-     .bind(actor.actorId).all()).results||[];
+    // A partially migrated database keeps the older Chat + Calendar inbox.
+    try{
+     const query='SELECT * FROM ('+base+' UNION ALL '+calendar+
+      ') ORDER BY created_at DESC,id DESC LIMIT 60';
+     rows=(await env.DB.prepare(query).bind(actor.actorId,actor.actorId).all()).results||[];
+     const count=await env.DB.prepare('SELECT COUNT(*) AS total FROM calendar_member_notifications '+
+      'WHERE recipient_id=? AND read_at IS NULL').bind(actor.actorId).first();
+     calendarUnread=Number(count?.total||0);
+    }catch{
+     rows=(await env.DB.prepare(base+' ORDER BY n.created_at DESC,n.id DESC LIMIT 60')
+      .bind(actor.actorId).all()).results||[];
+    }
    }
    const unread=await env.DB.prepare(
     'SELECT COUNT(*) AS total FROM member_notifications '+
@@ -249,7 +267,7 @@ export async function handleMemberNotices(request,env,url,origin,verifySession){
     id:row.id,actorId:row.actor_id||'',name:row.display_name,
     kind:row.kind,targetId:row.target_id,emoji:row.emoji,preview:row.preview,
     createdAt:row.created_at,readAt:row.read_at
-   })),unread:Number(unread?.total||0)+calendarUnread},200,origin);
+   })),unread:Number(unread?.total||0)+calendarUnread+systemUnread},200,origin);
   }
   if(url.pathname==='/api/notices/read'&&request.method==='POST'){
    let data;
@@ -264,12 +282,18 @@ export async function handleMemberNotices(request,env,url,origin,verifySession){
     try{await env.DB.prepare('UPDATE calendar_member_notifications SET read_at=? '+
      'WHERE id=? AND recipient_id=? AND read_at IS NULL').bind(now,id,actor.actorId).run();}
     catch{/* Old schema remains readable. */}
+    try{await env.DB.prepare('UPDATE member_system_notifications SET read_at=? '+
+     'WHERE id=? AND recipient_id=? AND read_at IS NULL').bind(now,id,actor.actorId).run();}
+    catch{/* A missing optional migration cannot block other notices. */}
    }else{
     await env.DB.prepare('UPDATE member_notifications SET read_at=? '+
      'WHERE recipient_id=? AND read_at IS NULL').bind(now,actor.actorId).run();
     try{await env.DB.prepare('UPDATE calendar_member_notifications SET read_at=? '+
      'WHERE recipient_id=? AND read_at IS NULL').bind(now,actor.actorId).run();}
     catch{/* Old schema remains readable. */}
+    try{await env.DB.prepare('UPDATE member_system_notifications SET read_at=? '+
+     'WHERE recipient_id=? AND read_at IS NULL').bind(now,actor.actorId).run();}
+    catch{/* A missing optional migration cannot block other notices. */}
    }
    return asJson({ok:true},200,origin);
   }
