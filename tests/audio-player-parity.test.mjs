@@ -197,3 +197,10 @@ test('Two concurrent member Audio loads share exactly one live request',async()=
  assert.deepEqual(await second,[]);
  assert.equal(calls,1);
 });
+
+test('Audio remounts on member credential changes without retaining the prior member UI',()=>{
+ const shell=read('apps/pwa/src/app/VisualApp.tsx');
+ const native=read('apps/android/features/chat/NativeChatSurface.tsx');
+ assert.match(shell,/MemberAudio token=\{token\}[\s\S]{0,100}key=\{token\}/);
+ assert.match(native,/NativeAudio token=\{session\.token\} key=\{session\.token\}/);
+});
