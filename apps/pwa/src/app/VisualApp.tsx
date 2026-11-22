@@ -34,13 +34,13 @@ const notes:Record<Exclude<MemberScreen,'chat'|'home'>,string>={
 // /visual.html remains presentation-only; it cannot open Chat or issue a session.
 function VisualApp({displayName,active,onNavigate,preview=false,token,actorId}:Props){
   const [profileOpen,setProfileOpen]=useState(false);
-  const [audioOpened,setAudioOpened]=useState(active==='audio');
+  const [audioOpened,setAudioOpened]=useState(active==='audio'||active==='home');
   const [storyEpoch,setStoryEpoch]=useState(0);
   const profile=usePwaMemberProfiles(token,actorId);
   const own=profile.own;
   const [previewScreen,setPreviewScreen]=useState<MemberScreen>('home');
   const screen=active??previewScreen;
-  useEffect(()=>{if(screen==='audio')setAudioOpened(true);},[screen]);
+  useEffect(()=>{if(screen==='audio'||screen==='home')setAudioOpened(true);},[screen]);
   const navigate=(target:MemberScreen)=>{
     if(target==='chat'&&!onNavigate)return; // Public preview never opens private Chat.
     if(onNavigate)onNavigate(target);
@@ -76,14 +76,14 @@ function VisualApp({displayName,active,onNavigate,preview=false,token,actorId}:P
         {screen==='home'?<Suspense fallback={<div className="visual-empty" role="status">Abriendo Inicio…</div>}>
           <MemberHome token={token} displayName={displayName} actorId={actorId} profiles={profile.profiles} preview={preview} canEditProfile={profile.phase==='ready'||profile.phase==='missing'} onPhotoError={profile.retryPhoto} refreshVersion={storyEpoch}/>
         </Suspense>:<>
-          <div className="visual-section-header">
+          {screen!=='audio'&&<div className="visual-section-header">
             <button className="visual-back" type="button" onClick={()=>navigate('home')}>‹ Inicio</button>
             <span className="visual-overline">HAVANA NICE / {selected?.label.toUpperCase()}</span>
             <h1>{selected?.label}</h1>
             <p className="visual-intro">{selected?.description}</p>
             {screen==='repertoire'&&<button type="button" className="hn-open-audio"
               onClick={()=>navigate('audio')}>♫ Abrir Audio HAVANA NICE</button>}
-          </div>
+          </div>}
           <Suspense fallback={<div className="visual-empty" role="status" aria-live="polite">Abriendo módulo…</div>}>
            {screen==='calendar'&&token?<CalendarAccordion token={token}/>:
             screen==='repertoire'&&token?<MemberRepertoire token={token}/>:
@@ -99,7 +99,7 @@ function VisualApp({displayName,active,onNavigate,preview=false,token,actorId}:P
           </Suspense>
         </>}
         {audioOpened&&token&&<Suspense fallback={<div className="visual-empty" role="status">Abriendo Audio…</div>}>
-         <MemberAudio token={token} active={screen==='audio'}/>
+         <MemberAudio token={token} active={screen==='audio'||screen==='home'}/>
         </Suspense>}
       </main>
     </div>
