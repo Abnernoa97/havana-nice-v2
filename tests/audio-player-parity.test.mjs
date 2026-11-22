@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
+import ts from 'typescript';
 const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
 test('Audio is an independent module, not another Chat or voice recorder',()=>{
  const meta=read('packages/shared/src/memberModules.ts');
@@ -98,7 +99,7 @@ test('Android OS player uses the same cover and MediaSession with audio backgrou
  assert.match(native,/artworkUrl:privateAudioUrl\(current\.coverUrl\)/);
  assert.match(native,/setAudioModeAsync/);
  assert.match(native,/shouldPlayInBackground:true/);
- assert.match(native,/getAudioTracks\(token\)/);
+ assert.match(native,/getAudioTracks\(token,false,force\)/);
  assert.match(native,/onRequestClose=\{onClose\}/);
  const visual=read('apps/android/features/audio/NativeAudioEditorialView.tsx');
  const bridge=read('apps/android/features/audio/nativeAudioStore.ts');
@@ -115,4 +116,84 @@ test('Android OS player uses the same cover and MediaSession with audio backgrou
  const audio=app.expo.plugins.find(p=>Array.isArray(p)&&p[0]==='expo-audio');
  assert.equal(audio[1].enableBackgroundPlayback,true);
  assert.equal(app.expo.version,'0.0.23','do not generate an Android version bump during the feature batch');
+});
+
+test('Private Audio cache is short-lived, member-bound and bypassable',async()=>{
+ const source=read('packages/shared/src/audio.ts');
+ assert.match(source,/const AUDIO_CATALOG_CACHE_MS=2\*60\*1000/);
+ assert.match(source,/clearAudioTracksCache/);
+ assert.doesNotMatch(source,/localStorage|sessionStorage|AsyncStorage/);
+ const workerImport="import {HAVANA_V2_DEV_API_BASE_URL as API} from './api-base';";
+ assert.ok(source.includes(workerImport));
+ const js=ts.transpileModule(source.replace(workerImport,
+  "const API='https://audio-test.example';"),{
+  compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}
+ }).outputText;
+ let now=100000;
+ const requests=[];
+ const fakeDate={now:()=>now};
+ const replies=async(url,options)=>{
+  const authorization=options.headers.Authorization;
+  requests.push({url,authorization});
+  const actor=authorization.split(' ').at(-1);
+  if(actor==='revoked')return new Response(JSON.stringify({error:'No autorizado'}),{
+   status:401,headers:{'Content-Type':'application/json'}
+  });
+  return new Response(JSON.stringify({tracks:[{
+   id:actor,title:actor,artist:'HAVANA NICE',album:'Audio',position:1,
+   sizeBytes:400,hasCover:false,audioUrl:'/api/audio/media/'+('a'.repeat(32)),coverUrl:null
+  }]}),{status:200,headers:{'Content-Type':'application/json'}});
+ };
+ const module={exports:{}};
+ new Function('exports','fetch','Date',js)(module.exports,replies,fakeDate);
+ const {getAudioTracks,clearAudioTracksCache}=module.exports;
+ const original=await getAudioTracks('noa');
+ assert.equal(original[0].id,'noa');
+ assert.equal((await getAudioTracks('noa'))[0].id,'noa');
+ assert.equal(requests.length,1,'Warm same-member opens should not issue new capabilities');
+ assert.equal((await getAudioTracks('noa',false,true))[0].id,'noa');
+ assert.equal(requests.length,2,'Manual refresh must bypass cache');
+ assert.equal((await getAudioTracks('fer'))[0].id,'fer');
+ assert.equal(requests.length,3,'A second member must not reuse the first member grants');
+ assert.equal((await getAudioTracks('noa'))[0].id,'noa');
+ assert.equal(requests.length,4,'Changing member invalidates the prior cache');
+ now+=120001;
+ await getAudioTracks('noa');
+ assert.equal(requests.length,5,'Expired client cache must renew before server grant expiration');
+ clearAudioTracksCache('noa');
+ await getAudioTracks('noa');
+ assert.equal(requests.length,6,'Logout must clear cached capabilities');
+ await assert.rejects(getAudioTracks('revoked'),{name:'AudioApiError',status:401});
+ await assert.rejects(getAudioTracks('revoked'),{name:'AudioApiError',status:401});
+ assert.equal(requests.length,8,'Auth failures must not be cached');
+ await getAudioTracks('noa',true);
+ await getAudioTracks('noa',true);
+ assert.equal(requests.length,10,'Admin must always fetch live catalog');
+ const pwa=read('apps/pwa/src/features/audio/MemberAudio.tsx');
+ const native=read('apps/android/features/audio/NativeAudio.tsx');
+ assert.match(pwa,/getAudioTracks\(token,false,true\)/);
+ assert.match(pwa,/onClick=\{\(\)=>void refresh\(true\)\}/);
+ assert.match(native,/refresh:\(\)=>\{void refresh\(true\);\}/);
+ assert.match(pwa,/clearAudioTracksCache\(token\)/);
+ assert.match(native,/clearAudioTracksCache\(token\)/);
+});
+
+test('Two concurrent member Audio loads share exactly one live request',async()=>{
+ const source=read('packages/shared/src/audio.ts');
+ const workerImport="import {HAVANA_V2_DEV_API_BASE_URL as API} from './api-base';";
+ const js=ts.transpileModule(source.replace(workerImport,
+  "const API='https://audio-test.example';"),{
+  compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}
+ }).outputText;
+ let calls=0,resolveRequest;
+ const fetchOnce=()=>{calls++;return new Promise(resolve=>{resolveRequest=resolve;});};
+ const module={exports:{}};
+ new Function('exports','fetch','Date',js)(module.exports,fetchOnce,Date);
+ const first=module.exports.getAudioTracks('noa');
+ const second=module.exports.getAudioTracks('noa');
+ assert.equal(calls,1);
+ resolveRequest(new Response(JSON.stringify({tracks:[]}),{status:200}));
+ assert.deepEqual(await first,[]);
+ assert.deepEqual(await second,[]);
+ assert.equal(calls,1);
 });
