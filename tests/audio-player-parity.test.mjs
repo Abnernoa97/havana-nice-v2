@@ -49,6 +49,12 @@ test('PWA uses artwork from R2 and HTML media session without mock songs',()=>{
   assert.ok(bytes.length>600&&bytes.length<20000);
  }
  assert.match(html,/havana-nice-v2\.pages\.dev\/audio-lounge\/floral\.webp/);
+ assert.match(css,/\.hn-audio-parchment:before\{/);
+ assert.match(css,/radial-gradient\(ellipse 65% 68%/);
+ assert.match(css,/\.hn-home-route \.hn-audio-editorial\{position:relative;z-index:1;margin-top:-18px\}/);
+ const homeStage=read('apps/pwa/src/features/home/home-stage.css');
+ assert.match(homeStage,/\.hn-home-route \.hn-moments-strip\{padding-top:3px;padding-bottom:4px\}/);
+ assert.match(html,/Stories and lounge touch/);
  assert.match(html,/renderHavanaAudio/);
  assert.match(pwa,/hn-audio-paper-tear/);
  assert.match(pwa,/hn-audio-flower/);
