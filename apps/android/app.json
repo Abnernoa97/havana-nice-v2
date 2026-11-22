@@ -8,7 +8,12 @@
     "android": {
       "package": "com.havananice.v2",
       "softwareKeyboardLayoutMode": "resize",
-      "versionCode": 24
+      "versionCode": 24,
+      "adaptiveIcon": {
+        "foregroundImage": "../pwa/public/icons/havana-nice-512.png",
+        "backgroundColor": "#0D2A23"
+      },
+      "icon": "../pwa/public/icons/havana-nice-512.png"
     },
     "extra": {
       "environment": "development"
@@ -29,6 +34,12 @@
           "enableBackgroundPlayback": true
         }
       ]
-    ]
+    ],
+    "icon": "../pwa/public/icons/havana-nice-512.png",
+    "splash": {
+      "image": "../pwa/public/icons/havana-nice-512.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0D2A23"
+    }
   }
 }
