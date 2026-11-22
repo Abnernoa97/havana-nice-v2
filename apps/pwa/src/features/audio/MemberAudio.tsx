@@ -98,11 +98,13 @@ export default function MemberAudio({token,active=true}:{token:string;active?:bo
    audio.preload='metadata';
   }
  },[current?.id,current?.audioUrl]);
- const recoverMedia=async()=>{
-  if(!current||recoveryTried.current.has(current.id)){
+ const recoverMedia=async(failedId=current?.id)=>{
+  const old=tracks.find(track=>track.id===failedId);
+  if(!old||recoveryTried.current.has(old.id)){
    setError('Este audio no pudo reproducirse. Pulsa Actualizar para reintentar.');return;
   }
-  const old=current;
+  const failedUrl=ref.current?.src;
+
   recoveryTried.current.add(old.id);
   const wasPlaying=requestedPlay.current||!!ref.current&&!ref.current.paused;
   pendingSeek.current={id:old.id,time:ref.current?.currentTime||0};
@@ -111,6 +113,8 @@ export default function MemberAudio({token,active=true}:{token:string;active?:bo
    const latest=await getAudioTracks(token,false,true);
    const position=latest.findIndex(track=>track.id===old.id);
    if(position<0)throw new Error('El archivo ya no está disponible.');
+   // Ignore a late refresh from a track the listener has already skipped.
+   if(ref.current?.src!==failedUrl)return;
    playOnChange.current=wasPlaying;
    lastCatalogFetch.current=Date.now();
    setTracks(latest);setSelected(position);
@@ -136,9 +140,11 @@ export default function MemberAudio({token,active=true}:{token:string;active?:bo
   playOnChange.current=false;
   setSelected(position);
   void audio.play().catch(error=>{
+   if(audio.src!==url)return; // an older song was superseded while loading
    requestedPlay.current=false;setBuffering(false);
-   if(error instanceof Error&&error.name==='NotAllowedError')return;
-   void recoverMedia();
+   if(error instanceof Error&&
+    (error.name==='NotAllowedError'||error.name==='AbortError'))return;
+   void recoverMedia(track.id);
   });
  };
  const toggle=()=>{
