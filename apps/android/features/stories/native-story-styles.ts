@@ -18,4 +18,6 @@ export const storyStyles=StyleSheet.create({
  plusText:{color:'#fff',fontSize:19,lineHeight:20},
  name:{width:80,height:18,lineHeight:18,fontSize:11,textAlign:'center',color:'#333'},
  error:{fontSize:12,color:'#9d4d40',paddingVertical:6},
+ reload:{alignSelf:'flex-start',paddingVertical:4,paddingHorizontal:8},
+ reloadText:{fontSize:11,color:'#745d3a'},
 });
