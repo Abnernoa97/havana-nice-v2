@@ -72,8 +72,8 @@
 .hn-audio-vinyl{position:relative;display:grid;place-items:center;width:100%;height:100%;
  border-radius:50%;overflow:hidden;transform:translateZ(0);
  border:3px solid #c8a365;box-shadow:0 0 0 4px #ffffff95,0 0 0 8px #d3b78055,0 16px 27px #61452b48}
-.hn-audio-vinyl{animation:hn-vinyl-turn 7s linear infinite;animation-play-state:paused}
-.hn-audio-vinyl.is-playing{animation-play-state:running}
+.hn-audio-vinyl{animation:hn-vinyl-turn 6s linear infinite;animation-play-state:paused}
+.hn-audio-vinyl.is-playing{animation-play-state:running!important}
 .hn-audio-vinyl img{display:block;width:100%;height:100%;object-fit:cover;border-radius:50%;
  pointer-events:none;user-select:none}
 .hn-audio-monogram{background:#173c2b;color:#d8c6a0;font:700 clamp(42px,12vw,85px) Georgia,serif;
@@ -85,7 +85,7 @@
  border-radius:50%;transform:translate(-50%,-50%);
  border:4px solid #c5a268;box-shadow:0 0 0 3px #e6dabbbd,0 2px 5px #0006;
  background:#203b2e}
-@keyframes hn-vinyl-turn{to{transform:rotate(360deg)}}
+@keyframes hn-vinyl-turn{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
 .hn-audio-details{display:grid;gap:4px;text-align:center;padding:2px 5px 0;max-width:100%}
 .hn-audio-details h3{font:600 clamp(23px,4.5vw,30px)/1.18 Georgia,serif;
  margin:0;color:#193d2b;overflow-wrap:anywhere}
@@ -137,9 +137,7 @@
  .hn-audio-track{min-height:67px}
  .hn-audio-timeline{gap:7px}
 }
-@media(prefers-reduced-motion:reduce){
- .hn-audio-vinyl.is-playing{animation:none}
-}
+
 
 /* === Reference-accurate editorial finish · based on the approved concept ===
    Small, optimized reference crops: 1.1 KiB tear, 4.1 KiB floral, 1.1 KiB corner.
@@ -172,13 +170,10 @@
 }
 .hn-audio-player{gap:7px}
 .hn-audio-flowers{
- position:absolute;z-index:0;left:-18px;top:-12px;
- width:calc(100% + 36px);height:auto;aspect-ratio:864 / 475;
- pointer-events:none;opacity:.97;
- background:url('/audio-lounge/floral.webp') center center / 100% 100% no-repeat;
- /* Diffuse in every direction instead of showing a rectangular backdrop. */
- -webkit-mask-image:radial-gradient(ellipse 65% 68% at 50% 53%,#000 58%,#000 65%,transparent 100%);
- mask-image:radial-gradient(ellipse 65% 68% at 50% 53%,#000 58%,#000 65%,transparent 100%);
+ position:absolute;z-index:0;left:-4%;top:-6px;
+ width:108%;height:auto;aspect-ratio:650 / 290;pointer-events:none;
+ opacity:1;background:url('/audio-lounge/floral-clean.webp') center center / 100% 100% no-repeat;
+ -webkit-mask-image:none;mask-image:none;
 }
 .hn-audio-silk,.hn-audio-flower{display:none!important}
 .hn-audio-record-wrap{
@@ -233,7 +228,7 @@
  .hn-audio-paper-title h2{font-size:clamp(24px,6.3vw,34px)}
  .hn-audio-paper-title p{font-size:12px}
  .hn-audio-flowers{
-  top:-9px;left:-15px;width:calc(100% + 30px);
+  top:-5px;left:-4%;width:108%;
  }
  .hn-audio-record-wrap{width:52%;max-width:220px}
  .hn-audio-paper-tear{height:46px}
@@ -241,9 +236,7 @@
  .hn-audio-details h3{font-size:20px}
  .hn-audio-track{min-height:58px}
 }
-@media(prefers-reduced-motion:reduce){
- .hn-audio-vinyl{animation:none}
-}
+
 
 /* Stories and lounge touch through a soft, irregular parchment edge. */
 .hn-audio-parchment:before{
@@ -262,3 +255,14 @@
  .hn-home-route .hn-audio-parchment{padding-top:41px}
  .hn-audio-paper-tear{height:62px}
 }
+
+/* The photograph and the reflective hairline both rotate with the record.
+   Playback-driven animation is intentionally visible even on devices with a
+   global reduced-motion setting because rotating vinyl is a core control. */
+.hn-audio-vinyl::before{content:"";position:absolute;z-index:3;pointer-events:none;
+ inset:5px;border-radius:50%;
+ background:conic-gradient(from 14deg,transparent 0deg 316deg,#fff7e927 328deg,
+  #fff7e9a6 335deg,transparent 344deg 360deg);
+ opacity:.52}
+.hn-home-route .hn-audio-parchment{min-height:max(720px,calc(100dvh - 185px))}
+.hn-home-route .visual-content{background:#f7f0e8}
