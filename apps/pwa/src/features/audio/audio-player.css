@@ -46,8 +46,22 @@
 }
 
 .hn-audio-record-wrap{
+ --hn-disc-x:0deg; --hn-disc-y:0deg; --hn-disc-glare-x:50%; --hn-disc-glare-y:35%;
  display:grid; place-items:center; width:min(52%,275px); min-width:0; min-height:0; position:relative;
  z-index:1; aspect-ratio:1; margin:0 auto 6px; filter:drop-shadow(0 7px 10px #604b3440);
+ transform:perspective(850px) rotateX(var(--hn-disc-x)) rotateY(var(--hn-disc-y));
+ transform-style:preserve-3d; transition:transform 90ms ease-out;
+}
+.hn-audio-record-wrap::after{
+ content:""; position:absolute; inset:2%; z-index:5; border-radius:50%; pointer-events:none;
+ background:radial-gradient(circle at var(--hn-disc-glare-x) var(--hn-disc-glare-y),
+  #fffef3b3 0%,#fff4dc45 18%,transparent 49%);
+ opacity:0; transition:opacity 180ms ease-out;
+}
+.hn-audio-record-wrap.hn-motion-active::after{opacity:.42}
+@media(prefers-reduced-motion:reduce){
+ .hn-audio-record-wrap{transform:none!important;transition:none!important}
+ .hn-audio-record-wrap.hn-motion-active::after{opacity:0}
 }
 .hn-audio-vinyl{
  position:relative; display:grid; place-items:center; width:100%; height:100%; border-radius:50%;
