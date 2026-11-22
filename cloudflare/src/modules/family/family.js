@@ -2,17 +2,28 @@
 // R2 content is exclusively served through short-lived opaque media grants.
 import {verifyAdminSession} from '../admin/admin-auth.js';
 import {notifyFamilyClients} from './family-realtime.js';
+import {notifyTeamFamilyMedia} from '../notices/member-notifications.js';
 import {familyStorageUsage} from './family-quota.js';
 import {familyMultipartRoute,handleFamilyMultipart} from './family-multipart.js';
 import {familyAlbumRoute,familyAlbumSummaries,familyMediaItemRoute,listFamilyMedia,readFamilyGrant,uploadFamilyMedia,checkFamilyOriginalUpload,uploadFamilyPoster,deleteFamilyMedia,selectFamilyCover} from './family-media.js';
 
 export async function handleFamilyApi(request,env,url,origin,respond,verifyMusicianSession,ctx){
  const reply=(value,status=200)=>respond(value,status,origin);
- const signalSaved=(result)=>{
+ const signalSaved=(result,albumActorId=null)=>{
   if(result.ok){
-   const task=notifyFamilyClients(env);
-   if(ctx?.waitUntil)ctx.waitUntil(task);
-   else void task;
+   // Only a newly committed original (photo or completed multipart video)
+   // generates a notice. Posters, covers, deletes and retry acknowledgements
+   // must NOT spam the entire team.
+   const saved=albumActorId&&result.status===201?result.clone():null;
+   const task=(async()=>{
+    if(saved){
+     const data=await saved.json().catch(()=>null);
+     if(data?.id&&['photo','video'].includes(data.kind))
+      await notifyTeamFamilyMedia(env,albumActorId,data.id,data.kind).catch(()=>{});
+    }
+    await notifyFamilyClients(env);
+   })();
+   if(ctx?.waitUntil)ctx.waitUntil(task);else void task;
   }
   return result;
  };
@@ -35,7 +46,7 @@ export async function handleFamilyApi(request,env,url,origin,respond,verifyMusic
   // Preserve the existing trusted browser CORS policy for cross-origin Admin uploads.
   result.headers.set('access-control-allow-origin',origin||'https://havana-nice-v2-dev.pages.dev');
   result.headers.set('vary','Origin');
-  return request.method==='POST'&&transfer.complete?signalSaved(result):result;
+  return request.method==='POST'&&transfer.complete?signalSaved(result,transfer.actorId):result;
  }
  const item=familyMediaItemRoute(url.pathname);
  if(item){
@@ -61,7 +72,7 @@ export async function handleFamilyApi(request,env,url,origin,respond,verifyMusic
    }catch{return reply({error:'Archivos no disponibles'},503);}
   }
   if(request.method==='POST'&&isAdmin&&route.admin)
-   return signalSaved(await uploadFamilyMedia(request,env,route.actorId,origin));
+   return signalSaved(await uploadFamilyMedia(request,env,route.actorId,origin),route.actorId);
   return reply({error:'Método no permitido'},405);
  }
  if(request.method!=='GET')return reply({error:'Método no permitido'},405);
