@@ -32,6 +32,8 @@ jobs:
           node --test cloudflare/tests/admin-auth.test.mjs cloudflare/tests/admin-trusted-device.test.mjs tests/worker-hash-parity.test.mjs
       - name: Test private Audio R2 operations before enabling shared Worker
         run: node --test cloudflare/tests/audio-api.test.mjs
+      - name: Verify Android calendar types before shipping the shared Worker
+        run: npm run typecheck -w @havana/android
       - name: Validate Calendar dates, realtime recipients and private system notices
         run: node --test cloudflare/tests/calendar.test.mjs cloudflare/tests/calendar-realtime.test.mjs cloudflare/tests/member-notifications.test.mjs tests/calendar-free-text-ui.test.mjs
       - name: Generate exact canonical Wrangler release bundle, no deployment
