@@ -16,7 +16,6 @@ function MemberHome({token,displayName,actorId,profiles,preview,canEditProfile,
   <MemberStories token={token} displayName={displayName} actorId={actorId} profiles={profiles}
    preview={preview} canEditProfile={canEditProfile} onPhotoError={onPhotoError}
    refreshVersion={refreshVersion}/>
-  <div className="hn-home-blank" aria-hidden="true"/>
  </section>;
 }
 export default memo(MemberHome);
