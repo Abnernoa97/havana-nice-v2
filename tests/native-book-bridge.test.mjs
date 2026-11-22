@@ -97,3 +97,16 @@ test('One-time native object strictly validates the event and token without pers
  assert.equal(parseNativeBookContext(JSON.stringify({token,eventId:'../../etc/passwd'})),null);
  assert.equal(parseNativeBookContext(JSON.stringify({token,eventId:'a'.repeat(700)})),null);
 });
+
+test('Embedded Calendar memory provides viewport height for complete next/previous BOOK controls',()=>{
+ const src=read('apps/android/features/book/NativeBook.tsx');
+ const reader=read('apps/pwa/src/features/book/BookReader.tsx');
+ assert.match(src,/useWindowDimensions/);
+ assert.match(src,/embeddedHeight=Math\.min\(740,Math\.max\(620/);
+ assert.match(src,/embedded&&\{height:embeddedHeight\}/);
+ assert.doesNotMatch(src,/inlineRoot:\{height:490/);
+ assert.match(reader,/className="hn-book-controls"/);
+ assert.match(reader,/aria-label="Página anterior"/);
+ assert.match(reader,/aria-label="Página siguiente"/);
+ assert.match(reader,/new PageFlip\(/);
+});
