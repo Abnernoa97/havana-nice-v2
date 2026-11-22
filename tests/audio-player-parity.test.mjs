@@ -68,6 +68,13 @@ test('PWA uses artwork from R2 and HTML media session without mock songs',()=>{
  assert.match(css,/url\('\/audio-lounge\/tear\.webp'\)/);
  assert.match(css,/url\('\/audio-lounge\/floral-clean\.webp'\)/);
  assert.match(css,/url\('\/audio-lounge\/corner\.webp'\)/);
+ // The approved artwork is still used. Earlier procedural versions of these
+ // same details were unconditionally overridden and must not return.
+ assert.doesNotMatch(css,/clip-path:polygon\(0 28px/);
+ assert.doesNotMatch(css,/repeating-linear-gradient\(165deg/);
+ assert.doesNotMatch(css,/height:clamp\(260px,52vw,390px\)/);
+ assert.doesNotMatch(css,/width:min\(76%,290px\)/);
+ assert.match(css,/animation:hn-vinyl-turn 6s linear infinite;animation-play-state:paused/);
  assert.doesNotMatch(css,/hn-audio-vinyl-grooves/);
  assert.doesNotMatch(pwa,/hn-audio-vinyl-grooves|hn-audio-silk|hn-audio-fold/);
  for(const asset of ['tear','floral','floral-clean','corner']){
