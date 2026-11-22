@@ -65,12 +65,12 @@ test('PWA uses artwork from R2 and HTML media session without mock songs',()=>{
  assert.match(css,/\.hn-home-route \.hn-audio-editorial\{position:relative;z-index:1;margin-top:-18px\}/);
  const homeStage=read('apps/pwa/src/features/home/home-stage.css');
  assert.match(homeStage,/\.hn-home-route \.hn-moments-strip\{padding-top:3px;padding-bottom:4px\}/);
- assert.match(homeStage,/true four-zone mobile layout/);
- assert.match(homeStage,/\.hn-home-route \.hn-home-stage\{[\s\S]*position:relative!important/);
- assert.match(homeStage,/\.hn-home-route \.hn-audio-editorial\{[\s\S]*overflow-y:auto!important/);
+ assert.doesNotMatch(homeStage,/true four-zone mobile layout/);
+ assert.match(homeStage,/\.hn-home-route \.hn-home-stage\{position:sticky;top:0/);
+ assert.doesNotMatch(homeStage,/\.hn-home-route \.hn-audio-paper-tear[\s\S]{0,100}display:none!important/);
  const homeStyles=read('apps/pwa/src/styles/home/home.css');
- assert.match(homeStyles,/html:has\(\.hn-home-route\)/);
- assert.match(homeStyles,/position:relative;z-index:15;flex:0 0 auto;bottom:auto/);
+ assert.doesNotMatch(homeStyles,/html:has\(\.hn-home-route\)/);
+ assert.match(homeStyles,/\.visual-bottom-nav\{position:fixed;bottom:0/);
 
  assert.match(html,/Stories and lounge touch/);
  assert.match(html,/renderHavanaAudio/);
