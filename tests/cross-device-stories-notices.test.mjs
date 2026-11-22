@@ -18,6 +18,18 @@ test('An Android State appears on PWA even without a matching Profile row',()=>{
  assert.match(pwa,/window\.setInterval\(\(\)=>\{/);
  assert.match(nativeApi,/const fallback=setInterval\(\(\)=>\{/);
  assert.match(shared,/\/api\/stories\/team/);
+ // Expired/failed R2 grants must not leave a blank native/PWA state forever.
+ assert.match(shared,/serverNow/);
+ assert.match(shared,/story\.expiresAt>serverNow/);
+ assert.match(native,/last\?\.photoUrl\|\|person\.photoUrl/);
+ assert.match(native,/onFailure=/);
+ assert.match(native,/onPress=\{states\.retryAll\}/);
+ for(const hook of [pwa,nativeApi]){
+  assert.match(hook,/failedPhotos=useRef\(new Map/);
+  assert.match(hook,/failedPhotos\.current\.clear\(\)/);
+  assert.match(hook,/photoGrants\.current\.delete\(id\)|grants\.current\.delete\(id\)/);
+  assert.match(hook,/recent&&prior\.attempts>=2/);
+ }
  for(const s of [pwa,nativeApi])
   assert.match(s,/45_000/);
 });
