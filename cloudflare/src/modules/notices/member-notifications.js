@@ -1,4 +1,5 @@
 import {sha256Hex} from '../../shared/crypto-helpers.js';
+import {queueNoticePush} from './push-center.js';
 // Private per-member inbox. One existing musician session; no new socket or credentials.
 // Notifications contain short metadata, never private media URLs or tokens.
 const asJson=(value,status,origin)=>new Response(JSON.stringify(value),{
@@ -14,16 +15,37 @@ export async function notifyMember(env,{recipientId,actorId,kind,targetId,emoji=
  // must also receive the system activity; all ordinary self-events are excluded.
  if(!recipientId||!actorId||(!allowSelf&&recipientId===actorId))return false;
  const now=Date.now();
+ const noticeId=crypto.randomUUID();
  const response=await env.DB.prepare(
   'INSERT OR IGNORE INTO member_notifications '+
   '(id,recipient_id,actor_id,kind,target_id,emoji,preview,created_at,dedupe_key) '+
   'SELECT ?,r.actor_id,a.actor_id,?,?,?,?,?,? FROM chat_members r '+
   'JOIN chat_members a ON a.actor_id=? AND a.active=1 '+
   'WHERE r.actor_id=? AND r.active=1'
- ).bind(crypto.randomUUID(),String(kind).slice(0,60),String(targetId).slice(0,100),
+ ).bind(noticeId,String(kind).slice(0,60),String(targetId).slice(0,100),
   String(emoji).slice(0,12),String(preview).slice(0,160),now,dedupeKey,
   actorId,recipientId).run();
- return Number(response.meta?.changes||0)>0;
+ const created=Number(response.meta?.changes||0)>0;
+ if(created){
+  // Push is additional to the existing private inbox, never a replacement.
+  // Lock-screen previews contain only short activity metadata, no message
+  // contents, R2 URLs or device tokens.
+  const section=kind.startsWith('chat.')?'Chat':
+   kind.startsWith('story.')?'Estados':
+   kind==='profile.photo'?'Perfil':
+   kind==='family.media'?'Familia':'Actividad';
+  const detail=kind==='chat.message'?'Nuevo mensaje del equipo':
+   kind==='chat.reaction'?'Reacción a tu mensaje':
+   kind==='story.reaction'?'Reacción a tu Estado':
+   kind==='story.comment'?'Nuevo comentario en tu Estado':
+   kind==='story.voice'?'Nueva nota de voz en tu Estado':
+   kind==='story.created'?'Nuevo Estado del equipo':
+   kind==='profile.photo'?'Se actualizó una foto de perfil':
+   kind==='family.media'?'Nuevo archivo en Familia':'Nueva actividad';
+  await queueNoticePush(env,{noticeId,recipientId,kind,targetId,
+   title:'HAVANA NICE · '+section,body:detail});
+ }
+ return created;
 }
 
 // Single typed central emitter for every team-wide member activity. No
