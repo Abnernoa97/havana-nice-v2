@@ -17,13 +17,13 @@ export function useNativeChatViewport(activeScreen:MemberScreen,sessionToken?:st
     if (!initialHistoryPending.current || !initialHistoryLoaded.current || userHasScrolled.current) return;
     // FlatList initially measures a virtualized subset of the history.
     // Keep landing on the real last bubble as later cells are measured.
-    scroll.current?.scrollToEnd({animated:false});
+    scroll.current?.scrollToOffset({offset:0,animated:false});
     if (initialBottomTimer.current) clearTimeout(initialBottomTimer.current);
     initialBottomTimer.current = setTimeout(() => {
       initialBottomTimer.current = null;
       if (!initialHistoryPending.current || userHasScrolled.current) return;
       initialBottomAttempts.current+=1;
-      scroll.current?.scrollToEnd({animated:false});
+      scroll.current?.scrollToOffset({offset:0,animated:false});
       if(initialBottomAttempts.current<10)scheduleInitialBottom();
       else initialHistoryPending.current=false;
     }, 120);
@@ -54,9 +54,10 @@ export function useNativeChatViewport(activeScreen:MemberScreen,sessionToken?:st
   },[activeScreen,sessionToken]);
 
   function trackUserScroll(event:{nativeEvent:{contentOffset:{y:number};contentSize:{height:number};layoutMeasurement:{height:number}}}) {
-    const {contentOffset,contentSize,layoutMeasurement}=event.nativeEvent;
-    const gap=contentSize.height-contentOffset.y-layoutMeasurement.height;
-    autoScroll.current=gap<90;
+    const {contentOffset}=event.nativeEvent;
+    // Inverted FlatList keeps the newest bubble at offset 0. Never drag
+    // someone back to the bottom while they read older messages above it.
+    autoScroll.current=contentOffset.y<90;
   }
   return {scroll,autoScroll,initialHistoryPending,initialHistoryLoaded,
     initialBottomTimer,userHasScrolled,scheduleInitialBottom,beginFreshChatViewport,trackUserScroll};
