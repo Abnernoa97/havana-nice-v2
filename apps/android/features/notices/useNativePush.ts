@@ -3,9 +3,11 @@
 import {useCallback,useEffect,useRef,useState} from 'react';
 import {AppState,Linking,Platform} from 'react-native';
 import * as Notifications from 'expo-notifications';
+import Storage from 'expo-sqlite/kv-store';
 import {HAVANA_V2_DEV_API_BASE_URL as API,type MemberScreen} from '@havana/shared';
 
 export const HAVANA_PUSH_CHANNEL='havana-team-activity';
+const PUSH_DISABLED_KEY='havana-v2:android-push-disabled';
 type PushState='checking'|'ready'|'enabled'|'blocked'|'pending'|'unavailable'|'error';
 type Config={androidReady:boolean};
 
@@ -61,6 +63,7 @@ export function useNativePush(token:string|null,onNavigate:(screen:MemberScreen)
  const navigate=useRef(onNavigate);
  navigate.current=onNavigate;
  const enabledSession=useRef<string|null>(null);
+ const optedOut=useRef(false);
  const sync=useCallback(async(currentToken:string)=>{
   await ensureChannel(); // Android 13+ requires channel before requesting FCM token.
   const credential=(await Notifications.getDevicePushTokenAsync()).data;
@@ -90,6 +93,8 @@ export function useNativePush(token:string|null,onNavigate:(screen:MemberScreen)
     const config=await response.json() as Config;
     if(!active)return;
     if(!config.androidReady){setState('pending');return;}
+    optedOut.current=await Storage.getItem(PUSH_DISABLED_KEY)==='1';
+    if(optedOut.current){setState('ready');return;}
     const permissions=await Notifications.getPermissionsAsync();
     if(!active)return;
     if(!permissions.granted){
@@ -117,8 +122,12 @@ export function useNativePush(token:string|null,onNavigate:(screen:MemberScreen)
    }
   }).catch(()=>{});
   const foreground=AppState.addEventListener('change',status=>{
-   if(active&&status==='active'&&enabledSession.current===token)
-    void sync(token).catch(()=>{});
+   if(!active||status!=='active'||optedOut.current)return;
+   void Notifications.getPermissionsAsync().then(permission=>{
+    if(!active)return;
+    if(permission.granted)void sync(token).catch(()=>{});
+    else setState(permission.canAskAgain===false?'blocked':'ready');
+   }).catch(()=>{});
   });
   return()=>{
    active=false;renewed.remove();tapped.remove();foreground.remove();
@@ -138,6 +147,8 @@ export function useNativePush(token:string|null,onNavigate:(screen:MemberScreen)
    if(!result.granted){
     setState(result.canAskAgain===false?'blocked':'ready');return;
    }
+   await Storage.removeItem(PUSH_DISABLED_KEY);
+   optedOut.current=false;
    await sync(token);
   }catch{
    setState('error');setError('No se pudieron activar los avisos del teléfono.');
@@ -148,6 +159,8 @@ export function useNativePush(token:string|null,onNavigate:(screen:MemberScreen)
   if(!token||!prior||prior.session!==token)return;
   try{
    await revokeFcm(token,prior.device);
+   await Storage.setItem(PUSH_DISABLED_KEY,'1');
+   optedOut.current=true;
    registered.current=null;enabledSession.current=null;setError('');setState('ready');
   }catch{setError('No se pudo desvincular este teléfono.');}
  },[token]);
