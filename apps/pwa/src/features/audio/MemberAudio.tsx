@@ -42,8 +42,8 @@ export default function MemberAudio({token,active=true}:{token:string;active?:bo
   document.addEventListener('visibilitychange',check);
   return()=>document.removeEventListener('visibilitychange',check);
  },[refresh,current?.id]);
- // Download small private covers once. Local Blob URLs prevent repeated R2
- // fetches on track changes. A square JPEG supports iOS lock-screen artwork.
+ // Decode private covers once for the vinyl and track list. The OS
+ // lock-screen image remains the original signed HTTPS URL, not this Blob.
  useEffect(()=>{
   const controller=new AbortController(),created:string[]=[];
   let live=true;
