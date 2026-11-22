@@ -153,17 +153,26 @@ export async function notifyCalendarMembers(env,recipients,{eventId,revision,act
  const preview=(action==='created'?'Nuevo evento':action==='deleted'?'Evento eliminado':'Evento actualizado')+
   ': '+String(title||'').slice(0,95)+(date?' · '+String(date).slice(0,32):'');
  const now=Date.now();
- const statements=unique.map(recipient=>env.DB.prepare(
+ const noticeIds=unique.map(()=>crypto.randomUUID());
+ const statements=unique.map((recipient,i)=>env.DB.prepare(
   'INSERT OR IGNORE INTO calendar_member_notifications '+
   '(id,recipient_id,kind,target_id,preview,created_at,dedupe_key) '+
   "SELECT ?,m.actor_id,'calendar.event',?,?,?,? FROM chat_members m "+
   'WHERE m.actor_id=? AND m.active=1'
- ).bind(crypto.randomUUID(),String(eventId),preview.slice(0,160),now,
+ ).bind(noticeIds[i],String(eventId),preview.slice(0,160),now,
   'calendar:'+String(eventId)+':'+String(revision)+':'+recipient,recipient));
  try{
   // A deployment without migration 0037 must not break Calendar edits.
   const results=await env.DB.batch(statements);
-  return results.reduce((sum,result)=>sum+Number(result?.meta?.changes||0),0);
+  let inserted=0;
+  for(let i=0;i<unique.length;i++){
+   if(Number(results[i]?.meta?.changes||0)<1)continue;
+   inserted++;
+   await queueNoticePush(env,{noticeId:noticeIds[i],recipientId:unique[i],
+    kind:'calendar.event',targetId:String(eventId),
+    title:'HAVANA NICE · Calendario',body:preview});
+  }
+  return inserted;
  }catch{return 0;}
 }
 
