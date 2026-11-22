@@ -60,6 +60,27 @@ export async function handleMemberPushApi(request,env,url,origin,verifySession){
    publicKey:webConfigured(env)?env.PUSH_VAPID_PUBLIC_KEY:null,
    androidReady:fcmConfigured(env)},200,origin);
  }
+ // Explicit, rate-limited test for the musician's OWN enrolled devices.
+ // Delay gives them time to lock the phone before cron sends the push.
+ if(route==='/api/push/test'&&request.method==='POST'){
+  try{
+   const recent=await env.DB.prepare(
+    "SELECT MAX(created_at) AS latest FROM member_push_outbox "+
+    "WHERE recipient_id=? AND kind='push.test'"
+   ).bind(actor.actorId).first();
+   if(recent?.latest&&Date.now()-Number(recent.latest)<60000)
+    return json({error:'Ya solicitaste una prueba recientemente.'},429,origin);
+   const id=crypto.randomUUID();
+   const devices=await queueNoticePush(env,{
+    noticeId:id,recipientId:actor.actorId,kind:'push.test',targetId:id,
+    title:'HAVANA NICE · Prueba',
+    body:'Si estás viendo esto con la pantalla bloqueada, ¡ya llegan los avisos!',
+    deliverAfterMs:15000
+   });
+   return devices?json({ok:true,scheduled:true,devices},202,origin):
+    json({error:'Primero activa las notificaciones en este dispositivo.'},409,origin);
+  }catch{return json({error:'No se pudo programar la prueba.'},503,origin);}
+ }
  if(route==='/api/push/devices'&&request.method==='GET'){
   try{
    const row=await env.DB.prepare(
@@ -120,7 +141,7 @@ export async function handleMemberPushApi(request,env,url,origin,verifySession){
 
 // A committed inbox item is delivered independently to every enrolled device.
 // No browser or Android client may forge recipients, actor names, or events.
-export async function queueNoticePush(env,{noticeId,recipientId,kind,targetId,title,body}){
+export async function queueNoticePush(env,{noticeId,recipientId,kind,targetId,title,body,deliverAfterMs=0}){
  try{
   const devices=(await env.DB.prepare(
    'SELECT d.id FROM member_push_devices d '+
@@ -130,18 +151,19 @@ export async function queueNoticePush(env,{noticeId,recipientId,kind,targetId,ti
   ).bind(Date.now(),recipientId).all()).results||[];
   if(!devices.length)return 0;
   const now=Date.now();
+  const due=now+Math.min(30000,Math.max(0,Number(deliverAfterMs)||0));
   const statements=devices.map(device=>env.DB.prepare(
    'INSERT OR IGNORE INTO member_push_outbox '+
    '(id,notice_id,device_id,recipient_id,kind,target_id,title,body,created_at,next_attempt_at) '+
    'VALUES(?,?,?,?,?,?,?,?,?,?)'
   ).bind(crypto.randomUUID(),noticeId,device.id,recipientId,String(kind).slice(0,60),
    String(targetId).slice(0,100),String(title).slice(0,80),
-   String(body).slice(0,160),now,now));
+   String(body).slice(0,160),now,due));
   await env.DB.batch(statements);
   // Deliver now, not only when the app is reopened. Unavailable providers
   // remain pending for the same Worker's scheduled retry; never drop inbox data.
-  if(env.FCM_SERVICE_ACCOUNT_JSON||
-    (env.PUSH_VAPID_PUBLIC_KEY&&env.PUSH_VAPID_PRIVATE_KEY))
+  if(due<=now&&(env.FCM_SERVICE_ACCOUNT_JSON||
+    (env.PUSH_VAPID_PUBLIC_KEY&&env.PUSH_VAPID_PRIVATE_KEY)))
    await dispatchDuePush(env,{recipientId,limit:10}).catch(()=>{});
   return devices.length;
  }catch{
