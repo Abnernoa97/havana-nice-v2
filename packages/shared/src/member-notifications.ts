@@ -2,7 +2,7 @@ import {HAVANA_V2_DEV_API_BASE_URL as API} from './api-base';
 
 export type MemberNoticeKind=
  'story.created'|'story.reaction'|'story.comment'|'story.voice'|
- 'chat.reaction'|'chat.message'|'calendar.event'|'family.media'|'repertoire.updated';
+ 'chat.reaction'|'chat.message'|'calendar.event'|'family.media'|'repertoire.updated'|'profile.photo';
 export interface MemberNotice {
  id:string;actorId:string;name:string;kind:MemberNoticeKind;
  targetId:string;emoji:string;preview:string;createdAt:number;readAt:number|null;
@@ -39,7 +39,8 @@ export function memberNoticeMessage(item:Pick<MemberNotice,'name'|'kind'|'emoji'
   case 'chat.reaction':return item.name+' reaccionó a tu mensaje';
   case 'chat.message':return item.name+' envió un mensaje al equipo';
   case 'calendar.event':return 'HAVANANICE-CALENDARIO📆';
-  case 'family.media':return item.name+' compartió nuevos recuerdos';
+  case 'family.media':return 'Se agregó contenido al álbum de '+item.name;
+  case 'profile.photo':return item.name+' actualizó su foto de perfil';
   case 'repertoire.updated':return 'Se actualizó tu repertorio';
   default:return 'Nueva actividad del equipo';
  }
