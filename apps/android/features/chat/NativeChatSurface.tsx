@@ -26,7 +26,7 @@ export default function NativeChatSurface({ui}:{ui:ReturnType<typeof useNativeCh
   };
   return (
     <SafeAreaView {...(Platform.OS==='ios'?iosBackPan.panHandlers:{})}
-      style={[styles.screen,keyboardOpen && styles.screenKeyboard]}>
+      style={[styles.screen,restoringAccess&&styles.screenLaunch,keyboardOpen&&styles.screenKeyboard]}>
       <StatusBar barStyle={restoringAccess?'light-content':'dark-content'}/>
       {/* Android 16 edge-to-edge can draw the composer behind the IME even with
             adjustResize. Height mode keeps the native chat input and Enviar
