@@ -68,7 +68,8 @@ test('PWA uses artwork from R2 and HTML media session without mock songs',()=>{
  assert.match(css,/url\('\/audio-lounge\/tear\.webp'\)/);
  assert.match(css,/url\('\/audio-lounge\/floral-clean\.webp'\)/);
  assert.match(css,/url\('\/audio-lounge\/corner\.webp'\)/);
- assert.match(css,/\.hn-audio-vinyl-grooves\{display:none\}/);
+ assert.doesNotMatch(css,/hn-audio-vinyl-grooves/);
+ assert.doesNotMatch(pwa,/hn-audio-vinyl-grooves|hn-audio-silk|hn-audio-fold/);
  for(const asset of ['tear','floral','floral-clean','corner']){
   const bytes=readFileSync(new URL('../apps/pwa/public/audio-lounge/'+asset+'.webp',import.meta.url));
   assert.equal(bytes.toString('ascii',0,4),'RIFF');
