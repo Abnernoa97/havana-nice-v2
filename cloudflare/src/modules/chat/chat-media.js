@@ -2,6 +2,7 @@
 // Media belongs to Chat messages, never to Family albums or a separate conversation.
 import {reserveFamilyStorage,releaseFamilyStorage,familyStorageUsage} from '../family/family-quota.js';
 import {sha256Hex} from '../../shared/crypto-helpers.js';
+import {notifyTeamChatMessage} from '../notices/member-notifications.js';
 
 const MIME=new Map([['image/jpeg','photo'],['image/png','photo'],['image/webp','photo'],
  ['image/heic','photo'],['image/heif','photo'],['video/mp4','video'],['video/quicktime','video']]);
@@ -218,10 +219,17 @@ export async function sendChatMedia(env,session,id,origin){
   const saved=await env.DB.prepare('SELECT seq FROM chat_messages WHERE sender_id=? AND client_message_id=?')
    .bind(session.actorId,id).first();
   if(!saved)return reply({error:'Mensaje no confirmado'},503,origin);
-  if(!existing)try{
-   await env.CHAT_ROOMS.get(env.CHAT_ROOMS.idFromName(ROOM)).fetch(
-    'https://internal/chat-media-message-ready',{method:'POST',body:JSON.stringify({seq:saved.seq})});
-  }catch{/* Next Chat snapshot loads already-committed messages. */}
+  if(!existing){
+   // Every confirmed photo/video is a Chat message. Emit exactly once,
+   // not for uploads, posters, or retries with the same client ID.
+   try{await notifyTeamChatMessage(env,session.actorId,saved.seq,
+    row.kind==='video'?'Nuevo video en Chat':'Nueva foto en Chat');}
+   catch{/* Saved media is not rolled back if a notice fails. */}
+   try{
+    await env.CHAT_ROOMS.get(env.CHAT_ROOMS.idFromName(ROOM)).fetch(
+     'https://internal/chat-media-message-ready',{method:'POST',body:JSON.stringify({seq:saved.seq})});
+   }catch{/* Next Chat snapshot loads already-committed messages. */}
+  }
   return reply({ok:true,seq:saved.seq,media:publicMedia(row)},existing?200:201,origin);
  }catch{return reply({error:'No se pudo publicar el archivo en Chat'},503,origin);}
 }
