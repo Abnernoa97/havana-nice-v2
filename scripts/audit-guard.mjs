@@ -237,7 +237,7 @@ present(android,/keyboardVerticalOffset=\{0\}/,
 present(read('apps/android/hooks/useNativeKeyboardVisibility.ts'),/Keyboard.addListener\('keyboardDidShow'/,
   'Android Chat must react to IME visibility');
 present(android,/useNativeKeyboardVisibility\(activeScreen==='chat'\)/,'Native App must use the single keyboard lifecycle hook');
-present(android,/keyboardOpen && styles.screenKeyboard/,
+present(android,/keyboardOpen\s*&&\s*styles\.screenKeyboard/,
   'Android Chat must clear nav padding while the keyboard is open');
 absent(android,/<Text style=\{styles.roomTitle\}>HAVANA NICE · Chat<\/Text>/,
   'Native Chat must not show the duplicated room banner');
