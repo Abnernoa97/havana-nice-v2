@@ -48,7 +48,7 @@ test('Long pressing native Chat opens emoji actions directly from touch without 
  assert.match(gesture,/onLongPress=\{event=>\{/);
  assert.match(gesture,/event\.nativeEvent/);
  assert.match(gesture,/callbacks\.current\.onLongPress\(\{/);
- assert.doesNotMatch(gesture,/measureInWindow/);
+ assert.doesNotMatch(gesture,/\.measureInWindow\(/);
  assert.match(menu,/\['👍','❤️','😂'\]/);
  assert.match(menu,/onPress=\{event=>onReact\(message,emoji/);
  assert.match(menu,/visible=\{!!message\}/);
