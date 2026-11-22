@@ -29,6 +29,9 @@ test('PWA HOME uses a scoped lightweight emerald-gold theme without affecting Ch
  assert.match(profileCSS,/\.visual-account\{display:flex;align-items:center/);
  assert.match(profileCSS,/\.visual-account-avatar\{display:grid;place-items:center/);
  assert.match(profileCSS,/\.visual-account-label\{color:#f5f1e8/);
+ assert.doesNotMatch(profileCSS,/\.hn-moment-/,'Story circle styles belong to HOME, never Profile');
+ assert.match(stageCSS,/\.hn-moment-circle\{appearance:none;box-sizing:border-box;overflow:visible/);
+ assert.match(stageCSS,/\.hn-moment-photo img\{display:block;width:100%;height:100%/);
  assert.doesNotMatch(stageCSS,/\.visual-account(?:-avatar|-label)?\{/,
   'Shared header belongs to Profile, not the lazy HOME Story module');
  assert.match(app,/aria-current=\{screen===item.id\?'page':undefined\}/);
