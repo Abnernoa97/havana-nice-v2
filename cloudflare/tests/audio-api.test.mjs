@@ -126,3 +126,41 @@ test('Audio catalog never performs grant housekeeping; expired links stay privat
  assert.equal((await handleAudioApi(new Request(deniedUrl),env,deniedUrl,
   'https://havana-nice-v2.pages.dev',verify,null)).status,404);
 });
+
+test('Audio grants use bounded multi-row inserts and keep 100 albums private',async()=>{
+ const {db,env,req,stored}=setup();
+ for(let i=0;i<100;i++){
+  const id='00000000-0000-4000-8000-'+String(i).padStart(12,'0');
+  db.prepare(
+   'INSERT INTO audio_tracks(id,title,artist,album,object_key,mime_type,size_bytes,cover_key,cover_mime,cover_size_bytes,created_at,position,published) '+
+   'VALUES(?,?,?,?,?,?,?,?,?,?,?,?,1)'
+  ).run(id,'Demo '+i,'HAVANA NICE','Audio','audio/demo/'+i,
+   'audio/mpeg',1024,'audio/cover/'+i,'image/jpeg',120,Date.now(),i);
+ }
+ stored.set('audio/demo/0',new Uint8Array(1024));
+ const jpg=new Uint8Array(120);jpg.set([255,216,255]);
+ stored.set('audio/cover/0',jpg);
+ const originalBatch=env.DB.batch.bind(env.DB);
+ const sizes=[];
+ env.DB.batch=async statements=>{
+  sizes.push(statements.length);
+  return originalBatch(statements);
+ };
+ const response=await req('/api/audio/tracks','GET','noa');
+ assert.equal(response.status,200);
+ const tracks=(await response.json()).tracks;
+ assert.equal(tracks.length,100);
+ assert.deepEqual(sizes,[8],'200 grants must fit in eight 25-row INSERT statements');
+ assert.equal(db.prepare('SELECT COUNT(*) AS n FROM audio_media_grants').get().n,200);
+ assert.equal(db.prepare("SELECT COUNT(*) AS n FROM audio_media_grants WHERE variant='cover'").get().n,100);
+ const urls=tracks.flatMap(track=>[track.audioUrl,track.coverUrl]);
+ assert.equal(new Set(urls).size,200,'Each capability must be unique');
+ assert.ok(urls.every(url=>/^\/api\/audio\/media\/[0-9a-f]{32}$/.test(url)));
+ const audioHash=await sha256Hex(tracks[0].audioUrl.split('/').at(-1));
+ const coverHash=await sha256Hex(tracks[0].coverUrl.split('/').at(-1));
+ assert.equal(db.prepare('SELECT variant FROM audio_media_grants WHERE token_hash=?').get(audioHash).variant,'audio');
+ assert.equal(db.prepare('SELECT variant FROM audio_media_grants WHERE token_hash=?').get(coverHash).variant,'cover');
+ assert.equal((await req(tracks[0].audioUrl,'GET','',null,{Range:'bytes=0-49'})).status,206);
+ assert.equal((await req(tracks[0].coverUrl)).status,200);
+ assert.equal(db.prepare('SELECT COUNT(*) AS n FROM audio_media_grants WHERE expires_at>?').get(Date.now()).n,200);
+});
