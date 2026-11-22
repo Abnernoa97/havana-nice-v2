@@ -68,3 +68,33 @@ self.addEventListener('fetch', event => {
     })
   );
 });
+
+// Web Push is independent of shell caching. Never cache a push payload,
+// private API response, auth token, media URL or notification subscription.
+self.addEventListener('push',event=>{
+ let data={};
+ try{data=event.data?.json()||{};}catch{}
+ const title=typeof data.title==='string'?data.title.slice(0,80):'HAVANA NICE';
+ const body=typeof data.body==='string'?data.body.slice(0,160):'Nueva actividad del equipo';
+ const kind=typeof data.kind==='string'?data.kind.slice(0,60):'activity';
+ const targetId=typeof data.targetId==='string'?data.targetId.slice(0,100):'';
+ event.waitUntil(self.registration.showNotification(title,{
+  body,icon:'/icons/havana-nice-192.png',badge:'/icons/havana-nice-192.png',
+  tag:kind+':'+targetId,renotify:false,
+  data:{kind,targetId,url:'/?push=notices'}
+ }));
+});
+self.addEventListener('notificationclick',event=>{
+ event.notification.close();
+ const data=event.notification.data||{};
+ event.waitUntil((async()=>{
+  const windows=await self.clients.matchAll({type:'window',includeUncontrolled:true});
+  const app=windows.find(client=>{
+   try{return new URL(client.url).origin===self.location.origin;}catch{return false;}
+  });
+  if(app){
+   await app.focus();
+   app.postMessage({type:'havana-push-open',kind:data.kind,targetId:data.targetId});
+  }else await self.clients.openWindow('/?push=notices');
+ })());
+});
