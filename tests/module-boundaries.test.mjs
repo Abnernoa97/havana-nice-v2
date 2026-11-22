@@ -251,7 +251,11 @@ test('M10 R2: only one named private V2 media bucket binding, no Chat/Havana Clo
  assert.deepEqual(cfg.d1_databases.map(x=>x.binding),['DB']);
  assert.deepEqual(cfg.durable_objects.bindings.map(x=>x.name),['CHAT_ROOMS','CALENDAR_ROOMS']);
  assert.deepEqual(cfg.durable_objects.missing||[],[]);
- assert.ok(cfg.migrations.some(x=>x.new_sqlite_classes?.includes('CalendarRoom')));
+ assert.equal(cfg.migrations,undefined,'Do not mix legacy migrations with declarative DO exports');
+ assert.deepEqual(cfg.exports,{
+  ChatRoom:{type:'durable-object',storage:'sqlite'},
+  CalendarRoom:{type:'durable-object',storage:'sqlite'},
+ });
  const calendarTransport=read('cloudflare/src/modules/calendar/calendar-realtime.js');
  assert.doesNotMatch(calendarTransport,/chat_messages|chat_reactions|\.r2\.dev|localStorage/);
  assert.match(calendarTransport,/calendar\.invalidate/);
