@@ -1,7 +1,7 @@
 import React,{useCallback,useEffect,useState} from 'react';
 import {Modal,Pressable,StatusBar,StyleSheet,Text,View} from 'react-native';
 import {setAudioModeAsync,useAudioPlaylist,useAudioPlaylistStatus} from 'expo-audio';
-import {getAudioTracks,privateAudioUrl,type AudioTrack} from '@havana/shared';
+import {getAudioTracks,clearAudioTracksCache,privateAudioUrl,type AudioTrack} from '@havana/shared';
 import NativeAudioEditorialView from './NativeAudioEditorialView';
 import {publishNativeAudio,registerNativeAudioHandlers,clearNativeAudio} from './nativeAudioStore';
 
@@ -19,10 +19,10 @@ export default function NativeAudio({token,visible,onClose}:{
  const index=Math.max(0,status.currentIndex||0);
  const current=tracks[index]||null;
 
- const refresh=useCallback(async()=>{
+ const refresh=useCallback(async(force=false)=>{
   setLoading(true);
   try{
-   const result=await getAudioTracks(token);
+   const result=await getAudioTracks(token,false,force);
    setTracks(result);setError('');
   }catch(e){
    setError(e instanceof Error?e.message:'El audio todavía no está disponible.');
@@ -36,7 +36,7 @@ export default function NativeAudio({token,visible,onClose}:{
  // Load the catalog immediately in HOME; opening the lounge then uses a warm
  // native playlist rather than fetching R2 only after the first tap.
  useEffect(()=>{void refresh();},[refresh]);
- useEffect(()=>()=>clearNativeAudio(),[token]);
+ useEffect(()=>()=>{clearAudioTracksCache(token);clearNativeAudio();},[token]);
  useEffect(()=>{
   const wasPlaying=player.playing;
   player.clear();
@@ -79,7 +79,7 @@ export default function NativeAudio({token,visible,onClose}:{
   registerNativeAudioHandlers({
    play,next:()=>step(1),previous:()=>step(-1),
    select,seek:time=>{void player.seekTo(time);},
-   refresh:()=>{void refresh();}
+   refresh:()=>{void refresh(true);}
   });
   return()=>registerNativeAudioHandlers(null);
  });
