@@ -16,8 +16,25 @@ createRoot(document.getElementById('root')!).render(
 );
 
 if ('serviceWorker' in navigator) {
+  // Versioned Vite assets stay cached for offline use. When Cloudflare publishes
+  // a new shell, the installed Android/iPhone PWA must stop showing old UI.
+  // Never unregister/delete sessions, private storage, or the user's media.
+  const previousController=navigator.serviceWorker.controller;
+  let refreshed=false;
+  navigator.serviceWorker.addEventListener('controllerchange',()=>{
+    if(!previousController||refreshed)return;
+    refreshed=true;
+    window.location.reload();
+  });
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js').catch((error) => {
+    void navigator.serviceWorker.register('/sw.js',{updateViaCache:'none'}).then(reg=>{
+      const update=()=>{
+        if(document.visibilityState==='visible')void reg.update().catch(()=>{});
+      };
+      document.addEventListener('visibilitychange',update);
+      window.addEventListener('online',update);
+      void reg.update().catch(()=>{});
+    }).catch((error) => {
       console.error('Service worker registration failed', error);
     });
   });
