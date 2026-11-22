@@ -23,6 +23,28 @@ export async function notifyMember(env,{recipientId,actorId,kind,targetId,emoji=
  return Number(response.meta?.changes||0)>0;
 }
 
+// New Android/PWA States are team activity, not a private author-only reply.
+// Each published batch creates ONE notice per other authorized musician.
+// The endpoint never trusts recipients supplied by the uploader.
+export async function notifyTeamStoryPublished(env,actor,storyId,count=1){
+ if(!actor?.actorId||!storyId)return 0;
+ try{
+  const roster=(await env.DB.prepare(
+   'SELECT actor_id FROM chat_members WHERE active=1 AND actor_id<>?'
+  ).bind(actor.actorId).all()).results||[];
+  let inserted=0;
+  for(const person of roster){
+   try{
+    if(await notifyMember(env,{recipientId:person.actor_id,actorId:actor.actorId,
+     kind:'story.created',targetId:storyId,
+     preview:count>1?count+' nuevos Estados publicados':'Nuevo Estado publicado',
+     dedupeKey:'story.created:'+storyId+':'+person.actor_id}))inserted++;
+   }catch{/* One bad recipient cannot prevent other musicians being notified. */}
+  }
+  return inserted;
+ }catch{return 0;}
+}
+
 export async function notifyStoryOwner(env,storyId,actor,kind,{emoji='',preview='',dedupeKey=null}={}){
  const story=await env.DB.prepare(
   'SELECT s.actor_id FROM member_stories s JOIN chat_members m '+
