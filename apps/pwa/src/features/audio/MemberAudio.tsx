@@ -1,5 +1,5 @@
 import {useCallback,useEffect,useRef,useState} from 'react';
-import {getAudioTracks,privateAudioUrl,type AudioTrack} from '@havana/shared';
+import {getAudioTracks,clearAudioTracksCache,privateAudioUrl,type AudioTrack} from '@havana/shared';
 import {prepareAudioCover,type PreparedAudioCover} from './audio-cover-cache';
 import './audio-player.css';
 
@@ -21,14 +21,15 @@ export default function MemberAudio({token,active=true}:{token:string;active?:bo
  const ref=useRef<HTMLAudioElement>(null);
  const playOnChange=useRef(false);
  const current=tracks[selected]||null;
- const refresh=useCallback(async()=>{
-  try{const value=await getAudioTracks(token);lastCatalogFetch.current=Date.now();
+ const refresh=useCallback(async(force=false)=>{
+  try{const value=await getAudioTracks(token,false,force);lastCatalogFetch.current=Date.now();
    setTracks(value);setSelected(n=>Math.max(0,Math.min(n,value.length-1)));
    recoveryTried.current.clear();setError('');}
   catch(e){setError(e instanceof Error?e.message:'La biblioteca de Audio no está disponible.');}
   finally{setLoading(false);}
  },[token]);
  useEffect(()=>{void refresh();},[refresh]);
+ useEffect(()=>()=>clearAudioTracksCache(token),[token]);
  // Keep temporary media grants fresh when returning to the app after a long
  // lock-screen session. Do not interrupt an actively playing track.
  useEffect(()=>{
@@ -37,7 +38,7 @@ export default function MemberAudio({token,active=true}:{token:string;active?:bo
     Date.now()-lastCatalogFetch.current<=40*60*1000)return;
    if(current&&ref.current.currentTime>0)
     pendingSeek.current={id:current.id,time:ref.current.currentTime};
-   void refresh();
+   void refresh(true);
   };
   document.addEventListener('visibilitychange',check);
   return()=>document.removeEventListener('visibilitychange',check);
@@ -90,7 +91,7 @@ export default function MemberAudio({token,active=true}:{token:string;active?:bo
   pendingSeek.current={id:old.id,time:ref.current?.currentTime||0};
   setError('');
   try{
-   const latest=await getAudioTracks(token);
+   const latest=await getAudioTracks(token,false,true);
    const position=latest.findIndex(track=>track.id===old.id);
    if(position<0)throw new Error('El archivo ya no está disponible.');
    playOnChange.current=wasPlaying;
@@ -165,7 +166,7 @@ export default function MemberAudio({token,active=true}:{token:string;active?:bo
     <div className="hn-audio-divider" aria-hidden="true">♬</div>
     <p>Audios y canciones del equipo</p>
    </div>
-   <button className="hn-audio-refresh" type="button" onClick={()=>void refresh()}
+   <button className="hn-audio-refresh" type="button" onClick={()=>void refresh(true)}
     aria-label="Actualizar la biblioteca de audio" disabled={loading}>Actualizar</button>
    {!!error&&<p className="hn-audio-error" role="alert">{error}</p>}
    {loading&&!current?<div className="hn-audio-empty" role="status">Abriendo Audio HAVANA NICE…</div>:!current?
