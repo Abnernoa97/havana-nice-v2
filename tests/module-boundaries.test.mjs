@@ -104,7 +104,7 @@ test('A04: Repertoire cannot create parallel sessions or mutate Chat/Calendar co
  assert.doesNotMatch(api,/\b(?:INSERT\s+INTO|UPDATE|DELETE\s+FROM)\s+chat_/i);
  assert.doesNotMatch(api,/\b(?:INSERT\s+INTO|UPDATE|DELETE\s+FROM)\s+calendar_/i);
  const handler=read('cloudflare/src/index.ts');
- assert.match(handler,/handleRepertoireApi\(request,env,url,origin,respond,verifySession\)/);
+ assert.match(handler,/handleRepertoireApi\(request,env,url,origin,respond,verifySession,ctx\)/);
  const ui=read('apps/pwa/src/features/repertoire/MemberRepertoire.tsx');
  assert.match(ui,/getAssignedEventRepertoire/);
  assert.doesNotMatch(ui,/adminCreateSong|adminDeleteSong|adminAddEventSongs/);
