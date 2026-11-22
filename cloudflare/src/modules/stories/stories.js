@@ -2,6 +2,7 @@
 // Uses existing musician authorization, private R2 and lightweight Family invalidation.
 import {sha256Hex} from '../../shared/crypto-helpers.js';
 import {notifyFamilyClients} from '../family/family-realtime.js';
+import {notifyTeamStoryPublished} from '../notices/member-notifications.js';
 import {handleStoryConversation} from './story-conversation.js';
 
 export const STORY_DURATION_MS=24*60*60*1000;
@@ -93,7 +94,10 @@ async function uploadStory(request,env,actor,origin,ctx){
   await env.MEDIA_BUCKET.delete(key).catch(()=>{});
   return respond({error:'No se pudo publicar el estado.'},503,origin);
  }
- if(ctx?.waitUntil)ctx.waitUntil(notifyFamilyClients(env));
+ if(ctx?.waitUntil)ctx.waitUntil((async()=>{
+  await notifyTeamStoryPublished(env,actor,id,1);
+  await notifyFamilyClients(env);
+ })());
  return respond({ok:true,id,createdAt:now,expiresAt:now+STORY_DURATION_MS},201,origin);
 }
 
@@ -159,7 +163,10 @@ async function uploadStoryBatch(request,env,actor,origin,ctx){
   }
   return respond({error:'No se pudo publicar el lote completo. Ninguna foto se ha añadido.'},503,origin);
  }
- if(ctx?.waitUntil)ctx.waitUntil(notifyFamilyClients(env));
+ if(ctx?.waitUntil)ctx.waitUntil((async()=>{
+  await notifyTeamStoryPublished(env,actor,records[0].id,records.length);
+  await notifyFamilyClients(env);
+ })());
  return respond({ok:true,count:records.length,
   ids:records.map(x=>x.id),expiresAt:records.map(x=>x.expiresAt)},201,origin);
 }
