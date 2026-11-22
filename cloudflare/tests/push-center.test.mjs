@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {DatabaseSync} from 'node:sqlite';
+import {createHash} from 'node:crypto';
 import {handleMemberPushApi,queueNoticePush} from '../src/modules/notices/push-center.js';
 import {encryptWebPush,sendWebPush,sendFcmPush,dispatchDuePush} from '../src/modules/notices/push-delivery.js';
 
@@ -17,6 +18,10 @@ function dbFixture(){
  raw.exec('CREATE TABLE chat_sessions(actor_id TEXT,token_hash TEXT,expires_at INTEGER)');
  raw.exec('CREATE TABLE chat_single_device_owners(actor_id TEXT,token_hash TEXT)');
  raw.exec(readFileSync(new URL('../migrations/0038_member_push_center.sql',import.meta.url),'utf8'));
+ const hash=createHash('sha256').update(token).digest('hex');
+ raw.prepare('INSERT INTO chat_members VALUES(?,?,1)').run('member:fer','Fer');
+ raw.prepare('INSERT INTO chat_sessions VALUES(?,?,?)').run('member:fer',hash,Date.now()+600000);
+ raw.prepare('INSERT INTO chat_single_device_owners VALUES(?,?)').run('member:fer',hash);
  const DB={prepare(sql){const query=(args)=>({
   first:async()=>raw.prepare(sql).get(...args)||null,
   all:async()=>({results:raw.prepare(sql).all(...args)}),
@@ -63,12 +68,7 @@ test('Device registration uses only authorized musician session and rejects unsa
 test('Outbox keeps exactly one job per device and notice, no credentials or R2 paths',async()=>{
  const {raw,env,api}=dbFixture();
  const key=await browserKey();
- raw.prepare('INSERT INTO chat_members VALUES(?,?,1)').run('member:fer','Fer');
- const hash=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(token));
- const sessionHash=b64(new Uint8Array(hash)); // fixture will use the real sha256Hex hex below
- const hex=Array.from(new Uint8Array(hash),v=>v.toString(16).padStart(2,'0')).join('');
- raw.prepare('INSERT INTO chat_sessions VALUES(?,?,?)').run('member:fer',hex,Date.now()+600000);
- raw.prepare('INSERT INTO chat_single_device_owners VALUES(?,?)').run('member:fer',hex);
+
  assert.equal((await api('POST','/api/push/devices',
   {platform:'webpush',subscription:key.subscription})).status,201);
  const event={noticeId:crypto.randomUUID(),recipientId:'member:fer',kind:'chat.message',
