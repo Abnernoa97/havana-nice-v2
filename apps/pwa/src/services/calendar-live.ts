@@ -86,6 +86,6 @@ export function watchCalendar(token:string,admin:boolean,onInvalidate:(reason?:'
 }
 
 // Same private CalendarRoom transport; no new socket engine.
-export function watchRepertoire(token:string,admin:boolean,onInvalidate:(reason?:'fallback')=>void):()=>void{
+export function watchRepertoire(token:string,admin:boolean,onInvalidate:(reason?:'fallback'|'changed')=>void):()=>void{
  return watchCalendar(token,admin,onInvalidate,'repertoire');
 }
