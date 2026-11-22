@@ -51,7 +51,7 @@ function NativeMemberHome({displayName,actorId,token,active,calendarRevision=0,o
     active==='repertoire'?<NativeRepertoire token={token}/>:
     active==='musicians'?<NativeMusicians token={token}/>:
     active==='family'?<NativeFamily token={token}/>:
-    active==='notices'?<NativeNotices token={token}/>:
+    active==='notices'?<NativeNotices token={token} calendarRevision={calendarRevision}/>:
     active==='audio'?null:<View style={styles.pending}>
      <Text style={styles.pendingTitle}>Módulo en preparación</Text>
      <Text style={styles.pendingDescription}>Esta sección estará disponible próximamente.</Text>
