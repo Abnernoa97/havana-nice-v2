@@ -1,6 +1,6 @@
 import { handleAdminSessionApi, verifyAdminSession } from './modules/admin/admin-auth.js';
 import {handleAdminStorageSummary} from './modules/admin/admin-storage-summary.js';
-import {handleAudioApi} from './modules/audio/audio.js';
+import {handleAudioApi,cleanupExpiredAudioGrants} from './modules/audio/audio.js';
 import {handleAdminTrustedDevice} from './modules/admin/admin-trusted-device.js';
 import { adminSocketToken, adminTokenRequest, notifyAdminClients } from './modules/admin/admin-realtime.js';
 import {handleAdminChat} from './modules/admin/admin-chat.js';
@@ -291,5 +291,7 @@ export default {
   async scheduled(_event:ScheduledEvent,env:V2Env,ctx:ExecutionContext){
     // Reclaim expired stories independently of any musician opening HOME.
     ctx.waitUntil(cleanupExpiredStories(env,80));
+    // Keep Audio housekeeping outside musician requests and first playback.
+    ctx.waitUntil(cleanupExpiredAudioGrants(env,2000));
   },
 };
