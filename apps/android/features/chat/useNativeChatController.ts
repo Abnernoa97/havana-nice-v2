@@ -651,7 +651,7 @@ export function useNativeChatController(){
   },[]);
   const onTimelineContentChange=useCallback(()=>{
     if(initialHistoryPending.current)scheduleInitialBottom();
-    else if(autoScroll.current)scroll.current?.scrollToEnd({animated:false});
+    else if(autoScroll.current)scroll.current?.scrollToOffset({offset:0,animated:false});
   },[]);
   const onTimelineScrollBeginDrag=useCallback(()=>{
     userHasScrolled.current=true;
