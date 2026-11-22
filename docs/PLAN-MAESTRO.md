@@ -2,6 +2,12 @@
 
 **Estado verificado: 22 de noviembre de 2026.** Fuente de verdad: [GitHub](https://github.com/Abnernoa97/havana-nice-v2), rama única `main`. Mantener estado ACTUAL, sin mezclar hitos históricos. Historia detallada en Git; auditoría de código: [22/11](AUDITORIA-DEPURACION-2026-11-22.md).
 
+## QA Android 0.0.24 → 0.0.25 · 22/11/2026
+
+- [x] **Código:** Estados fijos en todos los módulos, roster recuperado de Estados activos; Chat al último mensaje y reacciones por pulsación real; Recuerdos 3D sin corte de controles; splash e inicio con logo oficial HN.
+- [x] **Pruebas:** estructura, TypeScript, Chat, HOME, Calendario, Audio, Estados y BOOK aprobados.
+- [ ] **APK 0.0.25:** firma/publicación y QA físico pendientes. No desinstalar la versión existente.
+
 ## Calendario sincronizado · 22/11/2026
 
 - [x] **Fechas:** 10 eventos con `date_sort` ausente corregidos en D1, 11/11 válidos entonces. Parser compartido es/EN para meses escritos; el texto original no cambia.
