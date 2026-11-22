@@ -9,3 +9,123 @@
  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]),
  textarea,select{font-size:16px!important}
 }
+
+
+/* iPhone installed PWA: Safari may ignore the manifest's portrait preference.
+ * Rotate only the MUSICIAN application canvas in landscape. The virtual
+ * portrait screen has the short physical side as its width, so HOME cannot
+ * silently turn into the desktop/sidebar layout when the phone turns.
+ * The web Admin, public visual preview and standalone BOOK entry are excluded.
+ * No touch interception: Chat, Stories and Audio still receive real gestures. */
+@media (orientation:landscape) and (hover:none) and (pointer:coarse) {
+ html.hn-pwa-portrait-landscape,
+ body.hn-pwa-portrait-landscape {
+  margin:0;width:100%;height:100%;overflow:hidden;
+ }
+ body.hn-pwa-portrait-landscape{position:fixed;inset:0;background:#0d2a23}
+ body.hn-pwa-portrait-landscape #root{
+  position:fixed;left:100dvw;top:0;
+  width:100dvh;height:100dvw;max-width:none;max-height:none;
+  margin:0;padding:0;overflow:hidden;transform-origin:top left;
+  transform:rotate(90deg);
+ }
+ body.hn-pwa-portrait-landscape.hn-pwa-portrait-ccw #root{
+  left:0;top:100dvh;transform:rotate(-90deg);
+ }
+ /* Preserve portrait page geometry, including the bottom bar. Physical
+    landscape CSS width is not the virtual width, so mobile breakpoints
+    alone cannot keep the layout on a phone. */
+ body.hn-pwa-portrait-landscape #root .member-chat-visible{height:100%;max-height:100%}
+ body.hn-pwa-portrait-landscape #root .chat-app{
+  height:100%;min-height:0;max-height:100%;
+ }
+ body.hn-pwa-portrait-landscape #root .visual-shell{
+  display:flex;flex-direction:column;height:100%;min-height:0;
+  max-width:none;max-height:100%;margin:0;padding:0;overflow:hidden
+ }
+ body.hn-pwa-portrait-landscape #root .visual-header{
+  flex:0 0 auto;position:relative;z-index:20;
+  padding:20px 20px 17px
+ }
+ body.hn-pwa-portrait-landscape #root .visual-layout{
+  display:block;flex:1 1 auto;height:auto;min-height:0;overflow:hidden
+ }
+ body.hn-pwa-portrait-landscape #root .visual-side{display:none}
+ body.hn-pwa-portrait-landscape #root .visual-content{
+  height:100%;min-height:0;padding:27px 18px 108px;
+  overflow-x:hidden;overflow-y:auto;overscroll-behavior-y:contain;
+  -webkit-overflow-scrolling:touch
+ }
+ body.hn-pwa-portrait-landscape #root .visual-bottom-nav{
+  display:grid;position:fixed;bottom:0;left:0;right:0;z-index:30;
+  grid-template-columns:repeat(6,minmax(0,1fr));
+  background:#fffcf7;border-top:1px solid #e4ddd1;
+  padding:8px 4px calc(8px + env(safe-area-inset-bottom))
+ }
+ body.hn-pwa-portrait-landscape #root .visual-bottom-nav button{
+  min-width:0;border:0;background:transparent;color:#708077;
+  display:flex;flex-direction:column;gap:3px;align-items:center;
+  padding:6px 0;border-radius:10px;font-size:10px
+ }
+ body.hn-pwa-portrait-landscape #root .visual-bottom-nav button span{font-size:21px}
+ body.hn-pwa-portrait-landscape #root .visual-bottom-nav button small{
+  font-size:9px;letter-spacing:-.035em
+ }
+ body.hn-pwa-portrait-landscape #root .visual-bottom-nav button.active{
+  color:#133b30;font-weight:800;background:#e7eee6
+ }
+ body.hn-pwa-portrait-landscape #root .hn-home-route .hn-home-viewport{
+  display:flex;flex-direction:column;min-height:0;
+  padding:5px 16px 0;overflow:hidden;background:#f7f0e8
+ }
+ body.hn-pwa-portrait-landscape #root .hn-home-route .hn-home-stage{
+  position:relative;top:auto;flex:0 0 auto;z-index:9;
+  min-height:0;margin-inline:-16px;padding-inline:16px;
+  background:#fff;isolation:isolate;overflow:visible
+ }
+ body.hn-pwa-portrait-landscape #root .hn-home-route .hn-home-stage:after{
+  content:"";position:absolute;left:0;right:0;bottom:-29px;
+  height:36px;z-index:2;pointer-events:none;
+  background:linear-gradient(to bottom,#fff 0%,#fff 18%,
+   rgba(255,255,255,.88) 38%,rgba(255,255,255,.52) 65%,
+   rgba(255,255,255,0) 100%)
+ }
+ body.hn-pwa-portrait-landscape #root .hn-home-route .hn-home-audio-scroll{
+  flex:1 1 auto;min-height:0;min-width:0;
+  margin-inline:-16px;padding-inline:16px;
+  overflow-x:hidden;overflow-y:auto;overscroll-behavior-y:contain;
+  -webkit-overflow-scrolling:touch;background:#f7f0e8
+ }
+ body.hn-pwa-portrait-landscape #root .hn-home-route .hn-home-audio-scroll:after{
+  content:"";display:block;height:96px
+ }
+ body.hn-pwa-portrait-landscape #root .hn-home-route .hn-moments-strip{
+  padding-top:3px;padding-bottom:2px
+ }
+ body.hn-pwa-portrait-landscape #root .hn-home-route .hn-audio-editorial{margin-top:0}
+ body.hn-pwa-portrait-landscape #root .hn-audio-parchment{padding:48px 14px 23px}
+ body.hn-pwa-portrait-landscape #root .hn-audio-paper-title h2{font-size:30px}
+ body.hn-pwa-portrait-landscape #root .hn-audio-paper-title p{font-size:12px}
+ body.hn-pwa-portrait-landscape #root .hn-audio-record-wrap{width:52%;max-width:220px}
+ body.hn-pwa-portrait-landscape #root .hn-audio-track{min-height:58px}
+ /* Stories use a body portal, outside #root. Give that portal the SAME
+    portrait transform so publishing and viewing do not turn sideways. */
+ body.hn-pwa-portrait-landscape > .hn-story-overlay,
+ body.hn-pwa-portrait-landscape > .hn-story-shower,
+ body.hn-pwa-portrait-landscape > .hn-photo-overlay{
+  position:fixed;inset:auto;left:100dvw;top:0;
+  width:100dvh;height:100dvw;max-width:none;max-height:none;
+  transform-origin:top left;transform:rotate(90deg)
+ }
+ body.hn-pwa-portrait-landscape.hn-pwa-portrait-ccw > .hn-story-overlay,
+ body.hn-pwa-portrait-landscape.hn-pwa-portrait-ccw > .hn-story-shower,
+ body.hn-pwa-portrait-landscape.hn-pwa-portrait-ccw > .hn-photo-overlay{
+  left:0;top:100dvh;transform:rotate(-90deg)
+ }
+ body.hn-pwa-portrait-landscape > .hn-story-overlay .hn-story-viewer{
+  height:100%!important;max-height:100%!important
+ }
+ body.hn-pwa-portrait-landscape > .hn-story-overlay .hn-story-publish{
+  max-height:92%
+ }
+}
