@@ -266,3 +266,19 @@
  opacity:.52}
 .hn-home-route .hn-audio-parchment{min-height:max(720px,calc(100dvh - 185px))}
 .hn-home-route .visual-content{background:#f7f0e8}
+
+/* Flower definition: do not blur or stretch the hibiscus decoration. The
+   source is transparent; raising local contrast makes petals legible at 2x. */
+.hn-audio-player .hn-audio-flowers{
+ background-size:100% 100%;
+ image-rendering:-webkit-optimize-contrast;
+ filter:contrast(1.32) saturate(1.16);
+ transform:translateZ(0);
+}
+.hn-home-route .hn-audio-paper-corner{opacity:.6}
+@media(max-width:750px){
+ .hn-home-route .hn-audio-player .hn-audio-flowers{
+  width:112%;left:-6%;top:-6px;max-width:none;
+ }
+ .hn-home-route .hn-audio-record-wrap{z-index:2}
+}
