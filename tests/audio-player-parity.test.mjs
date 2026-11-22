@@ -32,7 +32,10 @@ test('PWA uses artwork from R2 and HTML media session without mock songs',()=>{
  assert.match(metadata,/name==='APIC'/);
  assert.match(metadata,/file\.slice\(0,2\*1024\*1024\)/);
  assert.match(shared,/privateAudioUrl/);
- assert.match(shell,/MemberAudio token=\{token\} active=\{screen==='audio'\}/);
+ assert.match(shell,/MemberAudio token=\{token\} active=\{screen==='audio'\|\|screen==='home'\}/);
+ assert.match(pwa,/hn-audio-vinyl\.is-playing/);
+ assert.match(pwa,/hn-audio-paper-tear/);
+ assert.match(pwa,/hn-audio-flower/);
  assert.doesNotMatch(pwa+shared,/https?:\/\/(?:example\.com|music\.mp3|testaudio)/);
 });
 test('Android OS player uses the same cover and MediaSession with audio background enabled',()=>{
@@ -44,6 +47,15 @@ test('Android OS player uses the same cover and MediaSession with audio backgrou
  assert.match(native,/shouldPlayInBackground:true/);
  assert.match(native,/getAudioTracks\(token\)/);
  assert.match(native,/onRequestClose=\{onClose\}/);
+ const visual=read('apps/android/features/audio/NativeAudioEditorialView.tsx');
+ const bridge=read('apps/android/features/audio/nativeAudioStore.ts');
+ const layout=read('apps/android/app/NativeMemberHome.tsx');
+ assert.match(native,/publishNativeAudio/);
+ assert.match(native,/useAudioPlaylist/);
+ assert.match(visual,/NATIVE_AUDIO_EDITORIAL_HTML/);
+ assert.match(visual,/sendNativeAudioCommand/);
+ assert.match(bridge,/useSyncExternalStore/);
+ assert.match(layout,/<NativeAudioEditorialView inline\/>/);
  const audio=app.expo.plugins.find(p=>Array.isArray(p)&&p[0]==='expo-audio');
  assert.equal(audio[1].enableBackgroundPlayback,true);
  assert.equal(app.expo.version,'0.0.23','do not generate an Android version bump during the feature batch');
