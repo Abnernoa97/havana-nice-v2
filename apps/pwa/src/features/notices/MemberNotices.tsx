@@ -33,6 +33,13 @@ export default function MemberNotices({token,calendarRevision=0}:{token:string;c
  useEffect(()=>{if(calendarRevision>0)void refresh();},[calendarRevision,refresh]);
  // Reuse the authenticated Familia invalidation socket only on this active tab.
  useFamilyLive(token,false,()=>{void refresh();});
+ const updateInstalledPwa=async()=>{
+  // Revalidate the public service worker and reload the shell. No logout,
+  // local database reset, app deletion, or notification permission reset.
+  try{await navigator.serviceWorker?.getRegistration().then(reg=>reg?.update());}
+  catch{/* A normal network-first reload is still useful. */}
+  window.location.reload();
+ };
  const mark=async(id?:string)=>{
   try{await markMemberNoticesRead(token,id);await refresh();}
   catch(e){setError(e instanceof Error?e.message:'No se pudo marcar como leído.');}
@@ -40,7 +47,7 @@ export default function MemberNotices({token,calendarRevision=0}:{token:string;c
  return <section className="hn-notices" aria-label="Notificaciones privadas del equipo">
   <div className="hn-notices-header">
    <div><h2>Tu actividad</h2><p>{unread} {unread===1?'aviso sin leer':'avisos sin leer'}</p></div>
-   <button type="button" onClick={()=>void refresh()}>Actualizar</button>
+   <button type="button" onClick={()=>void refresh()}>Actualizar actividad</button>
   </div>
   <div className="hn-push-control" role="status">
    {push.state==='enabled'?<>
@@ -52,10 +59,13 @@ export default function MemberNotices({token,calendarRevision=0}:{token:string;c
     <button type="button" onClick={()=>void push.enable()}>Activar notificaciones</button>
    </>:push.state==='blocked'?
     <span>Las notificaciones están bloqueadas. Actívalas en los ajustes del teléfono.</span>:
-    push.state==='unavailable'?
-    <span>{pwaPushUnavailableMessage()}</span>:
-    push.state==='pending'?
-    <span>La entrega de notificaciones al teléfono está pendiente de configuración.</span>:
+    push.state==='unavailable'?<>
+    <span>{pwaPushUnavailableMessage()}</span>
+    <button type="button" onClick={()=>void updateInstalledPwa()}>Actualizar PWA</button>
+   </>:push.state==='pending'?<>
+    <span>La entrega de notificaciones al teléfono está pendiente de configuración.</span>
+    <button type="button" onClick={()=>void updateInstalledPwa()}>Actualizar PWA</button>
+   </>:
     push.state==='error'?
     <button type="button" onClick={()=>void push.enable()}>Reintentar activación</button>:
     <span>Comprobando notificaciones del teléfono…</span>}
