@@ -21,6 +21,8 @@ test('Android FCM is part of the SINGLE native shell, not a new login or Chat so
  assert.match(hook,/Notifications\.requestPermissionsAsync\(\)/);
  assert.match(hook,/Storage\.setItem\(PUSH_DISABLED_KEY,'1'\)/);
  assert.match(hook,/Storage\.getItem\(PUSH_DISABLED_KEY\)/);
+ assert.match(hook,/requestPush\(token,'POST','\/api\/push\/test'\)/);
+ assert.match(notices,/push\.test\(\)/);
  assert.match(hook,/Notifications\.getPermissionsAsync\(\)/);
  assert.match(hook,/Authorization:'Bearer '\+token/);
  assert.match(hook,/platform:'android-fcm'/);
