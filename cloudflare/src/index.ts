@@ -14,6 +14,7 @@ import {handleFamilyApi} from './modules/family/family.js';
 import {handleProfileApi} from './modules/profile/profile.js';
 import {handleStoriesApi,cleanupExpiredStories} from './modules/stories/stories.js';
 import {handleMemberNotices} from './modules/notices/member-notifications.js';
+import {handleMemberPushApi} from './modules/notices/push-center.js';
 import {handleBookApi} from './modules/book/book.js';
 import {notifyFamilyClients} from './modules/family/family-realtime.js';
 import {handleChatMedia,readChatMedia,decorateChatMessages} from './modules/chat/chat-media.js';
@@ -129,6 +130,9 @@ export default {
     // Authenticated, recipient-scoped notifications. Reuse the musician session.
     if(url.pathname==='/api/notices'||url.pathname==='/api/notices/read')
       return handleMemberNotices(request,env,url,origin,verifySession);
+    // ONE private device registry for native FCM and iPhone PWA Web Push.
+    if(url.pathname.startsWith('/api/push/'))
+      return handleMemberPushApi(request,env,url,origin,verifySession);
     // Ephemeral photo stories have independent storage, reads and 24h expiry.
     if(url.pathname.startsWith('/api/stories/'))
       return handleStoriesApi(request,env,url,origin,verifySession,ctx);
