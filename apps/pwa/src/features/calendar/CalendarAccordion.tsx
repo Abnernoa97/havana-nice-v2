@@ -36,7 +36,7 @@ export default function CalendarAccordion({token}:{token:string}){
   return()=>{stop();pending.current?.abort();pending.current=null;};
  },[token,refresh]);
  return <section className="hn-cal-list" aria-label="Fechas de trabajo">
-  <div className="hn-cal-bar"><strong>Eventos · Fechas de trabajo</strong>
+  <div className="hn-cal-bar">
    <button type="button" onClick={()=>void refresh()}>Actualizar</button></div>
   {error&&<p role="alert" className="hn-cal-error">{error}</p>}
   {loading?<p className="hn-cal-empty">Cargando tus fechas…</p>:!events.length?
