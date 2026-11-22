@@ -44,7 +44,9 @@ test('PWA uses artwork from R2 and HTML media session without mock songs',()=>{
  assert.match(pwa,/recoverMedia/);
  assert.match(pwa,/recoveryTried/);
  assert.match(pwa,/onLoadedMetadata=/);
- assert.match(cachedArtwork,/canvas\.toDataURL\('image\/jpeg'/);
+ assert.doesNotMatch(cachedArtwork,/canvas\.toDataURL|document\.createElement\('canvas'\)/);
+ assert.match(cachedArtwork,/image\.decode\(\)/);
+ assert.match(cachedArtwork,/URL\.revokeObjectURL\(display\)/);
  assert.match(cachedArtwork,/URL\.createObjectURL/);
 
  assert.match(pwa,/onPlay=\{\(\)=>setPlaying\(true\)\}/);
