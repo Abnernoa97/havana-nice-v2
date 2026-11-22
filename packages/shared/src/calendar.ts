@@ -55,7 +55,7 @@ export function calendarSortDate(input:string):string|null{
  const words=/^(\d{1,2})\s*(?:(?:de|del|d)\s+)?([a-z]+)\.?\s*(?:(?:de|del|d)\s+)?(\d{2}|\d{4})$/.exec(value);
  if(iso){year=Number(iso[1]);month=Number(iso[2]);day=Number(iso[3]);}
  else if(numeric){year=Number(numeric[3]);month=Number(numeric[2]);day=Number(numeric[1]);}
- else if(words){year=Number(words[3]);if(year<100)year+=2000;month=CALENDAR_MONTHS[words[2]]||0;day=Number(words[1]);}
+ else if(words){year=Number(words[3]);if(year<100)year+=2000;month=CALENDAR_MONTHS[words[2]||'']||0;day=Number(words[1]);}
  else return null;
  if(year<1900||year>2100||month<1||month>12||day<1||day>31)return null;
  const date=new Date(Date.UTC(year,month-1,day));
