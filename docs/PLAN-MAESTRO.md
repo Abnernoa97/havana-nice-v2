@@ -1,6 +1,6 @@
 # HAVANA NICE V2 — PLAN MAESTRO ÚNICO
 
-**Estado de desarrollo: 21 de noviembre de 2026.** Fuente de verdad: repositorio [Abnernoa97/havana-nice-v2](https://github.com/Abnernoa97/havana-nice-v2), rama `main`. Este documento describe lo **vigente**; las versiones anteriores están en el historial de Git, sin copiar expedientes obsoletos dentro del árbol actual. Actualizar este archivo en el mismo commit de cada bloque concluido.
+**Estado verificado: 22 de noviembre de 2026.** Fuente de verdad: [GitHub](https://github.com/Abnernoa97/havana-nice-v2), rama única `main`. Mantener estado ACTUAL, sin mezclar hitos históricos. Historia detallada en Git; auditoría de código: [22/11](AUDITORIA-DEPURACION-2026-11-22.md).
 
 ## HOME/Audio iPhone · 22/11/2026
 
@@ -9,6 +9,13 @@
 - [x] **iPhone:** bloqueo reversible del scroll del documento solo en HOME; elimina rebote de la franja blanca sin tocar Estados, Chat o BOOK.
 - [x] **Android:** Estados fijos y degradado en código; nueva APK NO autorizada. Pendiente QA físico iPhone/Android y confirmar publicación del último bloque.
 - [x] **Vertical iPhone:** PWA músico instalada solicita `portrait-primary` e incorpora lienzo vertical con rotación CSS cuando Safari gira; portales de Estados incluidos. Expo Android ya fija `portrait`. Respeta BOOK independiente. **Pendiente:** prueba física en iPhone (Safari puede ignorar bloqueo nativo).
+
+## Depuración estructural · 22/11/2026
+
+- [x] **Audio:** retirados 21 estilos de adornos ocultos y su DOM, conservando gráficos reales, portada privada, vinilo y PageFlip; test de regresión actualizado.
+- [x] **PWA:** lógica/CSS de orientación del iPhone aislados en `features/viewport/`; regla común móvil devuelta a su tamaño original. Una sola rama `main`, cero PR abiertos.
+- [ ] **Siguiente limpieza:** reducir reglas CSS superpuestas HOME/Audio sin alterar acabado aprobado; auditar controladores Chat y discrepancia entre Worker de Audio en `main` y despliegue real.
+- **Registro de evidencias y límites:** [auditoría del 22/11](AUDITORIA-DEPURACION-2026-11-22.md). No declarar todo el repositorio 100 % depurado por una compilación exitosa.
 
 ## Lote acumulativo en `main` · 21/11 · SIN nueva APK
 
@@ -104,9 +111,9 @@ tests/ + cloudflare/tests/ + scripts/ → reglas de seguridad y CI
 | GitHub Actions | **2** workflows: `v2-foundation-check.yml` (compilación y QA) y `v2-android-apk.yml` (solo lote explícitamente aprobado) |
 | CI de todos los módulos + pruebas contra Worker v66 en vivo | **SUCCESS**, [ejecución 42451952817, segundo intento](https://github.com/Abnernoa97/havana-nice-v2/actions/runs/42451952817) |
 | Cloudflare Pages | publica `main`; comprobar SHA/deploy tras cada cambio |
-| Worker **en vivo** | **Carátulas de Chat, 12/11** `96100737-ce2d-4056-bb1e-bc00bd7067e6` al 100 %. Worker v66 `87e6d28a-f1eb-43ed-974b-eb1884198533` preservado para reversión. Siete bindings equivalentes, sin nueva D1 ni otro R2. |
-| Worker **en código** | Refactor publicado a v66 desde el bundle canónico Wrangler `SHA-256 0f67b065b8232a9adb1902711eb8850771ba17b3363dbbcbb8b5c135f714d02d`, idéntico en CI; mantiene los siete bindings y el mismo DO. |
-| Android | APK **0.0.21** publicada [aquí](https://github.com/Abnernoa97/havana-nice-v2/releases/download/v2-android-current/HAVANA-NICE-V2-LATEST.apk); firma 0.0.20 compatible, JS integrado, `versionCode` 21 y descarga estable verificados en [CI 42571102335](https://github.com/Abnernoa97/havana-nice-v2/actions/runs/42571102335). APK 0.0.20 preservada como PREVIOUS; BOOK 3D confirmado por usuario en Android, Recuerdos en QA pendiente. |
+| Worker **en vivo** | `havana-nice-v2-dev`: despliegue Cloudflare `d2558394-4c4a-4140-ab44-1c79bc4c9ac6` / versión `de7e23ad-23f0-4e57-ac1f-d6df222e04be`, comprobado 22/11. **No equivale a los commits actuales del backend de Audio en `main`**. No promover sin Wrangler y pruebas. |
+| Worker **en código** | Contiene correcciones de grants/audio posteriores a la versión desplegada. Revisar bundle canónico, CI y reversión antes de publicar. |
+| Android | APK firmada **0.0.23**, `versionCode` 23 en fuente; NO generar versión siguiente sin aprobación. Las correcciones de HOME/Audio posteriores siguen sin incluirse en APK. BOOK 3D preservado. |
 | Colas R2 | BOOK, Calendario y baja de músicos: **0** operaciones pendientes al control |
 | Fotos personales | Calendario 4 recuerdos (3 WebP), BOOK 7 originales (0 WebP), Familia 16 archivos al control |
 
@@ -123,7 +130,7 @@ tests/ + cloudflare/tests/ + scripts/ → reglas de seguridad y CI
 - [x] **A6 Prueba offline de fragmentos PWA:** caché de chunks previamente visitados, fallo explícito de recursos no descargados y sin almacenar APIs privadas. **No equivale a validación iPhone sin conexión**.
 - [x] **A7 Datos y borrados R2 auditados:** todas las colas consultadas en 0, límites compartidos vigentes; no ejecutar borrado innecesario.
 - [x] **A8 Documentación consolidada:** un plan vigente y continuidad breve; notas obsoletas no deben quedar como segundo estado contradictorio. Git conserva la trazabilidad de cambios antiguos.
-- [x] **A8b Estado operativo alineado (09/11):** README, continuidad y Plan Maestro reflejan Worker v66 desplegado y APK 0.0.21 firmada/publicada, **BOOK en Android/PWA confirmado por usuario; Recuerdos y QA entre módulos pendientes**. No se tocó código, sesión, D1, R2 ni producción ajena.
+
 - [x] **C5 Músicos / HOME:** directorio privado funcional con nombres reales de integrantes activos, en PWA y Android; usa la autoridad D1 y eventos privados ya existentes de Familia, sin duplicar tabla, sesiones ni Worker. Perfiles ampliados aún pendientes.
 - [x] **C4 Repertorio:** panel Admin descarta resultados de consultas antiguas y detecta expiraciones HTTP 401 originadas por Calendario. Sin cambiar tablas ni listas de canciones.
 - [x] **C3 Familia / Multimedia:** recuperación de WebSocket atascado al cambiar de red en iPhone y Android mediante timeout compartido; pruebas de paridad añadidas. Sin cambiar subida R2.
@@ -147,8 +154,6 @@ tests/ + cloudflare/tests/ + scripts/ → reglas de seguridad y CI
 - [x] **Auditoría de estructura:** árbol exacto y detección de código huérfano / importaciones rotas en `scripts/check-structure.mjs`. Se actualizaron las pruebas para inspeccionar el controlador real, no la entrada reducida.
 - [x] **Chat Android, primera optimización de render:** mensajes con `FlatList` virtualizada (`windowSize=7`, lotes limitados) para no montar todas las fotos/videos del historial; claves estables, paginación manual y posición visible preservadas; no cambiar sesión, D1, R2 ni caché. Requiere QA física de desplazamiento/60 FPS.
 - [ ] **Optimización posterior de Chat:** el controlador sigue siendo grande, pero el timeline YA usa `FlatList`; dividir el controlador restante únicamente tras comprobar desplazamiento, gestos, multimedia y memoria en Android real. No confundir organización con FPS medidos.
-
-- [x] **PWA: presentación de acceso aislada (20/11):** `App.tsx` pasó de 843 a 826 líneas; `PwaMemberAccessPanel.tsx` presenta restauración, acceso denegado de BOOK y entrada por nombre. La sesión, WebSocket, reconexión, rutas, la cola offline y la autorización permanecen en `App.tsx`; comprobación de build Pages exitosa en `bdc018c`. Se incorpora una prueba de límites de responsabilidad. QA física de sesión y modo avión sigue pendiente.
 
 - [x] **PWA `App.tsx` reorganizado (20/11):** entrada de 9 líneas. `usePwaChatController.ts` conserva sesión única, socket, historial, ACK y offline; `PwaChatSurface.tsx` contiene UI; navegación/historial y carga R2/progreso están en sus hooks propios. Galería e IndexedDB intactos. Estructura, TypeScript y postbuild bloquean errores; falta QA físico integral.
 
@@ -178,7 +183,7 @@ tests/ + cloudflare/tests/ + scripts/ → reglas de seguridad y CI
 ## 6. BOOK y Recuerdos 3D — estado consolidado
 
 - [x] **Motor único:** StPageFlip compartido entre BOOK y Recuerdos; el lector /book recibe la sesión Android por el puente de memoria tras el mensaje boot, sin otro login, token en URL ni segundo motor.
-- [x] **Gesto y vuelta de página:** avance y retroceso, esquina física correcta, deslizamiento horizontal fluido y scroll vertical preservados. BOOK Android/PWA confirmado por el usuario con APK firmada **0.0.21**. CI y experimentos anteriores permanecen en el historial Git.
+- [x] **Gestos del BOOK 3D:** se conserva el lector StPageFlip con avance/retroceso y scroll vertical; funcionamiento confirmado anteriormente por el usuario. El lector independiente no recibe la rotación visual de la PWA. QA de Recuerdos sigue pendiente.
 - [ ] **Recuerdos:** verificar en Android/iPhone el libro de una fecha realizada, cierre y retorno al Calendario. No generar una APK por cada corrección ni tocar datos privados.
 
 ## 7. Limpieza estructural y línea única (09/11/2026)
@@ -187,10 +192,10 @@ tests/ + cloudflare/tests/ + scripts/ → reglas de seguridad y CI
 - [x] **Sin código fuente huérfano conocido:** `check:structure` recorre importaciones normales y lazy de PWA, Android, Worker y paquete compartido; la CI vigente es verde. Se conserva la historia de migraciones D1: no es basura.
 - [x] **Sin instrucciones de versiones obsoletas:** retiradas de este Plan Maestro las notas ejecutables de APK 0.0.14–0.0.16 y el puente `injectedJavaScriptObject` sustituido. La trazabilidad permanece en el historial Git.
 - [x] **Nueva protección de una línea:** la CI consulta directamente GitHub y falla si aparecen ramas adicionales a `main` o PR abiertos. Se conserva el mismo workflow, no se crea otro.
-- [x] **NativeApp.tsx separado (20/11):** entrada nativa de 917 a 10 líneas. Controlador único `features/chat/useNativeChatController.ts` para sesión/socket/outbox; `NativeChatSurface.tsx` exclusivamente UI; `useNativeChatViewport.ts` para scroll; `hooks/useNativeMemberNavigation.ts` para botón Atrás/gestos. `chatPendingMedia.ts` era código activo, no basura; actualizada la verificación estructural. **Cloudflare Build `b0cb0fab`: 300/300 tests, TypeScript de los tres workspaces y compilación PWA PASS; Worker y APK no modificados en este bloque.** APK 0.0.21 instalada permanece igual, QA Android físico pendiente.
+- [x] **Android modular:** entrada `NativeApp.tsx` mínima, controlador Chat único en `features/chat/useNativeChatController.ts`; UI, viewport y navegación en archivos independientes. No se generó APK durante esta limpieza; conservar experiencia de la 0.0.23 hasta QA.
 - [x] **HOME PWA desacoplado (20/11):** la vista `features/home/MemberHome.tsx` se carga bajo demanda desde `VisualApp.tsx`, sin WebSocket, sesión propia ni almacenamiento. Se conservan las mismas tarjetas, botón de Inicio, navegación y restricciones de vista previa. Chat sigue siendo el controlador inicial y su conexión se mantiene independiente de HOME.
 - [ ] **QA HOME en iPhone PWA:** entrada, retorno desde Chat, cambio rápido de módulos y actualización del Service Worker, con y sin conexión.
 - [ ] **Cloudflare index.ts:** ~270 líneas. Ya es el único router de dominio; auditar acoplamientos y extraer únicamente responsabilidades realmente mezcladas, sin fragmentar por estética ni alterar Worker vivo.
-- [x] **Residuos de repositorio:** 210 archivos versionados al control, 112 archivos de fuente; ningún par de blobs idénticos duplicados y ningún APK, build, log o respaldo accidental versionado. Las 23 migraciones D1 son historia aplicada y se conservan.
+- [x] **Inventario 22/11:** 361 archivos en `main` al primer control, 30 migraciones D1 históricas y **cero archivos idénticos por SHA**. Este control no descarta duplicaciones funcionales; ver auditoría de código. No borrar migraciones ni respaldos de usuarios.
 - [ ] **QA física de integración:** Recuerdos/Calendario, Chat, Repertorio y Familia entre Admin/PWA/Android. Aún no afirmar sincronización total.
 
