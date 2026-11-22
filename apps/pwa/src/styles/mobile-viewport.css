@@ -129,3 +129,18 @@
   max-height:92%
  }
 }
+
+/* The dedicated BOOK reader owns its PageFlip geometry and gestures. When
+   opened from the musician session, restore its original, untransformed
+   viewport instead of applying the visual portrait frame to its pages. */
+@media (orientation:landscape) and (hover:none) and (pointer:coarse) {
+ html.hn-pwa-portrait-landscape:has(body #root main[aria-label="Lector HAVANA NICE"]),
+ body.hn-pwa-portrait-landscape:has(#root main[aria-label="Lector HAVANA NICE"]){
+  position:static;height:auto;max-height:none;overflow:auto
+ }
+ body.hn-pwa-portrait-landscape:has(#root main[aria-label="Lector HAVANA NICE"]) #root{
+  position:static;inset:auto;left:auto;top:auto;
+  width:100%;height:auto;max-height:none;overflow:visible;
+  transform:none
+ }
+}
