@@ -39,10 +39,10 @@ function NativeMemberHome({displayName,actorId,token,active,onNavigate}:Props){
    accessibilityLabel="Private Listening Lounge">
     <NativeAudioEditorialView inline/>
   </View>:<>
-   <Pressable accessibilityRole="button" accessibilityLabel="Volver a Inicio"
-    style={styles.back} onPress={()=>onNavigate('home')}><Text style={styles.backLabel}>‹ Inicio</Text></Pressable>
-   <Text style={styles.title}>{selected?.label||'Módulo'}</Text>
-   <Text style={styles.lead}>{selected?.description}</Text>
+   {active!=='calendar'&&<Pressable accessibilityRole="button" accessibilityLabel="Volver a Inicio"
+    style={styles.back} onPress={()=>onNavigate('home')}><Text style={styles.backLabel}>‹ Inicio</Text></Pressable>}
+   <Text style={styles.title}>{active==='calendar'?'Calendario':selected?.label||'Módulo'}</Text>
+   {active!=='calendar'&&<Text style={styles.lead}>{selected?.description}</Text>}
    {active==='repertoire'&&<Pressable accessibilityRole="button" accessibilityLabel="Abrir Audio HAVANA NICE"
      onPress={()=>onNavigate('audio')} style={styles.openAudio}>
      <Text style={styles.openAudioLabel}>♫  Abrir Audio HAVANA NICE</Text>
