@@ -13,10 +13,12 @@ export function useNativeStories(token:string,refreshVersion:number){
  const [saving,setSaving]=useState(false);
  const latest=useRef(0),mounted=useRef(true);
  const grants=useRef(new Map<string,{url:string;createdAt:number;expiresAt:number;issuedAt:number}>());
- const retried=useRef(new Set<string>());
+ // Bounded recovery of expired/failed R2 photo capabilities. Never pin a
+ // failed image URL for another eight minutes or retry indefinitely.
+ const failedPhotos=useRef(new Map<string,{attempts:number;since:number}>());
  const previousToken=useRef(token);
  if(previousToken.current!==token){
-  previousToken.current=token;grants.current.clear();retried.current.clear();
+  previousToken.current=token;grants.current.clear();failedPhotos.current.clear();
  }
  const refresh=useCallback(async()=>{
   const seq=++latest.current;
@@ -26,7 +28,9 @@ export function useNativeStories(token:string,refreshVersion:number){
    // Team reactions invalidate the roster, but an unchanged photo keeps its
    // original 10-minute capability for 8 minutes. Do not re-download R2.
    const now=Date.now(),ids=new Set(found.map(st=>st.id));
-   for(const id of grants.current.keys())if(!ids.has(id))grants.current.delete(id);
+   for(const id of grants.current.keys())if(!ids.has(id)){
+    grants.current.delete(id);failedPhotos.current.delete(id);
+   }
    const stable=found.map(st=>{
     const old=grants.current.get(st.id);
     if(old&&old.createdAt===st.createdAt&&old.expiresAt===st.expiresAt&&
@@ -113,8 +117,24 @@ export function useNativeStories(token:string,refreshVersion:number){
   finally{setSaving(false);}
  },[token,saving,refresh]);
  const retryPhoto=useCallback((id:string)=>{
-  if(!id||retried.current.has(id))return;
-  retried.current.add(id);grants.current.delete(id);void refresh();
+  if(!id)return;
+  const now=Date.now();
+  const prior=failedPhotos.current.get(id);
+  const recent=prior&&now-prior.since<60_000;
+  if(recent&&prior.attempts>=2){
+   setError('No se pudo cargar la fotografía. Pulsa Actualizar estados.');
+   return;
+  }
+  failedPhotos.current.set(id,{attempts:recent?prior.attempts+1:1,
+   since:recent?prior.since:now});
+  // The currently cached grant failed: force a NEW signed URL, even if the
+  // eight-minute pin would ordinarily keep the stale one.
+  grants.current.delete(id);
+  void refresh();
  },[refresh]);
- return {stories:stories.filter(st=>st.expiresAt>Date.now()),error,saving,publish,remove,refresh,retryPhoto};
+ const retryAll=useCallback(()=>{
+  failedPhotos.current.clear();grants.current.clear();
+  void refresh();
+ },[refresh]);
+ return {stories:stories.filter(st=>st.expiresAt>Date.now()),error,saving,publish,remove,refresh,retryPhoto,retryAll};
 }
