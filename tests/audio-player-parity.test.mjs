@@ -57,7 +57,9 @@ test('PWA uses artwork from R2 and HTML media session without mock songs',()=>{
  assert.match(proxy,/onRequestGet/);
  assert.match(proxy,/onRequestHead/);
 
- assert.match(pwa,/onPlay=\{\(\)=>setPlaying\(true\)\}/);
+ assert.match(pwa,/onPlay=\{\(\)=>\{requestedPlay\.current=true;setBuffering\(true\);\}\}/);
+ assert.match(pwa,/onPlaying=\{\(\)=>\{requestedPlay\.current=true;setPlaying\(true\);setBuffering\(false\);\}\}/);
+ assert.match(pwa,/onWaiting=\{\(\)=>\{setPlaying\(false\);setBuffering\(true\);\}\}/);
  assert.doesNotMatch(pwa,/onWaiting=\{\(\)=>setPlaying\(false\)\}/);
  const css=read('apps/pwa/src/features/audio/audio-player.css');
  const html=read('apps/android/features/audio/nativeAudioEditorialHtml.ts');
@@ -230,4 +232,37 @@ test('HOME keeps the story strip stationary while only Audio moves, in PWA and A
  assert.match(native,/<ScrollView style=\{styles\.root\} contentContainerStyle=\{styles\.content\}/);
  assert.match(native,/accessibilityRole="tablist"/);
  assert.match(book,/PageFlip|book/);
+});
+
+test('iPhone Audio starts on the real user gesture and never shows a false red autoplay warning',()=>{
+ const pwa=read('apps/pwa/src/features/audio/MemberAudio.tsx');
+ const cover=read('apps/pwa/src/features/audio/audio-cover-cache.ts');
+ assert.match(pwa,/const playTrack=\(position:number\)=>\{/);
+ assert.match(pwa,/audio\.preload='auto';audio\.src=url;/);
+ assert.match(pwa,/setSelected\(position\);\s*void audio\.play\(\)/);
+ assert.match(pwa,/if\(error instanceof Error&&error\.name==='NotAllowedError'\)return/);
+ assert.doesNotMatch(pwa,/Toca reproducir para escuchar el audio/);
+ assert.match(pwa,/\{!!error&&!current&&<p className="hn-audio-error"/);
+ assert.match(pwa,/aria-busy=\{isBuffering\}/);
+ assert.match(pwa,/onClick=\{\(\)=>\{if\(i!==selected\)playTrack\(i\);else toggle\(\);\}\}/);
+ assert.match(pwa,/preload="metadata"/);
+ assert.match(pwa,/const wanted=tracks\.filter\(t=>!!art\(t\.coverUrl\)\)\.slice\(0,4\)/);
+ assert.match(pwa,/void prepare\(\)/);
+ assert.doesNotMatch(cover,/localStorage|sessionStorage/);
+});
+
+test('iPhone HOME locks only the page shell, preserving independent Audio scroll and STORY overlays',()=>{
+ const view=read('apps/pwa/src/app/VisualApp.tsx');
+ const home=read('apps/pwa/src/styles/home/home.css');
+ const stage=read('apps/pwa/src/features/home/home-stage.css');
+ assert.match(view,/useLayoutEffect\(\(\)=>\{/);
+ assert.match(view,/if\(screen!=='home'\)return/);
+ assert.match(view,/document\.documentElement\.classList\.add\('hn-home-viewport-lock'\)/);
+ assert.match(view,/document\.body\.classList\.remove\('hn-home-viewport-lock'\)/);
+ assert.match(home,/body\.hn-home-viewport-lock\{[\s\S]*?position:fixed;inset:0/);
+ assert.match(home,/\.hn-home-viewport-lock \.hn-home-route\{[\s\S]*?padding-top:env\(safe-area-inset-top\)/);
+ assert.match(stage,/\.hn-home-route \.hn-home-audio-scroll\{[\s\S]*?overflow-x:hidden;overflow-y:auto/);
+ assert.doesNotMatch(home,/html:has\(\.hn-home-route\)/);
+ const story=read('apps/pwa/src/features/stories/MemberStories.tsx');
+ assert.match(story,/createPortal\(/);
 });
