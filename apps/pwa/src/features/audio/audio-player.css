@@ -72,7 +72,8 @@
 .hn-audio-vinyl{position:relative;display:grid;place-items:center;width:100%;height:100%;
  border-radius:50%;overflow:hidden;transform:translateZ(0);
  border:3px solid #c8a365;box-shadow:0 0 0 4px #ffffff95,0 0 0 8px #d3b78055,0 16px 27px #61452b48}
-.hn-audio-vinyl.is-playing{animation:hn-vinyl-turn 7s linear infinite}
+.hn-audio-vinyl{animation:hn-vinyl-turn 7s linear infinite;animation-play-state:paused}
+.hn-audio-vinyl.is-playing{animation-play-state:running}
 .hn-audio-vinyl img{display:block;width:100%;height:100%;object-fit:cover;border-radius:50%;
  pointer-events:none;user-select:none}
 .hn-audio-monogram{background:#173c2b;color:#d8c6a0;font:700 clamp(42px,12vw,85px) Georgia,serif;
