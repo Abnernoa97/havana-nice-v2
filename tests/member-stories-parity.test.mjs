@@ -87,6 +87,6 @@ test('Five-photo selection, stable image and timer stay independent of the 3D BO
  assert.match(nativeHook,/\/api\/stories\/me\/batch/);
  assert.match(nativeViewer,/STORY_PLAYBACK_MS/);
  assert.match(nativeViewer,/Animated.timing\(progress/);
- assert.match(native,/person\.photoUrl\|\|last\?\.photoUrl/);
+ assert.match(native,/last\?\.photoUrl\|\|person\.photoUrl/);
  assert.match(native,/for\(const story of states\.stories\)/);
 });
