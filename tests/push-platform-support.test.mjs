@@ -17,4 +17,15 @@ test('PWA distinguishes unsupported Android contexts from iOS Home Screen requir
  assert.match(ui,/pwaPushUnavailableMessage\(\)/);
  assert.doesNotMatch(ui,/Para recibir avisos en iPhone, añade HAVANA NICE a la pantalla de inicio/);
  assert.match(ui,/avisos sin leer/);
+ assert.match(ui,/Actualizar PWA/);
+ assert.match(ui,/updateInstalledPwa/);
+ assert.match(ui,/Actualizar actividad/);
+ const entry=read('apps/pwa/src/app/main.tsx');
+ const worker=read('apps/pwa/public/sw.js');
+ assert.match(entry,/updateViaCache:'none'/);
+ assert.match(entry,/controllerchange/);
+ assert.match(entry,/window\.location\.reload\(\)/);
+ assert.match(worker,/havana-nice-v2-static-v5/);
+ assert.match(worker,/caches\.delete/);
+ assert.doesNotMatch(worker,/auth_token|localStorage\.clear\(/);
 });
