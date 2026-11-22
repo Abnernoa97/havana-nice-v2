@@ -33,12 +33,15 @@ export default function MemberAudio({token,active=true}:{token:string;active?:bo
  // lock-screen session. Do not interrupt an actively playing track.
  useEffect(()=>{
   const check=()=>{
-   if(document.visibilityState==='visible'&&ref.current?.paused&&
-    Date.now()-lastCatalogFetch.current>40*60*1000)void refresh();
+   if(document.visibilityState!=='visible'||!ref.current?.paused||
+    Date.now()-lastCatalogFetch.current<=40*60*1000)return;
+   if(current&&ref.current.currentTime>0)
+    pendingSeek.current={id:current.id,time:ref.current.currentTime};
+   void refresh();
   };
   document.addEventListener('visibilitychange',check);
   return()=>document.removeEventListener('visibilitychange',check);
- },[refresh]);
+ },[refresh,current?.id]);
  // Download small private covers once. Local Blob URLs prevent repeated R2
  // fetches on track changes. A square JPEG supports iOS lock-screen artwork.
  useEffect(()=>{
