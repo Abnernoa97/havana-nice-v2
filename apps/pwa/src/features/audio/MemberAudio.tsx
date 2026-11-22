@@ -10,6 +10,7 @@ export default function MemberAudio({token,active=true}:{token:string;active?:bo
  const [tracks,setTracks]=useState<AudioTrack[]>([]);
  const [selected,setSelected]=useState(0);
  const [playing,setPlaying]=useState(false);
+ const [buffering,setBuffering]=useState(false);
  const [elapsed,setElapsed]=useState(0);
  const [duration,setDuration]=useState(0);
  const [loading,setLoading]=useState(true);
@@ -20,6 +21,7 @@ export default function MemberAudio({token,active=true}:{token:string;active?:bo
  const lastCatalogFetch=useRef(0);
  const ref=useRef<HTMLAudioElement>(null);
  const playOnChange=useRef(false);
+ const requestedPlay=useRef(false);
  const current=tracks[selected]||null;
  const refresh=useCallback(async(force=false)=>{
   try{const value=await getAudioTracks(token,false,force);lastCatalogFetch.current=Date.now();
@@ -49,7 +51,7 @@ export default function MemberAudio({token,active=true}:{token:string;active?:bo
   const controller=new AbortController(),created:string[]=[];
   let live=true;
   setPreparedCovers({});
-  const wanted=tracks.filter(t=>!!art(t.coverUrl)).slice(0,12);
+  const wanted=tracks.filter(t=>!!art(t.coverUrl)).slice(0,4);
   let cursor=0;
   const prepare=async()=>{
    while(live&&cursor<wanted.length){
@@ -67,19 +69,34 @@ export default function MemberAudio({token,active=true}:{token:string;active?:bo
     }catch{/* Keep the live R2 URL as a visual fallback. */}
    }
   };
-  void Promise.all([prepare(),prepare(),prepare()]);
+  // One small artwork task: avoid competing with the audio range request.
+  void prepare();
   return()=>{
    live=false;controller.abort();created.forEach(url=>URL.revokeObjectURL(url));
   };
  },[tracks]);
 
  useEffect(()=>{
-  const audio=ref.current;if(!audio)return;
-  audio.pause();setPlaying(false);setElapsed(0);setDuration(0);
-  if(!current)return;
-  audio.src=art(current.audioUrl)||'';audio.load();
+  const audio=ref.current;if(!audio||!current)return;
+  const url=art(current.audioUrl)||'';
+  // A tap can set src and invoke play() synchronously. Do not tear that
+  // playback down in the React effect that follows the state update.
+  if(audio.src===url)return;
+  audio.pause();setPlaying(false);setBuffering(false);
+  setElapsed(0);setDuration(0);
+  requestedPlay.current=playOnChange.current;
+  audio.src=url;
   if(playOnChange.current){playOnChange.current=false;
-   void audio.play().catch(()=>setError('Toca reproducir para escuchar el audio.'));}
+   setBuffering(true);
+   void audio.play().catch(()=>{
+    setBuffering(false);requestedPlay.current=false;
+    // iOS may require a fresh user gesture after a token refresh.
+    // Do not report that normal browser policy as a media failure.
+   });
+  }else{
+   // Do not force a full media download merely by opening HOME.
+   audio.preload='metadata';
+  }
  },[current?.id,current?.audioUrl]);
  const recoverMedia=async()=>{
   if(!current||recoveryTried.current.has(current.id)){
@@ -87,7 +104,7 @@ export default function MemberAudio({token,active=true}:{token:string;active?:bo
   }
   const old=current;
   recoveryTried.current.add(old.id);
-  const wasPlaying=!!ref.current&&!ref.current.paused;
+  const wasPlaying=requestedPlay.current||!!ref.current&&!ref.current.paused;
   pendingSeek.current={id:old.id,time:ref.current?.currentTime||0};
   setError('');
   try{
@@ -102,17 +119,39 @@ export default function MemberAudio({token,active=true}:{token:string;active?:bo
    setError(e instanceof Error?e.message:'No fue posible renovar el acceso al audio.');
   }
  };
- const toggle=async()=>{
+ const playTrack=(position:number)=>{
+  const audio=ref.current,track=tracks[position];
+  if(!audio||!track)return;
+  const url=art(track.audioUrl);
+  if(!url)return;
+  setError('');
+  requestedPlay.current=true;
+  setBuffering(true);
+  // Assign and start the selected media within THIS user gesture, before
+  // React runs effects. Safari cannot autoplay a different src after render.
+  if(audio.src!==url){
+   audio.pause();setPlaying(false);setElapsed(0);setDuration(0);
+   audio.preload='auto';audio.src=url;
+  }
+  playOnChange.current=false;
+  setSelected(position);
+  void audio.play().catch(error=>{
+   requestedPlay.current=false;setBuffering(false);
+   if(error instanceof Error&&error.name==='NotAllowedError')return;
+   void recoverMedia();
+  });
+ };
+ const toggle=()=>{
   const audio=ref.current;if(!audio||!current)return;
-  if(audio.paused)await audio.play().catch(()=>{void recoverMedia();});
-  else audio.pause();
+  if(audio.paused)playTrack(selected);
+  else{requestedPlay.current=false;audio.pause();setBuffering(false);}
  };
  const step=(direction:number)=>{
   if(!tracks.length)return;
   const next=(selected+direction+tracks.length)%tracks.length;
-  if(next===selected){if(ref.current){ref.current.currentTime=0;void ref.current.play();}return;}
-  playOnChange.current=playing;
-  setSelected(next);
+  if(next===selected){if(ref.current){ref.current.currentTime=0;playTrack(next);}return;}
+  if(playing||buffering)playTrack(next);
+  else setSelected(next);
  };
  // iOS Now Playing fetches artwork from an independent system process.
  // An opaque Blob or cross-origin workers.dev URL may not load there.
@@ -156,6 +195,7 @@ export default function MemberAudio({token,active=true}:{token:string;active?:bo
  },[playing]);
  const cover=current?(preparedCovers[current.id]?.display||art(current.coverUrl)):null;
  const progress=duration>0?Math.max(0,Math.min(100,elapsed/duration*100)):0;
+ const isBuffering=buffering&&!playing;
  return <section className="hn-audio hn-audio-editorial" aria-label="Audio HAVANA NICE" hidden={!active}>
   <div className="hn-audio-parchment">
    <div className="hn-audio-paper-tear" aria-hidden="true"/>
@@ -168,7 +208,7 @@ export default function MemberAudio({token,active=true}:{token:string;active?:bo
    </div>
    <button className="hn-audio-refresh" type="button" onClick={()=>void refresh(true)}
     aria-label="Actualizar la biblioteca de audio" disabled={loading}>Actualizar</button>
-   {!!error&&<p className="hn-audio-error" role="alert">{error}</p>}
+   {!!error&&!current&&<p className="hn-audio-error" role="alert">{error}</p>}
    {loading&&!current?<div className="hn-audio-empty" role="status">Abriendo Audio HAVANA NICE…</div>:!current?
     <div className="hn-audio-empty"><strong>Próximamente, tus canciones aquí.</strong>
      <p>Los audios y sus portadas aparecerán automáticamente cuando Administración los publique.</p>
@@ -205,7 +245,8 @@ export default function MemberAudio({token,active=true}:{token:string;active?:bo
      <div className="hn-audio-controls">
       <button type="button" onClick={()=>step(-1)} aria-label="Audio anterior">‹‹</button>
       <button type="button" onClick={()=>void toggle()} className="hn-audio-main"
-       aria-label={playing?'Pausar':'Reproducir'}>{playing?'Ⅱ':'▶'}</button>
+       aria-label={isBuffering?'Cargando canción':playing?'Pausar':'Reproducir'}
+       aria-busy={isBuffering}>{isBuffering?'◌':playing?'Ⅱ':'▶'}</button>
       <button type="button" onClick={()=>step(1)} aria-label="Audio siguiente">››</button>
      </div>
     </div>
@@ -213,20 +254,22 @@ export default function MemberAudio({token,active=true}:{token:string;active?:bo
     <div className="hn-audio-track-list" aria-label="Canciones disponibles">
      {tracks.map((track,i)=><button key={track.id} type="button"
       className={i===selected?'hn-audio-track selected':'hn-audio-track'}
-      onClick={()=>{if(i!==selected){playOnChange.current=true;setSelected(i);}
-       else void toggle();}}>
+      onClick={()=>{if(i!==selected)playTrack(i);else toggle();}}>
       {art(track.coverUrl)?<img alt="" src={preparedCovers[track.id]?.display||art(track.coverUrl)!} loading="lazy" decoding="async"/>:
        <span className="hn-audio-track-fallback">♫</span>}
       <span><strong>{track.title}</strong><small>{track.artist}</small></span>
-      <span aria-hidden="true">{i===selected&&playing?'Ⅱ':'▶'}</span>
+      <span aria-hidden="true">{i===selected&&isBuffering?'◌':i===selected&&playing?'Ⅱ':'▶'}</span>
      </button>)}
     </div>
    </>}
    <div className="hn-audio-paper-corner" aria-hidden="true"/>
   </div>
-  <audio ref={ref} preload={current&&current.sizeBytes<=8*1024*1024?'auto':'metadata'}
-   onPlay={()=>setPlaying(true)} onPlaying={()=>setPlaying(true)}
-   onPause={()=>setPlaying(false)}
+  <audio ref={ref} preload="metadata"
+   onPlay={()=>{requestedPlay.current=true;setBuffering(true);}}
+   onPlaying={()=>{requestedPlay.current=true;setPlaying(true);setBuffering(false);}}
+   onWaiting={()=>{setPlaying(false);setBuffering(true);}}
+   onStalled={()=>{setPlaying(false);setBuffering(true);}}
+   onPause={()=>{requestedPlay.current=false;setPlaying(false);setBuffering(false);}}
    onTimeUpdate={event=>setElapsed(event.currentTarget.currentTime)}
    onDurationChange={event=>setDuration(event.currentTarget.duration||0)}
    onLoadedMetadata={event=>{
@@ -238,6 +281,6 @@ export default function MemberAudio({token,active=true}:{token:string;active?:bo
     }
    }}
    onEnded={()=>step(1)}
-   onError={()=>{void recoverMedia();}}/>
+   onError={()=>{setBuffering(false);setPlaying(false);void recoverMedia();}}/>
  </section>;
 }
