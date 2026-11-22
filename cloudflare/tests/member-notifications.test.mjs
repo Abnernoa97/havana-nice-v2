@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {DatabaseSync} from 'node:sqlite';
 import {readFileSync} from 'node:fs';
-import {notifyStoryOwner,notifyCalendarMembers,handleMemberNotices} from '../src/modules/notices/member-notifications.js';
+import {notifyStoryOwner,notifyTeamStoryPublished,notifyCalendarMembers,handleMemberNotices} from '../src/modules/notices/member-notifications.js';
 
 const FER='member:fer',NOA='member:noa',STORY='123e4567-e89b-42d3-a456-426614174000';
 const ROOT='https://havana-nice-v2-dev.soloaplicaciones97.workers.dev';
@@ -129,4 +129,20 @@ test('Calendar changes create private system inbox notices, never impersonating 
  raw.prepare('UPDATE chat_members SET active=0 WHERE actor_id=?').run(NOA);
  assert.equal(await notifyCalendarMembers(env,[NOA],{...change,revision:'rev-2'}),0);
  assert.equal((await (await api('fer')).json()).items.length,1);
+});
+
+test('Publishing an Android State notifies only other active teammates once',async()=>{
+ const {env,raw,api}=setup();
+ assert.equal(await notifyTeamStoryPublished(env,{actorId:FER},STORY,3),1);
+ assert.equal(await notifyTeamStoryPublished(env,{actorId:FER},STORY,3),0);
+ const noa=await (await api('noa')).json();
+ const fer=await (await api('fer')).json();
+ assert.equal(noa.unread,1);
+ assert.equal(noa.items[0].kind,'story.created');
+ assert.equal(noa.items[0].actorId,FER);
+ assert.equal(noa.items[0].targetId,STORY);
+ assert.match(noa.items[0].preview,/3 nuevos Estados/);
+ assert.equal(fer.items.length,0);
+ raw.prepare('UPDATE chat_members SET active=0 WHERE actor_id=?').run(NOA);
+ assert.equal(await notifyTeamStoryPublished(env,{actorId:FER},'another-story',1),0);
 });
