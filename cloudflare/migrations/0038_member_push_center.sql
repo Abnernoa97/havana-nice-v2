@@ -4,6 +4,7 @@
 CREATE TABLE IF NOT EXISTS member_push_devices (
  id TEXT PRIMARY KEY NOT NULL,
  actor_id TEXT NOT NULL REFERENCES chat_members(actor_id) ON DELETE CASCADE,
+ session_hash TEXT NOT NULL,
  platform TEXT NOT NULL CHECK(platform IN ('webpush','android-fcm')),
  token_hash TEXT NOT NULL UNIQUE,
  endpoint TEXT NOT NULL,
