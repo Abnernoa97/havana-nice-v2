@@ -86,11 +86,14 @@ test('PWA uses artwork from R2 and HTML media session without mock songs',()=>{
  assert.match(html,/havana-nice-v2\.pages\.dev\/audio-lounge\/floral-clean\.webp/);
  assert.match(css,/\.hn-audio-parchment:before\{/);
  assert.match(css,/\.hn-audio-flowers\{[\s\S]*?-webkit-mask-image:none/);
- assert.match(css,/\.hn-home-route \.hn-audio-editorial\{position:relative;z-index:1;margin-top:-18px\}/);
+ assert.match(css,/\.hn-home-route \.hn-audio-editorial\{max-width:none;position:relative;z-index:1;margin-top:0\}/);
+ assert.doesNotMatch(css,/margin-top:-(?:12|18|20)px/);
  const homeStage=read('apps/pwa/src/features/home/home-stage.css');
  assert.match(homeStage,/\.hn-home-route \.hn-moments-strip\{padding-top:3px;padding-bottom:4px\}/);
  assert.doesNotMatch(homeStage,/true four-zone mobile layout/);
  assert.match(homeStage,/\.hn-home-route \.hn-home-stage\{[\s\S]*?position:relative;top:auto;flex:0 0 auto/);
+ assert.match(homeStage,/\.hn-home-route \.visual-content\{background:#f7f0e8\}/);
+ assert.doesNotMatch(homeStage,/\.hn-home-audio-scroll \.hn-audio-editorial\{margin-top:0\}/);
  assert.match(homeStage,/\.hn-home-route \.hn-home-audio-scroll\{/);
  assert.match(homeStage,/overflow-x:hidden;overflow-y:auto/);
  assert.match(homeStage,/\.hn-home-route \.hn-home-stage:after\{[\s\S]*?linear-gradient/);
