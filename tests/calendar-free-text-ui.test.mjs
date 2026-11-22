@@ -20,7 +20,7 @@ runInNewContext(compiled.outputText,{exports:exported,URL,Date,Intl,fetch,Error,
   assert.equal(id,'./api-base');
   return {HAVANA_V2_DEV_API_BASE_URL:'https://havana-nice-v2-dev.soloaplicaciones97.workers.dev'};
  }});
-const {calendarDate,safeCalendarMapUrl}=exported;
+const {calendarDate,calendarSortDate,sortCalendarEvents,safeCalendarMapUrl}=exported;
 
 test('completed-event stamp uses the venue date only after local midnight and never on cancelled dates',()=>{
  const {calendarEventCompleted}=exported;
@@ -70,7 +70,7 @@ test('Admin, PWA and native Calendar all use the same shared date function',()=>
 
 test('Admin Calendar mounts event photo editors only for the expanded date',()=>{
  const src=read('apps/pwa/src/features/calendar/AdminCalendar.tsx');
- assert.match(src,/expanded===item\.id&&<div className="a-cal-event-body">/);
+ assert.match(src,/expanded===item\.id&&<div className="a-cal-event-body hn-cal-details">/);
  assert.match(src,/<AdminCalendarMemories token=\{token\} eventId=\{item\.id\}/);
  assert.match(src,/const AdminCalendarMemories=lazy\(\(\)=>import\('\.\/AdminCalendarMemories'\)\)/);
  // AdminChatAccess already owns the live member directory. One Calendar
@@ -99,7 +99,17 @@ test('Calendar uses one private push protocol in native Android and PWA, without
  const admin=read('apps/pwa/src/features/calendar/AdminCalendar.tsx');
  const native=read('apps/android/features/calendar/NativeCalendar.tsx');
  const realtime=read('apps/pwa/src/services/calendar-live.ts');
- assert.match(member,/watchCalendar\(token,false,update\)/);
+ const pwaShell=read('apps/pwa/src/features/chat/PwaChatSurface.tsx');
+ const pwaSignals=read('apps/pwa/src/features/calendar/useMemberCalendarSignals.ts');
+ const nativeShell=read('apps/android/features/chat/NativeChatSurface.tsx');
+ const nativeSignals=read('apps/android/features/calendar/useNativeCalendarSignals.ts');
+ assert.match(pwaSignals,/watchCalendar\(token,false,reason/);
+ assert.match(nativeSignals,/watchNativeCalendar\(token,reason/);
+ assert.match(pwaShell,/useMemberCalendarSignals\(session\?\.token\)/);
+ assert.match(nativeShell,/useNativeCalendarSignals\(session\?\.token\)/);
+ assert.match(member,/calendarRevision/);
+ assert.doesNotMatch(member,/watchCalendar\(/);
+ assert.doesNotMatch(native,/watchNativeCalendar\(/);
  assert.match(admin,/watchCalendar\(token,true,update\)/);
  assert.doesNotMatch(member,/setInterval\(/);
  assert.doesNotMatch(admin,/setInterval\(/);
@@ -128,7 +138,8 @@ test('Calendar uses one private push protocol in native Android and PWA, without
  assert.doesNotMatch(realtime,/localStorage|IndexedDB|CHAT_ROOMS/);
  // Native code is staged for one explicitly approved cumulative APK; installed 0.0.13 is unchanged.
  const nativeTransport=read('apps/android/services/native-calendar-live.ts');
- assert.match(native,/watchNativeCalendar\(token/);
+ assert.match(nativeTransport,/onInvalidate\('changed'\)/);
+ assert.match(native,/calendarRevision/);
  assert.match(nativeTransport,/new WebSocket\(url,\['havana-v2-calendar','session\.'\+token\]\)/);
  assert.match(nativeTransport,/calendar\.invalidate/);
  assert.match(nativeTransport,/watchdog=setTimeout\(/);
@@ -138,4 +149,48 @@ test('Calendar uses one private push protocol in native Android and PWA, without
  assert.doesNotMatch(native,/setArchive\(|Abrir recuerdo con efecto BOOK/);
  assert.doesNotMatch(native,/setInterval\(/);
  assert.doesNotMatch(nativeTransport,/setInterval\(/);
+});
+
+test('Spanish month names sort chronologically regardless of when Admin added the event',()=>{
+ const fixtures=[
+  {id:'later',date:'24 de octubre 2026',dateSort:null},
+  {id:'unknown',date:'Por confirmar',dateSort:null},
+  {id:'earlier',date:'9 de Oct 2026',dateSort:null},
+  {id:'september',date:'21/09/2026',dateSort:null},
+  {id:'oct-last',date:'31 oct. 2026',dateSort:null},
+  {id:'nov',date:'6-11-2026',dateSort:null}
+ ];
+ assert.deepEqual(sortCalendarEvents(fixtures).map(e=>e.id),
+  ['september','earlier','later','oct-last','nov','unknown']);
+ for(const [date,expected] of [
+  ['9 de Oct 2026','2026-10-09'],['24 d octubre 2026','2026-10-24'],
+  ['17 octubre 2026','2026-10-17'],['14dic26','2026-12-14'],
+  ['14/11/2026','2026-11-14'],['2026-11-06','2026-11-06']]){
+  assert.equal(calendarSortDate(date),expected);
+ }
+ for(const text of ['31 febrero 2026','Por confirmar','Oct 2026','25 25 2026'])
+  assert.equal(calendarSortDate(text),null);
+ const past={date:'17 octubre 2026',dateSort:null,timeZone:'America/Mexico_City',status:'confirmed'};
+ assert.equal(exported.calendarEventCompleted(past,new Date('2026-11-22T12:00:00Z')),true);
+ assert.equal(exported.calendarEventCompleted({...past,date:'24 nov 2026'},new Date('2026-11-22T12:00:00Z')),false);
+ assert.equal(exported.calendarEventCompleted({...past,status:'cancelled'},new Date('2026-11-22T12:00:00Z')),false);
+});
+
+test('Member Calendar shows one title and background calendar change alert across all screens',()=>{
+ const visual=read('apps/pwa/src/app/VisualApp.tsx');
+ const pwa=read('apps/pwa/src/features/calendar/CalendarAccordion.tsx');
+ const nativeHome=read('apps/android/app/NativeMemberHome.tsx');
+ const native=read('apps/android/features/calendar/NativeCalendar.tsx');
+ const pwaShell=read('apps/pwa/src/features/chat/PwaChatSurface.tsx');
+ const nativeToast=read('apps/android/features/calendar/NativeCalendarToast.tsx');
+ assert.match(visual,/screen==='calendar'\?<div className="visual-section-header visual-calendar-heading">/);
+ assert.match(visual,/<h1>Calendario<\/h1>/);
+ assert.doesNotMatch(pwa,/Eventos · Fechas de trabajo/);
+ assert.doesNotMatch(native,/EVENTOS · FECHAS DE TRABAJO/);
+ assert.match(nativeHome,/active==='calendar'\?'Calendario'/);
+ assert.match(pwaShell,/HAVANANICE-CALENDARIO📆/);
+ assert.match(nativeToast,/HAVANANICE-CALENDARIO📆/);
+ assert.match(read('packages/shared/src/member-notifications.ts'),/case 'calendar.event':return 'HAVANANICE-CALENDARIO📆'/);
+ assert.match(native,/setTimeout\(tick,60000\)/);
+ assert.match(pwa,/setTimeout\(tick,60000\)/);
 });
