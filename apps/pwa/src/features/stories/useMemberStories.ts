@@ -9,7 +9,7 @@ export function useMemberStories(token:string|undefined,refreshVersion:number){
  const [saving,setSaving]=useState(false);
  const [preparing,setPreparing]=useState(0);
  const requestId=useRef(0);
- const retryIds=useRef(new Set<string>());
+ const failedPhotos=useRef(new Map<string,{attempts:number;since:number}>());
  // Server mints a fresh 10-minute R2 photo grant on EACH team refresh.
  // Reactions trigger Family invalidation, but the actual photo never changed.
  // Pin that photo URL for eight minutes so ❤️/👏/😂 never repaint the canvas.
@@ -18,7 +18,7 @@ export function useMemberStories(token:string|undefined,refreshVersion:number){
  if(previousToken.current!==token){
   previousToken.current=token;
   photoGrants.current.clear();
-  retryIds.current.clear();
+  failedPhotos.current.clear();
  }
  // A different musician session must not show the previous user's photo data.
  useEffect(()=>{setStories([]);setError('');},[token]);
@@ -30,7 +30,9 @@ export function useMemberStories(token:string|undefined,refreshVersion:number){
    if(id!==requestId.current)return;
    const now=Date.now(),validIds=new Set(items.map(s=>s.id));
    for(const oldId of photoGrants.current.keys()){
-    if(!validIds.has(oldId))photoGrants.current.delete(oldId);
+    if(!validIds.has(oldId)){
+     photoGrants.current.delete(oldId);failedPhotos.current.delete(oldId);
+    }
    }
    const stable=items.map(story=>{
     const saved=photoGrants.current.get(story.id);
@@ -100,11 +102,22 @@ export function useMemberStories(token:string|undefined,refreshVersion:number){
   finally{setSaving(false);}
  },[token,saving,refresh]);
  const retryPhoto=useCallback((id:string)=>{
-  if(!id||retryIds.current.has(id))return;
-  retryIds.current.add(id);
-  // Invalid or expired grant: allow the next GET to mint a replacement.
+  if(!id)return;
+  const now=Date.now(),prior=failedPhotos.current.get(id);
+  const recent=prior&&now-prior.since<60_000;
+  if(recent&&prior.attempts>=2){
+   setError('No se pudo cargar la fotografía. Pulsa Actualizar estados.');return;
+  }
+  failedPhotos.current.set(id,{attempts:recent?prior.attempts+1:1,
+   since:recent?prior.since:now});
+  // Do not retain a failed, privately signed URL during the 8-minute pin.
   photoGrants.current.delete(id);
   void refresh();
  },[refresh]);
- return {stories,error,saving,preparing,publish,remove,retryPhoto,refresh,clearError:()=>setError('')};
+ const retryAll=useCallback(()=>{
+  failedPhotos.current.clear();photoGrants.current.clear();
+  void refresh();
+ },[refresh]);
+ return {stories,error,saving,preparing,publish,remove,retryPhoto,retryAll,
+  refresh,clearError:()=>setError('')};
 }
