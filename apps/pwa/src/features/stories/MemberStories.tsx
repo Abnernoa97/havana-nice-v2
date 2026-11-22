@@ -1,4 +1,5 @@
 import {useEffect,useRef,useState,type ChangeEvent} from 'react';
+import {createPortal} from 'react-dom';
 import {STORY_BATCH_MAX,type MemberProfile} from '@havana/shared';
 import TeamStoriesStrip from '../home/TeamStoriesStrip';
 import MemberStoryViewer from './MemberStoryViewer';
@@ -51,7 +52,7 @@ export default function MemberStories({token,displayName,actorId,profiles,previe
    onOpenStory={setViewActor} onAddStory={()=>{setSelectionError('');input.current?.click();}}/>
   {(data.error||selectionError)&&!selected.length&&
    <p className="hn-story-error" role="status">{selectionError||data.error}</p>}
-  {selected.length>0&&<div className="hn-story-overlay" role="dialog" aria-modal="true" aria-label="Publicar estados">
+  {selected.length>0&&createPortal(<div className="hn-story-overlay" role="dialog" aria-modal="true" aria-label="Publicar estados">
    <div className="hn-story-publish">
     <button type="button" className="hn-story-x" onClick={discard} disabled={data.saving}
      aria-label="Cancelar publicación">×</button>
@@ -71,8 +72,10 @@ export default function MemberStories({token,displayName,actorId,profiles,previe
      {data.saving?'Publicando…':selected.length===1?'Publicar estado':'Publicar '+selected.length+' estados'}
     </button>
    </div>
-  </div>}
-  {viewActor&&viewing.length>0&&token&&<MemberStoryViewer items={viewing} myId={actorId} token={token} refreshVersion={refreshVersion}
-   onClose={()=>setViewActor(null)} onDelete={data.remove} onPhotoError={data.retryPhoto}/>}
+  </div>,document.body)}
+  {viewActor&&viewing.length>0&&token&&createPortal(
+   <MemberStoryViewer items={viewing} myId={actorId} token={token} refreshVersion={refreshVersion}
+    onClose={()=>setViewActor(null)} onDelete={data.remove} onPhotoError={data.retryPhoto}/>,
+   document.body)}
  </>;
 }
