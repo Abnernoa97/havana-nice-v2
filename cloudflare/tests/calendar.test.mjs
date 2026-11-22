@@ -18,6 +18,7 @@ class DB{
   assert.doesNotMatch(migration,/DROP TABLE|ALTER TABLE chat_|DELETE FROM chat_/i);
   this.raw.exec(migration);
   this.raw.exec(readFileSync(new URL('../migrations/0019_calendar_free_text.sql',import.meta.url),'utf8'));
+  this.raw.exec(readFileSync(new URL('../migrations/0037_calendar_member_notifications.sql',import.meta.url),'utf8'));
   this.raw.exec(readFileSync(new URL('../migrations/0029_calendar_event_memories.sql',import.meta.url),'utf8'));
   for(const [id,name] of [[M1,'Noa'],[M2,'Fer']])this.raw.prepare('INSERT INTO chat_members VALUES (?,?,1)').run(id,name);
  }
@@ -201,4 +202,56 @@ test('Realtime Calendar signals only previous/new musicians plus Admin after com
  assert.equal(deleted.status,200);
  assert.deepEqual(messages.shift(),[M2]);
  assert.equal(messages.length,0);
+});
+
+test('Spanish named-month dates are sorted at creation and returned as normalized ISO keys',async()=>{
+ const e=await env();
+ for(const [title,date] of [
+  ['Boda tarde','24 de octubre 2026'],['Boda temprano','9 de Oct 2026'],
+  ['Desconocida','Fecha por definir'],['San Miguel','17 octubre 2026']
+ ]){
+  const saved=await request(e,'/api/calendar/admin/events',{
+   method:'POST',body:{...sample,title,date}
+  });
+  assert.equal(saved.status,201,JSON.stringify(saved.data));
+ }
+ const rows=(await request(e,'/api/calendar/events',{token:'musician'})).data.events;
+ assert.deepEqual(rows.map(r=>r.title),['Boda temprano','San Miguel','Boda tarde','Desconocida']);
+ assert.deepEqual(rows.map(r=>r.dateSort),['2026-10-09','2026-10-17','2026-10-24',null]);
+ // Existing legacy records get a normalized key without rewriting Admin text.
+ e.DB.raw.prepare("UPDATE calendar_events SET date_sort=NULL WHERE title='San Miguel'").run();
+ const legacy=(await request(e,'/api/calendar/events',{token:'musician'})).data.events
+  .find(x=>x.title==='San Miguel');
+ assert.equal(legacy.date,'17 octubre 2026');
+ assert.equal(legacy.dateSort,'2026-10-17');
+});
+
+test('Successful Admin creates, edits and deletes persist per-recipient Calendar notices',async()=>{
+ const e=await env();
+ const saved=await request(e,'/api/calendar/admin/events',{method:'POST',body:sample});
+ assert.equal(saved.status,201);
+ const id=saved.data.event.id;
+ const notices=actor=>e.DB.raw.prepare(
+  'SELECT kind,preview,read_at FROM calendar_member_notifications WHERE recipient_id=? ORDER BY created_at'
+ ).all(actor);
+ assert.equal(notices(M1).length,1);
+ assert.match(notices(M1)[0].preview,/Nuevo evento/);
+ assert.equal(notices(M2).length,0);
+ const edited=await request(e,'/api/calendar/admin/events/'+id,{
+  method:'POST',body:{...sample,version:1,title:'La Vista',recipientIds:[M2]}
+ });
+ assert.equal(edited.status,200);
+ assert.equal(notices(M1).length,2);
+ assert.equal(notices(M2).length,1);
+ const stale=await request(e,'/api/calendar/admin/events/'+id,{
+  method:'POST',body:{...sample,version:1,recipientIds:[M1]}
+ });
+ assert.equal(stale.status,409);
+ assert.equal(notices(M1).length,2,'Stale writes must not create notices');
+ const deleted=await request(e,'/api/calendar/admin/events/'+id,{method:'DELETE',body:{version:2}});
+ assert.equal(deleted.status,200);
+ assert.equal(notices(M2).length,2);
+ assert.match(notices(M2)[1].preview,/Evento eliminado/);
+ assert.equal(e.DB.raw.prepare('SELECT COUNT(*) AS total FROM calendar_events').get().total,0);
+ assert.equal(e.DB.raw.prepare('SELECT COUNT(*) AS total FROM calendar_member_notifications').get().total,4);
 });
