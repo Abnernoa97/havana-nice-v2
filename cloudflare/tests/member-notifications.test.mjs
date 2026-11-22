@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {DatabaseSync} from 'node:sqlite';
 import {readFileSync} from 'node:fs';
-import {notifyStoryOwner,notifyTeamStoryPublished,notifyCalendarMembers,handleMemberNotices} from '../src/modules/notices/member-notifications.js';
+import {notifyStoryOwner,notifyTeamStoryPublished,notifyTeamChatMessage,notifyChatReaction,notifyCalendarMembers,handleMemberNotices} from '../src/modules/notices/member-notifications.js';
 
 const FER='member:fer',NOA='member:noa',STORY='123e4567-e89b-42d3-a456-426614174000';
 const ROOT='https://havana-nice-v2-dev.soloaplicaciones97.workers.dev';
@@ -11,6 +11,7 @@ function setup(){
  raw.exec('PRAGMA foreign_keys=ON');
  raw.exec('CREATE TABLE chat_members(actor_id TEXT PRIMARY KEY,display_name TEXT NOT NULL,active INTEGER NOT NULL)');
  raw.exec('CREATE TABLE member_stories(id TEXT PRIMARY KEY,actor_id TEXT NOT NULL,expires_at INTEGER NOT NULL)');
+ raw.exec('CREATE TABLE chat_messages(seq INTEGER PRIMARY KEY,sender_id TEXT NOT NULL,deleted_at TEXT)');
  raw.exec(readFileSync(new URL('../migrations/0034_member_notifications.sql',import.meta.url),'utf8'));
  raw.exec(readFileSync(new URL('../migrations/0037_calendar_member_notifications.sql',import.meta.url),'utf8'));
  raw.prepare('INSERT INTO chat_members VALUES(?,?,1)').run(FER,'Fer');
@@ -145,4 +146,29 @@ test('Publishing an Android State notifies only other active teammates once',asy
  assert.equal(fer.items.length,0);
  raw.prepare('UPDATE chat_members SET active=0 WHERE actor_id=?').run(NOA);
  assert.equal(await notifyTeamStoryPublished(env,{actorId:FER},'another-story',1),0);
+});
+
+test('New Chat message alerts the other member only, once even on network retry',async()=>{
+ const {env,api}=setup();
+ assert.equal(await notifyTeamChatMessage(env,FER,12,'Hola equipo'),1);
+ assert.equal(await notifyTeamChatMessage(env,FER,12,'Hola equipo'),0);
+ const noa=await (await api('noa')).json();
+ const fer=await (await api('fer')).json();
+ assert.equal(noa.unread,1);
+ assert.equal(noa.items[0].kind,'chat.message');
+ assert.equal(noa.items[0].preview,'Hola equipo');
+ assert.equal(fer.items.length,0);
+});
+test('Chat emoji notifies only original sender, never self or a deleted message',async()=>{
+ const {env,raw,api}=setup();
+ raw.prepare('INSERT INTO chat_messages VALUES(?,?,NULL)').run(44,FER);
+ assert.equal(await notifyChatReaction(env,NOA,44,'❤️'),true);
+ assert.equal(await notifyChatReaction(env,NOA,44,'❤️'),false);
+ assert.equal(await notifyChatReaction(env,FER,44,'😂'),false);
+ const fer=await (await api('fer')).json();
+ assert.equal(fer.unread,1);
+ assert.equal(fer.items[0].kind,'chat.reaction');
+ assert.equal(fer.items[0].emoji,'❤️');
+ raw.prepare("UPDATE chat_messages SET deleted_at='2026-11-22T00:00:00Z' WHERE seq=44").run();
+ assert.equal(await notifyChatReaction(env,NOA,44,'😂'),false);
 });
