@@ -50,8 +50,9 @@ test('Long pressing native Chat opens emoji actions directly from touch without 
  assert.match(gesture,/callbacks\.current\.onLongPress\(\{/);
  assert.doesNotMatch(gesture,/\.measureInWindow\(/);
  assert.match(menu,/\['👍','❤️','😂'\]/);
- assert.match(menu,/onPress=\{event=>onReact\(message,emoji/);
+ assert.match(menu,/onPress=\{event=>\{event\.stopPropagation\(\);onReact\(message,emoji/);
  assert.match(menu,/visible=\{!!message\}/);
- assert.match(menu,/const openedAt=React\.useMemo\(\(\)=>Date\.now\(\),\[message\?\.seq\]\)/);
- assert.match(menu,/if\(Date\.now\(\)-openedAt>350\)onClose\(\)/);
+ assert.match(menu,/backdropTouchStarted=React\.useRef\(false\)/);
+ assert.match(menu,/onPressIn=\{\(\)=>\{backdropTouchStarted\.current=true;\}\}/);
+ assert.doesNotMatch(menu,/openedAt|Date\.now\(\)-openedAt/);
 });
