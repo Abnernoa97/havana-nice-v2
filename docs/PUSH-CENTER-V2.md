@@ -67,9 +67,11 @@ Son acciones técnicas, no actividad útil del equipo.
 - [x] Adaptadores cifrados Web Push (RFC 8291/8292) + FCM HTTP v1.
 - [x] Service Worker y control PWA de activación mediante toque.
 - [x] Validación inicial CI del Worker y PWA: Worker versión `41c1c56e` y Pages `4adc9bce` pasaron las pruebas. Repetir para cambios posteriores.
-- [ ] Credenciales VAPID configuradas y prueba real PWA iPhone cerrada.
+- [x] Credenciales VAPID guardadas como secretos privados en Cloudflare (nombres comprobados).
+- [ ] Prueba real de notificación de pantalla bloqueada en PWA iPhone instalada.
 - [x] Proyecto Firebase `havana-nice-v2-push` registrado; `google-services.json` del paquete `com.havananice.v2` integrado en Expo mediante `android.googleServicesFile`.
-- [ ] Cuenta de servicio FCM HTTP v1 con permisos mínimos, almacenada como secreto de Cloudflare (`FCM_SERVICE_ACCOUNT_JSON`).
+- [x] Cuenta de servicio FCM HTTP v1 guardada como secreto privado en Cloudflare (`FCM_SERVICE_ACCOUNT_JSON`), sin compartir la clave.
+- [ ] Verificación de OAuth FCM y entrega real; la existencia del secreto no garantiza permisos válidos.
 - [x] Código fuente nativo `expo-notifications` SDK 58 conectado al Chat shell con permisos, token FCM, renovación, revocación y navegación al tocar un aviso. **No hay APK nueva**.
 - [ ] Verificación de build nativo, firma y recepción real en Android al final del lote autorizado.
 - [x] Notificaciones actorless del Repertorio por evento mediante migración aditiva `0039_member_system_notifications.sql` y destinatarios asignados; falta verificar push en teléfono real.
@@ -86,7 +88,14 @@ no prometer tiempo ni entrega absoluta de un proveedor externo.
 - Worker `havana-nice-v2-dev` desplegado con motor de push y siete bindings históricos intactos.
 - D1 contiene `member_push_devices` y `member_push_outbox`, ambos inicialmente vacíos.
 - PWA activa con permiso desde la bandeja privada y service worker para recepción; todavía no puede mostrar push reales sin claves VAPID.
-- Las credenciales VAPID no se provisionaron; intento de configuración segura bloqueado. No colocar claves en Git.
-- Firebase Android registrado: proyecto `havana-nice-v2-push`, número de proyecto `33085079931`, paquete `com.havananice.v2`; `google-services.json` integrado en `apps/android/` sin compilar APK. Falta la credencial del servidor FCM HTTP v1, que **no** se obtiene de este JSON público.
+- Los nombres de las claves VAPID pública/privada y FCM aparecen en la versión activa del Worker como secretos. Nunca guardar valores en Git.
+- Firebase Android registrado: proyecto `havana-nice-v2-push`, número de proyecto `33085079931`, paquete `com.havananice.v2`; `google-services.json` integrado en `apps/android/` sin compilar APK. La credencial FCM HTTP v1 está en el secreto del Worker; faltan pruebas de su validez y de entrega.
 - Ninguna APK nueva, compilación Android ni lote `android-batch.json` realizados durante el desarrollo de push. Los cambios en `app.json` y `google-services.json` no activan el workflow de lanzamiento de APK.
 - Push en segundo plano sin probar en teléfonos físicos, no declarar finalizado.
+
+## Fase de integración nativa y Repertorio
+
+- Android: `useNativePush.ts` se monta una sola vez desde `NativeChatSurface`, usa el token FCM nativo, canal `havana-team-activity`, renovación, permiso explícito y apertura contextual. El control se muestra en `NativeNotices`. Desactivación persistente con `expo-sqlite/kv-store`. No publicar ni compilar APK todavía.
+- Repertorio: `0039_member_system_notifications.sql` aplicada en D1, avisos de los cambios reales del repertorio de evento a los músicos asignados. Se evita suplantar la identidad de un músico con un evento de Administración.
+- `expo-notifications` 58.1.6 añadido y fijado en el lockfile; compilación Java/Gradle no ejecutada.
+- El cierre del proyecto depende de registrar teléfonos reales, probar Android bloqueado + PWA iPhone instalada y verificar FCM y VAPID, además de la firma de la futura APK única cuando el usuario lo autorice.
