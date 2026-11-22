@@ -2,6 +2,14 @@
 
 **Estado verificado: 22 de noviembre de 2026.** Fuente de verdad: [GitHub](https://github.com/Abnernoa97/havana-nice-v2), rama única `main`. Mantener estado ACTUAL, sin mezclar hitos históricos. Historia detallada en Git; auditoría de código: [22/11](AUDITORIA-DEPURACION-2026-11-22.md).
 
+## Calendario sincronizado · 22/11/2026
+
+- [x] **Fechas:** 10 eventos con `date_sort` ausente corregidos en D1, 11/11 válidos entonces. Parser compartido es/EN para meses escritos; el texto original no cambia.
+- [x] **Sello:** EVENTO REALIZADO tras medianoche en la zona horaria del evento, incluso en registros anteriores; actualiza la vista cada minuto.
+- [x] **Pantalla:** solo «Calendario» arriba, sin títulos ni rutas extra en PWA y Android.
+- [x] **Live:** una conexión CalendarRoom por sesión, cambios desde Admin y aviso «HAVANANICE-CALENDARIO📆» en Chat y demás vistas, inbox D1 privado por músico.
+- [ ] **Pendientes:** QA en dispositivos, nuevo APK Android, push OS con aplicación cerrada.
+
 ## HOME/Audio iPhone · 22/11/2026
 
 - [x] **HOME PWA:** Estados fijos bajo cabecera, Audio con scroll independiente y degradado blanco→marfil. Compilación y 74/74 pruebas aprobadas en Pages (`5fc9832`).
@@ -24,9 +32,9 @@
 - **Android · Inicio**: encabezado más abajo y marca proporcionada respecto a la barra de estado. **Estados**: 48 px de separación inferior para los botones del SO; segmentos de progreso pulsables y flechas de foto anterior/siguiente, conservando misma galería de cinco fotos, 6 segundos, API y R2.
 - **Android · Chat**: reacción visible en cada burbuja y toque sobre emojis existentes; ambos reutilizan la única función nativa `react(seq,emoji)`, la conexión Chat vigente y la lluvia visual. Validación física pendiente.
 - **Calendario/Recuerdos Android**: al expandir fecha pasada, mostrar de inmediato el **mismo BOOK híbrido 3D PWA**, dentro de la ficha, sin pulsar «Abrir recuerdo». `NativeBook` añade modo inline pero preserva URL canónica, sesión in-memory, PageFlip y modal de BOOK principal. Revisar scroll/gestos en vivo y altura real en teléfonos.
-- **Notificaciones, fase inicial en código**: módulo privado `notices` para Android y PWA y contrato compartido; D1 añade solo `0034_member_notifications.sql`, sin borrar tablas. `story-conversation.js` prepara avisos dirigidos exclusivamente al autor del Estado por ❤️/👏/😂, comentarios y audio; deduplicación de reacciones, propia actividad excluida, lectura por destinatario, un solo WS existente de Familia cuando la sección Notificaciones está abierta.
-- **NO activar backend de notificaciones sin** aplicar de forma controlada migración 0034, probar lectura/aislamiento/rollback y desplegar Worker desde el **bundle canónico Wrangler construido de main**. Las interfaces están preparadas, pero los avisos NO deben considerarse activos en producción todavía. No añadir sockets Chat alternativos, no almacenar tokens/notificaciones en localStorage y no realizar cambios a R2.
-- **Pendientes de extensión**: avisos Chat/Calendario/Familia/Repertorio usando el emisor compartido, indicador de sin leer en menú, acceso al elemento relevante y notificaciones push OS Android/PWA iPhone (permisos/consentimiento por dispositivo). Estas últimas no están implementadas. Ningún cambio Android de este lote está dentro de una APK publicada.
+- **Notificaciones en vivo:** D1 0034 y 0037 activadas; avisos privados de Estados y Calendario, deduplicados y limitados a destinatarios. CalendarRoom autorizado sin suplantar músicos.
+- **Backend 22/11:** Worker v93 `e74e6f68-baea-4949-8a03-7c67ee03ca65` al 100 %, bundle Wrangler con pruebas de Calendario, Audio y avisos. Siete bindings, DO y secreto Admin conservados; rollback v92 `de7e23ad`.
+- **Pendiente:** push de sistema con app cerrada, indicador global de no leídos, vínculo directo al evento y QA entre dispositivos. Código Android aún sin nueva APK.
 
 ## Administrador con interfaz del músico · 21/11
 
@@ -112,8 +120,8 @@ tests/ + cloudflare/tests/ + scripts/ → reglas de seguridad y CI
 | GitHub Actions | **2** workflows: `v2-foundation-check.yml` (compilación y QA) y `v2-android-apk.yml` (solo lote explícitamente aprobado) |
 | CI de todos los módulos + pruebas contra Worker v66 en vivo | **SUCCESS**, [ejecución 42451952817, segundo intento](https://github.com/Abnernoa97/havana-nice-v2/actions/runs/42451952817) |
 | Cloudflare Pages | publica `main`; comprobar SHA/deploy tras cada cambio |
-| Worker **en vivo** | `havana-nice-v2-dev`: despliegue Cloudflare `d2558394-4c4a-4140-ab44-1c79bc4c9ac6` / versión `de7e23ad-23f0-4e57-ac1f-d6df222e04be`, comprobado 22/11. **No equivale a los commits actuales del backend de Audio en `main`**. No promover sin Wrangler y pruebas. |
-| Worker **en código** | Contiene correcciones de grants/audio posteriores a la versión desplegada. Revisar bundle canónico, CI y reversión antes de publicar. |
+| Worker **en vivo** | V93 `e74e6f68-baea-4949-8a03-7c67ee03ca65`, deployment `a02fc7a2-8c4c-4edc-a484-c49b7d56ae66`, 100 %, 22/11. Siete bindings preservados; versión anterior disponible. |
+| Worker **en código** | Paquete Wrangler desplegado desde fuente `a758096be13159c7b7fc3a26b0d58a6b7aecb164`. Bundle temporal retirado de `main`, conservado en historial Git y Cloudflare. |
 | Android | APK firmada **0.0.23**, `versionCode` 23 en fuente; NO generar versión siguiente sin aprobación. Las correcciones de HOME/Audio posteriores siguen sin incluirse en APK. BOOK 3D preservado. |
 | Colas R2 | BOOK, Calendario y baja de músicos: **0** operaciones pendientes al control |
 | Fotos personales | Calendario 4 recuerdos (3 WebP), BOOK 7 originales (0 WebP), Familia 16 archivos al control |
@@ -137,7 +145,7 @@ tests/ + cloudflare/tests/ + scripts/ → reglas de seguridad y CI
 - [x] **C3 Familia / Multimedia:** recuperación de WebSocket atascado al cambiar de red en iPhone y Android mediante timeout compartido; pruebas de paridad añadidas. Sin cambiar subida R2.
 - [x] **C2 Músicos / Admin:** lecturas de lista protegidas contra respuestas HTTP atrasadas: baja, alta, liberación de instalación y salida anulan fetches previos. Sin borrar músicos ni cambiar backend. Pruebas de regresión añadidas.
 - [x] **C1 Chat borrado definitivo:** marcadores compartidos evitan resucitar mensajes por respuestas HTTP, búsquedas o WebSocket atrasados en Android y PWA; orden de conciliación de historial nativo corregido. Pruebas de paridad incluidas; verificación física pendiente.
-- [x] **S1 Repertorio sincronizado en código:** cambios de asignación/calendario también invalidan listas de evento, evitando fechas y repertorios discordantes;  lectura D1 inmediata antes de conectar WebSocket;  cambios del Admin avisan a PWA, Android y Admin por el CalendarRoom privado ya existente, recuperan de D1 y eliminan polling de 30 s; **Worker v66 publicado y smoke tests CI de rutas privadas/DO superados; QA física entre Admin, PWA y Android pendiente**.
+- [x] **S1 Repertorio en vivo:** la asignación y los cambios de Admin invalidan fechas y listas mediante CalendarRoom; D1 es la fuente de verdad, sin otro Chat ni polling corto. QA física pendiente.
 - [x] **S2 Administración:** WebSocket privado con detector de conexión atascada (9 s), reconexión única, recuperación y limpieza de temporizador en segundo plano/cierre, sin borrar sesiones ni duplicar socket.
 - [x] **P1 Worker release:** v66 `87e6d28a-f1eb-43ed-974b-eb1884198533` al **100 %** desde el bundle SHA-256 exacto aprobado por CI. Se transfirió sin recompilar ni editar la salida; se verificaron siete bindings heredados con modo estricto, compatibilidad, v65 de respaldo y despliegue gradual. Smoke tests CI y recuentos D1 posteriores aprobados; pruebas físicas todavía pendientes.
 - [ ] **P2 Chat estructural profundo:** extracción por capas de socket y estado en PWA/nativo **sin duplicar dueño de sesión**; someter cada cambio a CI y pruebas reales de reconexión.
