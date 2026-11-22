@@ -26,6 +26,7 @@ type Props={token:string;actorId:string;displayName:string;profiles:readonly Mem
 export default function NativeStories({token,actorId,displayName,profiles,canPublish,refreshVersion}:Props){
  const states=useNativeStories(token,refreshVersion);
  const [viewerActor,setViewerActor]=useState<string|null>(null);
+ const [emptyMessage,setEmptyMessage]=useState('');
  const group=useMemo(()=>states.stories.filter(st=>st.actorId===viewerActor),
   [states.stories,viewerActor]);
  // Team profiles can be momentarily unavailable while Family refreshes.
@@ -50,9 +51,12 @@ export default function NativeStories({token,actorId,displayName,profiles,canPub
   const last=newest(person.actorId);
   return <View style={s.member} key={person.actorId}>
    <View style={s.slot}>
-    <Pressable accessibilityRole="button" disabled={!last}
-     accessibilityLabel={last?'Ver estados de '+person.name:'Sin estados de '+person.name}
-     onPress={()=>setViewerActor(person.actorId)}
+    <Pressable accessibilityRole="button"
+     accessibilityLabel={last?'Ver estados de '+person.name:'Consultar estados de '+person.name}
+     onPress={()=>{
+      if(last){setEmptyMessage('');setViewerActor(person.actorId);}
+      else setEmptyMessage(self?'Aún no tienes estados.':person.name+' aún no tiene estados.');
+     }}
      style={[s.ring,self&&s.ownRing,!!last&&s.activeRing]}>
      <StoryAvatar uri={last?.photoUrl||person.photoUrl} name={person.name}
       onFailure={()=>{if(last)states.retryPhoto(last.id);}}/>
@@ -75,9 +79,10 @@ export default function NativeStories({token,actorId,displayName,profiles,canPub
    {states.saving&&<ActivityIndicator color="#153d31"/>}
    {(!!states.error||states.stories.length===0)&&
     <Pressable accessibilityRole="button" accessibilityLabel="Actualizar estados del equipo"
-     onPress={states.retryAll} style={s.reload}>
+     onPress={()=>{setEmptyMessage('');states.retryAll();}} style={s.reload}>
      <Text style={s.reloadText}>{states.error||'Sin estados activos'} · Actualizar</Text>
     </Pressable>}
+   {!!emptyMessage&&<Text style={s.emptyHint} accessibilityRole="text">{emptyMessage}</Text>}
   </View>
   {viewerActor&&group.length>0&&<NativeStoryViewer key={viewerActor}
    stories={group} token={token} actorId={actorId} version={refreshVersion}
