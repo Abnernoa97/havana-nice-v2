@@ -33,6 +33,22 @@ function validFcmToken(value){
   /^[A-Za-z0-9:_-]+$/.test(value);
 }
 
+function fcmConfigured(env){
+ try{
+  const value=JSON.parse(env.FCM_SERVICE_ACCOUNT_JSON||'null');
+  return value?.project_id==='havana-nice-v2-push'&&
+   typeof value?.client_email==='string'&&
+   value.client_email.endsWith('.iam.gserviceaccount.com')&&
+   typeof value?.private_key==='string'&&
+   value.private_key.includes('-----BEGIN PRIVATE KEY-----');
+ }catch{return false;}
+}
+function webConfigured(env){
+ return typeof env.PUSH_VAPID_PUBLIC_KEY==='string'&&
+  env.PUSH_VAPID_PUBLIC_KEY.length===87&&
+  typeof env.PUSH_VAPID_PRIVATE_KEY==='string'&&
+  env.PUSH_VAPID_PRIVATE_KEY.length===43;
+}
 export async function handleMemberPushApi(request,env,url,origin,verifySession){
  const token=(request.headers.get('authorization')||'').replace(/^Bearer\s+/i,'');
  const actor=await verifySession(env,token);
@@ -40,9 +56,9 @@ export async function handleMemberPushApi(request,env,url,origin,verifySession){
  const route=url.pathname;
  if(route==='/api/push/config'&&request.method==='GET'){
   // Public VAPID key only; private keys stay in Worker secret bindings.
-  return json({webReady:!!(env.PUSH_VAPID_PUBLIC_KEY&&env.PUSH_VAPID_PRIVATE_KEY),
-   publicKey:env.PUSH_VAPID_PUBLIC_KEY||null,
-   androidReady:!!env.FCM_SERVICE_ACCOUNT_JSON},200,origin);
+  return json({webReady:webConfigured(env),
+   publicKey:webConfigured(env)?env.PUSH_VAPID_PUBLIC_KEY:null,
+   androidReady:fcmConfigured(env)},200,origin);
  }
  if(route==='/api/push/devices'&&request.method==='GET'){
   try{
