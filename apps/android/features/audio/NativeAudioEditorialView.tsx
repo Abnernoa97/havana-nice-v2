@@ -3,7 +3,6 @@ import {View,StyleSheet} from 'react-native';
 import {WebView,type WebViewMessageEvent} from 'react-native-webview';
 import {privateAudioUrl} from '@havana/shared';
 import {NATIVE_AUDIO_EDITORIAL_HTML} from './nativeAudioEditorialHtml';
-import {useNativeVinylMotion} from './useNativeVinylMotion';
 import {
  useNativeAudioSnapshot,sendNativeAudioCommand,seekNativeAudio,selectNativeAudioTrack
 } from './nativeAudioStore';
@@ -11,7 +10,7 @@ import {
 // Visual-only parchment/vinyl: receives snapshots from the ONE native Expo Audio
 // engine. It cannot open network routes, perform authentication or play audio.
 // The HTML uses exactly the editorial CSS authored for the PWA music player.
-export default function NativeAudioEditorialView({inline=false,active=true}:{inline?:boolean;active?:boolean}){
+export default function NativeAudioEditorialView({inline=false}:{inline?:boolean}){
  const view=useRef<WebView<object>>(null);
  const snapshot=useNativeAudioSnapshot();
  const [ready,setReady]=useState(false);
@@ -33,15 +32,6 @@ export default function NativeAudioEditorialView({inline=false,active=true}:{inl
   );
  },[data,ready]);
  useEffect(()=>{sendState();},[sendState]);
- const onTilt=useCallback((x:number,y:number)=>{
-  if(!ready)return;
-  // Only bounded numeric degrees reach the visual WebView. Audio itself stays
-  // under the existing Expo Audio + MediaSession instance.
-  view.current?.injectJavaScript(
-   'window.havanaAudioTilt('+x.toFixed(2)+','+y.toFixed(2)+');true;'
-  );
- },[ready]);
- useNativeVinylMotion(active&&ready,onTilt);
  const onMessage=useCallback((event:WebViewMessageEvent)=>{
   let msg:{action?:string;index?:number;time?:number;height?:number};
   try{msg=JSON.parse(event.nativeEvent.data);}
