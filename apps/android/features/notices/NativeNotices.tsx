@@ -82,10 +82,16 @@ export default function NativeNotices({token,calendarRevision=0,push}:{token:str
     push.state==='checking'?'Comprobando el registro de este teléfono…':
     push.state==='unavailable'?'Los avisos externos no están disponibles en este dispositivo.':
     'Activa los avisos para recibirlos incluso cuando la aplicación esté cerrada.'}</Text>
-   {push.state==='enabled'?<Pressable accessibilityRole="button"
-    style={s.pushButton} onPress={()=>void push.disable()}>
-    <Text style={s.pushButtonText}>Desactivar avisos</Text>
-   </Pressable>:push.state==='blocked'?<Pressable accessibilityRole="button"
+   {push.state==='enabled'?<View style={s.pushActions}>
+    <Pressable accessibilityRole="button"
+     style={s.pushButton} onPress={()=>void push.test()}>
+     <Text style={s.pushButtonText}>Probar aviso</Text>
+    </Pressable>
+    <Pressable accessibilityRole="button"
+     style={s.pushButton} onPress={()=>void push.disable()}>
+     <Text style={s.pushButtonText}>Desactivar avisos</Text>
+    </Pressable>
+   </View>:push.state==='blocked'?<Pressable accessibilityRole="button"
     style={s.pushButton} onPress={()=>void push.openSettings()}>
     <Text style={s.pushButtonText}>Abrir ajustes de Android</Text>
    </Pressable>:['ready','error'].includes(push.state)?<Pressable accessibilityRole="button"
@@ -93,6 +99,7 @@ export default function NativeNotices({token,calendarRevision=0,push}:{token:str
     <Text style={s.pushButtonText}>Activar notificaciones</Text>
    </Pressable>:null}
    {!!push.error&&<Text style={s.error}>{push.error}</Text>}
+   {!!push.testStatus&&<Text style={s.pushInfo}>{push.testStatus}</Text>}
   </View>
   {inbox.unread>0&&<Pressable accessibilityRole="button"
    style={s.readAll} onPress={()=>void mark()}>
@@ -123,6 +130,7 @@ const s=StyleSheet.create({
  root:{flex:1,gap:12,paddingBottom:12},
  pushCard:{backgroundColor:'#f1f5ed',borderRadius:14,borderWidth:1,borderColor:'#d3decf',padding:14,gap:9},
  pushTitle:{fontSize:14,fontWeight:'700',color:'#193b30'},
+ pushActions:{flexDirection:'row',flexWrap:'wrap',gap:8},
  pushInfo:{fontSize:12,color:'#53665b',lineHeight:19},
  pushButton:{alignSelf:'flex-start',backgroundColor:'#173d30',paddingVertical:11,paddingHorizontal:15,borderRadius:11},
  pushButtonText:{fontSize:12,color:'#fff',fontWeight:'700'},
