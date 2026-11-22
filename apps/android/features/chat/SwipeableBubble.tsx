@@ -17,7 +17,6 @@ export default function SwipeableBubble({children,style,onReply,onLongPress,onPr
   const callbacks = useRef({onReply,onLongPress,onPress});
   callbacks.current={onReply,onLongPress,onPress};
   const translation=useRef(new Animated.Value(0)).current;
-  const pressableRef=useRef<React.ElementRef<typeof Pressable>|null>(null);
   const pan=useRef(PanResponder.create({
     onStartShouldSetPanResponder:()=>false,
     onMoveShouldSetPanResponder:(_,gesture)=>
@@ -36,14 +35,17 @@ export default function SwipeableBubble({children,style,onReply,onLongPress,onPr
   })).current;
   return (
     <Animated.View {...pan.panHandlers} style={[style,{transform:[{translateX:translation}]}]}>
-      <Pressable ref={pressableRef}
-        accessibilityHint="Desliza a la derecha para responder; mantén pulsado para más opciones"
-        onLongPress={()=>{
-          // Anchor the menu to the actual bubble; never to the screen center.
-          pressableRef.current?.measureInWindow((x,y,width,height)=>{
-            callbacks.current.onLongPress({x,y,width,height});
+      <Pressable
+        accessibilityHint="Desliza a la derecha para responder; mantén pulsado para reaccionar"
+        onLongPress={event=>{
+          // Android can flatten the Pressable and never call measureInWindow.
+          // Use the native touch position synchronously so the emoji menu
+          // always opens after holding a delivered text or photo message.
+          const {pageX,pageY}=event.nativeEvent;
+          callbacks.current.onLongPress({
+           x:pageX-26,y:pageY-22,width:52,height:44
           });
-        }} delayLongPress={380}
+        }} delayLongPress={330}
         onPress={()=>callbacks.current.onPress?.()}>
         {children}
       </Pressable>
