@@ -45,6 +45,7 @@ export default function MemberNotices({token,calendarRevision=0}:{token:string;c
   <div className="hn-push-control" role="status">
    {push.state==='enabled'?<>
     <span>Notificaciones del teléfono activadas</span>
+    <button type="button" onClick={()=>void push.test()}>Probar aviso</button>
     <button type="button" onClick={()=>void push.disable()}>Desactivar</button>
    </>:push.state==='ready'?<>
     <span>Recibe las novedades del equipo incluso con la aplicación cerrada.</span>
@@ -59,6 +60,7 @@ export default function MemberNotices({token,calendarRevision=0}:{token:string;c
     <button type="button" onClick={()=>void push.enable()}>Reintentar activación</button>:
     <span>Comprobando notificaciones del teléfono…</span>}
    {push.error&&<small>{push.error}</small>}
+   {push.testStatus&&<small>{push.testStatus}</small>}
   </div>
   {unread>0&&<button className="hn-notices-readall" type="button"
    onClick={()=>void mark()}>Marcar todas como leídas</button>}
