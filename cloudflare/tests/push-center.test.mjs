@@ -153,3 +153,24 @@ test('Provider readiness verifies project ID and private credential format witho
  assert.ok(!JSON.stringify(config).includes(env.PUSH_VAPID_PRIVATE_KEY));
  assert.ok(!JSON.stringify(config).includes('firebase-adminsdk'));
 });
+
+test('Self-test schedules a delayed private push and blocks spam and forged identities',async()=>{
+ const {env,api,raw}=dbFixture();
+ const browser=await browserKey();
+ const enrolled=await api('POST','/api/push/devices',{
+  platform:'webpush',subscription:browser.subscription
+ });
+ assert.equal(enrolled.status,201);
+ const first=await api('POST','/api/push/test');
+ assert.equal(first.status,202);
+ assert.equal((await first.json()).devices,1);
+ const job=raw.prepare("SELECT kind,recipient_id,delivered_at,next_attempt_at,created_at FROM member_push_outbox WHERE kind='push.test'").get();
+ assert.equal(job.kind,'push.test');
+ assert.equal(job.recipient_id,'member:fer');
+ assert.equal(job.delivered_at,null);
+ assert.ok(job.next_attempt_at-job.created_at>=14000);
+ assert.equal((await api('POST','/api/push/test')).status,429);
+ assert.equal(raw.prepare("SELECT COUNT(*) AS n FROM member_push_outbox WHERE kind='push.test'").get().n,1);
+ assert.equal((await api('POST','/api/push/test',undefined,'invalid')).status,401);
+ raw.close();
+});
