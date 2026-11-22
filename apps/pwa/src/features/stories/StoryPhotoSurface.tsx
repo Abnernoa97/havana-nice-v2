@@ -6,8 +6,11 @@ export default memo(function StoryPhotoSurface({id,name,url,failed}:{
  id:string;name:string;url:string;failed:boolean;
 }){
  return <div className="hn-story-canvas" aria-label={'Fotografía del estado'}>
-  {failed?<div className="hn-story-unavailable">No se pudo cargar esta fotografía.</div>:
+  {failed?<div className="hn-story-unavailable">No se pudo cargar esta fotografía.</div>:<>
    <div key={id} className="hn-story-photo" role="img"
-    aria-label={'Estado de '+name} style={{backgroundImage:'url("'+url+'")'}}/>}
+    aria-label={'Estado de '+name}
+    style={url?{backgroundImage:'url("'+url+'")'}:undefined}/>
+   {!url&&<div className="hn-story-loading" role="status">Cargando fotografía…</div>}
+  </>}
  </div>;
 });
