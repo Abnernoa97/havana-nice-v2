@@ -1,5 +1,6 @@
 import {useCallback,useEffect,useRef,useState} from 'react';
 import {AppState} from 'react-native';
+import {fetch as expoFetch} from 'expo/fetch';
 import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
 import {File} from 'expo-file-system';
@@ -78,6 +79,7 @@ export function useNativeStories(token:string,refreshVersion:number){
   }
   const f=new File(result.uri);
   if(!f.exists||!f.size||f.size>1_500_000)throw Error('Foto demasiado grande después de optimizar.');
+  if(f.type!=='image/jpeg')throw Error('No se pudo preparar la fotografía en JPG.');
   return f;
  },[]);
  const publish=useCallback(async()=>{
@@ -96,17 +98,25 @@ export function useNativeStories(token:string,refreshVersion:number){
    for(let i=0;i<result.assets.length;i++){
     const asset=result.assets[i]!;
     const file=await prepare(asset.uri);
-    // Stream optimized JPEGs; Android originals remain untouched in the gallery.
-    form.append('photos',{uri:file.uri,name:'estado-'+(i+1)+'.jpg',type:'image/jpeg'} as unknown as Blob);
+    // Expo SDK 58's WinterCG fetch DOES NOT accept a React Native-style
+    // {uri,name,type} FormData part. expo-file-system File implements Blob;
+    // pass that real file directly so 1-5 photos remain ONE atomic batch.
+    form.append('photos',file,'estado-'+(i+1)+'.jpg');
    }
    setSaving(true);
-   const reply=await fetch(API+'/api/stories/me/batch',{
+   const reply=await expoFetch(API+'/api/stories/me/batch',{
     method:'POST',headers:{Authorization:'Bearer '+token},body:form
    });
    const parsed=await reply.json().catch(()=>({error:'No se pudieron publicar los estados.'})) as {error?:string};
    if(!reply.ok)throw Error(parsed.error||'No se pudieron publicar los estados.');
    await refresh();
-  }catch(e){setError(e instanceof Error?e.message:'No se pudieron publicar los estados.');}
+  }catch(e){
+   const message=e instanceof Error?e.message:'';
+   // Never leak Expo transport internals to the HOME screen.
+   setError(/Unsupported FormDataPart|Network request failed/i.test(message)
+    ?'No se pudo enviar la foto. Comprueba tu conexión e intenta otra vez.'
+    :message||'No se pudieron publicar los estados.');
+  }
   finally{setSaving(false);}
  },[token,saving,refresh,prepare]);
  const remove=useCallback(async(id:string)=>{
