@@ -15,8 +15,20 @@ export default function NativeStories({token,actorId,displayName,profiles,canPub
  const [viewerActor,setViewerActor]=useState<string|null>(null);
  const group=useMemo(()=>states.stories.filter(st=>st.actorId===viewerActor),
   [states.stories,viewerActor]);
- const own=profiles.find(p=>p.actorId===actorId);
- const others=profiles.filter(p=>p.actorId!==actorId);
+ // Team profiles can be momentarily unavailable while Family refreshes.
+ // Stories must still be visible from the authenticated Story API; never
+ // discard a teammate's active status just because the profile GET lagged.
+ const roster=useMemo(()=>{
+  const members=new Map(profiles.map(profile=>[profile.actorId,profile]));
+  for(const story of states.stories){
+   if(!members.has(story.actorId))members.set(story.actorId,{
+    actorId:story.actorId,name:story.name,photoUrl:null
+   });
+  }
+  return [...members.values()];
+ },[profiles,states.stories]);
+ const own=roster.find(p=>p.actorId===actorId);
+ const others=roster.filter(p=>p.actorId!==actorId);
  useEffect(()=>{if(viewerActor&&!group.length)setViewerActor(null);},[viewerActor,group.length]);
  const newest=(id:string)=>states.stories.filter(st=>st.actorId===id)
   .reduce<MemberStory|null>((best,s)=>!best||s.createdAt>best.createdAt||
@@ -33,7 +45,7 @@ export default function NativeStories({token,actorId,displayName,profiles,canPub
      accessibilityLabel={last?'Ver estados de '+person.name:'Sin estados de '+person.name}
      onPress={()=>setViewerActor(person.actorId)}
      style={[s.ring,self&&s.ownRing,!!last&&s.activeRing]}>
-     {avatar(last?.photoUrl||person.photoUrl,person.name)}
+     {avatar(person.photoUrl||last?.photoUrl,person.name)}
     </Pressable>
     {self&&<Pressable accessibilityRole="button" accessibilityLabel="Publicar hasta cinco fotos"
      disabled={!canPublish||states.saving} style={s.plus}
