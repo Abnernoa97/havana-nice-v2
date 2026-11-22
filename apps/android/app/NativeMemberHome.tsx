@@ -21,7 +21,7 @@ function NativeMemberHome({displayName,actorId,token,active,onNavigate}:Props){
  const avatar=(photo:string|null|undefined,name:string,size:number)=>
   photo?<Image source={{uri:photo}} style={{width:size,height:size,borderRadius:size/2}}/>:
    <Text style={styles.initial}>{name.charAt(0).toUpperCase()}</Text>;
- const content=<>
+ const header=<>
   <View style={styles.top}>
    <View><Text style={styles.brand}>HAVANA NICE</Text>
     <Text style={styles.subheading}>ESPACIO DEL EQUIPO</Text></View>
@@ -31,14 +31,12 @@ function NativeMemberHome({displayName,actorId,token,active,onNavigate}:Props){
     <View style={styles.headerAvatar}>{avatar(profile.own?.photoUrl,displayName,36)}</View>
    </Pressable>
   </View>
-  {active==='home'?<>
-   <NativeStories token={token} actorId={actorId}
-    displayName={displayName} profiles={profile.profiles}
-    canPublish={profile.phase==='ready'} refreshVersion={profile.liveVersion}/>
-   <View style={styles.loungeInline} accessibilityLabel="Private Listening Lounge">
+ </>;
+ const content=<>
+  {active==='home'?<View style={styles.loungeInline}
+   accessibilityLabel="Private Listening Lounge">
     <NativeAudioEditorialView inline/>
-   </View>
-  </>:<>
+  </View>:<>>
    <Pressable accessibilityRole="button" accessibilityLabel="Volver a Inicio"
     style={styles.back} onPress={()=>onNavigate('home')}><Text style={styles.backLabel}>‹ Inicio</Text></Pressable>
    <Text style={styles.title}>{selected?.label||'Módulo'}</Text>
@@ -59,8 +57,15 @@ function NativeMemberHome({displayName,actorId,token,active,onNavigate}:Props){
   </>}
  </>;
  return <View style={styles.screen}>
+  {header}
+  {active==='home'&&<View style={styles.storiesFixed}>
+   <NativeStories token={token} actorId={actorId}
+    displayName={displayName} profiles={profile.profiles}
+    canPublish={profile.phase==='ready'} refreshVersion={profile.liveVersion}/>
+  </View>}
   {active==='family'?<View style={[styles.root,styles.content,styles.familyViewport]}>{content}</View>:
-   <ScrollView style={styles.root} contentContainerStyle={styles.content}>{content}</ScrollView>}
+   <ScrollView style={styles.root} contentContainerStyle={styles.content}
+    keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>{content}</ScrollView>}
   <View style={styles.bottomNav} accessibilityRole="tablist">
    {(['home','chat','calendar','repertoire','family','notices'] as MemberScreen[]).map(dest=>{
     const item=MEMBER_MODULES.find(m=>m.id===dest),isActive=active===dest;
@@ -98,14 +103,15 @@ function NativeMemberHome({displayName,actorId,token,active,onNavigate}:Props){
  </View>;
 }
 const styles=StyleSheet.create({
- screen:{flex:1,backgroundColor:'#fff'},root:{flex:1},
- loungeInline:{marginHorizontal:-20,marginTop:9,backgroundColor:'#faf1e7'},
- content:{paddingHorizontal:20,paddingTop:10,paddingBottom:24,flexGrow:1},
+ screen:{flex:1,backgroundColor:'#f7f0e8'},root:{flex:1,minHeight:0},
+ storiesFixed:{backgroundColor:'#fff',paddingHorizontal:20,paddingBottom:0,zIndex:2},
+ loungeInline:{marginHorizontal:-20,marginTop:0,backgroundColor:'#f7f0e8'},
+ content:{paddingHorizontal:20,paddingTop:0,paddingBottom:24,flexGrow:1},
  familyViewport:{flex:1,minHeight:0,paddingBottom:0},
- top:{backgroundColor:'#0D2A23',paddingHorizontal:20,paddingBottom:22,
-  paddingTop:Platform.OS==='android'?(StatusBar.currentHeight||24)+20:20,
-  minHeight:112,marginHorizontal:-20,marginTop:-10,
-  marginBottom:10,flexDirection:'row',justifyContent:'space-between',alignItems:'center'},
+ top:{backgroundColor:'#0D2A23',paddingHorizontal:20,paddingBottom:16,
+  paddingTop:Platform.OS==='android'?(StatusBar.currentHeight||24)+12:16,
+  minHeight:95,marginHorizontal:0,marginTop:0,
+  marginBottom:0,flexDirection:'row',justifyContent:'space-between',alignItems:'center'},
  brand:{fontFamily:'serif',fontSize:19,fontWeight:'700',letterSpacing:2,color:'#DBC59A'},
  subheading:{fontSize:11,letterSpacing:1.4,color:'#D3DED5',marginTop:8},
  myProfile:{padding:2},headerAvatar:{width:40,height:40,borderRadius:20,
