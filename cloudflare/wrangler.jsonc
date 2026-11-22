@@ -32,26 +32,26 @@
       }
     ]
   },
-  "migrations": [
-    {
-      "tag": "v1",
-      "new_sqlite_classes": [
-        "ChatRoom"
-      ]
-    },
-    {
-      "tag": "v2-calendar-realtime",
-      "new_sqlite_classes": [
-        "CalendarRoom"
-      ]
-    }
-  ],
-  "triggers": { "crons": ["*/15 * * * *"] },
+  "triggers": {
+    "crons": [
+      "*/15 * * * *"
+    ]
+  },
   "observability": {
     "enabled": true,
     "logs": {
       "enabled": true,
       "invocation_logs": true
+    }
+  },
+  "exports": {
+    "ChatRoom": {
+      "type": "durable-object",
+      "storage": "sqlite"
+    },
+    "CalendarRoom": {
+      "type": "durable-object",
+      "storage": "sqlite"
     }
   }
 }
