@@ -1,6 +1,6 @@
 import React,{useCallback,useEffect,useMemo,useRef,useState} from 'react';
 import {View,StyleSheet} from 'react-native';
-import WebView,{type WebViewMessageEvent} from 'react-native-webview';
+import {WebView,type WebViewMessageEvent} from 'react-native-webview';
 import {privateAudioUrl} from '@havana/shared';
 import {NATIVE_AUDIO_EDITORIAL_HTML} from './nativeAudioEditorialHtml';
 import {
@@ -11,7 +11,7 @@ import {
 // engine. It cannot open network routes, perform authentication or play audio.
 // The HTML uses exactly the editorial CSS authored for the PWA music player.
 export default function NativeAudioEditorialView({inline=false}:{inline?:boolean}){
- const view=useRef<WebView>(null);
+ const view=useRef<WebView<object>>(null);
  const snapshot=useNativeAudioSnapshot();
  const [ready,setReady]=useState(false);
  const [height,setHeight]=useState(810);
@@ -51,7 +51,7 @@ export default function NativeAudioEditorialView({inline=false}:{inline?:boolean
   }
  },[inline]);
  return <View style={inline?[styles.inline,{height}]:styles.full} pointerEvents="auto">
-  <WebView ref={view} source={{html:NATIVE_AUDIO_EDITORIAL_HTML,
+  <WebView<object> ref={view} source={{html:NATIVE_AUDIO_EDITORIAL_HTML,
     baseUrl:'https://havana-nice-v2.pages.dev/'}} originWhitelist={['about:blank','https://havana-nice-v2.pages.dev']}
    onMessage={onMessage} onLoadEnd={()=>setReady(true)}
    onShouldStartLoadWithRequest={req=>req.url==='about:blank'||
