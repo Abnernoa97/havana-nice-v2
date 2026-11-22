@@ -1,5 +1,6 @@
 /* Isolated, symmetrical HOME state row. No Chat / BOOK selectors. */
-.hn-home-route,.hn-home-route .visual-layout,.hn-home-route .visual-content{background:#fff}
+.hn-home-route,.hn-home-route .visual-layout{background:#fff}
+.hn-home-route .visual-content{background:#f7f0e8}
 .hn-home-route .visual-header{background:#0D2A23}
 .hn-home-stage{background:#fff}
 .hn-moments-wrap{width:100%;padding:8px 0 0}
@@ -65,7 +66,6 @@
  .hn-home-route .hn-home-audio-scroll:after{
   content:"";display:block;height:calc(96px + env(safe-area-inset-bottom))
  }
- .hn-home-route .hn-home-audio-scroll .hn-audio-editorial{margin-top:0}
  .hn-home-route .hn-moments-wrap{background:#fff}
  .hn-home-route .hn-moments-strip{padding-bottom:2px}
 }
