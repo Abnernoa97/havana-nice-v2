@@ -5,6 +5,19 @@ import {useNativeStories} from './useNativeStories';
 import NativeStoryViewer from './NativeStoryViewer';
 import {storyStyles as s} from './native-story-styles';
 
+// A failed R2 grant must not leave an invisible circle or repeat requests on
+// every render. Show the member's initial until a new photo URL arrives.
+const StoryAvatar=React.memo(function StoryAvatar({uri,name,onFailure}:{
+ uri:string|null|undefined;name:string;onFailure:()=>void;
+}){
+ const [failed,setFailed]=useState(false);
+ useEffect(()=>setFailed(false),[uri]);
+ return uri&&!failed
+  ?<Image source={{uri,cache:'default'}} style={s.photo} resizeMode="cover"
+    onError={()=>{setFailed(true);onFailure();}}/>
+  :<Text style={s.initial}>{name.charAt(0).toUpperCase()}</Text>;
+});
+
 type Props={token:string;actorId:string;displayName:string;profiles:readonly MemberProfile[];
  canPublish:boolean;refreshVersion:number};
 
@@ -33,11 +46,7 @@ export default function NativeStories({token,actorId,displayName,profiles,canPub
  const newest=(id:string)=>states.stories.filter(st=>st.actorId===id)
   .reduce<MemberStory|null>((best,s)=>!best||s.createdAt>best.createdAt||
    (s.createdAt===best.createdAt&&s.id>best.id)?s:best,null);
- const avatar=(url:string|null|undefined,name:string)=>
-  url?<Image source={{uri:url,cache:'force-cache'}} style={s.photo} resizeMode="cover"
-    onError={()=>void states.refresh()}/>:
-   <Text style={s.initial}>{name.charAt(0).toUpperCase()}</Text>;
- const member=(person:{actorId:string;name:string;photoUrl:string|null},self=false)=>{
+  const member=(person:{actorId:string;name:string;photoUrl:string|null},self=false)=>{
   const last=newest(person.actorId);
   return <View style={s.member} key={person.actorId}>
    <View style={s.slot}>
@@ -45,7 +54,8 @@ export default function NativeStories({token,actorId,displayName,profiles,canPub
      accessibilityLabel={last?'Ver estados de '+person.name:'Sin estados de '+person.name}
      onPress={()=>setViewerActor(person.actorId)}
      style={[s.ring,self&&s.ownRing,!!last&&s.activeRing]}>
-     {avatar(person.photoUrl||last?.photoUrl,person.name)}
+     <StoryAvatar uri={last?.photoUrl||person.photoUrl} name={person.name}
+      onFailure={()=>{if(last)states.retryPhoto(last.id);}}/>
     </Pressable>
     {self&&<Pressable accessibilityRole="button" accessibilityLabel="Publicar hasta cinco fotos"
      disabled={!canPublish||states.saving} style={s.plus}
@@ -63,7 +73,11 @@ export default function NativeStories({token,actorId,displayName,profiles,canPub
     {others.map(p=>member(p))}
    </ScrollView>
    {states.saving&&<ActivityIndicator color="#153d31"/>}
-   {!!states.error&&<Text style={s.error}>{states.error}</Text>}
+   {(!!states.error||states.stories.length===0)&&
+    <Pressable accessibilityRole="button" accessibilityLabel="Actualizar estados del equipo"
+     onPress={states.retryAll} style={s.reload}>
+     <Text style={s.reloadText}>{states.error||'Sin estados activos'} · Actualizar</Text>
+    </Pressable>}
   </View>
   {viewerActor&&group.length>0&&<NativeStoryViewer key={viewerActor}
    stories={group} token={token} actorId={actorId} version={refreshVersion}
