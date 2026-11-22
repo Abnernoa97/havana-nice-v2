@@ -240,7 +240,10 @@ test('iPhone Audio starts on the real user gesture and never shows a false red a
  assert.match(pwa,/const playTrack=\(position:number\)=>\{/);
  assert.match(pwa,/audio\.preload='auto';audio\.src=url;/);
  assert.match(pwa,/setSelected\(position\);\s*void audio\.play\(\)/);
- assert.match(pwa,/if\(error instanceof Error&&error\.name==='NotAllowedError'\)return/);
+ assert.match(pwa,/error\.name==='NotAllowedError'\|\|error\.name==='AbortError'/);
+ assert.match(pwa,/if\(audio\.src!==url\)return/);
+ assert.match(pwa,/void recoverMedia\(track\.id\)/);
+ assert.match(pwa,/if\(ref\.current\?\.src!==failedUrl\)return/);
  assert.doesNotMatch(pwa,/Toca reproducir para escuchar el audio/);
  assert.match(pwa,/\{!!error&&!current&&<p className="hn-audio-error"/);
  assert.match(pwa,/aria-busy=\{isBuffering\}/);
