@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {DatabaseSync} from 'node:sqlite';
 import {readFileSync} from 'node:fs';
-import {notifyStoryOwner,notifyTeamStoryPublished,notifyTeamChatMessage,notifyChatReaction,notifyCalendarMembers,notifyTeamProfilePhoto,notifyTeamFamilyMedia,handleMemberNotices} from '../src/modules/notices/member-notifications.js';
+import {notifyStoryOwner,notifyTeamStoryPublished,notifyTeamChatMessage,notifyChatReaction,notifyCalendarMembers,notifyTeamProfilePhoto,notifyTeamFamilyMedia,notifyRepertoireMembers,handleMemberNotices} from '../src/modules/notices/member-notifications.js';
 
 const FER='member:fer',NOA='member:noa',STORY='123e4567-e89b-42d3-a456-426614174000';
 const ROOT='https://havana-nice-v2-dev.soloaplicaciones97.workers.dev';
@@ -12,8 +12,11 @@ function setup(){
  raw.exec('CREATE TABLE chat_members(actor_id TEXT PRIMARY KEY,display_name TEXT NOT NULL,active INTEGER NOT NULL)');
  raw.exec('CREATE TABLE member_stories(id TEXT PRIMARY KEY,actor_id TEXT NOT NULL,expires_at INTEGER NOT NULL)');
  raw.exec('CREATE TABLE chat_messages(seq INTEGER PRIMARY KEY,sender_id TEXT NOT NULL,deleted_at TEXT)');
+ raw.exec('CREATE TABLE calendar_event_recipients(event_id TEXT,actor_id TEXT)');
  raw.exec(readFileSync(new URL('../migrations/0034_member_notifications.sql',import.meta.url),'utf8'));
  raw.exec(readFileSync(new URL('../migrations/0037_calendar_member_notifications.sql',import.meta.url),'utf8'));
+ raw.exec(readFileSync(new URL('../migrations/0039_member_system_notifications.sql',import.meta.url),'utf8'));
+
  raw.prepare('INSERT INTO chat_members VALUES(?,?,1)').run(FER,'Fer');
  raw.prepare('INSERT INTO chat_members VALUES(?,?,1)').run(NOA,'Noa');
  raw.prepare('INSERT INTO member_stories VALUES(?,?,?)').run(STORY,FER,Date.now()+86400000);
@@ -198,4 +201,25 @@ test('Admin-managed Familia originals alert the whole team, including album owne
   assert.equal(inbox.items[0].targetId,file);
   assert.match(inbox.items[0].preview,/fotografía/);
  }
+});
+
+test('Repertoire admin edit sends actorless notification only to assigned musician',async()=>{
+ const {env,raw,api}=setup();
+ raw.prepare('INSERT INTO calendar_event_recipients VALUES(?,?)').run(STORY,FER);
+ assert.equal(await notifyRepertoireMembers(env,STORY,'added','revision-1'),1);
+ assert.equal(await notifyRepertoireMembers(env,STORY,'added','revision-1'),0);
+ const owner=await (await api('fer')).json();
+ const other=await (await api('noa')).json();
+ assert.equal(owner.unread,1);
+ assert.equal(other.unread,0);
+ assert.equal(owner.items[0].kind,'repertoire.updated');
+ assert.equal(owner.items[0].actorId,'');
+ assert.equal(owner.items[0].name,'HAVANA NICE');
+ assert.match(owner.items[0].preview,/canciones/);
+ assert.equal((await api('noa','/api/notices/read',{id:owner.items[0].id})).status,200);
+ assert.equal((await (await api('fer')).json()).unread,1);
+ assert.equal((await api('fer','/api/notices/read',{id:owner.items[0].id})).status,200);
+ assert.equal((await (await api('fer')).json()).unread,0);
+ raw.prepare('UPDATE chat_members SET active=0 WHERE actor_id=?').run(FER);
+ assert.equal(await notifyRepertoireMembers(env,STORY,'reordered','revision-2'),0);
 });
