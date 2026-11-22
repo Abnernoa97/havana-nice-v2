@@ -14,6 +14,7 @@
 
 - [x] **Audio:** retirados 21 estilos de adornos ocultos y su DOM, conservando gráficos reales, portada privada, vinilo y PageFlip; test de regresión actualizado.
 - [x] **PWA:** lógica/CSS de orientación del iPhone aislados en `features/viewport/`; regla común móvil devuelta a su tamaño original. Una sola rama `main`, cero PR abiertos.
+- [x] **HOME:** retirado el viejo `hn-home-blank` de 55vh y reglas de márgenes/padding reemplazadas por el scroll interior. Estados, degradado y gráficos de Audio conservados.
 - [ ] **Siguiente limpieza:** reducir reglas CSS superpuestas HOME/Audio sin alterar acabado aprobado; auditar controladores Chat y discrepancia entre Worker de Audio en `main` y despliegue real.
 - **Registro de evidencias y límites:** [auditoría del 22/11](AUDITORIA-DEPURACION-2026-11-22.md). No declarar todo el repositorio 100 % depurado por una compilación exitosa.
 
@@ -159,7 +160,7 @@ tests/ + cloudflare/tests/ + scripts/ → reglas de seguridad y CI
 
 ## 4.1. Matriz de aceptación física antes de declarar sincronización 100 %
 
-- [x] **BOOK 3D Android/PWA:** el usuario confirmó que abrió y que el giro hacia atrás y el deslizamiento mejorado funcionan con 0.0.21 y actualizaciones web.
+- [x] **BOOK 3D Android/PWA:** el usuario confirmó previamente avance, retroceso y deslizamiento en el lector híbrido; el código actual preserva PageFlip y exige QA en 0.0.23.
 - [ ] **QA restante Android/PWA:** verificar Recuerdos de Calendario y sincronización real de Chat/Familia/Calendario; no confundir BOOK validado con toda la aplicación validada.
 - [ ] **Calendario Admin ↔ PWA ↔ Android:** crear/editar fecha real de prueba, cambiar destinatarios y eliminar únicamente esa fecha de prueba; observar notificación instantánea y que un músico desasignado deja de verla.
 - [ ] **Repertorio:** editar catálogo y lista por fecha desde Admin; comprobar actualización en ambos clientes y que quitar fecha invalida su lista.
