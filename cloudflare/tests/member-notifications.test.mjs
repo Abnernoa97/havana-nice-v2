@@ -21,7 +21,18 @@ function setup(){
   async all(){return {results:raw.prepare(statement).all(...params)};},
   async run(){return {meta:raw.prepare(statement).run(...params)};}
  });
- const DB={prepare:statement=>({bind:(...params)=>sql(statement,params)})};
+ const DB={
+  prepare:statement=>({bind:(...params)=>sql(statement,params)}),
+  async batch(statements){
+   raw.exec('BEGIN IMMEDIATE');
+   try{
+    const results=[];
+    for(const statement of statements)results.push(await statement.run());
+    raw.exec('COMMIT');
+    return results;
+   }catch(error){raw.exec('ROLLBACK');throw error;}
+  }
+ };
  const env={DB};
  const identity=(env,token)=>token==='fer'?{actorId:FER,displayName:'Fer'}:
   token==='noa'?{actorId:NOA,displayName:'Noa'}:null;
