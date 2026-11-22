@@ -6,10 +6,10 @@
 
 - [x] **0.0.25:** Estados fijos, Chat invertido, BOOK intacto y splash HN.
 - [x] **Audio:** 3D no autorizado revertido de PWA/Android; Expo Audio y BOOK intactos.
-- [ ] **APK 0.0.27:** compilación [#45054455003](https://github.com/Abnernoa97/havana-nice-v2/actions/runs/45054455003); publicar solo tras firma/rollback. 0.0.26 vigente.
+- [x] **APK 0.0.27 firmada:** [run #45054455003](https://github.com/Abnernoa97/havana-nice-v2/actions/runs/45054455003) `SUCCESS`, `versionCode 27`, firma compatible, rollback 0.0.26. [APK](https://github.com/Abnernoa97/havana-nice-v2/releases/download/v2-android-current/HAVANA-NICE-V2-LATEST.apk). QA física pendiente.
 
 - [x] **Estados:** PWA/Android aceptan autores desde API aunque falten en Perfiles, refresco visible 45 s. PWA publicada.
-- [x] **Avisos:** indicador privado de no leídos en PWA y Android, lectura con app abierta cada 30 s. `story.created` en `main` pendiente despliegue Worker.
+- [x] **Avisos en interfaz:** contador privado en PWA/Android, consulta cada 30 s en primer plano. `story.created`, `chat.message` y `chat.reaction` incorporados al Worker en `main`, PENDIENTES DE DESPLIEGUE. D1 conserva 1 aviso previo sin leer.
 - [ ] **Pantalla apagada:** Firebase FCM Android y Web Push para PWA instalada requieren configuración/credenciales/permiso; NO activos todavía.
 
 ## Calendario sincronizado · 22/11/2026
@@ -25,7 +25,7 @@
 - [x] **HOME PWA:** Estados fijos bajo cabecera, Audio con scroll independiente y degradado blanco→marfil. Compilación y 74/74 pruebas aprobadas en Pages (`5fc9832`).
 - [x] **Audio PWA:** reproducción iniciada desde el toque (Safari), indicador real de buffering, sin falso error rojo; portadas preparadas sin competir con streaming.
 - [x] **iPhone:** bloqueo reversible del scroll del documento solo en HOME; elimina rebote de la franja blanca sin tocar Estados, Chat o BOOK.
-- [x] **Android:** Estado fijado y recuperación 45 s; Audio original. APK 0.0.27 en compilación.
+- [x] **Android:** Estados fijos y reconciliados (45 s), emojis al sostener y Audio original en APK 0.0.27 firmada; BOOK intacto.
 - [x] **Vertical iPhone:** PWA músico instalada solicita `portrait-primary` e incorpora lienzo vertical con rotación CSS cuando Safari gira; portales de Estados incluidos. Expo Android ya fija `portrait`. Respeta BOOK independiente. **Pendiente:** prueba física en iPhone (Safari puede ignorar bloqueo nativo).
 
 ## Depuración estructural · 22/11/2026
@@ -132,7 +132,7 @@ tests/ + cloudflare/tests/ + scripts/ → reglas de seguridad y CI
 | Cloudflare Pages | publica `main`; comprobar SHA/deploy tras cada cambio |
 | Worker **en vivo** | V93 `e74e6f68-baea-4949-8a03-7c67ee03ca65`, deployment `a02fc7a2-8c4c-4edc-a484-c49b7d56ae66`, 100 %, 22/11. Siete bindings preservados; versión anterior disponible. |
 | Worker **en código** | Paquete Wrangler desplegado desde fuente `a758096be13159c7b7fc3a26b0d58a6b7aecb164`. Bundle temporal retirado de `main`, conservado en historial Git y Cloudflare. |
-| Android | APK firmada 0.0.26 aún vigente; 0.0.27 en compilación con Estados, emojis, avisos y Audio original. |
+| Android | APK 0.0.27 firmada, `versionCode 27`, certificado compatible con 0.0.26, rollback disponible; Estados/Chat/Audio original. QA física pendiente. |
 | Colas R2 | BOOK, Calendario y baja de músicos: **0** operaciones pendientes al control |
 | Fotos personales | Calendario 4 recuerdos (3 WebP), BOOK 7 originales (0 WebP), Familia 16 archivos al control |
 
