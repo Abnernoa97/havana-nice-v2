@@ -8,14 +8,14 @@
 - [x] **Sello:** EVENTO REALIZADO tras medianoche en la zona horaria del evento, incluso en registros anteriores; actualiza la vista cada minuto.
 - [x] **Pantalla:** solo «Calendario» arriba, sin títulos ni rutas extra en PWA y Android.
 - [x] **Live:** una conexión CalendarRoom por sesión, cambios desde Admin y aviso «HAVANANICE-CALENDARIO📆» en Chat y demás vistas, inbox D1 privado por músico.
-- [ ] **Pendientes:** QA en dispositivos, nuevo APK Android, push OS con aplicación cerrada.
+- [ ] **Pendientes:** QA físico en Android 0.0.24 e iPhone; push OS con aplicación cerrada no implementado.
 
 ## HOME/Audio iPhone · 22/11/2026
 
 - [x] **HOME PWA:** Estados fijos bajo cabecera, Audio con scroll independiente y degradado blanco→marfil. Compilación y 74/74 pruebas aprobadas en Pages (`5fc9832`).
 - [x] **Audio PWA:** reproducción iniciada desde el toque (Safari), indicador real de buffering, sin falso error rojo; portadas preparadas sin competir con streaming.
 - [x] **iPhone:** bloqueo reversible del scroll del documento solo en HOME; elimina rebote de la franja blanca sin tocar Estados, Chat o BOOK.
-- [x] **Android:** Estados fijos y degradado en código; nueva APK NO autorizada. Pendiente QA físico iPhone/Android y confirmar publicación del último bloque.
+- [x] **Android:** Estados fijos, degradado y Audio editorial unificado con la PWA incluidos en APK firmada 0.0.24. QA físico pendiente.
 - [x] **Vertical iPhone:** PWA músico instalada solicita `portrait-primary` e incorpora lienzo vertical con rotación CSS cuando Safari gira; portales de Estados incluidos. Expo Android ya fija `portrait`. Respeta BOOK independiente. **Pendiente:** prueba física en iPhone (Safari puede ignorar bloqueo nativo).
 
 ## Depuración estructural · 22/11/2026
@@ -26,15 +26,15 @@
 - [ ] **Siguiente limpieza:** auditar controladores grandes de Chat y discrepancias entre el Worker Audio en `main` y el backend desplegado; validar en iPhone los efectos reales de orientación, scroll y primer sonido.
 - **Registro de evidencias y límites:** [auditoría del 22/11](AUDITORIA-DEPURACION-2026-11-22.md). No declarar todo el repositorio 100 % depurado por una compilación exitosa.
 
-## Lote acumulativo en `main` · 21/11 · SIN nueva APK
+## Actualización Android acumulativa · 21–22/11
 
-- **APK 0.0.23**: compilación, firma y publicación CI aprobadas (#16, run 44878578050). El usuario ya mostró capturas de ejecución física; eso confirma instalación, no QA completa. **NO** crear 0.0.24 ni tocar el manifiesto `releases/android-batch.json` hasta nuevo pedido expreso.
+- **APK 0.0.24 publicada y firmada:** run GitHub Actions [44997594379](https://github.com/Abnernoa97/havana-nice-v2/actions/runs/44997594379) aprobado. Certificado SHA-256 idéntico al de 0.0.23; paquete `com.havananice.v2`, `versionCode 24` y JS de producción embebido. `LATEST.apk` actualizada, `PREVIOUS.apk` conserva 0.0.23. Actualización encima de la anterior, sin desinstalar ni borrar datos.
 - **Android · Inicio**: encabezado más abajo y marca proporcionada respecto a la barra de estado. **Estados**: 48 px de separación inferior para los botones del SO; segmentos de progreso pulsables y flechas de foto anterior/siguiente, conservando misma galería de cinco fotos, 6 segundos, API y R2.
 - **Android · Chat**: reacción visible en cada burbuja y toque sobre emojis existentes; ambos reutilizan la única función nativa `react(seq,emoji)`, la conexión Chat vigente y la lluvia visual. Validación física pendiente.
 - **Calendario/Recuerdos Android**: al expandir fecha pasada, mostrar de inmediato el **mismo BOOK híbrido 3D PWA**, dentro de la ficha, sin pulsar «Abrir recuerdo». `NativeBook` añade modo inline pero preserva URL canónica, sesión in-memory, PageFlip y modal de BOOK principal. Revisar scroll/gestos en vivo y altura real en teléfonos.
 - **Notificaciones en vivo:** D1 0034 y 0037 activadas; avisos privados de Estados y Calendario, deduplicados y limitados a destinatarios. CalendarRoom autorizado sin suplantar músicos.
 - **Backend 22/11:** Worker v93 `e74e6f68-baea-4949-8a03-7c67ee03ca65` al 100 %, bundle Wrangler con pruebas de Calendario, Audio y avisos. Siete bindings, DO y secreto Admin conservados; rollback v92 `de7e23ad`.
-- **Pendiente:** push de sistema con app cerrada, indicador global de no leídos, vínculo directo al evento y QA entre dispositivos. Código Android aún sin nueva APK.
+- **Pendiente:** QA físico de 0.0.24, push de sistema con app cerrada, indicador global de no leídos y vínculo directo al evento.
 
 ## Administrador con interfaz del músico · 21/11
 
@@ -46,7 +46,7 @@
 
 - **Una sola rama `main`**, un solo repositorio V2. Sin parches temporales, duplicar rutas o dejar motores alternativos. Borrar lógica verdaderamente sustituida solo después de verificar referencias y equivalencia funcional.
 - **No tocar HAVANA CLOUD, PWA original, Drive original, cuentas ni producción ajena a V2.** No migrar datos del sistema anterior. V2 es autónoma.
-- **iPhone:** PWA instalable. **Android:** app React Native/Expo con Chat nativo; instalar futura APK acumulativa encima de la anterior. No generar APK por cada mejora. Android APK publicada **0.0.23** (`versionCode 23`), firmada e instalable encima de 0.0.21 según CI; BOOK 3D confirmado por el usuario. QA integral pendiente.
+- **iPhone:** PWA instalable. **Android:** app React Native/Expo con Chat nativo; instalar futura APK acumulativa encima de la anterior. No generar APK por cada mejora. Android APK publicada **0.0.24** (`versionCode 24`), certificado compatible con 0.0.23; BOOK 3D preservado. QA integral pendiente.
 - **Identidad:** Admin autoriza nombres; el músico ingresa una vez y su instalación queda vinculada a una sola sesión/propietario. Rechazar desconocidos y revocados. Hasta 10 músicos, lista inicial Orly, Andy, Jali, Rafa, Noa y Fer. El Admin tiene sesión y permisos propios; un solo dueño de sesión para todos los módulos, sin nuevos accesos secundarios.
 - **Módulos independientes:** Chat, Calendario, Repertorio, Familia, BOOK, Músicos y futura Multimedia. HOME como navegación central; datos, estados y componentes separados; compartir contratos, servicios y sesión, no duplicar implementación.
 - **Primero funcionamiento, sincronización, velocidad y depuración.** Después pintura/estética. Preservar lo visual que el usuario ya confirmó de BOOK/Calendario.
@@ -80,7 +80,7 @@ cloudflare/migrations/ → historial aditivo D1; NUNCA reescribir migraciones us
 tests/ + cloudflare/tests/ + scripts/ → reglas de seguridad y CI
 ```
 
-**HOME social (21/11):** PWA: fotos JPG 720×1280 objetivo ~450KB, 24h, URLs 8min, barra 6s, voz/comentarios y ❤️/👏/😂. Android: React Native nativo separado, mismo backend D1/R2, JPEG 720px, Animated 6s, voz AAC/M4A mediante expo-audio, misma conversación, sin WebView ni otro Chat. Lote APK 0.0.23 autorizado; publicable solo si supera firma incremental de 0.0.21 y pruebas. BOOK 3D intacto. Safari sin zoom por doble toque y campos 16px, pellizco depende del SO.
+**HOME social (21/11):** PWA: fotos JPG 720×1280 objetivo ~450KB, 24h, URLs 8min, barra 6s, voz/comentarios y ❤️/👏/😂. Android: React Native nativo separado, mismo backend D1/R2, JPEG 720px, Animated 6s, voz AAC/M4A mediante expo-audio, misma conversación, sin WebView ni otro Chat. Lote histórico 0.0.23 aprobado; actualización 0.0.24 firmada con el mismo certificado. BOOK 3D intacto. Safari sin zoom por doble toque y campos 16px, pellizco depende del SO.
 
 **Separación de carga PWA:** `React.lazy`/`Suspense` en HOME, Calendario, Repertorio, Familia, BOOK y pestañas Admin. La PWA tiene cuatro entradas HTML históricas, pero **no URLs HTML diferentes por módulo**; cada componente pesado se descarga bajo demanda. Comprobación con manifiesto real de Vite. Usuario aprobó navegación de iPhone el 08/11; pruebas físicas adicionales sin red siguen pendientes.
 
@@ -122,7 +122,7 @@ tests/ + cloudflare/tests/ + scripts/ → reglas de seguridad y CI
 | Cloudflare Pages | publica `main`; comprobar SHA/deploy tras cada cambio |
 | Worker **en vivo** | V93 `e74e6f68-baea-4949-8a03-7c67ee03ca65`, deployment `a02fc7a2-8c4c-4edc-a484-c49b7d56ae66`, 100 %, 22/11. Siete bindings preservados; versión anterior disponible. |
 | Worker **en código** | Paquete Wrangler desplegado desde fuente `a758096be13159c7b7fc3a26b0d58a6b7aecb164`. Bundle temporal retirado de `main`, conservado en historial Git y Cloudflare. |
-| Android | APK firmada **0.0.23**, `versionCode` 23 en fuente; NO generar versión siguiente sin aprobación. Las correcciones de HOME/Audio posteriores siguen sin incluirse en APK. BOOK 3D preservado. |
+| Android | APK firmada **0.0.24**, `versionCode 24`; paquete y firma comparados con 0.0.23; Audio/HOME y Calendario incluidos; BOOK 3D preservado. |
 | Colas R2 | BOOK, Calendario y baja de músicos: **0** operaciones pendientes al control |
 | Fotos personales | Calendario 4 recuerdos (3 WebP), BOOK 7 originales (0 WebP), Familia 16 archivos al control |
 
@@ -168,7 +168,7 @@ tests/ + cloudflare/tests/ + scripts/ → reglas de seguridad y CI
 
 ## 4.1. Matriz de aceptación física antes de declarar sincronización 100 %
 
-- [x] **BOOK 3D Android/PWA:** el usuario confirmó previamente avance, retroceso y deslizamiento en el lector híbrido; el código actual preserva PageFlip y exige QA en 0.0.23.
+- [x] **BOOK 3D Android/PWA:** el usuario confirmó previamente avance, retroceso y deslizamiento en el lector híbrido; el código preserva PageFlip y requiere QA física tras instalar 0.0.24.
 - [ ] **QA restante Android/PWA:** verificar Recuerdos de Calendario y sincronización real de Chat/Familia/Calendario; no confundir BOOK validado con toda la aplicación validada.
 - [ ] **Calendario Admin ↔ PWA ↔ Android:** crear/editar fecha real de prueba, cambiar destinatarios y eliminar únicamente esa fecha de prueba; observar notificación instantánea y que un músico desasignado deja de verla.
 - [ ] **Repertorio:** editar catálogo y lista por fecha desde Admin; comprobar actualización en ambos clientes y que quitar fecha invalida su lista.
@@ -201,7 +201,7 @@ tests/ + cloudflare/tests/ + scripts/ → reglas de seguridad y CI
 - [x] **Sin código fuente huérfano conocido:** `check:structure` recorre importaciones normales y lazy de PWA, Android, Worker y paquete compartido; la CI vigente es verde. Se conserva la historia de migraciones D1: no es basura.
 - [x] **Sin instrucciones de versiones obsoletas:** retiradas de este Plan Maestro las notas ejecutables de APK 0.0.14–0.0.16 y el puente `injectedJavaScriptObject` sustituido. La trazabilidad permanece en el historial Git.
 - [x] **Nueva protección de una línea:** la CI consulta directamente GitHub y falla si aparecen ramas adicionales a `main` o PR abiertos. Se conserva el mismo workflow, no se crea otro.
-- [x] **Android modular:** entrada `NativeApp.tsx` mínima, controlador Chat único en `features/chat/useNativeChatController.ts`; UI, viewport y navegación en archivos independientes. No se generó APK durante esta limpieza; conservar experiencia de la 0.0.23 hasta QA.
+- [x] **Android modular:** entrada `NativeApp.tsx` mínima, controlador Chat único en `features/chat/useNativeChatController.ts`; UI, viewport y navegación en archivos independientes. Consolidado en APK 0.0.24; QA física pendiente.
 - [x] **HOME PWA desacoplado (20/11):** la vista `features/home/MemberHome.tsx` se carga bajo demanda desde `VisualApp.tsx`, sin WebSocket, sesión propia ni almacenamiento. Se conservan las mismas tarjetas, botón de Inicio, navegación y restricciones de vista previa. Chat sigue siendo el controlador inicial y su conexión se mantiene independiente de HOME.
 - [ ] **QA HOME en iPhone PWA:** entrada, retorno desde Chat, cambio rápido de módulos y actualización del Service Worker, con y sin conexión.
 - [ ] **Cloudflare index.ts:** ~270 líneas. Ya es el único router de dominio; auditar acoplamientos y extraer únicamente responsabilidades realmente mezcladas, sin fragmentar por estética ni alterar Worker vivo.
