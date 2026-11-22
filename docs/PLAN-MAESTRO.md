@@ -8,6 +8,7 @@
 - [x] **Audio PWA:** reproducción iniciada desde el toque (Safari), indicador real de buffering, sin falso error rojo; portadas preparadas sin competir con streaming.
 - [x] **iPhone:** bloqueo reversible del scroll del documento solo en HOME; elimina rebote de la franja blanca sin tocar Estados, Chat o BOOK.
 - [x] **Android:** Estados fijos y degradado en código; nueva APK NO autorizada. Pendiente QA físico iPhone/Android y confirmar publicación del último bloque.
+- [x] **Vertical iPhone:** PWA músico instalada solicita `portrait-primary` e incorpora lienzo vertical con rotación CSS cuando Safari gira; portales de Estados incluidos. Expo Android ya fija `portrait`. Respeta BOOK independiente. **Pendiente:** prueba física en iPhone (Safari puede ignorar bloqueo nativo).
 
 ## Lote acumulativo en `main` · 21/11 · SIN nueva APK
 
@@ -149,7 +150,7 @@ tests/ + cloudflare/tests/ + scripts/ → reglas de seguridad y CI
 
 - [x] **PWA: presentación de acceso aislada (20/11):** `App.tsx` pasó de 843 a 826 líneas; `PwaMemberAccessPanel.tsx` presenta restauración, acceso denegado de BOOK y entrada por nombre. La sesión, WebSocket, reconexión, rutas, la cola offline y la autorización permanecen en `App.tsx`; comprobación de build Pages exitosa en `bdc018c`. Se incorpora una prueba de límites de responsabilidad. QA física de sesión y modo avión sigue pendiente.
 
-- [x] **PWA `App.tsx` reorganizado (20/11):** de 826 líneas a entrada de 9. `usePwaChatController.ts` conserva el único dueño de sesión, WebSocket, histórico, borrado, ACK y offline; `PwaChatSurface.tsx` contiene la presentación completa; `usePwaMemberNavigation.ts` conserva el historial y retroceso del navegador; `usePwaChatMediaUpload.ts` conserva las llamadas de R2 originales y el progreso. El selector `usePwaMediaSelection`, la galería, IndexedDB y los servicios permanecen intactos. Pruebas de fuente migradas al grafo modular; los comandos de Cloudflare Pages bloquean una compilación con fallas de estructura, auditoría, TypeScript o pruebas del acceso/bundle. CI general y QA físico siguen siendo exigibles antes de declarar sincronización integral.
+- [x] **PWA `App.tsx` reorganizado (20/11):** entrada de 9 líneas. `usePwaChatController.ts` conserva sesión única, socket, historial, ACK y offline; `PwaChatSurface.tsx` contiene UI; navegación/historial y carga R2/progreso están en sus hooks propios. Galería e IndexedDB intactos. Estructura, TypeScript y postbuild bloquean errores; falta QA físico integral.
 
 ## 4.1. Matriz de aceptación física antes de declarar sincronización 100 %
 
