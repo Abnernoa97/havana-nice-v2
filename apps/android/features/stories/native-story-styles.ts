@@ -20,4 +20,5 @@ export const storyStyles=StyleSheet.create({
  error:{fontSize:12,color:'#9d4d40',paddingVertical:6},
  reload:{alignSelf:'flex-start',paddingVertical:4,paddingHorizontal:8},
  reloadText:{fontSize:11,color:'#745d3a'},
+ emptyHint:{fontSize:12,color:'#665431',marginLeft:7,paddingVertical:3},
 });
