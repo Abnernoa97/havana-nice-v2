@@ -132,7 +132,8 @@ test('Android OS player uses the same cover and MediaSession with audio backgrou
  assert.match(layout,/<NativeAudioEditorialView inline\/>/);
  assert.match(layout,/\{header\}/);
  assert.match(layout,/styles\.storiesFixed/);
- assert.match(layout,/\{active==='home'&&<View style=\{styles\.storiesFixed\}>/);
+ assert.match(layout,/<View style=\{styles\.storiesFixed\}>/);
+ assert.doesNotMatch(layout,/active==='home'&&<View style=\{styles\.storiesFixed\}>/);
  const audio=app.expo.plugins.find(p=>Array.isArray(p)&&p[0]==='expo-audio');
  assert.equal(audio[1].enableBackgroundPlayback,true);
  const batch=JSON.parse(read('releases/android-batch.json'));
@@ -241,7 +242,8 @@ test('HOME keeps the story strip stationary while only Audio moves, in PWA and A
  assert.match(stage,/\.hn-home-route \.hn-home-stage:after\{[\s\S]*?pointer-events:none/);
  assert.match(stage,/rgba\(255,255,255,0\) 100%/);
  assert.match(frame,/\.visual-bottom-nav\{position:fixed;bottom:0/);
- assert.match(native,/\{active==='home'&&<View style=\{styles\.storiesFixed\}>/);
+ assert.match(native,/<View style=\{styles\.storiesFixed\}>/);
+ assert.doesNotMatch(native,/active==='home'&&<View style=\{styles\.storiesFixed\}>/);
  assert.match(native,/source=\{\{uri:STORIES_FADE\}\}/);
  assert.match(native,/storiesFade:\{position:'absolute',left:0,right:0,bottom:-29,height:36/);
  assert.match(native,/<ScrollView style=\{styles\.root\} contentContainerStyle=\{styles\.content\}/);
