@@ -128,3 +128,28 @@ test('WebPush has real VAPID auth and FCM never sends without service credential
  assert.equal((await sendFcmPush({},{})).unconfigured,true);
  assert.equal((await sendWebPush({}, {endpoint:'https://attacker.test'},{})).terminal,true);
 });
+
+test('Provider readiness verifies project ID and private credential format without revealing secrets',async()=>{
+ const {env,api}=dbFixture();
+ let config=await (await api('GET','/api/push/config')).json();
+ assert.equal(config.androidReady,false);
+ assert.equal(config.webReady,false);
+ env.FCM_SERVICE_ACCOUNT_JSON=JSON.stringify({
+  project_id:'different-project',client_email:'firebase-adminsdk@different-project.iam.gserviceaccount.com',
+  private_key:'-----BEGIN PRIVATE KEY-----test'
+ });
+ config=await (await api('GET','/api/push/config')).json();
+ assert.equal(config.androidReady,false);
+ env.FCM_SERVICE_ACCOUNT_JSON=JSON.stringify({
+  project_id:'havana-nice-v2-push',client_email:'firebase-adminsdk@havana-nice-v2-push.iam.gserviceaccount.com',
+  private_key:'-----BEGIN PRIVATE KEY-----test'
+ });
+ env.PUSH_VAPID_PUBLIC_KEY='A'.repeat(87);
+ env.PUSH_VAPID_PRIVATE_KEY='B'.repeat(43);
+ config=await (await api('GET','/api/push/config')).json();
+ assert.equal(config.androidReady,true);
+ assert.equal(config.webReady,true);
+ assert.equal(config.publicKey,env.PUSH_VAPID_PUBLIC_KEY);
+ assert.ok(!JSON.stringify(config).includes(env.PUSH_VAPID_PRIVATE_KEY));
+ assert.ok(!JSON.stringify(config).includes('firebase-adminsdk'));
+});
