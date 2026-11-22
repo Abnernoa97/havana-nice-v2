@@ -153,9 +153,11 @@
 }
 .hn-audio-parchment:after{inset:0;z-index:-1;opacity:.28;mix-blend-mode:multiply}
 .hn-audio-paper-tear{
- top:-2px;left:0;right:0;width:100%;height:50px;
+ top:-17px;left:0;right:0;width:100%;height:67px;
  transform:none;border-radius:0;filter:none;box-shadow:none;
- background:url('/audio-lounge/tear.webp') center top / 100% 100% no-repeat;
+ background:url('/audio-lounge/tear.webp') center center / 100% 100% no-repeat;
+ -webkit-mask-image:linear-gradient(to bottom,transparent 0%,#000 23%,#000 68%,transparent 99%);
+ mask-image:linear-gradient(to bottom,transparent 0%,#000 23%,#000 68%,transparent 99%);
 }
 .hn-audio-fold{display:none}
 .hn-audio-paper-title{margin:0 auto 11px;gap:3px}
@@ -170,12 +172,13 @@
 }
 .hn-audio-player{gap:7px}
 .hn-audio-flowers{
- position:absolute;z-index:0;left:-18px;top:-7px;
+ position:absolute;z-index:0;left:-18px;top:-12px;
  width:calc(100% + 36px);height:auto;aspect-ratio:864 / 475;
- pointer-events:none;
+ pointer-events:none;opacity:.97;
  background:url('/audio-lounge/floral.webp') center center / 100% 100% no-repeat;
- -webkit-mask-image:linear-gradient(to bottom,transparent,#000 17%,#000 89%,transparent);
- mask-image:linear-gradient(to bottom,transparent,#000 17%,#000 89%,transparent);
+ /* Diffuse in every direction instead of showing a rectangular backdrop. */
+ -webkit-mask-image:radial-gradient(ellipse 65% 68% at 50% 53%,#000 58%,#000 65%,transparent 100%);
+ mask-image:radial-gradient(ellipse 65% 68% at 50% 53%,#000 58%,#000 65%,transparent 100%);
 }
 .hn-audio-silk,.hn-audio-flower{display:none!important}
 .hn-audio-record-wrap{
@@ -230,7 +233,7 @@
  .hn-audio-paper-title h2{font-size:clamp(24px,6.3vw,34px)}
  .hn-audio-paper-title p{font-size:12px}
  .hn-audio-flowers{
-  top:-6px;left:-15px;width:calc(100% + 30px);
+  top:-9px;left:-15px;width:calc(100% + 30px);
  }
  .hn-audio-record-wrap{width:52%;max-width:220px}
  .hn-audio-paper-tear{height:46px}
@@ -240,4 +243,22 @@
 }
 @media(prefers-reduced-motion:reduce){
  .hn-audio-vinyl{animation:none}
+}
+
+/* Stories and lounge touch through a soft, irregular parchment edge. */
+.hn-audio-parchment:before{
+ content:"";position:absolute;left:0;right:0;top:-9px;height:41px;z-index:2;
+ pointer-events:none;opacity:.88;
+ background:linear-gradient(180deg,#fff 0%,#fffaf5f0 23%,#f9efe7a6 50%,transparent 100%);
+ clip-path:polygon(0 0,100% 0,100% 56%,97% 49%,93% 60%,89% 54%,85% 67%,
+  80% 59%,76% 65%,71% 56%,66% 64%,61% 56%,56% 63%,51% 54%,46% 64%,
+  41% 56%,36% 62%,31% 53%,26% 63%,21% 56%,16% 65%,11% 55%,7% 63%,3% 54%,0 61%);
+}
+.hn-home-route .hn-audio-editorial{position:relative;z-index:1;margin-top:-18px}
+.hn-home-route .hn-audio-parchment{margin-top:0;padding-top:43px}
+.hn-home-route .hn-audio-paper-title{margin-bottom:8px}
+@media(max-width:600px){
+ .hn-home-route .hn-audio-editorial{margin-top:-20px}
+ .hn-home-route .hn-audio-parchment{padding-top:41px}
+ .hn-audio-paper-tear{height:62px}
 }
