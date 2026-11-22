@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {DatabaseSync} from 'node:sqlite';
 import {readFileSync} from 'node:fs';
-import {notifyStoryOwner,notifyTeamStoryPublished,notifyTeamChatMessage,notifyChatReaction,notifyCalendarMembers,handleMemberNotices} from '../src/modules/notices/member-notifications.js';
+import {notifyStoryOwner,notifyTeamStoryPublished,notifyTeamChatMessage,notifyChatReaction,notifyCalendarMembers,notifyTeamProfilePhoto,notifyTeamFamilyMedia,handleMemberNotices} from '../src/modules/notices/member-notifications.js';
 
 const FER='member:fer',NOA='member:noa',STORY='123e4567-e89b-42d3-a456-426614174000';
 const ROOT='https://havana-nice-v2-dev.soloaplicaciones97.workers.dev';
@@ -171,4 +171,31 @@ test('Chat emoji notifies only original sender, never self or a deleted message'
  assert.equal(fer.items[0].emoji,'❤️');
  raw.prepare("UPDATE chat_messages SET deleted_at='2026-11-22T00:00:00Z' WHERE seq=44").run();
  assert.equal(await notifyChatReaction(env,NOA,44,'😂'),false);
+});
+
+test('Updating a profile photo alerts other members without revealing the R2 object path',async()=>{
+ const {env,api}=setup();
+ const privateKey='profiles/member%3Afer/secret-r2-key.jpg';
+ assert.equal(await notifyTeamProfilePhoto(env,{actorId:FER},privateKey),1);
+ assert.equal(await notifyTeamProfilePhoto(env,{actorId:FER},privateKey),0);
+ const noa=await (await api('noa')).json();
+ const fer=await (await api('fer')).json();
+ assert.equal(fer.unread,0);
+ assert.equal(noa.unread,1);
+ assert.equal(noa.items[0].kind,'profile.photo');
+ assert.ok(!JSON.stringify(noa).includes(privateKey));
+ assert.match(noa.items[0].targetId,/^[a-f0-9]{64}$/);
+});
+test('Admin-managed Familia originals alert the whole team, including album owner, once',async()=>{
+ const {env,api}=setup();
+ const file='123e4567-e89b-42d3-a456-426614174099';
+ assert.equal(await notifyTeamFamilyMedia(env,FER,file,'photo'),2);
+ assert.equal(await notifyTeamFamilyMedia(env,FER,file,'photo'),0);
+ for(const recipient of ['fer','noa']){
+  const inbox=await (await api(recipient)).json();
+  assert.equal(inbox.unread,1);
+  assert.equal(inbox.items[0].kind,'family.media');
+  assert.equal(inbox.items[0].targetId,file);
+  assert.match(inbox.items[0].preview,/fotografía/);
+ }
 });
