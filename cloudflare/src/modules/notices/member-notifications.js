@@ -58,7 +58,7 @@ export async function notifyTeamActivity(env,actorId,kind,targetId,{
   return 0;
  const roster=(await env.DB.prepare(
   'SELECT actor_id FROM chat_members WHERE active=1'
- ).all()).results||[];
+ ).bind().all()).results||[];
  let count=0;
  for(const row of roster){
   try{
