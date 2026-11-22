@@ -12,10 +12,10 @@
 
 ## Depuración estructural · 22/11/2026
 
-- [x] **Audio:** retirados 21 estilos de adornos ocultos y su DOM, conservando gráficos reales, portada privada, vinilo y PageFlip; test de regresión actualizado.
+- [x] **Audio CSS:** 21 reglas antiguas de adornos ocultos retiradas; 24 bloques globales unificados y 42 propiedades sobrescritas eliminadas. Comparación estática de propiedades en 11 anchos (320–1440 px); gráficos, vinilo y streaming preservados.
 - [x] **PWA:** lógica/CSS de orientación del iPhone aislados en `features/viewport/`; regla común móvil devuelta a su tamaño original. Una sola rama `main`, cero PR abiertos.
-- [x] **HOME:** retirado el viejo `hn-home-blank` de 55vh y reglas de márgenes/padding reemplazadas por el scroll interior. Estados, degradado y gráficos de Audio conservados.
-- [ ] **Siguiente limpieza:** reducir reglas CSS superpuestas HOME/Audio sin alterar acabado aprobado; auditar controladores Chat y discrepancia entre Worker de Audio en `main` y despliegue real.
+- [x] **HOME/Perfil:** eliminado el espaciador `hn-home-blank` (55vh); cabecera y avatar son responsabilidad de `features/profile/profile.css`, Estados de `features/home/home-stage.css` y reproductor de `features/audio/audio-player.css`. Sin cambios en medidas finales aprobadas.
+- [ ] **Siguiente limpieza:** auditar controladores grandes de Chat y discrepancias entre el Worker Audio en `main` y el backend desplegado; validar en iPhone los efectos reales de orientación, scroll y primer sonido.
 - **Registro de evidencias y límites:** [auditoría del 22/11](AUDITORIA-DEPURACION-2026-11-22.md). No declarar todo el repositorio 100 % depurado por una compilación exitosa.
 
 ## Lote acumulativo en `main` · 21/11 · SIN nueva APK
