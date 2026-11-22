@@ -1,12 +1,13 @@
 import React,{useCallback,useEffect,useRef,useState} from 'react';
 import {AppState,Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
+import type {NativePushControl} from './useNativePush';
 import {getMemberNotices,markMemberNoticesRead,memberNoticeMessage,
  openFamilyRealtime,FAMILY_WS_HANDSHAKE_TIMEOUT_MS,
  type MemberNotice,type MemberNoticeInbox} from '@havana/shared';
 
 // One existing musician session, one notification-only Familia stream while this
 // tab is active. Never create a second Chat owner or persist private inbox data.
-export default function NativeNotices({token,calendarRevision=0}:{token:string;calendarRevision?:number}){
+export default function NativeNotices({token,calendarRevision=0,push}:{token:string;calendarRevision?:number;push:NativePushControl}){
  const [inbox,setInbox]=useState<MemberNoticeInbox>({items:[],unread:0});
  const [loading,setLoading]=useState(true);
  const [error,setError]=useState('');
@@ -72,6 +73,27 @@ export default function NativeNotices({token,calendarRevision=0}:{token:string;c
    <Pressable accessibilityRole="button" onPress={()=>void refresh()}
     style={s.refresh}><Text style={s.link}>Actualizar</Text></Pressable>
   </View>
+  <View style={s.pushCard} accessibilityLabel="Notificaciones del teléfono">
+   <Text style={s.pushTitle}>Avisos con la pantalla bloqueada</Text>
+   <Text style={s.pushInfo}>{push.state==='enabled'?
+    'Activados en este Android. Recibirás avisos de Chat, Estados, Familia y Calendario.':
+    push.state==='blocked'?'Android tiene bloqueadas las notificaciones de HAVANA NICE.':
+    push.state==='pending'?'Firebase todavía no está listo para enviar los avisos.':
+    push.state==='checking'?'Comprobando el registro de este teléfono…':
+    push.state==='unavailable'?'Los avisos externos no están disponibles en este dispositivo.':
+    'Activa los avisos para recibirlos incluso cuando la aplicación esté cerrada.'}</Text>
+   {push.state==='enabled'?<Pressable accessibilityRole="button"
+    style={s.pushButton} onPress={()=>void push.disable()}>
+    <Text style={s.pushButtonText}>Desactivar avisos</Text>
+   </Pressable>:push.state==='blocked'?<Pressable accessibilityRole="button"
+    style={s.pushButton} onPress={()=>void push.openSettings()}>
+    <Text style={s.pushButtonText}>Abrir ajustes de Android</Text>
+   </Pressable>:['ready','error'].includes(push.state)?<Pressable accessibilityRole="button"
+    style={s.pushButton} onPress={()=>void push.enable()}>
+    <Text style={s.pushButtonText}>Activar notificaciones</Text>
+   </Pressable>:null}
+   {!!push.error&&<Text style={s.error}>{push.error}</Text>}
+  </View>
   {inbox.unread>0&&<Pressable accessibilityRole="button"
    style={s.readAll} onPress={()=>void mark()}>
    <Text style={s.readAllLabel}>Marcar todas como leídas</Text>
@@ -99,6 +121,11 @@ export default function NativeNotices({token,calendarRevision=0}:{token:string;c
 }
 const s=StyleSheet.create({
  root:{flex:1,gap:12,paddingBottom:12},
+ pushCard:{backgroundColor:'#f1f5ed',borderRadius:14,borderWidth:1,borderColor:'#d3decf',padding:14,gap:9},
+ pushTitle:{fontSize:14,fontWeight:'700',color:'#193b30'},
+ pushInfo:{fontSize:12,color:'#53665b',lineHeight:19},
+ pushButton:{alignSelf:'flex-start',backgroundColor:'#173d30',paddingVertical:11,paddingHorizontal:15,borderRadius:11},
+ pushButtonText:{fontSize:12,color:'#fff',fontWeight:'700'},
  head:{flexDirection:'row',justifyContent:'space-between',alignItems:'center'},
  title:{fontSize:22,fontWeight:'700',color:'#193b30'},
  subtitle:{fontSize:12,marginTop:4,color:'#617268'},
