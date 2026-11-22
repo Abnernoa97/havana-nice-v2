@@ -2,6 +2,7 @@
 // Admin writes event + selected recipients atomically. Member reads only assigned dates.
 import {verifyAdminSession} from '../admin/admin-auth.js';
 import {notifyCalendarClients} from './calendar-realtime.js';
+import {notifyCalendarMembers} from '../notices/member-notifications.js';
 import {queueCalendarPhotosOnEventDelete} from './calendar-memories.js';
 const ID=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 // The canonical musician actor IDs are member:<opaque-id>, NOT event UUIDs.
@@ -88,7 +89,7 @@ function event(row,admin=false){
   wardrobe:row.wardrobe,details:row.details,contactName:row.contact_name,
   contactPhone:row.contact_phone,notes:row.notes,mapUrl:row.map_url,
   status:row.status,statusText:row.status_text||'',version:row.version,updatedAt:row.updated_at,
-  dateSort:row.date_sort||null,memoryCount:Number(row.memory_count||0)
+  dateSort:row.date_sort||optionalSortDate(row.event_date),memoryCount:Number(row.memory_count||0)
  };
  if(admin)result.recipientIds=JSON.parse(row.recipients_json||'[]');
  return result;
@@ -148,6 +149,8 @@ export async function handleCalendarApi(request,env,url,origin,respond,verifyMus
      'INSERT INTO calendar_event_recipients(event_id,actor_id) VALUES (?,?)').bind(id,actorId))
    ];
    await env.DB.batch(statements);
+   await notifyCalendarMembers(env,payload.recipientIds,{
+    eventId:id,revision,action:'created',title:payload.title,date:payload.date});
    await notifyCalendarClients(env,payload.recipientIds);
    return reply({event:{id,...payload,version:1,updatedAt:now}},201);
   }catch{return reply({error:'No se pudo crear la fecha'},503);}
@@ -182,6 +185,8 @@ export async function handleCalendarApi(request,env,url,origin,respond,verifyMus
    ];
    const results=await env.DB.batch([update,...replaceRecipients]);
    if(Number(results[0]?.meta?.changes)!==1)return reply({error:ERR[409]},409);
+   await notifyCalendarMembers(env,[...previous,...payload.recipientIds],{
+    eventId:id,revision,action:'updated',title:payload.title,date:payload.date});
    await notifyCalendarClients(env,[...previous,...payload.recipientIds]);
    return reply({event:{id,...payload,version:raw.version+1,updatedAt:now}});
   }catch{return reply({error:'No se pudo guardar la fecha'},503);}
@@ -195,11 +200,17 @@ export async function handleCalendarApi(request,env,url,origin,respond,verifyMus
   try{
    const previous=await env.DB.prepare('SELECT actor_id FROM calendar_event_recipients WHERE event_id=?')
     .bind(id).all();
+   const deletedEvent=await env.DB.prepare('SELECT title,event_date FROM calendar_events WHERE id=?')
+    .bind(id).first();
    // Atomic conditional queue+delete: no R2 orphan when a date with photos
    // is removed, and no photos are queued when a stale edit is rejected.
    const deleted=await queueCalendarPhotosOnEventDelete(env,id,raw.version);
    if(!deleted)return reply({error:ERR[409]},409);
-   await notifyCalendarClients(env,(previous.results||[]).map(row=>row.actor_id));
+   const recipients=(previous.results||[]).map(row=>row.actor_id);
+   await notifyCalendarMembers(env,recipients,{
+    eventId:id,revision:crypto.randomUUID(),action:'deleted',
+    title:deletedEvent?.title||'',date:deletedEvent?.event_date||''});
+   await notifyCalendarClients(env,recipients);
    return reply({ok:true});
   }catch{return reply({error:'No se pudo eliminar la fecha'},503);}
  }
