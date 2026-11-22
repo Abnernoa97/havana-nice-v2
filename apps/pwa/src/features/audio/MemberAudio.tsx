@@ -1,5 +1,6 @@
 import {useCallback,useEffect,useRef,useState} from 'react';
 import {getAudioTracks,privateAudioUrl,type AudioTrack} from '@havana/shared';
+import {prepareAudioCover,type PreparedAudioCover} from './audio-cover-cache';
 import './audio-player.css';
 
 const clock=(time:number)=>!Number.isFinite(time)?'0:00':
@@ -13,16 +14,58 @@ export default function MemberAudio({token,active=true}:{token:string;active?:bo
  const [duration,setDuration]=useState(0);
  const [loading,setLoading]=useState(true);
  const [error,setError]=useState('');
+ const [preparedCovers,setPreparedCovers]=useState<Record<string,PreparedAudioCover>>({});
+ const recoveryTried=useRef(new Set<string>());
+ const pendingSeek=useRef<{id:string;time:number}|null>(null);
+ const lastCatalogFetch=useRef(0);
  const ref=useRef<HTMLAudioElement>(null);
  const playOnChange=useRef(false);
  const current=tracks[selected]||null;
  const refresh=useCallback(async()=>{
-  try{const value=await getAudioTracks(token);setTracks(value);
-   setSelected(n=>Math.max(0,Math.min(n,value.length-1)));setError('');}
+  try{const value=await getAudioTracks(token);lastCatalogFetch.current=Date.now();
+   setTracks(value);setSelected(n=>Math.max(0,Math.min(n,value.length-1)));
+   recoveryTried.current.clear();setError('');}
   catch(e){setError(e instanceof Error?e.message:'La biblioteca de Audio no está disponible.');}
   finally{setLoading(false);}
  },[token]);
  useEffect(()=>{void refresh();},[refresh]);
+ // Keep temporary media grants fresh when returning to the app after a long
+ // lock-screen session. Do not interrupt an actively playing track.
+ useEffect(()=>{
+  const check=()=>{
+   if(document.visibilityState==='visible'&&ref.current?.paused&&
+    Date.now()-lastCatalogFetch.current>40*60*1000)void refresh();
+  };
+  document.addEventListener('visibilitychange',check);
+  return()=>document.removeEventListener('visibilitychange',check);
+ },[refresh]);
+ // Download small private covers once. Local Blob URLs prevent repeated R2
+ // fetches on track changes. A square JPEG supports iOS lock-screen artwork.
+ useEffect(()=>{
+  const controller=new AbortController(),created:string[]=[];
+  let live=true;
+  setPreparedCovers({});
+  const wanted=tracks.filter(t=>!!art(t.coverUrl)).slice(0,12);
+  let cursor=0;
+  const prepare=async()=>{
+   while(live&&cursor<wanted.length){
+    const track=wanted[cursor++];
+    const url=art(track?.coverUrl||null);
+    if(!track||!url)continue;
+    try{
+     const ready=await prepareAudioCover(url,controller.signal);
+     if(!live){URL.revokeObjectURL(ready.display);continue;}
+     created.push(ready.display);
+     setPreparedCovers(old=>({...old,[track.id]:ready}));
+    }catch{/* Keep the live R2 URL as a visual fallback. */}
+   }
+  };
+  void Promise.all([prepare(),prepare(),prepare()]);
+  return()=>{
+   live=false;controller.abort();created.forEach(url=>URL.revokeObjectURL(url));
+  };
+ },[tracks]);
+
  useEffect(()=>{
   const audio=ref.current;if(!audio)return;
   audio.pause();setPlaying(false);setElapsed(0);setDuration(0);
@@ -31,9 +74,30 @@ export default function MemberAudio({token,active=true}:{token:string;active?:bo
   if(playOnChange.current){playOnChange.current=false;
    void audio.play().catch(()=>setError('Toca reproducir para escuchar el audio.'));}
  },[current?.id,current?.audioUrl]);
+ const recoverMedia=async()=>{
+  if(!current||recoveryTried.current.has(current.id)){
+   setError('Este audio no pudo reproducirse. Pulsa Actualizar para reintentar.');return;
+  }
+  const old=current;
+  recoveryTried.current.add(old.id);
+  const wasPlaying=!!ref.current&&!ref.current.paused;
+  pendingSeek.current={id:old.id,time:ref.current?.currentTime||0};
+  setError('');
+  try{
+   const latest=await getAudioTracks(token);
+   const position=latest.findIndex(track=>track.id===old.id);
+   if(position<0)throw new Error('El archivo ya no está disponible.');
+   playOnChange.current=wasPlaying;
+   lastCatalogFetch.current=Date.now();
+   setTracks(latest);setSelected(position);
+  }catch(e){
+   pendingSeek.current=null;playOnChange.current=false;
+   setError(e instanceof Error?e.message:'No fue posible renovar el acceso al audio.');
+  }
+ };
  const toggle=async()=>{
   const audio=ref.current;if(!audio||!current)return;
-  if(audio.paused)await audio.play().catch(()=>setError('No se pudo reproducir este audio.'));
+  if(audio.paused)await audio.play().catch(()=>{void recoverMedia();});
   else audio.pause();
  };
  const step=(direction:number)=>{
@@ -49,7 +113,11 @@ export default function MemberAudio({token,active=true}:{token:string;active?:bo
   const session=navigator.mediaSession;
   session.metadata=new MediaMetadata({
    title:current.title,artist:current.artist,album:current.album,
-   artwork:art(current.coverUrl)?[{src:art(current.coverUrl)!,sizes:'512x512'}]:[]
+   artwork:art(current.coverUrl)?[{
+    src:preparedCovers[current.id]?.lockscreen||art(current.coverUrl)!,
+    sizes:'512x512',
+    ...(preparedCovers[current.id]?.lockscreen?.startsWith('data:image/jpeg')?{type:'image/jpeg'}:{})
+   }]:[]
   });
   session.setActionHandler('play',()=>{void ref.current?.play();});
   session.setActionHandler('pause',()=>ref.current?.pause());
@@ -63,12 +131,12 @@ export default function MemberAudio({token,active=true}:{token:string;active?:bo
     try{session.setActionHandler(action,null);}catch{}
    }
   };
- },[current?.id,selected,tracks.length,playing]);
+ },[current?.id,selected,tracks.length,playing,preparedCovers[current?.id||'']?.lockscreen]);
  useEffect(()=>{
   if(!('mediaSession' in navigator))return;
   navigator.mediaSession.playbackState=playing?'playing':'paused';
  },[playing]);
- const cover=art(current?.coverUrl||null);
+ const cover=current?(preparedCovers[current.id]?.display||art(current.coverUrl)):null;
  const progress=duration>0?Math.max(0,Math.min(100,elapsed/duration*100)):0;
  return <section className="hn-audio hn-audio-editorial" aria-label="Audio HAVANA NICE" hidden={!active}>
   <div className="hn-audio-parchment">
@@ -129,7 +197,7 @@ export default function MemberAudio({token,active=true}:{token:string;active?:bo
       className={i===selected?'hn-audio-track selected':'hn-audio-track'}
       onClick={()=>{if(i!==selected){playOnChange.current=true;setSelected(i);}
        else void toggle();}}>
-      {art(track.coverUrl)?<img alt="" src={art(track.coverUrl)!} loading="lazy" decoding="async"/>:
+      {art(track.coverUrl)?<img alt="" src={preparedCovers[track.id]?.display||art(track.coverUrl)!} loading="lazy" decoding="async"/>:
        <span className="hn-audio-track-fallback">♫</span>}
       <span><strong>{track.title}</strong><small>{track.artist}</small></span>
       <span aria-hidden="true">{i===selected&&playing?'Ⅱ':'▶'}</span>
@@ -143,7 +211,15 @@ export default function MemberAudio({token,active=true}:{token:string;active?:bo
    onPause={()=>setPlaying(false)}
    onTimeUpdate={event=>setElapsed(event.currentTarget.currentTime)}
    onDurationChange={event=>setDuration(event.currentTarget.duration||0)}
+   onLoadedMetadata={event=>{
+    const seek=pendingSeek.current;
+    if(current&&seek?.id===current.id){
+     if(Number.isFinite(seek.time))event.currentTarget.currentTime=
+      Math.min(Math.max(0,seek.time),Math.max(0,event.currentTarget.duration-1||0));
+     pendingSeek.current=null;
+    }
+   }}
    onEnded={()=>step(1)}
-   onError={()=>{if(current)setError('No se pudo reproducir este archivo; toca Actualizar.');}}/>
+   onError={()=>{void recoverMedia();}}/>
  </section>;
 }
