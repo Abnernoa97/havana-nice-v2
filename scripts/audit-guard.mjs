@@ -82,6 +82,12 @@ assert.equal(reproducibleWorker.vars?.V2_ADMIN_LOGIN_SECRET,undefined,
   'Admin login secret must never enter source-controlled Wrangler configuration');
 assert.equal(reproducibleWorker.services,undefined,
   'No separate service bridge may be reintroduced');
+assert.equal(reproducibleWorker.migrations,undefined,
+  'Cloudflare Durable Object exports and legacy migrations must not coexist');
+assert.deepEqual(reproducibleWorker.exports,{
+  ChatRoom:{type:'durable-object',storage:'sqlite'},
+  CalendarRoom:{type:'durable-object',storage:'sqlite'},
+},'Keep the original ChatRoom and CalendarRoom SQLite namespaces; never tombstone or rename them');
 
 const master = read('docs/PLAN-MAESTRO.md');
 const continuity = read('docs/CONTINUIDAD-EXACTA.md');
