@@ -1,6 +1,7 @@
 import {useCallback,useEffect,useRef,useState} from 'react';
 import {getAudioTracks,clearAudioTracksCache,privateAudioUrl,type AudioTrack} from '@havana/shared';
 import {prepareAudioCover,type PreparedAudioCover} from './audio-cover-cache';
+import {useAudioDiscMotion} from './useAudioDiscMotion';
 import './audio-player.css';
 
 const clock=(time:number)=>!Number.isFinite(time)?'0:00':
@@ -23,6 +24,7 @@ export default function MemberAudio({token,active=true}:{token:string;active?:bo
  const playOnChange=useRef(false);
  const requestedPlay=useRef(false);
  const current=tracks[selected]||null;
+ const {discRef,requestFromGesture}=useAudioDiscMotion(active&&!!current);
  const refresh=useCallback(async(force=false)=>{
   try{const value=await getAudioTracks(token,false,force);lastCatalogFetch.current=Date.now();
    setTracks(value);setSelected(n=>Math.max(0,Math.min(n,value.length-1)));
@@ -220,7 +222,7 @@ export default function MemberAudio({token,active=true}:{token:string;active?:bo
     </div>:<>
     <div className="hn-audio-player">
      <div className="hn-audio-flowers" aria-hidden="true"/>
-     <div className="hn-audio-record-wrap">
+     <div className="hn-audio-record-wrap" ref={discRef}>
       <div className={playing?'hn-audio-vinyl is-playing':'hn-audio-vinyl'}
        role="img" aria-label={`Vinilo con la portada de ${current.title}`}>
        {cover?<img src={cover} alt="" decoding="async" loading="eager"/>:
@@ -244,7 +246,7 @@ export default function MemberAudio({token,active=true}:{token:string;active?:bo
      </div>
      <div className="hn-audio-controls">
       <button type="button" onClick={()=>step(-1)} aria-label="Audio anterior">‹‹</button>
-      <button type="button" onClick={()=>void toggle()} className="hn-audio-main"
+      <button type="button" onClick={()=>{requestFromGesture();void toggle();}} className="hn-audio-main"
        aria-label={isBuffering?'Cargando canción':playing?'Pausar':'Reproducir'}
        aria-busy={isBuffering}>{isBuffering?'◌':playing?'Ⅱ':'▶'}</button>
       <button type="button" onClick={()=>step(1)} aria-label="Audio siguiente">››</button>
@@ -254,7 +256,7 @@ export default function MemberAudio({token,active=true}:{token:string;active?:bo
     <div className="hn-audio-track-list" aria-label="Canciones disponibles">
      {tracks.map((track,i)=><button key={track.id} type="button"
       className={i===selected?'hn-audio-track selected':'hn-audio-track'}
-      onClick={()=>{if(i!==selected)playTrack(i);else toggle();}}>
+      onClick={()=>{requestFromGesture();if(i!==selected)playTrack(i);else toggle();}}>
       {art(track.coverUrl)?<img alt="" src={preparedCovers[track.id]?.display||art(track.coverUrl)!} loading="lazy" decoding="async"/>:
        <span className="hn-audio-track-fallback">♫</span>}
       <span><strong>{track.title}</strong><small>{track.artist}</small></span>
