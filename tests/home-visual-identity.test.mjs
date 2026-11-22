@@ -14,6 +14,8 @@ test('PWA HOME uses a scoped lightweight emerald-gold theme without affecting Ch
  const home=read('apps/pwa/src/features/home/MemberHome.tsx');
  assert.match(app,/const MemberHome=lazy\(\(\)=>import\('\.\.\/features\/home\/MemberHome'\)\)/);
  assert.match(home,/className="hn-home-stage"/);
+ assert.doesNotMatch(home,/hn-home-blank/);
+ assert.doesNotMatch(read('apps/pwa/src/features/home/home-stage.css'),/hn-home-blank|height:55vh/);
  assert.match(home,/<MemberStories token=\{token\}/);
  assert.doesNotMatch(home,/visual-welcome|visual-grid|Todo lo que necesitas/);
  const strip=read('apps/pwa/src/features/home/TeamStoriesStrip.tsx');
