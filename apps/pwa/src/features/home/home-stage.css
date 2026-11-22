@@ -5,7 +5,7 @@
 .visual-account-avatar{display:grid;place-items:center;width:38px;height:38px;border-radius:50%;
  background:#EDF1E9;color:#193b2f;border:2px solid #DBC59A;font-weight:750;font-size:15px}
 .visual-account-label{color:#f5f1e8;font-size:12px;font-weight:650}
-.hn-home-stage{min-height:calc(100dvh - 220px);background:#fff}
+.hn-home-stage{background:#fff}
 .hn-moments-wrap{width:100%;padding:8px 0 0}
 .hn-moments-strip{display:flex;align-items:flex-start;gap:11px;overflow-x:auto;
  overscroll-behavior-inline:contain;scrollbar-width:none;padding:6px 0 16px}
@@ -34,27 +34,17 @@
 .hn-moment-name{display:block;box-sizing:border-box;width:80px;max-width:80px;
  height:18px;text-align:center;font-size:11px;line-height:18px;color:#333;
  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.hn-home-blank{min-height:55vh}
 @media(max-width:750px){
- .hn-home-route .visual-content{padding:10px 16px calc(96px + env(safe-area-inset-bottom))}
- .hn-home-stage{min-height:calc(100dvh - 200px)}
  .visual-account-label{font-size:11px}
 }
 
-/* The once-empty home canvas is now the real, persistent Audio Lounge.
-   Keep the Stories row as-is; remove only the old unused white spacer. */
+/* The dedicated HOME stage contains only the pinned Stories row. */
 .hn-home-route .hn-home-stage{min-height:0}
-.hn-home-route .hn-home-blank{display:none}
-.hn-home-route .visual-content{padding-bottom:calc(105px + env(safe-area-inset-bottom))}
 
 /* Closing the oversized white strip between member Stories and the parchment.
    Story circles, hit targets and labels keep their original dimensions. */
 .hn-home-route .hn-moments-wrap{padding-top:2px}
 .hn-home-route .hn-moments-strip{padding-top:3px;padding-bottom:4px}
-@media(max-width:750px){
- .hn-home-route .visual-content{padding-top:5px}
-}
-
 /* HOME is split into two siblings: static Stories and the ONLY Audio
    scroller. Safari elastic overscroll must never displace the profile row. */
 @media(max-width:750px){
