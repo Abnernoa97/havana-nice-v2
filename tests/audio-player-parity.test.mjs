@@ -33,7 +33,12 @@ test('PWA uses artwork from R2 and HTML media session without mock songs',()=>{
  assert.match(metadata,/file\.slice\(0,2\*1024\*1024\)/);
  assert.match(shared,/privateAudioUrl/);
  assert.match(shell,/MemberAudio token=\{token\} active=\{screen==='audio'\|\|screen==='home'\}/);
- assert.match(pwa,/hn-audio-vinyl\.is-playing/);
+ assert.match(pwa,/hn-audio-vinyl is-playing/);
+ const css=read('apps/pwa/src/features/audio/audio-player.css');
+ const html=read('apps/android/features/audio/nativeAudioEditorialHtml.ts');
+ assert.match(css,/\.hn-audio-vinyl\.is-playing\{animation:/);
+ assert.match(css,/hn-audio-parchment/);
+ assert.match(html,/renderHavanaAudio/);
  assert.match(pwa,/hn-audio-paper-tear/);
  assert.match(pwa,/hn-audio-flower/);
  assert.doesNotMatch(pwa+shared,/https?:\/\/(?:example\.com|music\.mp3|testaudio)/);
