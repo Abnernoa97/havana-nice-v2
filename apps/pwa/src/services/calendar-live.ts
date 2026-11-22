@@ -3,7 +3,7 @@
 import {HAVANA_V2_DEV_API_BASE_URL as API} from '@havana/shared';
 const MEMBER=/^[A-Za-z0-9_-]{40,100}$/;
 const ADMIN=/^[A-Za-z0-9_-]{40,128}$/;
-export function watchCalendar(token:string,admin:boolean,onInvalidate:(reason?:'fallback')=>void,topic:'calendar'|'repertoire'='calendar'):()=>void{
+export function watchCalendar(token:string,admin:boolean,onInvalidate:(reason?:'fallback'|'changed')=>void,topic:'calendar'|'repertoire'='calendar'):()=>void{
  if(!(admin?ADMIN:MEMBER).test(token))return ()=>{};
  const address=API.replace(/^http/,'ws')+'/ws/calendar';
  let socket:WebSocket|null=null,closed=false,retry:ReturnType<typeof setTimeout>|null=null;
@@ -45,7 +45,7 @@ export function watchCalendar(token:string,admin:boolean,onInvalidate:(reason?:'
    try{
     const message=JSON.parse(String(event.data)) as {type?:string};
     // Calendar recipient changes also alter visible event setlists.
-    if(message.type==='calendar.invalidate')onInvalidate();
+    if(message.type==='calendar.invalidate')onInvalidate('changed');
     if(message.type==='repertoire.invalidate'&&topic==='repertoire')onInvalidate();
    }catch{}
   };
