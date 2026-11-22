@@ -2,11 +2,11 @@
 
 **Estado verificado: 22 de noviembre de 2026.** Fuente de verdad: [GitHub](https://github.com/Abnernoa97/havana-nice-v2), rama única `main`. Mantener estado ACTUAL, sin mezclar hitos históricos. Historia detallada en Git; auditoría de código: [22/11](AUDITORIA-DEPURACION-2026-11-22.md).
 
-## QA Android 0.0.24 → 0.0.25 · 22/11/2026
+## Android 0.0.26 · Vinilo 3D · 22/11/2026
 
-- [x] **Código:** Estados fijos en todos los módulos, roster recuperado de Estados activos; Chat al último mensaje y reacciones por pulsación real; Recuerdos 3D sin corte de controles; splash e inicio con logo oficial HN.
-- [x] **Pruebas:** estructura, TypeScript, Chat, HOME, Calendario, Audio, Estados y BOOK aprobados.
-- [ ] **APK 0.0.25:** firma/publicación y QA físico pendientes. No desinstalar la versión existente.
+- [x] **0.0.25:** Estados fijos, Chat al último mensaje y emojis, Recuerdos 3D con controles completos y splash HN, publicados con firma estable.
+- [x] **0.0.26:** disco con paralaje por inclinación del teléfono (±8°) y reflejo dinámico; Android usa `expo-sensors` y la PWA el permiso iOS desde reproducción. Sin modificar Expo Audio, MediaSession ni BOOK 3D.
+- [x] **APK firmada 0.0.26:** [run #45001592947](https://github.com/Abnernoa97/havana-nice-v2/actions/runs/45001592947) `SUCCESS`, `versionCode 26`, certificado compatible con 0.0.25 y rollback preservado. [APK oficial](https://github.com/Abnernoa97/havana-nice-v2/releases/download/v2-android-current/HAVANA-NICE-V2-LATEST.apk). QA físico pendiente.
 
 ## Calendario sincronizado · 22/11/2026
 
@@ -14,14 +14,14 @@
 - [x] **Sello:** EVENTO REALIZADO tras medianoche en la zona horaria del evento, incluso en registros anteriores; actualiza la vista cada minuto.
 - [x] **Pantalla:** solo «Calendario» arriba, sin títulos ni rutas extra en PWA y Android.
 - [x] **Live:** una conexión CalendarRoom por sesión, cambios desde Admin y aviso «HAVANANICE-CALENDARIO📆» en Chat y demás vistas, inbox D1 privado por músico.
-- [ ] **Pendientes:** QA físico en Android 0.0.24 e iPhone; push OS con aplicación cerrada no implementado.
+- [ ] **Pendientes:** QA físico en Android 0.0.26 e iPhone; push OS con aplicación cerrada aún no implementado.
 
 ## HOME/Audio iPhone · 22/11/2026
 
 - [x] **HOME PWA:** Estados fijos bajo cabecera, Audio con scroll independiente y degradado blanco→marfil. Compilación y 74/74 pruebas aprobadas en Pages (`5fc9832`).
 - [x] **Audio PWA:** reproducción iniciada desde el toque (Safari), indicador real de buffering, sin falso error rojo; portadas preparadas sin competir con streaming.
 - [x] **iPhone:** bloqueo reversible del scroll del documento solo en HOME; elimina rebote de la franja blanca sin tocar Estados, Chat o BOOK.
-- [x] **Android:** Estados fijos, degradado y Audio editorial unificado con la PWA incluidos en APK firmada 0.0.24. QA físico pendiente.
+- [x] **Android:** HOME, Estados y Audio editorial con vinilo 3D incluidos en APK firmada 0.0.26; BOOK intacto. QA físico pendiente.
 - [x] **Vertical iPhone:** PWA músico instalada solicita `portrait-primary` e incorpora lienzo vertical con rotación CSS cuando Safari gira; portales de Estados incluidos. Expo Android ya fija `portrait`. Respeta BOOK independiente. **Pendiente:** prueba física en iPhone (Safari puede ignorar bloqueo nativo).
 
 ## Depuración estructural · 22/11/2026
@@ -52,7 +52,7 @@
 
 - **Una sola rama `main`**, un solo repositorio V2. Sin parches temporales, duplicar rutas o dejar motores alternativos. Borrar lógica verdaderamente sustituida solo después de verificar referencias y equivalencia funcional.
 - **No tocar HAVANA CLOUD, PWA original, Drive original, cuentas ni producción ajena a V2.** No migrar datos del sistema anterior. V2 es autónoma.
-- **iPhone:** PWA instalable. **Android:** app React Native/Expo con Chat nativo; instalar futura APK acumulativa encima de la anterior. No generar APK por cada mejora. Android APK publicada **0.0.24** (`versionCode 24`), certificado compatible con 0.0.23; BOOK 3D preservado. QA integral pendiente.
+- **iPhone:** PWA instalada con audio 3D opcional; **Android:** Expo con Chat nativo y APK 0.0.26 firmada, actualizable sobre 0.0.25 sin desinstalar. El lector BOOK 3D permanece intacto. QA física pendiente.
 - **Identidad:** Admin autoriza nombres; el músico ingresa una vez y su instalación queda vinculada a una sola sesión/propietario. Rechazar desconocidos y revocados. Hasta 10 músicos, lista inicial Orly, Andy, Jali, Rafa, Noa y Fer. El Admin tiene sesión y permisos propios; un solo dueño de sesión para todos los módulos, sin nuevos accesos secundarios.
 - **Módulos independientes:** Chat, Calendario, Repertorio, Familia, BOOK, Músicos y futura Multimedia. HOME como navegación central; datos, estados y componentes separados; compartir contratos, servicios y sesión, no duplicar implementación.
 - **Primero funcionamiento, sincronización, velocidad y depuración.** Después pintura/estética. Preservar lo visual que el usuario ya confirmó de BOOK/Calendario.
@@ -86,7 +86,7 @@ cloudflare/migrations/ → historial aditivo D1; NUNCA reescribir migraciones us
 tests/ + cloudflare/tests/ + scripts/ → reglas de seguridad y CI
 ```
 
-**HOME social (21/11):** PWA: fotos JPG 720×1280 objetivo ~450KB, 24h, URLs 8min, barra 6s, voz/comentarios y ❤️/👏/😂. Android: React Native nativo separado, mismo backend D1/R2, JPEG 720px, Animated 6s, voz AAC/M4A mediante expo-audio, misma conversación, sin WebView ni otro Chat. Lote histórico 0.0.23 aprobado; actualización 0.0.24 firmada con el mismo certificado. BOOK 3D intacto. Safari sin zoom por doble toque y campos 16px, pellizco depende del SO.
+**HOME social (21/11):** Estados privados de 24 h con JPG, voz, comentarios y ❤️/👏/😂 en PWA y Android; un solo backend D1/R2 y Chat nativo independiente. Safari limita el zoom por doble toque. BOOK 3D preservado.
 
 **Separación de carga PWA:** `React.lazy`/`Suspense` en HOME, Calendario, Repertorio, Familia, BOOK y pestañas Admin. La PWA tiene cuatro entradas HTML históricas, pero **no URLs HTML diferentes por módulo**; cada componente pesado se descarga bajo demanda. Comprobación con manifiesto real de Vite. Usuario aprobó navegación de iPhone el 08/11; pruebas físicas adicionales sin red siguen pendientes.
 
@@ -128,7 +128,7 @@ tests/ + cloudflare/tests/ + scripts/ → reglas de seguridad y CI
 | Cloudflare Pages | publica `main`; comprobar SHA/deploy tras cada cambio |
 | Worker **en vivo** | V93 `e74e6f68-baea-4949-8a03-7c67ee03ca65`, deployment `a02fc7a2-8c4c-4edc-a484-c49b7d56ae66`, 100 %, 22/11. Siete bindings preservados; versión anterior disponible. |
 | Worker **en código** | Paquete Wrangler desplegado desde fuente `a758096be13159c7b7fc3a26b0d58a6b7aecb164`. Bundle temporal retirado de `main`, conservado en historial Git y Cloudflare. |
-| Android | APK firmada **0.0.24**, `versionCode 24`; paquete y firma comparados con 0.0.23; Audio/HOME y Calendario incluidos; BOOK 3D preservado. |
+| Android | APK firmada **0.0.26** (`versionCode 26`), mismo paquete/certificado que 0.0.25; disco con giroscopio, Chat y HOME corregidos. Rollback 0.0.25; BOOK 3D intacto. |
 | Colas R2 | BOOK, Calendario y baja de músicos: **0** operaciones pendientes al control |
 | Fotos personales | Calendario 4 recuerdos (3 WebP), BOOK 7 originales (0 WebP), Familia 16 archivos al control |
 
