@@ -67,7 +67,7 @@ jobs:
           npm run check:structure
           npm run audit:guard
           npm run typecheck --workspaces --if-present
-          node --test tests/member-stories-parity.test.mjs tests/android-stories-parity.test.mjs
+          node --test tests/member-stories-parity.test.mjs tests/android-stories-parity.test.mjs tests/cross-device-stories-notices.test.mjs
 
       - name: Verify today's Calendar chronology, realtime notices and private backend
         run: |
@@ -78,7 +78,7 @@ jobs:
         run: |
           node --test tests/audio-player-parity.test.mjs tests/home-visual-identity.test.mjs tests/member-home-navigation.test.mjs tests/native-chat-virtualization.test.mjs tests/android-batch-policy.test.mjs
           node --experimental-strip-types --test tests/native-book-bridge.test.mjs tests/chat-session-recovery.test.mjs tests/chat-offline-policy.test.mjs
-          node --test tests/member-stories-parity.test.mjs tests/android-stories-parity.test.mjs
+          node --test tests/member-stories-parity.test.mjs tests/android-stories-parity.test.mjs tests/cross-device-stories-notices.test.mjs
 
       - name: Export the actual production Android JS and images before Gradle
         run: npm run export -w @havana/android
