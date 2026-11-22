@@ -68,8 +68,8 @@ Son acciones técnicas, no actividad útil del equipo.
 - [x] Service Worker y control PWA de activación mediante toque.
 - [x] Validación inicial CI del Worker y PWA: Worker versión `41c1c56e` y Pages `4adc9bce` pasaron las pruebas. Repetir para cambios posteriores.
 - [ ] Credenciales VAPID configuradas y prueba real PWA iPhone cerrada.
-- [ ] Proyecto Firebase conectado, `google-services.json` de
-      `com.havananice.v2` y cuenta de servicio FCM en secretos.
+- [x] Proyecto Firebase `havana-nice-v2-push` registrado; `google-services.json` del paquete `com.havananice.v2` integrado en Expo mediante `android.googleServicesFile`.
+- [ ] Cuenta de servicio FCM HTTP v1 con permisos mínimos, almacenada como secreto de Cloudflare (`FCM_SERVICE_ACCOUNT_JSON`).
 - [ ] Enlace nativo Expo para canal, permisos, rotación de token, click y logout.
 - [ ] Cobertura de repertorio y cualquier evento de Admin adicional.
 - [ ] Prueba cruzada Android ↔ PWA con pantalla bloqueada, sin red y reconexión.
@@ -85,6 +85,6 @@ no prometer tiempo ni entrega absoluta de un proveedor externo.
 - D1 contiene `member_push_devices` y `member_push_outbox`, ambos inicialmente vacíos.
 - PWA activa con permiso desde la bandeja privada y service worker para recepción; todavía no puede mostrar push reales sin claves VAPID.
 - Las credenciales VAPID no se provisionaron; intento de configuración segura bloqueado. No colocar claves en Git.
-- Firebase para FCM Android no está conectado: falta autorización del usuario para configurar proyecto/credenciales.
-- Ninguna APK nueva, compilación Android ni lote `android-batch.json` realizados durante el desarrollo de push.
+- Firebase Android registrado: proyecto `havana-nice-v2-push`, número de proyecto `33085079931`, paquete `com.havananice.v2`; `google-services.json` integrado en `apps/android/` sin compilar APK. Falta la credencial del servidor FCM HTTP v1, que **no** se obtiene de este JSON público.
+- Ninguna APK nueva, compilación Android ni lote `android-batch.json` realizados durante el desarrollo de push. Los cambios en `app.json` y `google-services.json` no activan el workflow de lanzamiento de APK.
 - Push en segundo plano sin probar en teléfonos físicos, no declarar finalizado.
