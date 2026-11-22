@@ -50,6 +50,8 @@ test('Android story upload uses actual Expo File blobs, never unsupported URI Fo
  assert.match(strip,/Aún no tienes estados/);
  assert.match(strip,/aún no tiene estados/);
  assert.match(native,/No se pudo enviar la foto/);
+ assert.match(native,/publishing=useRef\(false\)/);
+ assert.match(native,/if\(saving\|\|publishing\.current\)return/);
 });
 
 test('Holding Android Chat text reliably opens emoji menu without competing responder',()=>{
