@@ -34,6 +34,15 @@ test('PWA uses artwork from R2 and HTML media session without mock songs',()=>{
  assert.match(shared,/privateAudioUrl/);
  assert.match(shell,/MemberAudio token=\{token\} active=\{screen==='audio'\|\|screen==='home'\}/);
  assert.match(pwa,/hn-audio-vinyl is-playing/);
+ const cachedArtwork=read('apps/pwa/src/features/audio/audio-cover-cache.ts');
+ assert.match(pwa,/prepareAudioCover/);
+ assert.match(pwa,/preparedCovers\[current\.id\]\?\.lockscreen/);
+ assert.match(pwa,/recoverMedia/);
+ assert.match(pwa,/recoveryTried/);
+ assert.match(pwa,/onLoadedMetadata=/);
+ assert.match(cachedArtwork,/canvas\.toDataURL\('image\/jpeg'/);
+ assert.match(cachedArtwork,/URL\.createObjectURL/);
+
  assert.match(pwa,/onPlay=\{\(\)=>setPlaying\(true\)\}/);
  assert.doesNotMatch(pwa,/onWaiting=\{\(\)=>setPlaying\(false\)\}/);
  const css=read('apps/pwa/src/features/audio/audio-player.css');
@@ -56,6 +65,13 @@ test('PWA uses artwork from R2 and HTML media session without mock songs',()=>{
  assert.match(css,/\.hn-home-route \.hn-audio-editorial\{position:relative;z-index:1;margin-top:-18px\}/);
  const homeStage=read('apps/pwa/src/features/home/home-stage.css');
  assert.match(homeStage,/\.hn-home-route \.hn-moments-strip\{padding-top:3px;padding-bottom:4px\}/);
+ assert.match(homeStage,/true four-zone mobile layout/);
+ assert.match(homeStage,/\.hn-home-route \.hn-home-stage\{[\s\S]*position:relative!important/);
+ assert.match(homeStage,/\.hn-home-route \.hn-audio-editorial\{[\s\S]*overflow-y:auto!important/);
+ const homeStyles=read('apps/pwa/src/styles/home/home.css');
+ assert.match(homeStyles,/html:has\(\.hn-home-route\)/);
+ assert.match(homeStyles,/position:relative;z-index:15;flex:0 0 auto;bottom:auto/);
+
  assert.match(html,/Stories and lounge touch/);
  assert.match(html,/renderHavanaAudio/);
  assert.match(pwa,/hn-audio-paper-tear/);
