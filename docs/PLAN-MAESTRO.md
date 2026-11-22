@@ -2,11 +2,15 @@
 
 **Estado verificado: 22 de noviembre de 2026.** Fuente de verdad: [GitHub](https://github.com/Abnernoa97/havana-nice-v2), rama única `main`. Mantener estado ACTUAL, sin mezclar hitos históricos. Historia detallada en Git; auditoría de código: [22/11](AUDITORIA-DEPURACION-2026-11-22.md).
 
-## Android 0.0.26 · Vinilo 3D · 22/11/2026
+## QA · Estados, Chat, notificaciones · 22/11
 
-- [x] **0.0.25:** Estados fijos, Chat al último mensaje y emojis, Recuerdos 3D con controles completos y splash HN, publicados con firma estable.
-- [x] **0.0.26:** disco con paralaje por inclinación del teléfono (±8°) y reflejo dinámico; Android usa `expo-sensors` y la PWA el permiso iOS desde reproducción. Sin modificar Expo Audio, MediaSession ni BOOK 3D.
-- [x] **APK firmada 0.0.26:** [run #45001592947](https://github.com/Abnernoa97/havana-nice-v2/actions/runs/45001592947) `SUCCESS`, `versionCode 26`, certificado compatible con 0.0.25 y rollback preservado. [APK oficial](https://github.com/Abnernoa97/havana-nice-v2/releases/download/v2-android-current/HAVANA-NICE-V2-LATEST.apk). QA físico pendiente.
+- [x] **0.0.25:** Estados fijos, Chat invertido, BOOK intacto y splash HN.
+- [x] **Audio:** 3D no autorizado revertido de PWA/Android; Expo Audio y BOOK intactos.
+- [ ] **APK 0.0.27:** compilación [#45054455003](https://github.com/Abnernoa97/havana-nice-v2/actions/runs/45054455003); publicar solo tras firma/rollback. 0.0.26 vigente.
+
+- [x] **Estados:** PWA/Android aceptan autores desde API aunque falten en Perfiles, refresco visible 45 s. PWA publicada.
+- [x] **Avisos:** indicador privado de no leídos en PWA y Android, lectura con app abierta cada 30 s. `story.created` en `main` pendiente despliegue Worker.
+- [ ] **Pantalla apagada:** Firebase FCM Android y Web Push para PWA instalada requieren configuración/credenciales/permiso; NO activos todavía.
 
 ## Calendario sincronizado · 22/11/2026
 
@@ -14,14 +18,14 @@
 - [x] **Sello:** EVENTO REALIZADO tras medianoche en la zona horaria del evento, incluso en registros anteriores; actualiza la vista cada minuto.
 - [x] **Pantalla:** solo «Calendario» arriba, sin títulos ni rutas extra en PWA y Android.
 - [x] **Live:** una conexión CalendarRoom por sesión, cambios desde Admin y aviso «HAVANANICE-CALENDARIO📆» en Chat y demás vistas, inbox D1 privado por músico.
-- [ ] **Pendientes:** QA físico en Android 0.0.26 e iPhone; push OS con aplicación cerrada aún no implementado.
+- [ ] **QA:** Android/iPhone, Estados cruzados, Chat emojis, aviso privado. Push con pantalla apagada pendiente de FCM y Web Push.
 
 ## HOME/Audio iPhone · 22/11/2026
 
 - [x] **HOME PWA:** Estados fijos bajo cabecera, Audio con scroll independiente y degradado blanco→marfil. Compilación y 74/74 pruebas aprobadas en Pages (`5fc9832`).
 - [x] **Audio PWA:** reproducción iniciada desde el toque (Safari), indicador real de buffering, sin falso error rojo; portadas preparadas sin competir con streaming.
 - [x] **iPhone:** bloqueo reversible del scroll del documento solo en HOME; elimina rebote de la franja blanca sin tocar Estados, Chat o BOOK.
-- [x] **Android:** HOME, Estados y Audio editorial con vinilo 3D incluidos en APK firmada 0.0.26; BOOK intacto. QA físico pendiente.
+- [x] **Android:** Estado fijado y recuperación 45 s; Audio original. APK 0.0.27 en compilación.
 - [x] **Vertical iPhone:** PWA músico instalada solicita `portrait-primary` e incorpora lienzo vertical con rotación CSS cuando Safari gira; portales de Estados incluidos. Expo Android ya fija `portrait`. Respeta BOOK independiente. **Pendiente:** prueba física en iPhone (Safari puede ignorar bloqueo nativo).
 
 ## Depuración estructural · 22/11/2026
@@ -52,7 +56,7 @@
 
 - **Una sola rama `main`**, un solo repositorio V2. Sin parches temporales, duplicar rutas o dejar motores alternativos. Borrar lógica verdaderamente sustituida solo después de verificar referencias y equivalencia funcional.
 - **No tocar HAVANA CLOUD, PWA original, Drive original, cuentas ni producción ajena a V2.** No migrar datos del sistema anterior. V2 es autónoma.
-- **iPhone:** PWA instalada con audio 3D opcional; **Android:** Expo con Chat nativo y APK 0.0.26 firmada, actualizable sobre 0.0.25 sin desinstalar. El lector BOOK 3D permanece intacto. QA física pendiente.
+- **iPhone:** PWA sin Audio 3D;
 - **Identidad:** Admin autoriza nombres; el músico ingresa una vez y su instalación queda vinculada a una sola sesión/propietario. Rechazar desconocidos y revocados. Hasta 10 músicos, lista inicial Orly, Andy, Jali, Rafa, Noa y Fer. El Admin tiene sesión y permisos propios; un solo dueño de sesión para todos los módulos, sin nuevos accesos secundarios.
 - **Módulos independientes:** Chat, Calendario, Repertorio, Familia, BOOK, Músicos y futura Multimedia. HOME como navegación central; datos, estados y componentes separados; compartir contratos, servicios y sesión, no duplicar implementación.
 - **Primero funcionamiento, sincronización, velocidad y depuración.** Después pintura/estética. Preservar lo visual que el usuario ya confirmó de BOOK/Calendario.
@@ -128,7 +132,7 @@ tests/ + cloudflare/tests/ + scripts/ → reglas de seguridad y CI
 | Cloudflare Pages | publica `main`; comprobar SHA/deploy tras cada cambio |
 | Worker **en vivo** | V93 `e74e6f68-baea-4949-8a03-7c67ee03ca65`, deployment `a02fc7a2-8c4c-4edc-a484-c49b7d56ae66`, 100 %, 22/11. Siete bindings preservados; versión anterior disponible. |
 | Worker **en código** | Paquete Wrangler desplegado desde fuente `a758096be13159c7b7fc3a26b0d58a6b7aecb164`. Bundle temporal retirado de `main`, conservado en historial Git y Cloudflare. |
-| Android | APK firmada **0.0.26** (`versionCode 26`), mismo paquete/certificado que 0.0.25; disco con giroscopio, Chat y HOME corregidos. Rollback 0.0.25; BOOK 3D intacto. |
+| Android | APK firmada 0.0.26 aún vigente; 0.0.27 en compilación con Estados, emojis, avisos y Audio original. |
 | Colas R2 | BOOK, Calendario y baja de músicos: **0** operaciones pendientes al control |
 | Fotos personales | Calendario 4 recuerdos (3 WebP), BOOK 7 originales (0 WebP), Familia 16 archivos al control |
 
@@ -174,7 +178,7 @@ tests/ + cloudflare/tests/ + scripts/ → reglas de seguridad y CI
 
 ## 4.1. Matriz de aceptación física antes de declarar sincronización 100 %
 
-- [x] **BOOK 3D Android/PWA:** el usuario confirmó previamente avance, retroceso y deslizamiento en el lector híbrido; el código preserva PageFlip y requiere QA física tras instalar 0.0.24.
+- [x] **BOOK 3D:** motor PageFlip híbrido preservado; QA física pendiente.
 - [ ] **QA restante Android/PWA:** verificar Recuerdos de Calendario y sincronización real de Chat/Familia/Calendario; no confundir BOOK validado con toda la aplicación validada.
 - [ ] **Calendario Admin ↔ PWA ↔ Android:** crear/editar fecha real de prueba, cambiar destinatarios y eliminar únicamente esa fecha de prueba; observar notificación instantánea y que un músico desasignado deja de verla.
 - [ ] **Repertorio:** editar catálogo y lista por fecha desde Admin; comprobar actualización en ambos clientes y que quitar fecha invalida su lista.
