@@ -37,7 +37,7 @@ export function memberNoticeMessage(item:Pick<MemberNotice,'name'|'kind'|'emoji'
   case 'story.voice':return item.name+' te envió una nota de voz en tu estado';
   case 'chat.reaction':return item.name+' reaccionó a tu mensaje';
   case 'chat.message':return item.name+' envió un mensaje al equipo';
-  case 'calendar.event':return 'Se actualizó tu calendario';
+  case 'calendar.event':return 'HAVANANICE-CALENDARIO📆';
   case 'family.media':return item.name+' compartió nuevos recuerdos';
   case 'repertoire.updated':return 'Se actualizó tu repertorio';
   default:return 'Nueva actividad del equipo';
