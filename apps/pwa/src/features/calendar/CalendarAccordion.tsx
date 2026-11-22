@@ -2,9 +2,9 @@ import {lazy,Suspense,useCallback,useEffect,useRef,useState} from 'react';
 import {calendarDate,calendarEventCompleted,getCalendarEvents,HAVANA_V2_DEV_API_BASE_URL,safeCalendarMapUrl,type CalendarEvent} from '@havana/shared';
 const CalendarMemories=lazy(()=>import('./CalendarMemories'));
 import './calendar-memories.css';
-import {watchCalendar} from '../../services/calendar-live';
+
 // Member token is provided by the existing V2 session. Never create another login.
-export default function CalendarAccordion({token}:{token:string}){
+export default function CalendarAccordion({token,calendarRevision=0}:{token:string;calendarRevision?:number}){
  const [events,setEvents]=useState<CalendarEvent[]>([]);
  const [open,setOpen]=useState<string|null>(null);
  const [error,setError]=useState('');
@@ -29,19 +29,27 @@ export default function CalendarAccordion({token}:{token:string}){
    }
   }
  },[token]);
+ // The authenticated app shell owns CalendarRoom, even when Chat is open.
+ // This pane only reacts to that one subscription's revision.
  useEffect(()=>{
-  const update=(reason?:'fallback')=>{if(!document.hidden&&navigator.onLine){if(reason!=='fallback')setRevision(n=>n+1);void refresh();}};
-  update();
-  const stop=watchCalendar(token,false,update);
-  return()=>{stop();pending.current?.abort();pending.current=null;};
- },[token,refresh]);
+  setRevision(n=>n+1);
+  void refresh();
+  return()=>{pending.current?.abort();pending.current=null;};
+ },[calendarRevision,refresh]);
+ const [clock,setClock]=useState(Date.now());
+ useEffect(()=>{
+  let stopped=false;let timeout:ReturnType<typeof setTimeout>;
+  const tick=()=>{if(stopped)return;setClock(Date.now());timeout=setTimeout(tick,60000);};
+  timeout=setTimeout(tick,60000);
+  return()=>{stopped=true;clearTimeout(timeout);};
+ },[]);
  return <section className="hn-cal-list" aria-label="Fechas de trabajo">
   <div className="hn-cal-bar">
    <button type="button" onClick={()=>void refresh()}>Actualizar</button></div>
   {error&&<p role="alert" className="hn-cal-error">{error}</p>}
   {loading?<p className="hn-cal-empty">Cargando tus fechas…</p>:!events.length?
    <p className="hn-cal-empty">No tienes eventos asignados.</p>:
-   events.map(item=>{const past=calendarEventCompleted(item);return <article key={item.id} className={'hn-cal-event'+(past?' hn-cal-completed':'')}>
+   events.map(item=>{const past=calendarEventCompleted(item,new Date(clock));return <article key={item.id} className={'hn-cal-event'+(past?' hn-cal-completed':'')}>
     <button type="button" className="hn-cal-event-head" aria-expanded={open===item.id}
      onClick={()=>setOpen(value=>value===item.id?null:item.id)}>
      <span className="hn-cal-summary-main"><small>{calendarDate(item.date)}</small><strong>{item.title}</strong>
