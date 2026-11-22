@@ -1,10 +1,6 @@
 /* Isolated, symmetrical HOME state row. No Chat / BOOK selectors. */
 .hn-home-route,.hn-home-route .visual-layout,.hn-home-route .visual-content{background:#fff}
 .hn-home-route .visual-header{background:#0D2A23}
-.visual-account{display:flex;align-items:center;gap:8px;min-width:0}
-.visual-account-avatar{display:grid;place-items:center;width:38px;height:38px;border-radius:50%;
- background:#EDF1E9;color:#193b2f;border:2px solid #DBC59A;font-weight:750;font-size:15px}
-.visual-account-label{color:#f5f1e8;font-size:12px;font-weight:650}
 .hn-home-stage{background:#fff}
 .hn-moments-wrap{width:100%;padding:8px 0 0}
 .hn-moments-strip{display:flex;align-items:flex-start;gap:11px;overflow-x:auto;
@@ -34,10 +30,6 @@
 .hn-moment-name{display:block;box-sizing:border-box;width:80px;max-width:80px;
  height:18px;text-align:center;font-size:11px;line-height:18px;color:#333;
  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-@media(max-width:750px){
- .visual-account-label{font-size:11px}
-}
-
 /* The dedicated HOME stage contains only the pinned Stories row. */
 .hn-home-route .hn-home-stage{min-height:0}
 
