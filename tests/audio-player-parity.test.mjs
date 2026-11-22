@@ -135,7 +135,9 @@ test('Android OS player uses the same cover and MediaSession with audio backgrou
  assert.match(layout,/\{active==='home'&&<View style=\{styles\.storiesFixed\}>/);
  const audio=app.expo.plugins.find(p=>Array.isArray(p)&&p[0]==='expo-audio');
  assert.equal(audio[1].enableBackgroundPlayback,true);
- assert.equal(app.expo.version,'0.0.23','do not generate an Android version bump during the feature batch');
+ const batch=JSON.parse(read('releases/android-batch.json'));
+ assert.equal(app.expo.version,batch.version,'Native version must match the explicitly approved signed batch');
+ assert.equal(app.expo.android.versionCode,batch.versionCode);
 });
 
 test('Private Audio cache is short-lived, member-bound and bypassable',async()=>{
@@ -304,4 +306,17 @@ test('Audio editorial CSS keeps one top-level rule per selector',()=>{
  assert.ok(seen.size>=50,'Expected the actual editorial stylesheet');
  assert.deepEqual([...seen].filter(([,count])=>count>1),[],
   'Do not reintroduce layered duplicate global rules in Audio');
+});
+
+test('Native editorial Audio shares the CURRENT PWA parchment CSS, not hidden legacy decorations',()=>{
+ const source=read('apps/android/features/audio/nativeAudioEditorialHtml.ts');
+ const serialized=source.match(/export const NATIVE_AUDIO_EDITORIAL_HTML=("(?:\\.|[^"\\])*");?/s)?.[1];
+ assert.ok(serialized,'Expected self-contained native HTML');
+ const html=JSON.parse(serialized);
+ const current=read('apps/pwa/src/features/audio/audio-player.css')
+  .replaceAll("url('/audio-lounge/","url('https://havana-nice-v2.pages.dev/audio-lounge/");
+ assert.ok(html.includes(current),'Native WebView must use the full approved PWA editorial stylesheet');
+ assert.doesNotMatch(html,/class="hn-audio-fold"|class="hn-audio-silk|hn-audio-vinyl-grooves/);
+ assert.match(html,/window\.renderHavanaAudio/);
+ assert.match(read('apps/android/features/audio/NativeAudio.tsx'),/useAudioPlaylist\(/);
 });
