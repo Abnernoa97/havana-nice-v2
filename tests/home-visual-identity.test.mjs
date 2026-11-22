@@ -30,6 +30,10 @@ test('PWA HOME uses a scoped lightweight emerald-gold theme without affecting Ch
  assert.match(profileCSS,/\.visual-account-avatar\{display:grid;place-items:center/);
  assert.match(profileCSS,/\.visual-account-label\{color:#f5f1e8/);
  assert.doesNotMatch(profileCSS,/\.hn-moment-/,'Story circle styles belong to HOME, never Profile');
+ assert.doesNotMatch(profileCSS,/\.visual-bottom-nav/,
+  'Bottom navigation belongs to the shell, not Profile');
+ assert.match(css,/\.visual-shell:not\(\.hn-admin-editorial\) \.visual-bottom-nav button\{font-size:9px\}/);
+ assert.match(css,/\.visual-shell:not\(\.hn-admin-editorial\) \.visual-bottom-nav button small\{letter-spacing:-\.025em\}/);
  assert.match(stageCSS,/\.hn-moment-circle\{appearance:none;box-sizing:border-box;overflow:visible/);
  assert.match(stageCSS,/\.hn-moment-photo img\{display:block;width:100%;height:100%/);
  assert.doesNotMatch(stageCSS,/\.visual-account(?:-avatar|-label)?\{/,
