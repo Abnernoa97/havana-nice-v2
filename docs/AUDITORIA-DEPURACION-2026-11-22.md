@@ -12,7 +12,8 @@
 ## Cambios implementados en este lote
 1. **Audio:** eliminado del DOM el pliegue nunca visible y pétalos/seda dibujados por CSS que quedaron detrás del diseño aprobado. Se eliminaron las reglas de esos elementos y el surco de vinilo oculto. Total: **21 reglas CSS obsoletas retiradas**. Se conservan las imágenes reales `floral-clean.webp`, `tear.webp`, `corner.webp`, portada privada, controles, animación de vinilo y streaming.
 2. **Orientación PWA:** `features/viewport/musician-portrait.ts` contiene exclusivamente la lógica del iPhone instalado y `features/viewport/musician-portrait.css` sus estilos. `app/main.tsx` vuelve a ser la entrada de composición y `styles/mobile-viewport.css` vuelve a compartir únicamente reglas táctiles y de zoom (703 caracteres). El módulo no se importa en entradas Admin, visual o BOOK.
-3. **Regresión:** adaptadas las pruebas de Audio y orientación para detectar reintroducciones de DOM/CSS oculto y vigilar el aislamiento del módulo.
+3. **HOME:** eliminado de `MemberHome.tsx` el `hn-home-blank` invisible (antiguo espaciador de 55vh). Eliminadas las reglas de tamaño/padding que ya eran sustituidas por el HOME fijo y scroll independiente; mantiene los perfiles y el degradado.
+4. **Regresión:** adaptadas las pruebas de Audio, HOME y orientación para detectar reintroducciones de DOM/CSS oculto y vigilar el aislamiento del módulo.
 
 ## Hallazgos pendientes (NO declarar limpieza 100 %)
 - **Audio editorial:** reglas CSS por selector y media-query repetidas por capas de refinamiento (por ejemplo, `.hn-home-route .hn-audio-parchment` llegó a cinco apariciones). Deben consolidarse con pruebas visuales y comparación física; no retirar estilos finales por intuición.
