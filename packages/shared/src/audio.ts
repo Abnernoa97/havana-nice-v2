@@ -16,13 +16,46 @@ export function privateAudioUrl(path:string|null):string|null{
    /^\/api\/audio\/media\/[a-f0-9]{32}$/.test(url.pathname)?url.href:null;
  }catch{return null;}
 }
-export async function getAudioTracks(token:string,admin=false):Promise<AudioTrack[]>{
- const result=await fetch(API+(admin?'/api/audio/admin/tracks':'/api/audio/tracks'),{
-  cache:'no-store',headers:{Authorization:'Bearer '+token,Accept:'application/json'}
+// Private, process-local, member-scoped cache. Never persist grant URLs or share them across users.
+// Grants live for 60 minutes on the Worker; this cache lives only 2 minutes.
+const AUDIO_CATALOG_CACHE_MS=2*60*1000;
+let memberCatalogCache:{token:string;tracks:AudioTrack[];expiresAt:number}|null=null;
+let memberCatalogPending:{token:string;promise:Promise<AudioTrack[]>}|null=null;
+export function clearAudioTracksCache(token?:string):void{
+ if(!token||memberCatalogCache?.token===token)memberCatalogCache=null;
+ if(!token||memberCatalogPending?.token===token)memberCatalogPending=null;
+}
+export async function getAudioTracks(token:string,admin=false,force=false):Promise<AudioTrack[]>{
+ if(!admin){
+  if(memberCatalogCache&&memberCatalogCache.token!==token)memberCatalogCache=null;
+  if(!force&&memberCatalogCache?.token===token&&Date.now()<memberCatalogCache.expiresAt)
+   return memberCatalogCache.tracks;
+  // Deduplicate simultaneous opens without reusing another member's capabilities.
+  if(memberCatalogPending?.token===token)return memberCatalogPending.promise;
+ }
+ const request=(async()=>{
+  const result=await fetch(API+(admin?'/api/audio/admin/tracks':'/api/audio/tracks'),{
+   cache:'no-store',headers:{Authorization:'Bearer '+token,Accept:'application/json'}
+  });
+  const data=await result.json().catch(()=>({})) as {tracks?:AudioTrack[];error?:string};
+  if(!result.ok)throw new AudioApiError(data.error||'Biblioteca de audio no disponible',result.status);
+  return (data.tracks||[]).filter(t=>privateAudioUrl(t.audioUrl));
+ })();
+ // Admin always reads live data. A member's manual refresh passes force=true.
+ if(admin)return request;
+ const pending=request.then(tracks=>{
+  if(memberCatalogPending?.promise===pending)
+   memberCatalogCache={token,tracks,expiresAt:Date.now()+AUDIO_CATALOG_CACHE_MS};
+  return tracks;
+ }).catch(error=>{
+  if(error instanceof AudioApiError&&(error.status===401||error.status===403))
+   clearAudioTracksCache(token);
+  throw error;
+ }).finally(()=>{
+  if(memberCatalogPending?.promise===pending)memberCatalogPending=null;
  });
- const data=await result.json().catch(()=>({})) as {tracks?:AudioTrack[];error?:string};
- if(!result.ok)throw new AudioApiError(data.error||'Biblioteca de audio no disponible',result.status);
- return (data.tracks||[]).filter(t=>privateAudioUrl(t.audioUrl));
+ memberCatalogPending={token,promise:pending};
+ return pending;
 }
 function uploadBinary(path:string,token:string,file:Blob,meta?:{
  title:string;artist:string;album:string;
@@ -53,11 +86,13 @@ export async function uploadAudioTrack(token:string,file:File,info:{
  if(!file.size||file.size>30*1024*1024)throw new Error('El audio debe pesar máximo 30 MiB.');
  const result=await uploadBinary('/api/audio/admin/tracks',token,file,info);
  if(!result.id)throw new Error('No se confirmó el archivo.');
+ clearAudioTracksCache();
  return result.id;
 }
 export async function uploadAudioCover(token:string,id:string,blob:Blob):Promise<void>{
  if(!blob.size||blob.size>400*1024)throw new Error('La portada debe pesar menos de 400 KiB.');
  await uploadBinary('/api/audio/admin/tracks/'+encodeURIComponent(id)+'/cover',token,blob);
+ clearAudioTracksCache();
 }
 export async function removeAudioTrack(token:string,id:string):Promise<void>{
  const result=await fetch(API+'/api/audio/admin/tracks/'+encodeURIComponent(id),{
@@ -67,4 +102,5 @@ export async function removeAudioTrack(token:string,id:string):Promise<void>{
   const value=await result.json().catch(()=>({})) as {error?:string};
   throw new AudioApiError(value.error||'No se pudo eliminar el audio',result.status);
  }
+ clearAudioTracksCache();
 }
