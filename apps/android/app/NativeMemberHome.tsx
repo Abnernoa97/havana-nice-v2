@@ -8,6 +8,7 @@ import NativeFamily from '../features/family/NativeFamily';
 import {useNativeMemberProfile} from '../features/profile/useNativeMemberProfile';
 import NativeStories from '../features/stories/NativeStories';
 import NativeNotices from '../features/notices/NativeNotices';
+import {useNativeUnreadNotices} from '../features/notices/useNativeUnreadNotices';
 import NativeAudioEditorialView from '../features/audio/NativeAudioEditorialView';
 
 type Props={displayName:string;actorId:string;token:string;
@@ -17,6 +18,7 @@ type Props={displayName:string;actorId:string;token:string;
 const STORIES_FADE='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAAwCAYAAADQMxCBAAAAOUlEQVR42n2JyQ0AIAzDrO4/MC1H+IEqUT6WnSBJBjQD/OCfbkB8t6gyDOhV9keOfIxsFzPbxTrQBqWZMlwxZHeoAAAAAElFTkSuQmCC';
 function NativeMemberHome({displayName,actorId,token,active,calendarRevision=0,onNavigate}:Props){
  const profile=useNativeMemberProfile(token,actorId,true);
+ const unreadNotices=useNativeUnreadNotices(token,profile.liveVersion+calendarRevision);
  const [profileOpen,setProfileOpen]=useState(false);
  const selected=MEMBER_MODULES.find(item=>item.id===active);
  const mustAdd=profile.phase==='missing',checking=profile.phase==='checking';
@@ -82,6 +84,7 @@ function NativeMemberHome({displayName,actorId,token,active,calendarRevision=0,o
       onPress={()=>onNavigate(dest)}>
       <Text style={[styles.bottomGlyph,isActive&&styles.activeLabel]}>{dest==='home'?'⌂':item?.glyph||'•'}</Text>
       <Text numberOfLines={1} style={[styles.bottomLabel,isActive&&styles.activeLabel]}>{label}</Text>
+      {dest==='notices'&&unreadNotices>0&&<View style={styles.unreadBadge}><Text style={styles.unreadCount}>{unreadNotices}</Text></View>}
      </Pressable>;
    })}
   </View>
@@ -128,6 +131,9 @@ const styles=StyleSheet.create({
  bottomNav:{flexDirection:'row',backgroundColor:'#FFFCF7',borderTopWidth:1,borderColor:'#E4DDD1',paddingVertical:8},
  bottomTab:{flex:1,alignItems:'center',borderRadius:9,paddingVertical:6,marginHorizontal:1},
  activeTab:{backgroundColor:'#E7EEE6'},bottomGlyph:{fontSize:20,color:'#708077'},
+ unreadBadge:{position:'absolute',top:0,right:5,minWidth:17,height:17,borderRadius:9,
+  backgroundColor:'#98433C',alignItems:'center',justifyContent:'center',paddingHorizontal:3},
+ unreadCount:{color:'#fff',fontSize:10,fontWeight:'700'},
  bottomLabel:{fontSize:9,color:'#708077'},activeLabel:{fontWeight:'800',color:'#133B30'},
  title:{fontSize:36,fontWeight:'700',marginTop:8,color:'#1B332B'},
  lead:{fontSize:14,lineHeight:21,color:'#657269',marginTop:8,marginBottom:23},
