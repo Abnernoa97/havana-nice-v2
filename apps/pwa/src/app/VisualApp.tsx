@@ -1,4 +1,4 @@
-import {lazy,Suspense,memo,useEffect,useState} from 'react';
+import {lazy,Suspense,memo,useEffect,useLayoutEffect,useState} from 'react';
 import {usePwaMemberProfiles,PwaProfileLive} from '../features/profile/usePwaMemberProfiles';
 import MemberProfilePanel from '../features/profile/MemberProfilePanel';
 import PrivateProfileAvatar from '../features/profile/PrivateProfileAvatar';
@@ -40,6 +40,19 @@ function VisualApp({displayName,active,onNavigate,preview=false,token,actorId}:P
   const own=profile.own;
   const [previewScreen,setPreviewScreen]=useState<MemberScreen>('home');
   const screen=active??previewScreen;
+  // iOS standalone HOME must never drag the document itself: only the Lounge
+  // scrolls. Release the lock on navigation so Chat, BOOK and dialogs retain
+  // their own viewport policies.
+  useLayoutEffect(()=>{
+    if(screen!=='home')return;
+    document.documentElement.classList.add('hn-home-viewport-lock');
+    document.body.classList.add('hn-home-viewport-lock');
+    window.scrollTo(0,0);
+    return()=>{
+      document.documentElement.classList.remove('hn-home-viewport-lock');
+      document.body.classList.remove('hn-home-viewport-lock');
+    };
+  },[screen]);
   useEffect(()=>{if(screen==='audio'||screen==='home')setAudioOpened(true);},[screen]);
   const navigate=(target:MemberScreen)=>{
     if(target==='chat'&&!onNavigate)return; // Public preview never opens private Chat.
