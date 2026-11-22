@@ -6,7 +6,7 @@ import {getMemberNotices,markMemberNoticesRead,memberNoticeMessage,
 
 // One existing musician session, one notification-only Familia stream while this
 // tab is active. Never create a second Chat owner or persist private inbox data.
-export default function NativeNotices({token}:{token:string}){
+export default function NativeNotices({token,calendarRevision=0}:{token:string;calendarRevision?:number}){
  const [inbox,setInbox]=useState<MemberNoticeInbox>({items:[],unread:0});
  const [loading,setLoading]=useState(true);
  const [error,setError]=useState('');
@@ -60,6 +60,7 @@ export default function NativeNotices({token}:{token:string}){
   });
   return()=>{mounted=false;++id.current;clear();socket?.close();sub.remove();};
  },[token,refresh]);
+ useEffect(()=>{if(calendarRevision>0)void refresh();},[calendarRevision,refresh]);
  const mark=async(item?:MemberNotice)=>{
   try{await markMemberNoticesRead(token,item?.id);await refresh();}
   catch(e){setError(e instanceof Error?e.message:'No se pudo marcar como leído.');}
