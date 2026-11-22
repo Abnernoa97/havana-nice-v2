@@ -34,9 +34,18 @@ async function issue(env,rows){
   ...(row.cover_key?[{id:row.id,variant:'cover'}]:[])]);
  const tokens=pairs.map(()=>crypto.randomUUID().replace(/-/g,''));
  const hashes=await Promise.all(tokens.map(sha256Hex));
- await env.DB.batch(pairs.map((row,i)=>env.DB.prepare(
-  'INSERT INTO audio_media_grants(token_hash,track_id,variant,expires_at) VALUES(?,?,?,?)'
- ).bind(hashes[i],row.id,row.variant,expire)));
+ // Group grants into bounded multi-row inserts. One atomic D1 batch now holds
+ // up to 8 statements for 100 tracks with covers, instead of 200 statements.
+ const statements=[];
+ for(let start=0;start<pairs.length;start+=25){
+  const chunk=pairs.slice(start,start+25);
+  const values=chunk.map(()=>'(?,?,?,?)').join(',');
+  const bindings=chunk.flatMap((row,i)=>[hashes[start+i],row.id,row.variant,expire]);
+  statements.push(env.DB.prepare(
+   'INSERT INTO audio_media_grants(token_hash,track_id,variant,expires_at) VALUES '+values
+  ).bind(...bindings));
+ }
+ await env.DB.batch(statements);
  let cursor=0;
  return rows.map(row=>({
   id:row.id,title:row.title,artist:row.artist,album:row.album,position:row.position,
