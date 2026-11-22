@@ -205,7 +205,6 @@ export default function MemberAudio({token,active=true}:{token:string;active?:bo
  return <section className="hn-audio hn-audio-editorial" aria-label="Audio HAVANA NICE" hidden={!active}>
   <div className="hn-audio-parchment">
    <div className="hn-audio-paper-tear" aria-hidden="true"/>
-   <div className="hn-audio-fold" aria-hidden="true"/>
    <div className="hn-audio-paper-title">
     <span>SESIÓN PRIVADA</span>
     <h2>Private Listening Lounge</h2>
@@ -220,11 +219,7 @@ export default function MemberAudio({token,active=true}:{token:string;active?:bo
      <p>Los audios y sus portadas aparecerán automáticamente cuando Administración los publique.</p>
     </div>:<>
     <div className="hn-audio-player">
-     <div className="hn-audio-flowers" aria-hidden="true">
-      <span className="hn-audio-silk hn-audio-silk-left"/><span className="hn-audio-silk hn-audio-silk-right"/>
-      <span className="hn-audio-flower hn-audio-flower-left">{Array.from({length:5},(_,i)=><i key={i}/>)}</span>
-      <span className="hn-audio-flower hn-audio-flower-right">{Array.from({length:5},(_,i)=><i key={i}/>)}</span>
-     </div>
+     <div className="hn-audio-flowers" aria-hidden="true"/>
      <div className="hn-audio-record-wrap">
       <div className={playing?'hn-audio-vinyl is-playing':'hn-audio-vinyl'}
        role="img" aria-label={`Vinilo con la portada de ${current.title}`}>
