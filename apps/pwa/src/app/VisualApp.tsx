@@ -20,6 +20,7 @@ type Props={
   onNavigate?:(screen:MemberScreen)=>void;
   preview?:boolean;
   token?:string;
+  calendarRevision?:number;
   actorId?:string;
 };
 const notes:Record<Exclude<MemberScreen,'chat'|'home'>,string>={
@@ -32,7 +33,7 @@ const notes:Record<Exclude<MemberScreen,'chat'|'home'>,string>={
 };
 // Reuses the existing visual shell for the member HOME after successful login.
 // /visual.html remains presentation-only; it cannot open Chat or issue a session.
-function VisualApp({displayName,active,onNavigate,preview=false,token,actorId}:Props){
+function VisualApp({displayName,active,onNavigate,preview=false,token,actorId,calendarRevision=0}:Props){
   const [profileOpen,setProfileOpen]=useState(false);
   const [audioOpened,setAudioOpened]=useState(active==='audio'||active==='home');
   const [storyEpoch,setStoryEpoch]=useState(0);
@@ -100,11 +101,11 @@ function VisualApp({displayName,active,onNavigate,preview=false,token,actorId}:P
               onClick={()=>navigate('audio')}>♫ Abrir Audio HAVANA NICE</button>}
           </div>}
           <Suspense fallback={<div className="visual-empty" role="status" aria-live="polite">Abriendo módulo…</div>}>
-           {screen==='calendar'&&token?<CalendarAccordion token={token}/>:
+           {screen==='calendar'&&token?<CalendarAccordion token={token} revision={calendarRevision}/>:
             screen==='repertoire'&&token?<MemberRepertoire token={token}/>:
             screen==='musicians'&&token?<MemberMusicians token={token}/>:
             screen==='family'&&token?<MemberFamily token={token}/>:
-            screen==='notices'&&token?<MemberNotices token={token}/>:
+            screen==='notices'&&token?<MemberNotices token={token} calendarRevision={calendarRevision}/>:
             screen==='audio'?null:
             <div className="visual-empty">
              <span className="visual-empty-icon" aria-hidden="true">◇</span>
