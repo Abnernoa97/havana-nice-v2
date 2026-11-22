@@ -55,18 +55,35 @@
  .hn-home-route .visual-content{padding-top:5px}
 }
 
-/* Keep HAVANA NICE stories fixed below the brand while Audio alone scrolls.
-   Fade the white stories into the warm paper instead of a dark separator. */
+/* HOME is split into two siblings: static Stories and the ONLY Audio
+   scroller. Safari elastic overscroll must never displace the profile row. */
 @media(max-width:750px){
- .hn-home-route .visual-content{background:#f7f0e8}
- .hn-home-route .hn-home-stage{position:sticky;top:0;z-index:9;
-  background:#fff;isolation:isolate;overflow:visible}
+ .hn-home-route .visual-layout>.hn-home-viewport{
+  display:flex;flex-direction:column;min-height:0;height:100%;
+  overflow:hidden;padding:5px 16px 0;background:#f7f0e8
+ }
+ .hn-home-route .hn-home-stage{
+  position:relative;top:auto;flex:0 0 auto;z-index:9;
+  margin-inline:-16px;padding-inline:16px;
+  background:#fff;isolation:isolate;overflow:visible
+ }
  .hn-home-route .hn-home-stage:after{
-  content:"";position:absolute;left:-18px;right:-18px;bottom:-18px;
-  height:23px;z-index:2;pointer-events:none;
-  background:linear-gradient(to bottom,#fff 0%,rgba(255,255,255,.84) 37%,
+  content:"";position:absolute;left:0;right:0;bottom:-29px;
+  height:36px;z-index:2;pointer-events:none;
+  background:linear-gradient(to bottom,#fff 0%,#fff 18%,
+   rgba(255,255,255,.88) 38%,rgba(255,255,255,.52) 65%,
    rgba(255,255,255,0) 100%)
  }
+ .hn-home-route .hn-home-audio-scroll{
+  flex:1 1 auto;min-height:0;min-width:0;
+  margin-inline:-16px;padding-inline:16px;overflow-x:hidden;overflow-y:auto;
+  overscroll-behavior-y:contain;-webkit-overflow-scrolling:touch;
+  background:#f7f0e8
+ }
+ .hn-home-route .hn-home-audio-scroll:after{
+  content:"";display:block;height:calc(96px + env(safe-area-inset-bottom))
+ }
+ .hn-home-route .hn-home-audio-scroll .hn-audio-editorial{margin-top:0}
  .hn-home-route .hn-moments-wrap{background:#fff}
  .hn-home-route .hn-moments-strip{padding-bottom:2px}
 }
