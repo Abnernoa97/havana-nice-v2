@@ -66,7 +66,7 @@ Son acciones técnicas, no actividad útil del equipo.
 - [x] Código de registro privado de dispositivos y cola deduplicada.
 - [x] Adaptadores cifrados Web Push (RFC 8291/8292) + FCM HTTP v1.
 - [x] Service Worker y control PWA de activación mediante toque.
-- [ ] Validación completa CI del Worker y PWA.
+- [x] Validación inicial CI del Worker y PWA: Worker versión `41c1c56e` y Pages `4adc9bce` pasaron las pruebas. Repetir para cambios posteriores.
 - [ ] Credenciales VAPID configuradas y prueba real PWA iPhone cerrada.
 - [ ] Proyecto Firebase conectado, `google-services.json` de
       `com.havananice.v2` y cuenta de servicio FCM en secretos.
@@ -78,3 +78,13 @@ Son acciones técnicas, no actividad útil del equipo.
 Una app totalmente apagada por el usuario, un teléfono sin corriente,
 el modo No molestar o restricciones del sistema pueden alterar la entrega;
 no prometer tiempo ni entrega absoluta de un proveedor externo.
+
+## Estado confirmado · 22 de noviembre de 2026
+
+- Worker `havana-nice-v2-dev` desplegado con motor de push y siete bindings históricos intactos.
+- D1 contiene `member_push_devices` y `member_push_outbox`, ambos inicialmente vacíos.
+- PWA activa con permiso desde la bandeja privada y service worker para recepción; todavía no puede mostrar push reales sin claves VAPID.
+- Las credenciales VAPID no se provisionaron; intento de configuración segura bloqueado. No colocar claves en Git.
+- Firebase para FCM Android no está conectado: falta autorización del usuario para configurar proyecto/credenciales.
+- Ninguna APK nueva, compilación Android ni lote `android-batch.json` realizados durante el desarrollo de push.
+- Push en segundo plano sin probar en teléfonos físicos, no declarar finalizado.
