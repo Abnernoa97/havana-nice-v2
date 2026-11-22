@@ -11,6 +11,9 @@
 .hn-story-photo{position:absolute;inset:0;display:block;width:100%;height:100%;
  background-color:#0a100d;background-size:contain;background-repeat:no-repeat;
  background-position:center;transform:none;animation:none}
+.hn-story-loading{position:absolute;inset:0;z-index:1;display:grid;place-items:center;
+ color:#e6e9e2;background:linear-gradient(150deg,#193127,#0b100d 78%);
+ font-size:13px;letter-spacing:.04em;pointer-events:none}
 .hn-story-unavailable{position:absolute;inset:0;display:grid;place-items:center;
  padding:32px;text-align:center;color:#d6e0d9}
 .hn-story-viewer::after{content:'';position:absolute;inset:0;z-index:2;pointer-events:none;
