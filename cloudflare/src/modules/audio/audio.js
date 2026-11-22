@@ -82,21 +82,20 @@ async function readGrant(request,env,url,origin){
  }else h.set('content-length',String(object.size));
  return new Response(request.method==='HEAD'?null:object.body,{status,headers:h});
 }
-async function list(env,origin,ctx){
- // The catalog must never wait for housekeeping. Grants remain safe even
- // before physical removal: readGrant rejects every expired grant in SQL.
+// The 15-minute Worker cron reclaims expired capabilities; never do housekeeping on Audio open.
+// readGrant rejects expired tokens immediately even before their rows are deleted.
+export async function cleanupExpiredAudioGrants(env,limit=2000){
+ return env.DB.prepare(
+  'DELETE FROM audio_media_grants WHERE token_hash IN ('+
+  'SELECT token_hash FROM audio_media_grants WHERE expires_at<=? LIMIT ?)'
+ ).bind(Date.now(),limit).run();
+}
+async function list(env,origin){
  const rows=(await env.DB.prepare(
   'SELECT id,title,artist,album,position,size_bytes,cover_key FROM audio_tracks '+
   'WHERE published=1 ORDER BY position ASC,created_at ASC LIMIT 100'
  ).all()).results||[];
- const response=json({tracks:await issue(env,rows)},200,origin);
- const cleanupExpired=()=>env.DB.prepare(
-  'DELETE FROM audio_media_grants WHERE token_hash IN ('+
-  'SELECT token_hash FROM audio_media_grants WHERE expires_at<=? LIMIT 200)'
- ).bind(Date.now()).run();
- if(ctx?.waitUntil)ctx.waitUntil(cleanupExpired().catch(()=>{}));
- else await cleanupExpired().catch(()=>{});
- return response;
+ return json({tracks:await issue(env,rows)},200,origin);
 }
 async function uploadAudio(request,env,origin){
  if(!env.MEDIA_BUCKET)return json({error:'R2 no disponible'},503,origin);
@@ -202,7 +201,7 @@ export async function handleAudioApi(request,env,url,origin,verifyMember,ctx){
  }
  try{
   if(url.pathname===(admin?'/api/audio/admin/tracks':'/api/audio/tracks')&&request.method==='GET')
-   return await list(env,origin,ctx);
+   return await list(env,origin);
   if(!admin)return json({error:'Método no permitido'},405,origin);
   let result;
   if(url.pathname==='/api/audio/admin/tracks'&&request.method==='POST')
