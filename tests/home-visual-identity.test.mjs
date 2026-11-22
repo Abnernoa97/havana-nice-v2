@@ -24,6 +24,13 @@ test('PWA HOME uses a scoped lightweight emerald-gold theme without affecting Ch
  assert.match(strip,/onOpenStory/);
  assert.doesNotMatch(strip,/onOpenProfile|choosePhoto/,'Publishing a story must not enter the Profile editor');
  assert.match(app,/MemberProfilePanel/);
+ const profileCSS=read('apps/pwa/src/features/profile/profile.css');
+ const stageCSS=read('apps/pwa/src/features/home/home-stage.css');
+ assert.match(profileCSS,/\.visual-account\{display:flex;align-items:center/);
+ assert.match(profileCSS,/\.visual-account-avatar\{display:grid;place-items:center/);
+ assert.match(profileCSS,/\.visual-account-label\{color:#f5f1e8/);
+ assert.doesNotMatch(stageCSS,/\.visual-account(?:-avatar|-label)?\{/,
+  'Shared header belongs to Profile, not the lazy HOME Story module');
  assert.match(app,/aria-current=\{screen===item.id\?'page':undefined\}/);
  assert.doesNotMatch(app+'\n'+home,/new WebSocket|startNamedChatSession|uploadChatMediaBatch/);
 });
