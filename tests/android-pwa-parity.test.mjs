@@ -10,7 +10,12 @@ test('Android Calendar has no old 30 second polling and uses the same private Ca
  const calendar=read('apps/android/features/calendar/NativeCalendar.tsx');
  const transport=read('apps/android/services/native-calendar-live.ts');
  const pwa=read('apps/pwa/src/services/calendar-live.ts');
- assert.match(calendar,/watchNativeCalendar\(token/);
+ const signals=read('apps/android/features/calendar/useNativeCalendarSignals.ts');
+ const shell=read('apps/android/features/chat/NativeChatSurface.tsx');
+ assert.match(signals,/watchNativeCalendar\(token,reason/);
+ assert.match(shell,/useNativeCalendarSignals\(session\?\.token\)/);
+ assert.match(calendar,/calendarRevision/);
+ assert.doesNotMatch(calendar,/watchNativeCalendar\(/);
  assert.doesNotMatch(calendar,/setInterval|30000|new WebSocket/);
  assert.match(transport,/new WebSocket\(url,\['havana-v2-calendar','session\.'\+token\]\)/);
  assert.match(transport,/calendar\.invalidate/);
@@ -45,9 +50,9 @@ test('one private Repertoire invalidation channel synchronizes Admin, PWA and An
  assert.match(entry,/ctx\.waitUntil\(notifyRepertoireClients\(env\)\)/);
  assert.match(room,/type:'repertoire.invalidate'/);
  assert.match(browserTransport,/watchRepertoire\(token/);
- assert.match(browserTransport,/if\(message\.type==='calendar.invalidate'\)onInvalidate\(\)/);
+ assert.match(browserTransport,/if\(message\.type==='calendar.invalidate'\)onInvalidate\('changed'\)/);
  assert.match(nativeTransport,/watchNativeRepertoire\(token/);
- assert.match(nativeTransport,/if\(event\.type==='calendar.invalidate'\)onInvalidate\(\)/);
+ assert.match(nativeTransport,/if\(event\.type==='calendar.invalidate'\)onInvalidate\('changed'\)/);
  assert.match(admin,/void refreshAll\(\); \/\/ Carga D1 inmediata/);
  assert.match(admin,/watchRepertoire\(token,true/);
  assert.match(member,/void refresh\(\); \/\/ Initial D1 load/);
