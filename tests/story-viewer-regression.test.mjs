@@ -24,7 +24,14 @@ test('Only one photo layer is rendered, independently of the number of uploaded 
  assert.match(surface,/memo\(function StoryPhotoSurface/);
  assert.match(component,/StoryPhotoSurface id=\{item.id\}/);
  assert.doesNotMatch(component,/<img\b|rotateY|page-next|page-previous|hn-story-image-stage/);
- assert.match(component,/new Image\(\)/); // background preload is not a visible DOM photo
+ const cache=read('apps/pwa/src/features/stories/useStoryPhotoCache.ts');
+ assert.match(component,/useStoryPhotoCache\(items,position,onPhotoError\)/);
+ assert.match(cache,/new Image\(\)/); // a single decoded private JPEG cache, not a visible DOM layer
+ assert.match(cache,/fetch\(item\.photoUrl/);
+ assert.match(cache,/URL\.createObjectURL\(blob\)/);
+ assert.match(cache,/URL\.revokeObjectURL/);
+ assert.match(cache,/items\.slice\(position,position\+2\)/);
+ assert.match(surface,/hn-story-loading/);
  assert.match(surface,/className="hn-story-canvas"/);
  assert.match(style,/\.hn-story-canvas\{position:absolute;inset:0/);
  assert.match(style,/\.hn-story-photo\{position:absolute;inset:0/);
