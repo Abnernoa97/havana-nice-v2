@@ -5,10 +5,21 @@ import assert from 'node:assert/strict';
 const read = path => readFileSync(new URL('../' + path, import.meta.url), 'utf8');
 // A separate repository must contain only V2 source, never the original app.
 const allowedRoot=new Set(['.git','.github','.gitignore','.env.example','README.md',
- 'apps','cloudflare','packages','docs','scripts','tests','releases','node_modules',
+ 'apps','cloudflare','packages','docs','scripts','tests','releases','functions','node_modules',
  'package.json','package-lock.json','tsconfig.base.json']);
 assert.deepEqual(readdirSync(new URL('../',import.meta.url)).filter(x=>!allowedRoot.has(x)),
  [],'Standalone V2 repository cannot include original app files');
+// The only Pages Function is the same-origin private artwork bridge.
+// Never allow parallel implementations, public media endpoints or backdoors.
+for(const [folder,allowed] of [
+ ['functions',['api']],
+ ['functions/api',['audio']],
+ ['functions/api/audio',['artwork']],
+ ['functions/api/audio/artwork',['[token].js']],
+]){
+ assert.deepEqual(readdirSync(new URL('../'+folder+'/',import.meta.url)).sort(),allowed,
+  'Pages Functions must contain only the signed artwork bridge: '+folder);
+}
 if(existsSync(new URL('../releases/',import.meta.url)))
  assert.deepEqual(readdirSync(new URL('../releases/',import.meta.url)).sort(),['android-batch.json'],
   'Only the explicit V2 Android batch marker may live in releases/');
