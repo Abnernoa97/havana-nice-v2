@@ -1,0 +1,61 @@
+name: HAVANA NICE V2 Worker canonical release bundle
+
+# One-time source build. The compiled file is an ephemeral release artifact,
+# never a new hand-maintained Worker or a second branch.
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/v2-worker-bundle-once.yml
+
+permissions:
+  contents: write
+
+jobs:
+  build-release-candidate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: true
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - name: Install canonical locked dependencies
+        run: npm ci
+      - name: Verify Worker TypeScript and existing private sessions
+        run: |
+          npm run typecheck -w @havana/cloudflare
+          node --test cloudflare/tests/admin-auth.test.mjs cloudflare/tests/admin-trusted-device.test.mjs tests/worker-hash-parity.test.mjs
+      - name: Test private Audio R2 operations before enabling shared Worker
+        run: node --test cloudflare/tests/audio-api.test.mjs
+      - name: Validate Calendar dates, realtime recipients and private system notices
+        run: node --test cloudflare/tests/calendar.test.mjs cloudflare/tests/calendar-realtime.test.mjs cloudflare/tests/member-notifications.test.mjs tests/calendar-free-text-ui.test.mjs
+      - name: Generate exact canonical Wrangler release bundle, no deployment
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd cloudflare
+          npx wrangler deploy --dry-run --outdir /tmp/havana-v2-canonical
+          cd ..
+          BUNDLE="$(find /tmp/havana-v2-canonical -type f -name 'index.js' -print -quit)"
+          test -n "$BUNDLE" && test -s "$BUNDLE"
+          node scripts/verify-worker-preview.mjs "$BUNDLE"
+          node scripts/worker-release-preflight.mjs "$BUNDLE"
+          node --check "$BUNDLE"
+          mkdir -p cloudflare/.release
+          cp "$BUNDLE" cloudflare/.release/worker.mjs
+          printf '%s\n' "$GITHUB_SHA" > cloudflare/.release/source-sha.txt
+          sha256sum cloudflare/.release/worker.mjs | awk '{print $1}' > cloudflare/.release/bundle-sha256.txt
+      - name: Export verified bundle to this same main branch for signed API release
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add cloudflare/.release/worker.mjs cloudflare/.release/source-sha.txt cloudflare/.release/bundle-sha256.txt
+          git commit -m "build(worker): checked canonical source bundle for secured release"
+          git push origin HEAD:main
