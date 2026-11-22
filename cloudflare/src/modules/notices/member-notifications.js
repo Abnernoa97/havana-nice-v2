@@ -1,3 +1,4 @@
+import {sha256Hex} from '../../shared/crypto-helpers.js';
 // Private per-member inbox. One existing musician session; no new socket or credentials.
 // Notifications contain short metadata, never private media URLs or tokens.
 const asJson=(value,status,origin)=>new Response(JSON.stringify(value),{
@@ -47,7 +48,8 @@ export async function notifyTeamActivity(env,actorId,kind,targetId,{
  return count;
 }
 export async function notifyTeamProfilePhoto(env,actor,photoKey){
- return notifyTeamActivity(env,actor.actorId,'profile.photo',photoKey,{
+ // Never include an R2 object key in an inbox or a push notification.
+ return notifyTeamActivity(env,actor.actorId,'profile.photo',await sha256Hex(photoKey),{
   preview:'Actualizó su foto de perfil'
  });
 }
