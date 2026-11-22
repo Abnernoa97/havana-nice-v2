@@ -99,7 +99,7 @@ export default function NativeAudio({token,visible,onClose}:{
     <Pressable accessibilityRole="button" accessibilityLabel="Cerrar reproductor"
      onPress={onClose} style={styles.close}><Text style={styles.closeLabel}>×</Text></Pressable>
    </View>
-   <NativeAudioEditorialView/>
+   <NativeAudioEditorialView active={visible}/>
   </View>
  </Modal>;
 }
