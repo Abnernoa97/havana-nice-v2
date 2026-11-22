@@ -11,9 +11,13 @@ type Props={message:ChatMessage|null;actorId:string;connection:string;reactions:
  onReact:(message:ChatMessage,emoji:ChatEmoji,origin:{x:number;y:number})=>void;};
 export default function NativeChatMessageMenu({message,actorId,connection,reactions,
  left,top,width,onClose,onReact}:Props){
+ // The backdrop must not consume the finger RELEASE from the long press that
+ // opened it, otherwise the reaction menu appears and disappears instantly.
+ const openedAt=React.useMemo(()=>Date.now(),[message?.seq]);
  return <Modal animationType="fade" transparent statusBarTranslucent visible={!!message}
       onRequestClose={onClose}>
-   <Pressable style={styles.whatsappBackdrop} onPress={onClose}>
+   <Pressable style={styles.whatsappBackdrop}
+     onPress={()=>{if(Date.now()-openedAt>350)onClose();}}>
      {message?<Pressable accessibilityLabel="Reaccionar al mensaje"
        style={[styles.whatsappContext,{left,top,width}]} onPress={()=>{}}>
        <View style={styles.whatsappEmojiBar}>
