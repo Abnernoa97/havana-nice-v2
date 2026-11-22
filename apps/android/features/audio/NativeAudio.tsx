@@ -3,7 +3,7 @@ import {Modal,Pressable,StatusBar,StyleSheet,Text,View} from 'react-native';
 import {setAudioModeAsync,useAudioPlaylist,useAudioPlaylistStatus} from 'expo-audio';
 import {getAudioTracks,privateAudioUrl,type AudioTrack} from '@havana/shared';
 import NativeAudioEditorialView from './NativeAudioEditorialView';
-import {publishNativeAudio,registerNativeAudioHandlers} from './nativeAudioStore';
+import {publishNativeAudio,registerNativeAudioHandlers,clearNativeAudio} from './nativeAudioStore';
 
 // Expo Audio owns the *only* native player and Android MediaSession.
 // The shared editorial WebView surfaces are strictly presentation/gesture layers.
@@ -36,6 +36,7 @@ export default function NativeAudio({token,visible,onClose}:{
  // Load the catalog immediately in HOME; opening the lounge then uses a warm
  // native playlist rather than fetching R2 only after the first tap.
  useEffect(()=>{void refresh();},[refresh]);
+ useEffect(()=>()=>clearNativeAudio(),[token]);
  useEffect(()=>{
   const wasPlaying=player.playing;
   player.clear();
