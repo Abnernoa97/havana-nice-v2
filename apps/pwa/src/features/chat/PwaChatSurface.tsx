@@ -6,6 +6,7 @@ import PwaChatMessageMenu from './PwaChatMessageMenu';
 import PwaChatMediaQueuePreview from './PwaChatMediaQueuePreview';
 import PwaMemberAccessPanel from './PwaMemberAccessPanel';
 import ComposerIcon from './ChatComposerIcon';
+import {useMemberCalendarSignals} from '../calendar/useMemberCalendarSignals';
 
 // Presentation only. Neither authentication nor WebSocket/storage live here.
 const VisualApp=lazy(()=>import('../../app/VisualApp'));
@@ -23,6 +24,7 @@ export default function PwaChatSurface({ui}:{ui:PwaChatUI}){
   photoPreparing,mediaProgress,mediaReady,removeSelectedMedia,mediaError,sendSelectedMedia,
   send,draft,draftInput,typeText,openCamera
   }=ui;
+  const calendarSignals=useMemberCalendarSignals(session?.token);
   useLayoutEffect(()=>{
     const field=draftInput.current;
     if(!field)return;
@@ -40,10 +42,13 @@ export default function PwaChatSurface({ui}:{ui:PwaChatUI}){
     });
   return (
     <>
+      {session&&calendarSignals.notice&&<button type="button"
+       className="hn-calendar-live-alert" role="status"
+       onClick={calendarSignals.dismiss}>HAVANANICE-CALENDARIO📆</button>}
       {session&&activeScreen!=='chat'&&<Suspense fallback={<div className="visual-shell" role="status">Abriendo espacio del equipo…</div>}>
         {readerRoute?<PwaReaderRoute token={session.token} route={readerRoute} onClose={closeReader}/>:
          <VisualApp displayName={session.displayName} actorId={session.actorId}
-          active={activeScreen} token={session.token} onNavigate={navigateTo}/>}
+          active={activeScreen} token={session.token} calendarRevision={calendarSignals.revision} onNavigate={navigateTo}/>}
       </Suspense>}
       {(!session||activeScreen==='chat')&&<div className="member-chat-visible">
     <main className="chat-app" onTouchStart={event=>{
