@@ -38,6 +38,17 @@ test('PWA uses artwork from R2 and HTML media session without mock songs',()=>{
  const html=read('apps/android/features/audio/nativeAudioEditorialHtml.ts');
  assert.match(css,/\.hn-audio-vinyl\.is-playing\{animation-play-state:running/);
  assert.match(css,/hn-audio-parchment/);
+ assert.match(css,/url\('\/audio-lounge\/tear\.webp'\)/);
+ assert.match(css,/url\('\/audio-lounge\/floral\.webp'\)/);
+ assert.match(css,/url\('\/audio-lounge\/corner\.webp'\)/);
+ assert.match(css,/\.hn-audio-vinyl-grooves\{display:none\}/);
+ for(const asset of ['tear','floral','corner']){
+  const bytes=readFileSync(new URL('../apps/pwa/public/audio-lounge/'+asset+'.webp',import.meta.url));
+  assert.equal(bytes.toString('ascii',0,4),'RIFF');
+  assert.equal(bytes.toString('ascii',8,12),'WEBP');
+  assert.ok(bytes.length>600&&bytes.length<20000);
+ }
+ assert.match(html,/havana-nice-v2\.pages\.dev\/audio-lounge\/floral\.webp/);
  assert.match(html,/renderHavanaAudio/);
  assert.match(pwa,/hn-audio-paper-tear/);
  assert.match(pwa,/hn-audio-flower/);
