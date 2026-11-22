@@ -30,6 +30,11 @@ test('The six navigation destinations are real; Admin retains the only secure ma
  assert.match(admin,/id:'memory'/);
  assert.match(admin,/id:'access'/);
  assert.match(access,/adminLogin\(password\)/);
+ assert.match(access,/restoreAdminDevice\(\)/);
+ assert.match(access,/hadVerifiedSession\.current/);
+ assert.match(access,/devicePhase==='manual'&&hasLocalDevice/);
+ assert.match(access,/explicitLogout\.current=true/);
+ assert.doesNotMatch(access,/localStorage\.|sessionStorage\.|document\.cookie/);
  assert.match(access,/if\(!session\)return/);
  assert.match(server,/verifyAdminSession/);
  assert.doesNotMatch(admin,/startNamedChatSession|restoreNamedChatSession|localStorage|sessionStorage|new WebSocket|new D1Database/);
