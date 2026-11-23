@@ -250,3 +250,5 @@ export {getBookPages,uploadBookPage,uploadBookOptimized,updateBookPage,removeBoo
 export type {BookPage,BookDirectory} from './book';
 export {pwaReaderUrl,parsePwaReaderHash} from './book-route';
 export type {PwaReaderTarget} from './book-route';
+
+export {groupChatMediaMessages,CHAT_MEDIA_CLUSTER_GAP_MS,CHAT_MEDIA_CLUSTER_LIMIT} from './chat-media-cluster';
