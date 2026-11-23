@@ -7,14 +7,7 @@
  max-width:1200px;background:var(--hn-cream);color:var(--hn-ink)
 }
 .hn-admin-editorial .a-header.visual-header{background:var(--hn-deep);border-color:#3B584B;padding:20px clamp(20px,5vw,50px)}
-.hn-admin-editorial .a-header .hn-admin-brand{display:flex;flex-direction:column;gap:7px;min-width:0}
-.hn-admin-editorial .a-header .visual-brand{font:700 16px/1.1 Georgia,serif;letter-spacing:.19em;color:var(--hn-gold-light)}
-.hn-admin-editorial .a-header .visual-subtitle{margin:0;font-size:9px;line-height:1.4;color:#D3DED5;letter-spacing:.12em}
 .hn-admin-editorial .a-header-tools{display:flex;flex-direction:row;align-items:center;gap:9px}
-.hn-admin-editorial .hn-admin-profile{background:#ffffff0e;display:flex;align-items:center;gap:9px;padding:6px 11px 6px 6px;color:#fff4df;border:1px solid #ae9b734f;border-radius:28px;min-height:49px}
-.hn-admin-profile-mark{width:35px;height:35px;background:#dac59e;color:#174034;border-radius:50%;display:grid;place-items:center;font:700 21px Georgia,serif}
-.hn-admin-editorial .hn-admin-profile-label{display:flex;flex-direction:column;text-align:left;gap:3px;font-size:12px;line-height:1;font-weight:700}
-.hn-admin-editorial .hn-admin-profile-label small{font-size:9px;letter-spacing:.12em;color:#dfc8a0}
 .hn-admin-editorial .a-install{background:#e6d6b6;color:#174034;border-color:transparent}
 .hn-admin-editorial .a-layout.visual-layout{display:grid;grid-template-columns:230px minmax(0,1fr);min-height:calc(100dvh - 86px)}
 .hn-admin-editorial .a-side.visual-side{background:var(--hn-paper);border-color:var(--hn-edge);display:flex;flex-direction:column;gap:6px;padding:36px 17px;min-height:auto}
@@ -63,12 +56,6 @@
 .hn-admin-editorial .a-family-avatar{background:linear-gradient(145deg,#7d9788,#1c4435);border-radius:50%;width:55px;height:55px;font-style:normal}
 .hn-admin-editorial .a-family-cover{border-radius:16px;background:linear-gradient(150deg,#84978a,#456b58,#15362c)}
 .hn-admin-editorial .a-family-book{border-radius:18px;background:linear-gradient(130deg,#173a31,#0b241f)}
-.hn-admin-shortcuts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:15px 0 20px}
-.hn-admin-shortcuts button{min-height:72px;border:1px solid var(--hn-edge);background:var(--hn-paper);border-radius:14px;display:flex;align-items:center;gap:12px;padding:14px;text-align:left;color:var(--hn-ink)}
-.hn-admin-shortcuts button:hover{border-color:#bca77f;background:#fdfbf5}
-.hn-admin-shortcuts button strong{flex:1;font-size:14px;font-weight:650}
-.hn-admin-shortcuts button>span:last-child{font-size:23px;color:#937b52}
-.hn-admin-shortcut-symbol{width:39px;height:39px;display:grid;place-items:center;background:#e8eee6;color:var(--hn-forest);border-radius:11px;font-size:21px}
 .hn-admin-editorial .a-chat-general{display:flex;flex-direction:column;gap:7px;min-height:0}
 .hn-admin-editorial .a-chat-general-head h2{font-size:18px}
 .hn-admin-editorial .a-chat-general-head .a-detail{margin-top:5px}
@@ -86,11 +73,6 @@
 .hn-admin-editorial .a-bottom.visual-bottom-nav{display:none}
 @media(max-width:750px){
  .hn-admin-editorial .a-header.visual-header{padding:18px 19px 16px}
- .hn-admin-editorial .a-header .visual-brand{font-size:16px}
- .hn-admin-editorial .a-header .visual-subtitle{font-size:8px;letter-spacing:.09em}
- .hn-admin-editorial .a-header .hn-admin-profile-label{display:none}
- .hn-admin-editorial .hn-admin-profile{padding:5px;border-radius:50%;min-height:45px}
- .hn-admin-editorial .hn-admin-profile-mark{width:35px;height:35px}
  .hn-admin-editorial .a-layout.visual-layout{display:block;min-height:0}
  .hn-admin-editorial .a-side.visual-side{display:none}
  .hn-admin-editorial .a-main.visual-content{padding:22px 16px calc(110px + env(safe-area-inset-bottom))}
@@ -104,10 +86,6 @@
  .hn-admin-editorial .a-bottom button span:first-child{font-size:20px;min-width:0}
  .hn-admin-editorial .a-bottom button span:last-child{font-size:9px;white-space:nowrap;letter-spacing:-.02em}
  .hn-admin-editorial .a-bottom button.active{background:#e7eee6;color:var(--hn-forest);font-weight:800}
- .hn-admin-shortcuts{gap:8px}
- .hn-admin-shortcuts button{padding:12px;gap:9px;min-height:70px}
- .hn-admin-shortcuts button strong{font-size:12px}
- .hn-admin-shortcut-symbol{width:33px;height:33px;font-size:18px}
  .hn-admin-editorial .a-chat-general{padding:0;border:0;background:transparent}
  .hn-admin-editorial .a-chat-general-history{height:min(64dvh,700px);padding:12px 8px}
  .hn-admin-editorial .a-chat-bubble{max-width:calc(100% - 45px)}
@@ -115,7 +93,6 @@
 }
 @media(max-width:370px){
  .hn-admin-editorial .a-bottom button span:last-child{font-size:8px}
- .hn-admin-editorial .hn-admin-shortcut-symbol{display:none}
 }
 @media(prefers-reduced-motion:reduce){
  .hn-admin-editorial *,.hn-admin-editorial *::before,.hn-admin-editorial *::after{transition:none!important}

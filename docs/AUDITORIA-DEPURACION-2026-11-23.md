@@ -76,3 +76,9 @@
 - Se preservan las clases actuales de álbumes, álbum privado, Estados, lector BOOK 3D y controles de revista (`hn-family-inline-book`).
 - La prueba de regresión inspecciona todos los archivos TS/TSX/JS/HTML de la PWA y verifica que no se consumen las clases antiguas.
 - No se modifica la estructura de pantalla, lógica de HOME/Familia/Admin, APK, Worker ni datos D1/R2.
+
+## Novena fase · Administración: cabecera y accesos antiguos (23/11)
+- `admin-editorial.css`: se retiran reglas del perfil/cabecera y mosaico de atajos anteriores al menú plano actual. Esas clases ya no existen en `AdminApp.tsx` ni en las otras vistas administrativas.
+- Se mantienen intactos el menú y cabecera actuales (`hn-admin-minimal`, `hn-admin-brand-button`, `hn-admin-plain-menu`), permisos, historial, Chat, calendarios, BOOK 3D y paneles privados.
+- Se añade una prueba que recorre los 90 archivos fuente de la PWA y comprueba tanto la ausencia de referencias antiguas como la permanencia de los estilos de la interfaz actual.
+- No hay cambios de endpoints, autenticación, Worker, R2, D1 ni APK.
