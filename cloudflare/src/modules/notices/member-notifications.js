@@ -82,6 +82,16 @@ export async function handleMemberNotices(request,env,url,origin,verifySession){
      }
     }
    }
+   let adminUnread=0;
+   try{
+    const admin=(await env.DB.prepare(
+     "SELECT id,NULL AS actor_id,'HAVANA NICE' AS display_name,kind,target_id,'' AS emoji,preview,created_at,read_at "+
+     'FROM admin_member_announcements WHERE recipient_id=? ORDER BY created_at DESC LIMIT 60'
+    ).bind(actor.actorId).all()).results||[];
+    const count=await env.DB.prepare('SELECT COUNT(*) AS total FROM admin_member_announcements WHERE recipient_id=? AND read_at IS NULL').bind(actor.actorId).first();
+    adminUnread=Number(count?.total||0);
+    rows=[...rows,...admin].sort((a,b)=>b.created_at-a.created_at).slice(0,60);
+   }catch{/* Older deployments remain compatible. */}
    const unread=await env.DB.prepare(
     'SELECT COUNT(*) AS total FROM member_notifications '+
     'WHERE recipient_id=? AND read_at IS NULL'
@@ -90,7 +100,7 @@ export async function handleMemberNotices(request,env,url,origin,verifySession){
     id:row.id,actorId:row.actor_id||'',name:row.display_name,
     kind:row.kind,targetId:row.target_id,emoji:row.emoji,preview:row.preview,
     createdAt:row.created_at,readAt:row.read_at
-   })),unread:Number(unread?.total||0)+calendarUnread+systemUnread+bookUnread},200,origin);
+   })),unread:Number(unread?.total||0)+calendarUnread+systemUnread+bookUnread+adminUnread},200,origin);
   }
   if(url.pathname==='/api/notices/read'&&request.method==='POST'){
    let data;
@@ -111,6 +121,9 @@ export async function handleMemberNotices(request,env,url,origin,verifySession){
     try{await env.DB.prepare('UPDATE book_member_notifications SET read_at=? '+
      'WHERE id=? AND recipient_id=? AND read_at IS NULL').bind(now,id,actor.actorId).run();}
     catch{/* A missing optional migration cannot block other notices. */}
+    try{await env.DB.prepare('UPDATE admin_member_announcements SET read_at=? '+
+     'WHERE id=? AND recipient_id=? AND read_at IS NULL').bind(now,id,actor.actorId).run();}
+    catch{/* Optional migration absent. */}
    }else{
     await env.DB.prepare('UPDATE member_notifications SET read_at=? '+
      'WHERE recipient_id=? AND read_at IS NULL').bind(now,actor.actorId).run();
@@ -123,6 +136,9 @@ export async function handleMemberNotices(request,env,url,origin,verifySession){
     try{await env.DB.prepare('UPDATE book_member_notifications SET read_at=? '+
      'WHERE recipient_id=? AND read_at IS NULL').bind(now,actor.actorId).run();}
     catch{/* A missing optional migration cannot block other notices. */}
+    try{await env.DB.prepare('UPDATE admin_member_announcements SET read_at=? '+
+     'WHERE recipient_id=? AND read_at IS NULL').bind(now,actor.actorId).run();}
+    catch{/* Optional migration absent. */}
    }
    return asJson({ok:true},200,origin);
   }
