@@ -36,6 +36,7 @@ function EventRepertoire({token,eventId,revision}:{token:string;eventId:string;r
 export default function CalendarAccordion({token,calendarRevision=0}:{token:string;calendarRevision?:number}){
  const [events,setEvents]=useState<CalendarEvent[]>([]);
  const [open,setOpen]=useState<string|null>(null);
+ const [view,setView]=useState<'upcoming'|'completed'>('upcoming');
  const [error,setError]=useState('');
  const [loading,setLoading]=useState(true);
  const [revision,setRevision]=useState(0);
@@ -71,13 +72,26 @@ export default function CalendarAccordion({token,calendarRevision=0}:{token:stri
   timeout=setTimeout(tick,60000);
   return()=>{stopped=true;clearTimeout(timeout);};
  },[]);
+ const now=new Date(clock);
+ const upcoming=events.filter(item=>!calendarEventCompleted(item,now));
+ const completed=events.filter(item=>calendarEventCompleted(item,now));
+ const visible=view==='upcoming'?upcoming:completed;
  return <section className="hn-cal-list" aria-label="Fechas de trabajo">
-  <div className="hn-cal-bar">
-   <button type="button" onClick={()=>void refresh()}>Actualizar</button></div>
+  <div className="hn-cal-view-switch" role="group" aria-label="Filtrar eventos">
+   <button type="button" className={view==='upcoming'?'is-selected':''}
+    aria-pressed={view==='upcoming'} onClick={()=>{setView('upcoming');setOpen(null);}}>
+    Eventos por realizar <span aria-hidden="true">{upcoming.length}</span>
+   </button>
+   <button type="button" className={view==='completed'?'is-selected':''}
+    aria-pressed={view==='completed'} onClick={()=>{setView('completed');setOpen(null);}}>
+    Eventos realizados <span aria-hidden="true">{completed.length}</span>
+   </button>
+  </div>
   {error&&<p role="alert" className="hn-cal-error">{error}</p>}
   {loading?<p className="hn-cal-empty">Cargando tus fechas…</p>:!events.length?
-   <p className="hn-cal-empty">No tienes eventos asignados.</p>:
-   events.map(item=>{const past=calendarEventCompleted(item,new Date(clock));return <article key={item.id} className={'hn-cal-event'+(past?' hn-cal-completed':'')}>
+   <p className="hn-cal-empty">No tienes eventos asignados.</p>:!visible.length?
+   <p className="hn-cal-empty">{view==='upcoming'?'No tienes eventos por realizar.':'Todavía no hay eventos realizados.'}</p>:
+   visible.map(item=>{const past=calendarEventCompleted(item,now);return <article key={item.id} className={'hn-cal-event'+(past?' hn-cal-completed':'')}>
     <button type="button" className="hn-cal-event-head" aria-expanded={open===item.id}
      onClick={()=>setOpen(value=>value===item.id?null:item.id)}>
      <span className="hn-cal-summary-main"><small>{calendarDate(item.date)}</small><strong>{item.title}</strong>
@@ -86,10 +100,10 @@ export default function CalendarAccordion({token,calendarRevision=0}:{token:stri
      </span>
      <b aria-hidden="true">{open===item.id?'−':'+'}</b>
     </button>
-    {!past&&item.mapUrl&&(safeCalendarMapUrl(item.mapUrl)?<a className="hn-cal-maps" href={safeCalendarMapUrl(item.mapUrl)!} target="_blank"
+    {open===item.id&&!past&&item.mapUrl&&(safeCalendarMapUrl(item.mapUrl)?<a className="hn-cal-maps" href={safeCalendarMapUrl(item.mapUrl)!} target="_blank"
      rel="noopener noreferrer">Llegar al evento · Google Maps ↗</a>:
      <p className="hn-cal-maps">Google Maps: {item.mapUrl}</p>)}
-    {open===item.id&&(past?<div className="hn-cal-memory-sheet">
+    {open===item.id&&(past?<div className="hn-cal-memory-sheet hn-cal-scroll-reveal">
      <div className="hn-cal-memory-heading"><span>HAVANA NICE / ARCHIVO DE EVENTOS</span>
       <strong>Ficha del evento</strong></div>
      <dl className="hn-cal-memory-facts">

@@ -7,7 +7,7 @@ import './member-repertoire.css';
 // Catalog only: one open category; Calendar owns event-specific songs.
 export default function MemberRepertoire({token}:{token:string}){
  const [songs,setSongs]=useState<RepertoireSong[]>([]);
- const [open,setOpen]=useState<RepertoireSection|null>('ENGLISH');
+ const [open,setOpen]=useState<RepertoireSection|null>(null);
  const [loading,setLoading]=useState(true);
  const [error,setError]=useState('');
  const requestId=useRef(0);
@@ -21,7 +21,7 @@ export default function MemberRepertoire({token}:{token:string}){
   finally{if(id===requestId.current)setLoading(false);}
  },[token]);
  useEffect(()=>{
-  setSongs([]);setOpen('ENGLISH');setLoading(true);setError('');
+  setSongs([]);setOpen(null);setLoading(true);setError('');
   void refresh();
   const stop=watchRepertoire(token,false,()=>{if(!document.hidden&&navigator.onLine)void refresh();});
   return()=>{++requestId.current;stop();};

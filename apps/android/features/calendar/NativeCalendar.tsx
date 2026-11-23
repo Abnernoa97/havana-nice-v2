@@ -1,5 +1,5 @@
 import React,{useCallback,useEffect,useRef,useState} from 'react';
-import {Linking,Pressable,StyleSheet,Text,View} from 'react-native';
+import {LayoutAnimation,Linking,Platform,Pressable,StyleSheet,Text,UIManager,View} from 'react-native';
 import {getCalendarEvents,getEventRepertoire,calendarDate,calendarEventCompleted,safeCalendarMapUrl,safeRepertoireLink,HAVANA_V2_DEV_API_BASE_URL,type CalendarEvent,type RepertoireEventItem} from '@havana/shared';
 import NativeBook from '../book/NativeBook';
 
@@ -7,6 +7,8 @@ import NativeBook from '../book/NativeBook';
 export default function NativeCalendar({token,calendarRevision=0}:{token:string;calendarRevision?:number}){
  const [events,setEvents]=useState<CalendarEvent[]>([]);
  const [open,setOpen]=useState<string|null>(null);
+ const [view,setView]=useState<'upcoming'|'completed'>('upcoming');
+ useEffect(()=>{if(Platform.OS==='android')UIManager.setLayoutAnimationEnabledExperimental?.(true);},[]);
  const [loading,setLoading]=useState(true);
  const [revision,setRevision]=useState(0);
  const [error,setError]=useState('');
@@ -43,17 +45,38 @@ export default function NativeCalendar({token,calendarRevision=0}:{token:string;
   timeout=setTimeout(tick,60000);
   return()=>{disposed=true;clearTimeout(timeout);};
  },[]);
+ const now=new Date(clock);
+ const upcoming=events.filter(item=>!calendarEventCompleted(item,now));
+ const completed=events.filter(item=>calendarEventCompleted(item,now));
+ const visible=view==='upcoming'?upcoming:completed;
+ const setViewClosed=(next:'upcoming'|'completed')=>{
+  LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+  setOpen(null);setView(next);
+ };
  return <View style={styles.root}>
-  <View style={styles.row}>
-   <Pressable accessibilityRole="button" onPress={()=>void refresh()}>
-    <Text style={styles.link}>Actualizar</Text></Pressable></View>
+  <View style={styles.viewButtons}>
+   <Pressable accessibilityRole="button" accessibilityState={{selected:view==='upcoming'}}
+    onPress={()=>setViewClosed('upcoming')}
+    style={[styles.viewButton,view==='upcoming'&&styles.viewActive]}>
+    <Text style={[styles.viewButtonText,view==='upcoming'&&styles.viewActiveText]}
+     numberOfLines={2}>Eventos por realizar  {upcoming.length}</Text>
+   </Pressable>
+   <Pressable accessibilityRole="button" accessibilityState={{selected:view==='completed'}}
+    onPress={()=>setViewClosed('completed')}
+    style={[styles.viewButton,view==='completed'&&styles.viewActive]}>
+    <Text style={[styles.viewButtonText,view==='completed'&&styles.viewActiveText]}
+     numberOfLines={2}>Eventos realizados  {completed.length}</Text>
+   </Pressable>
+  </View>
   {!!error&&<Text style={styles.error}>{error}</Text>}
   {loading?<Text style={styles.empty}>Cargando tus fechas…</Text>:!events.length?
-   <Text style={styles.empty}>No tienes eventos asignados.</Text>:
-   events.map(item=>{const past=calendarEventCompleted(item,new Date(clock));return <View key={item.id} style={styles.event}>
+   <Text style={styles.empty}>No tienes eventos asignados.</Text>:!visible.length?
+   <Text style={styles.empty}>{view==='upcoming'?'No tienes eventos por realizar.':'Todavía no hay eventos realizados.'}</Text>:
+   visible.map(item=>{const past=calendarEventCompleted(item,now);return <View key={item.id} style={styles.event}>
     <Pressable accessibilityRole="button" accessibilityLabel={'Detalles de '+item.title}
      accessibilityState={{expanded:open===item.id}}
-     onPress={()=>setOpen(value=>value===item.id?null:item.id)} style={styles.head}>
+     onPress={()=>{LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+      setOpen(value=>value===item.id?null:item.id);}} style={styles.head}>
      <View style={styles.headText}><Text style={styles.date}>{calendarDate(item.date)}</Text>
       <Text style={styles.title}>{item.title}</Text>
       {!!item.venue&&<Text style={styles.venue}>{item.venue}</Text>}
@@ -61,11 +84,12 @@ export default function NativeCalendar({token,calendarRevision=0}:{token:string;
      </View>
      <Text style={styles.expand}>{open===item.id?'−':'+'}</Text>
     </Pressable>
-    {!past&&!!item.mapUrl&&(safeCalendarMapUrl(item.mapUrl)?<Pressable accessibilityRole="link" style={styles.map}
+    {open===item.id&&!past&&!!item.mapUrl&&(safeCalendarMapUrl(item.mapUrl)?<Pressable accessibilityRole="link" style={styles.map}
      onPress={()=>{const link=safeCalendarMapUrl(item.mapUrl);if(link)void Linking.openURL(link);}}>
      <Text style={styles.mapText}>Llegar al evento · Google Maps ↗</Text></Pressable>:
      <View style={styles.map}><Text style={styles.mapText}>Google Maps: {item.mapUrl}</Text></View>)}
     {open===item.id&&(past?<View style={styles.memoryPaper}>
+     <View pointerEvents="none" style={styles.scrollRollTop}/>
      <Text style={styles.archiveLabel}>HAVANA NICE · ARCHIVO DE EVENTOS</Text>
      <Text style={styles.memoryHeading}>Ficha del evento</Text>
      <View style={styles.memoryFacts}>
@@ -81,6 +105,7 @@ export default function NativeCalendar({token,calendarRevision=0}:{token:string;
        <NativeBook embedded token={token} calendarEventId={item.id} calendarTitle={item.title}
         refreshKey={revision}/>
       </View>:<Text style={styles.memoryEmpty}>Administración incorporará aquí las fotografías de este día.</Text>}
+     <View pointerEvents="none" style={styles.scrollRollBottom}/>
     </View>:<View style={styles.details}>
      <View style={styles.hours}>
       {([['Llamada',item.callTime],['Sonido',item.soundcheckTime],['Llegada',item.arrivalTime],
@@ -129,7 +154,15 @@ function NativeEventRepertoire({token,eventId,revision}:{token:string;eventId:st
  </View>;
 }
 const styles=StyleSheet.create({
- root:{gap:11,paddingBottom:30},row:{flexDirection:'row',justifyContent:'flex-end',alignItems:'center'},
+ root:{gap:11,paddingBottom:30},
+ viewButtons:{flexDirection:'row',gap:8,marginTop:2,marginBottom:12},
+ viewButton:{flex:1,minWidth:0,minHeight:58,paddingVertical:11,paddingHorizontal:5,
+  alignItems:'center',justifyContent:'center',borderWidth:1,borderColor:'#b6cdb9',
+  borderRadius:15,backgroundColor:'#dfebe0'},
+ viewActive:{backgroundColor:'#144b36',borderColor:'#154c38'},
+ viewButtonText:{fontSize:12,fontWeight:'800',color:'#214c38',textAlign:'center'},
+ viewActiveText:{color:'#fffdf5'},
+ row:{flexDirection:'row',justifyContent:'flex-end',alignItems:'center'},
  caption:{color:'#917252',fontWeight:'700',fontSize:10,letterSpacing:1.5},link:{color:'#856243',fontWeight:'700',fontSize:12},
  error:{color:'#ac3434',fontSize:13},empty:{marginTop:20,color:'#81756b',fontSize:13,textAlign:'center'},
  event:{backgroundColor:'#FFFAF2',borderColor:'#D5CAB8',borderWidth:1,borderRadius:15,overflow:'hidden'},
@@ -145,15 +178,22 @@ const styles=StyleSheet.create({
  stamp:{borderWidth:2,borderColor:'#96533F',alignSelf:'flex-start',paddingHorizontal:9,
   paddingVertical:5,marginTop:10,borderRadius:3,transform:[{rotate:'-8deg'}]},
  stampText:{fontSize:11,color:'#96533F',fontWeight:'800',letterSpacing:1.1},
- memoryPaper:{padding:19,marginTop:0,backgroundColor:'#F4E6C8',
-  borderColor:'#CEB389',borderWidth:1,gap:12},
+ memoryPaper:{paddingHorizontal:15,paddingTop:21,paddingBottom:24,marginTop:0,
+  backgroundColor:'#f9edda',borderColor:'#c9ac7f',borderWidth:1,gap:7,
+  borderBottomLeftRadius:19,borderBottomRightRadius:19,overflow:'hidden'},
+ scrollRollTop:{position:'absolute',height:11,top:0,left:8,right:8,
+  backgroundColor:'#d8be92',borderBottomWidth:1,borderBottomColor:'#b69563',
+  borderBottomLeftRadius:25,borderBottomRightRadius:25},
+ scrollRollBottom:{position:'absolute',height:11,bottom:0,left:8,right:8,
+  backgroundColor:'#d8be92',borderTopWidth:1,borderTopColor:'#b69563',
+  borderTopLeftRadius:25,borderTopRightRadius:25},
  archiveLabel:{textAlign:'center',fontSize:9,color:'#8A6946',letterSpacing:1.1,fontWeight:'800'},
  memoryHeading:{fontFamily:'serif',fontSize:27,color:'#453521',textAlign:'center',
   paddingBottom:9,borderBottomColor:'#B89A77',borderBottomWidth:1},
- memoryFacts:{gap:9,paddingVertical:8},
+ memoryFacts:{gap:6,paddingVertical:4},
  memoryFact:{fontSize:13,lineHeight:22,color:'#4F4030'},
  memoryBold:{fontWeight:'800',color:'#7B593A'},
- memoryGallery:{marginTop:3,gap:10},
+ memoryGallery:{marginTop:0,gap:3},
  memoryGalleryTitle:{textAlign:'center',fontSize:11,letterSpacing:1,color:'#785436',fontWeight:'800'},
  memoryEmpty:{padding:15,textAlign:'center',fontSize:12,color:'#826749'},
  repPanel:{padding:17,backgroundColor:'#f1e5cb',borderTopWidth:1,borderTopColor:'#d5bb97',gap:5},

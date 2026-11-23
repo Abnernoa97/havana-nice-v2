@@ -81,3 +81,45 @@
  .hn-cal-completed .hn-cal-summary-main,.a-cal-completed .a-cal-summary-main{padding-right:112px}
  .hn-cal-completed .hn-cal-stamp,.a-cal-completed .hn-cal-stamp{font-size:9px;max-width:118px;right:0;top:4px}
 }
+
+/* Calendar's free built-in unroll animation. Only for completed dates.
+   The existing StPageFlip 3D reader retains its independent page physics. */
+.hn-cal-completed .hn-cal-scroll-reveal{
+ --scroll-paper:#fff6e8;position:relative;overflow:hidden;
+ padding:clamp(17px,3vw,24px) clamp(14px,3vw,28px) 25px;
+ background:linear-gradient(93deg,#cdb48d 0%,#eee0c4 4%,#fff8e9 14%,
+ #faf0db 49%,#fff6e5 87%,#ddc49d 97%,#b99f7b 100%);
+ border:1px solid #c7a77f;
+ border-radius:13px 13px 22px 22px;
+ box-shadow:inset 7px 0 15px #75522d20,inset -7px 0 13px #83633b20,0 11px 25px #4b392324;
+ animation:hn-calendar-unfurl .62s cubic-bezier(.18,.8,.24,1) both}
+.hn-cal-completed .hn-cal-scroll-reveal:before,
+.hn-cal-completed .hn-cal-scroll-reveal:after{
+ content:"";position:absolute;left:7px;right:7px;z-index:2;pointer-events:none;
+ height:13px;border:1px solid #bda37c;
+ background:linear-gradient(180deg,#b89a70 0%,#eee0bd 28%,#faf0dc 56%,#b89c71 100%);
+ box-shadow:0 2px 6px #553c2530}
+.hn-cal-completed .hn-cal-scroll-reveal:before{
+ top:0;border-radius:0 0 60% 60%}
+.hn-cal-completed .hn-cal-scroll-reveal:after{
+ bottom:0;border-radius:60% 60% 0 0;box-shadow:0 -2px 6px #553c252d}
+@keyframes hn-calendar-unfurl{
+ 0%{opacity:.5;clip-path:inset(0 0 100% 0 round 13px)}
+ 30%{opacity:1}
+ 100%{opacity:1;clip-path:inset(0 0 0 0 round 13px)}
+}
+.hn-cal-completed .hn-cal-scroll-reveal .hn-cal-memory-heading{
+ padding-bottom:8px;gap:3px}
+.hn-cal-completed .hn-cal-scroll-reveal .hn-cal-memory-facts{
+ margin:10px 0 10px;gap:6px 12px}
+.hn-cal-completed .hn-cal-scroll-reveal .hn-cal-memory-facts>div{padding-bottom:4px}
+.hn-cal-completed .hn-cal-scroll-reveal .hn-cal-memory-photos h4{margin:2px 0 4px}
+.hn-cal-completed .hn-cal-memory-gallery .hn-book-reader{padding:2px 2px 0;background:transparent}
+.hn-cal-completed .hn-cal-memory-gallery .hn-book-stage{
+ height:max(382px,min(108vw,57svh));min-height:0}
+.hn-cal-completed .hn-cal-memory-gallery .hn-book-controls{
+ margin:1px auto 3px;gap:10px}
+.hn-cal-completed .hn-cal-memory-gallery .hn-book-counter small{display:none}
+@media(prefers-reduced-motion:reduce){
+ .hn-cal-completed .hn-cal-scroll-reveal{animation:none}
+}

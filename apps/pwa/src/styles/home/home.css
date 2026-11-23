@@ -218,3 +218,17 @@
  .hn-family-inline-book .hn-book-controls{gap:9px;max-width:100%}
  .hn-family-inline-book .hn-book-controls>button{flex:0 0 44px}
 }
+
+/* Two exclusive Calendar views. Actual event records and admin forms untouched. */
+.hn-cal-view-switch{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+ gap:9px;margin:1px 0 14px}
+.hn-cal-view-switch button{min-width:0;min-height:60px;padding:12px 9px;
+ border:1px solid #b6cdb9;border-radius:15px;
+ background:linear-gradient(135deg,#e8f2e7,#f7faf4,#cfe4d3);
+ color:#1c4d38;font:750 clamp(11px,2.8vw,15px)/1.25 system-ui,sans-serif;
+ cursor:pointer;transition:box-shadow .2s,border-color .2s}
+.hn-cal-view-switch button.is-selected{background:linear-gradient(122deg,#103e30,#22694c,#104331);
+ color:#fcfcf3;border-color:#0b4734;box-shadow:0 4px 12px #103e3022}
+.hn-cal-view-switch button span{margin-left:5px;font-size:11px;opacity:.74}
+.hn-cal-view-switch button:focus-visible{outline:3px solid #bd9e67;outline-offset:3px}
+@media(max-width:375px){.hn-cal-view-switch{gap:6px}.hn-cal-view-switch button{padding:10px 5px;font-size:11px}}

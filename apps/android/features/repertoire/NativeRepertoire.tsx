@@ -6,7 +6,7 @@ import {getRepertoireSongs,repertoireSection,REPERTOIRE_SECTIONS,safeRepertoireL
 
 export default function NativeRepertoire({token}:{token:string}){
  const [songs,setSongs]=useState<RepertoireSong[]>([]);
- const [open,setOpen]=useState<RepertoireSection|null>('ENGLISH');
+ const [open,setOpen]=useState<RepertoireSection|null>(null);
  const [loading,setLoading]=useState(true);
  const [error,setError]=useState('');
  const requestId=useRef(0);
@@ -47,7 +47,7 @@ export default function NativeRepertoire({token}:{token:string}){
   finally{if(id===requestId.current)setLoading(false);}
  },[token]);
  useEffect(()=>{
-  setSongs([]);setOpen('ENGLISH');setLoading(true);setError('');
+  setSongs([]);setOpen(null);setLoading(true);setError('');
   const stop=watchNativeRepertoire(token,()=>void refresh());
   return()=>{++requestId.current;stop();};
  },[token,refresh]);

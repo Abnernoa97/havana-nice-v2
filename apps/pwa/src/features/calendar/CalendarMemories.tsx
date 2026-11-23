@@ -34,6 +34,6 @@ export default function CalendarMemories({token,eventId,title,revision=0,photoCo
  return <div className="hn-cal-memory-gallery">
   <BookReader edition="calendar" coverTitle={title} pages={photos.map(p=>({
    id:p.id,url:p.url,fit:p.fit,position:p.position,published:true
-  }))}/>
+  }))} showModeSwitch={false}/>
  </div>;
 }
