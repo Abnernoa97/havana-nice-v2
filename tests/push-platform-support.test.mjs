@@ -14,6 +14,7 @@ test('PWA distinguishes unsupported Android contexts from iOS Home Screen requir
  assert.match(hook,/\/Android\/i\.test\(navigator\.userAgent\)/);
  assert.match(hook,/no ofrece permiso para notificaciones Web Push/);
  assert.match(hook,/Prueba en Chrome/);
+ assert.doesNotMatch(hook,/APK nativa antigua todavía no incorpora FCM/);
  assert.match(hook,/pwaPushDiagnostics/);
  assert.match(hook,/registration\.pushManager\.getSubscription/);
  assert.doesNotMatch(hook,/['\"]PushManager['\"] in window&&/);
