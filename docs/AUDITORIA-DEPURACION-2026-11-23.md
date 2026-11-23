@@ -110,3 +110,9 @@
 - `useFamilyLive` permanece como dueño único de resync foreground/online y de Familia WebSocket: no se crea otro canal ni se alteran permisos o almacenamiento.
 - Dos pruebas de regresión comprueban las referencias de ambos componentes y simulan eventos del ciclo de vida con un WebSocket ficticio para validar una sincronización por señal, cierre offline y limpieza de timers.
 - Este cambio no modifica el Worker, R2/D1, BOOK 3D, notificaciones ni la APK Android.
+
+## Decimocuarta fase · Cobertura básica de arquitectura en cada despliegue (23/11)
+- El build de Pages ahora ejecuta tres suites adicionales ya existentes: `family-realtime-parity`, `module-boundaries` y `android-pwa-parity`. Antes solo estaban en el workflow completo de GitHub.
+- Son pruebas locales Node sin conexión a D1/R2 productivos y sin dependencias nuevas; detectan sesiones/transportes duplicados, errores de límites de módulos y diferencias entre la PWA y Android.
+- No se modifica la aplicación, sus módulos, URLs, el Worker ni la APK. Los cambios de producción se siguen bloqueando si falla una prueba.
+- El workflow completo de GitHub permanece intacto y se mantiene su ejecución manual/programada para controlar minutos.
