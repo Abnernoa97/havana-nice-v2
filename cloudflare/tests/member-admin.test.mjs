@@ -11,7 +11,7 @@ class FakeDB{
  prepare(sql){
   return {bind:(...args)=>({
     first:async()=>{
-      if(sql.startsWith('SELECT expires_at,revoked_at'))return args[0]===this.sessionHash?{expires_at:Date.now()+60_000,revoked_at:this.revoked?Date.now():null}:null;
+      if(sql.startsWith('SELECT expires_at,revoked_at'))return args[0]===this.sessionHash?{expires_at:Date.now()+60_000,last_seen_at:Date.now(),revoked_at:this.revoked?Date.now():null}:null;
       if(sql.startsWith('SELECT actor_id,display_name FROM chat_members'))return this.members.get(args[0])||null;
       if(sql.startsWith('SELECT actor_id FROM chat_members'))return this.members.get(args[0])||null;
       if(sql.startsWith('SELECT COUNT(*) AS entries'))return {entries:2};
