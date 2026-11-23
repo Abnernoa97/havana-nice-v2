@@ -158,3 +158,12 @@
  font-size:11px;padding:3px 8px;cursor:pointer}
 .hn-story-error button{margin-left:5px}
 .hn-story-refresh{display:block;margin:0 0 5px 6px}
+
+/* Auto-visible, tiny reaction receipts. Tapping a receipt never sends an emoji. */
+.hn-story-who-reacted{display:flex;gap:5px;align-items:center;max-height:31px;
+ overflow-x:auto;scrollbar-width:none;white-space:nowrap;color:#fcf9ec}
+.hn-story-who-reacted::-webkit-scrollbar{display:none}
+.hn-story-who-reacted span{display:inline-flex;align-items:center;min-height:23px;
+ padding:2px 8px;border-radius:15px;background:#184633a8;border:1px solid #ffffff31;
+ font-size:11px;font-weight:600;flex:0 0 auto}
+.hn-story-conversation.is-recording .hn-story-who-reacted{display:none}

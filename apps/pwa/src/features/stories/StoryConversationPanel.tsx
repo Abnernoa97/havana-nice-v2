@@ -18,6 +18,7 @@ export default function StoryConversationPanel({story,token,refreshVersion,onPau
  const [listening,setListening]=useState(false);
  const serial=useRef(0);
  const comments=data.conversation?.comments||[];
+ const reactionDetails=data.conversation?.reactionDetails||[];
  useEffect(()=>{
   setDraft('');setExpanded(false);setTyping(false);setRecording(false);setListening(false);
  },[story.id]);
@@ -68,6 +69,12 @@ export default function StoryConversationPanel({story,token,refreshVersion,onPau
     Comentarios{comments.length?' · '+comments.length:''}
    </button>
   </div>
+  {!!reactionDetails.length&&!recording&&<div className="hn-story-who-reacted"
+   aria-label="Quién reaccionó a este estado">
+   {reactionDetails.map(item=><span key={item.actorId+':'+item.emoji}>
+    {item.emoji} {item.name}{item.count>1?' ×'+item.count:''}
+   </span>)}
+  </div>}
   <form className={"hn-story-composer"+(recording?" is-recording":"")} onSubmit={e=>{e.preventDefault();void send();}}>
    <input value={draft} maxLength={500} onChange={e=>setDraft(e.target.value)}
     onFocus={()=>setTyping(true)} onBlur={()=>setTyping(false)}

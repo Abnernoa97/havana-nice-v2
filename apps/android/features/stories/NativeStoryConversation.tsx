@@ -20,6 +20,7 @@ export default function NativeStoryConversation({token,storyId,version,onPause,o
  const playback=useAudioPlayerStatus(player);
  const burstId=useRef(0);
  const comments=api.conversation?.comments||[];
+ const reactionDetails=api.conversation?.reactionDetails||[];
  useEffect(()=>{setDraft('');setExpanded(false);setRecording(false);setFocused(false);},[storyId]);
  useEffect(()=>{
   onPause(expanded||recording||focused||api.busy||playback.playing);
@@ -72,6 +73,15 @@ export default function NativeStoryConversation({token,storyId,version,onPause,o
     <Text style={s.commentsButtonText}>Comentarios{comments.length?' · '+comments.length:''}</Text>
    </Pressable>
   </View>}
+  {!!reactionDetails.length&&!recording&&<ScrollView horizontal
+   showsHorizontalScrollIndicator={false} keyboardShouldPersistTaps="handled"
+   style={s.reactionRoster} contentContainerStyle={s.reactionRosterContent}
+   accessibilityLabel="Quién reaccionó a este estado">
+    {reactionDetails.map(item=><View key={item.actorId+':'+item.emoji} style={s.reactionReceipt}>
+     <Text style={s.reactionReceiptText}>{item.emoji} {item.name}
+      {item.count>1?' ×'+item.count:''}</Text>
+    </View>)}
+   </ScrollView>}
   <View style={[s.composer,recording&&s.recordComposer]}>
    {!recording&&<>
     <TextInput accessibilityLabel="Escribir comentario público" placeholder="Comentar…"
@@ -95,6 +105,11 @@ const s=StyleSheet.create({
   backgroundColor:'rgba(1,15,9,.72)'},
  recordOnly:{alignItems:'center',justifyContent:'center',paddingVertical:17},
  actions:{flexDirection:'row',gap:7,alignItems:'center'},
+ reactionRoster:{flexGrow:0,maxHeight:29},
+ reactionRosterContent:{flexDirection:'row',gap:5,alignItems:'center'},
+ reactionReceipt:{minHeight:23,justifyContent:'center',paddingHorizontal:8,
+  borderRadius:15,borderWidth:1,borderColor:'#ffffff31',backgroundColor:'#184633a8'},
+ reactionReceiptText:{color:'#fcf9ec',fontSize:11,fontWeight:'600'},
  emoji:{flexDirection:'row',alignItems:'center',gap:3,backgroundColor:'#123a2dbb',
   borderRadius:20,borderWidth:1,borderColor:'#ffffff44',paddingHorizontal:8,minHeight:35},
  emojiText:{fontSize:20},count:{color:'#fff',fontSize:10},

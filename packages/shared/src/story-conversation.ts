@@ -5,8 +5,12 @@ export type StoryComment={
  id:string;actorId:string;name:string;kind:'text'|'voice';
  text:string;createdAt:number;voiceUrl:string|null;
 };
+export type StoryReactionDetail={
+ actorId:string;name:string;emoji:StoryEmoji;count:number;
+};
 export type StoryConversation={
- storyId:string;comments:StoryComment[];reactions:Record<StoryEmoji,number>;serverNow:number;
+ storyId:string;comments:StoryComment[];reactions:Record<StoryEmoji,number>;
+ reactionDetails?:StoryReactionDetail[];serverNow:number;
 };
 const assertId=(id:string)=>{
  if(!/^[a-f0-9-]{36}$/i.test(id))throw Error('Estado inválido.');

@@ -45,7 +45,18 @@ async function conversation(env,id,url,origin){
  const reactions=Object.fromEntries(['❤️','👏','😂'].map(emoji=>[
   emoji,Number(reactionRows.find(row=>row.emoji===emoji)?.total||0)
  ]));
- return json({storyId:id,comments,reactions,serverNow:Date.now()},200,origin);
+ // Authorized team only: sender name + exact number of emoji reactions.
+ // This is a read-only projection of the existing 24h per-actor table.
+ const authors=(await env.DB.prepare(
+  'SELECT r.actor_id,m.display_name,r.emoji,r.count FROM member_story_reactions r '+
+  'JOIN chat_members m ON m.actor_id=r.actor_id AND m.active=1 '+
+  'WHERE r.story_id=? ORDER BY r.updated_at DESC LIMIT 150'
+ ).bind(id).all()).results||[];
+ const reactionDetails=authors.map(row=>({
+  actorId:row.actor_id,name:row.display_name,emoji:row.emoji,
+  count:Math.max(0,Number(row.count||0))
+ }));
+ return json({storyId:id,comments,reactions,reactionDetails,serverNow:Date.now()},200,origin);
 }
 async function postText(request,env,actor,id,origin,ctx){
  let data;

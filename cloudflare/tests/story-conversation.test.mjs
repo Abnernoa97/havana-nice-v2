@@ -128,3 +128,16 @@ test('Revoked senders and expired grants cannot access earlier voice notes',asyn
  const doc=await (await e.api(path+'/conversation','GET','fer')).json();
  assert.equal(doc.comments.length,0);
 });
+
+test('Reaction receipts are attributed to each sender, with each repeated emoji counted',async()=>{
+ const e=setup();
+ await e.api('/api/stories/me/photo','PUT','fer',JPEG);
+ const listed=await (await e.api('/api/stories/team')).json();
+ const id=listed.stories[0].id,path='/api/stories/'+id;
+ for(let i=0;i<4;i++)await e.api(path+'/reaction','POST','noa',{emoji:'❤️'});
+ await e.api(path+'/reaction','POST','fer',{emoji:'👏'});
+ const reply=await (await e.api(path+'/conversation')).json();
+ assert.equal(reply.reactions['❤️'],4);
+ assert.ok(reply.reactionDetails.some(x=>x.name==='Noa'&&x.emoji==='❤️'&&x.count===4));
+ assert.ok(reply.reactionDetails.some(x=>x.name==='Fer'&&x.emoji==='👏'&&x.count===1));
+});
