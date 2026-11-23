@@ -114,5 +114,7 @@ test('Cold story strip prefetches signed covers and counts active states, not av
  assert.match(pool,/LIMIT=18/);
  assert.match(pool,/setStoryPhotoOwner/);
  assert.match(pool,/entries.clear\(\)/);
- assert.match(styles,/\.hn-moment-story-pending/);
+ assert.doesNotMatch(styles,/\.hn-moment-story-pending/);
+ assert.match(styles,/\.hn-moment-photo\{/);
+ assert.match(styles,/\.hn-moment-count\{/);
 });
