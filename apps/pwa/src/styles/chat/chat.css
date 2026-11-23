@@ -331,3 +331,15 @@ h1 span { font-weight:400; }
 .hn-chat-voice-error{position:absolute;right:0;bottom:52px;width:max-content;
  max-width:240px;padding:8px;border-radius:9px;background:#fff3ea;
  color:#9c2f26;font-size:11px}
+
+/* Functional, lazily authorized private voice messages. */
+.hn-chat-audio{display:flex;align-items:center;gap:11px;max-width:100%;
+ min-width:165px;width:min(260px,100%);padding:9px;border-radius:14px;
+ background:#e4ebe1;color:#183a2b}
+.hn-chat-audio>button{min-width:39px;min-height:39px;border:0;border-radius:50%;
+ background:#174532;color:#fff;font-size:19px}
+.hn-chat-audio-body{min-width:0;flex:1;display:flex;flex-direction:column;gap:4px}
+.hn-chat-audio-progress{display:flex;align-items:center;gap:8px}
+.hn-chat-audio-progress input{width:100%;min-width:0;flex:1;accent-color:#276b4b}
+.hn-chat-audio-progress small{font-size:11px;color:#1f4b37}
+.hn-chat-audio-body [role="alert"]{font-size:11px;color:#943a35}

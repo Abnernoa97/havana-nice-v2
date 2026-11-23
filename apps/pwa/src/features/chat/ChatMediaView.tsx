@@ -4,6 +4,7 @@ import {useEffect,useState} from 'react';
 import {useChatMediaPreview} from './useChatMediaPreview';
 import ChatPhotoViewer from './ChatPhotoViewer';
 import ChatVideoPlayer from './ChatVideoPlayer';
+import ChatVoiceMessage from './ChatVoiceMessage';
 import type {ChatMedia} from './chat-media-types';
 export type {ChatMedia} from './chat-media-types';
 
@@ -17,7 +18,8 @@ export default function ChatMediaView({media,token,compact=false,onOpen}:{media:
  useEffect(()=>{if(!visible&&!videoOpen)setVideoRequest(0);},[visible,videoOpen]);
  return <>
    <div ref={surface} className={'hn-chat-media'+(compact?' is-tile':'')}>
-     {media.kind==='photo'?
+     {media.kind==='audio'?<ChatVoiceMessage media={media} token={token}/>:
+      media.kind==='photo'?
        preview?<button type="button" className="hn-chat-image-button"
          onClick={()=>onOpen?onOpen(media.assetId):setPhotoOpen(true)} aria-label="Abrir fotografía original">
          <img src={preview} alt="Fotografía enviada" decoding="async"
