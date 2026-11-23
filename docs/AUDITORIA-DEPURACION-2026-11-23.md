@@ -122,3 +122,9 @@
 - `tests/android-pwa-parity.test.mjs` comprueba que ambos Repertorios muestran el catálogo general y que las canciones del evento están dentro de Calendario (Android `NativeEventRepertoire`, PWA `EventRepertoire`). La prueba de Familia comprueba el BOOK integrado vigente en lugar del antiguo callback `onClose`.
 - `tests/module-boundaries.test.mjs` valida el contrato privado de repertorio por evento y el refresco automático de Administración, sin exigir un antiguo botón `Actualizar` que ya no existe.
 - No se modificaron componentes, rutas, contratos API, Worker, D1/R2 ni APK para silenciar tests; se corrigieron las aserciones para el comportamiento actual y se mantiene la nueva cobertura en cada build.
+
+## Decimosexta fase · Pruebas de Familia adaptadas al lector y reproductor actuales (23/11)
+- Las dos aserciones restantes de `module-boundaries` seguían exigiendo una ventana BOOK que hoy es un módulo editorial integrado y un `<video controls>` que ya se sustituyó por el visor con controles de reproducción propios.
+- Ahora se validan BOOK inline con regreso del álbum, el reproductor actual con botones de reproducir/pausar, miniaturas eager/lazy, y la guarda de `itemsActor===selected` que impide mostrar archivos del álbum equivocado.
+- El acceso a medios sigue pasando por URLs seguras del Worker. No se modificó código de interfaz, lógica de datos, servicios, backend, recursos privados ni la APK.
+- La publicación sigue bloqueada hasta aprobar todas las suites, incluidas las tres incorporadas al build de Pages.
