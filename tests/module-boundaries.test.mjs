@@ -233,8 +233,8 @@ test('M09: four-column Familia viewer accepts only authorized Worker file grants
  assert.match(admin,/uploadFailures\.map\(\(reason,index\)=>/);
  assert.match(admin,/setFailedFiles\(failures\.filter\(item=>item\.retryable\)/);
  assert.doesNotMatch(admin,/80 MiB|80 MB por archivo/);
- assert.match(admin,/storage\.warning/);
- assert.match(admin,/storage\.stopped/);
+ assert.match(admin,/storage\?\.warning/);
+ assert.match(admin,/storage\?\.stopped/);
  assert.match(admin,/9\.5 GB/);
  assert.match(shared,/familyMultipartOriginal\(token,actorId,file,onProgress\)/);
  assert.doesNotMatch(shared,/80 MiB|80\*1024\*1024/);
