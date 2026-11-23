@@ -2,7 +2,7 @@ import {useCallback,useEffect,useRef,useState} from 'react';
 import {getMemberNotices,markMemberNoticesRead,memberNoticeMessage,
  type MemberNotice,MemberNoticeApiError} from '@havana/shared';
 import {useFamilyLive} from '../../services/use-family-live';
-import {usePwaPush,pwaPushUnavailableMessage} from './usePwaPush';
+import {usePwaPush,pwaPushUnavailableMessage,pwaPushDiagnostics} from './usePwaPush';
 import './member-notices.css';
 
 export default function MemberNotices({token,calendarRevision=0}:{token:string;calendarRevision?:number}){
@@ -33,13 +33,6 @@ export default function MemberNotices({token,calendarRevision=0}:{token:string;c
  useEffect(()=>{if(calendarRevision>0)void refresh();},[calendarRevision,refresh]);
  // Reuse the authenticated Familia invalidation socket only on this active tab.
  useFamilyLive(token,false,()=>{void refresh();});
- const updateInstalledPwa=async()=>{
-  // Revalidate the public service worker and reload the shell. No logout,
-  // local database reset, app deletion, or notification permission reset.
-  try{await navigator.serviceWorker?.getRegistration().then(reg=>reg?.update());}
-  catch{/* A normal network-first reload is still useful. */}
-  window.location.reload();
- };
  const mark=async(id?:string)=>{
   try{await markMemberNoticesRead(token,id);await refresh();}
   catch(e){setError(e instanceof Error?e.message:'No se pudo marcar como leído.');}
@@ -61,10 +54,10 @@ export default function MemberNotices({token,calendarRevision=0}:{token:string;c
     <span>Las notificaciones están bloqueadas. Actívalas en los ajustes del teléfono.</span>:
     push.state==='unavailable'?<>
     <span>{pwaPushUnavailableMessage()}</span>
-    <button type="button" onClick={()=>void updateInstalledPwa()}>Actualizar PWA</button>
+    <small className="hn-push-diagnostics">{pwaPushDiagnostics()}</small>
    </>:push.state==='pending'?<>
-    <span>La entrega de notificaciones al teléfono está pendiente de configuración.</span>
-    <button type="button" onClick={()=>void updateInstalledPwa()}>Actualizar PWA</button>
+    <span>El servidor todavía no confirmó las claves para Web Push. Actualizar la PWA no cambia los permisos del teléfono.</span>
+    <small className="hn-push-diagnostics">{pwaPushDiagnostics()}</small>
    </>:
     push.state==='error'?
     <button type="button" onClick={()=>void push.enable()}>Reintentar activación</button>:
