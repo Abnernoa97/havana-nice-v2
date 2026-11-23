@@ -47,9 +47,6 @@ export async function notifyRepertoireMembers(env,eventId,action,changeId){
  }
 }
 
-// New Android/PWA States are team activity, not a private author-only reply.
-// Each published batch creates ONE notice per other authorized musician.
-// The endpoint never trusts recipients supplied by the uploader.
 // Changes to the *general* song library are useful to every active musician;
 // this is an Admin system notice, not a forged message from an album owner.
 export async function notifyGeneralRepertoireMembers(env,action,songTitle,changeId){
