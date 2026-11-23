@@ -3,7 +3,7 @@ import {
   chatReactionPayload,chatTypingPayload,chatReadReceiptPayload,
   fetchBackendHealth,getChatSnapshot,getOlderChatMessages,getChatMessagePermissions,isWithinChatEditWindow,
   setOutgoingChatStatus,projectOutgoingChatStatus,clearChatAckTimer,pauseChatOutbox,
-  confirmChatOutgoingMessage,flushChatOutbox,newClientMessageId,
+  confirmChatOutgoingMessage,flushChatOutbox,newClientMessageId,createQueuedChatMessage,
   openChatSocket,reconcileChatMessages,startNamedChatSession,restoreNamedChatSession,
   recoverChatAccess,chatSessionExpired,ChatConnectionTimers,ChatResumeGate,
   withoutRemovedChatMessages,ChatHistoryRequestGate,oldestConfirmedChatSeq,
@@ -536,10 +536,9 @@ export function usePwaChatController(){
       return;
     }
     const clientMessageId = newClientMessageId();
-    const message: ChatMessage = {
-      seq: 0, clientMessageId, senderId: session.actorId, senderName: session.displayName,
-      text, sentAt: new Date().toISOString(), pending: true, deliveryStatus: 'queued', replyToSeq: replyTo?.seq || null,
-    };
+    const message=createQueuedChatMessage(
+      session,text,replyTo?.seq||null,clientMessageId,new Date().toISOString(),
+    );
     outbox.current.set(clientMessageId, message);
     persist();
     setReplyTo(null);

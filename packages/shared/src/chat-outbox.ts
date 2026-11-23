@@ -1,9 +1,21 @@
 // Canonical offline Chat delivery policy shared by Android and the iPhone PWA.
 // Storage, socket lifecycle, and platform-specific timers stay in their respective apps.
-import type {ChatMessage} from './index';
+import type {ChatMessage,ChatSession} from './index';
 
 export const CHAT_ACK_TIMEOUT_MS=12_000;
 export type ChatOutboxState='queued'|'sending'|'error';
+
+// One offline message shape for Android and PWA. Each owner supplies its own
+// already-generated ID and timestamp; this policy never owns a socket or disk.
+export function createQueuedChatMessage(
+ session:Pick<ChatSession,'actorId'|'displayName'>,text:string,
+ replyToSeq:number|null,clientMessageId:string,sentAt:string,
+):ChatMessage{
+ return {
+  seq:0,clientMessageId,senderId:session.actorId,senderName:session.displayName,
+  text,sentAt,pending:true,deliveryStatus:'queued',replyToSeq,
+ };
+}
 
 // Preserve the original ordering and backpressure behavior: an in-flight ACK
 // blocks later items; error messages must be retried explicitly, not skipped.

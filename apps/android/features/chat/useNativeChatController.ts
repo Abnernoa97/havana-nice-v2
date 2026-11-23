@@ -6,7 +6,7 @@ import {
   chatReactionPayload,chatTypingPayload,chatReadReceiptPayload,
   logMemberActivity,fetchBackendHealth,getChatSnapshot,getOlderChatMessages,getChatMenuState,
   getChatMessagePermissions,isWithinChatEditWindow,setOutgoingChatStatus,projectOutgoingChatStatus,
-  clearChatAckTimer,pauseChatOutbox,confirmChatOutgoingMessage,flushChatOutbox,newClientMessageId,
+  clearChatAckTimer,pauseChatOutbox,confirmChatOutgoingMessage,flushChatOutbox,newClientMessageId,createQueuedChatMessage,
   reconcileChatMessages,reconcileChatSnapshot,applyChatIncomingEvent,startNamedChatSession,
   restoreNamedChatSession,recoverChatAccess,chatSessionExpired,ChatConnectionTimers,ChatResumeGate,
   withoutRemovedChatMessages,ChatHistoryRequestGate,oldestConfirmedChatSeq,mergeOlderChatReactions,
@@ -595,10 +595,9 @@ export function useNativeChatController(){
       return;
     }
     const clientMessageId = newClientMessageId();
-    const item: ChatMessage = {
-      seq: 0, clientMessageId, senderId: session.actorId, senderName: session.displayName,
-      text, sentAt: new Date().toISOString(), pending: true, deliveryStatus: 'queued', replyToSeq: replyTo?.seq || null,
-    };
+    const item=createQueuedChatMessage(
+      session,text,replyTo?.seq||null,clientMessageId,new Date().toISOString(),
+    );
     outbox.current.set(clientMessageId, item);
     persistLocal();
     setReplyTo(null);

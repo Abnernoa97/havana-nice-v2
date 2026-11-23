@@ -46,3 +46,8 @@
 - Las confirmaciones revalidan el token activo antes de refrescar historial o retirar archivos, evitando que una subida tardía mezcle la conversación de otro músico.
 - El grafo de pruebas `tests/helpers/native-source.mjs` incluye el nuevo hook y se añaden pruebas de aislamiento y paridad.
 - **Límite:** se requiere una APK nueva para reflejar cambios nativos. La firma y BOOK 3D vigentes no se modifican.
+
+## Cuarta fase · Política offline única de salida (23/11)
+- `packages/shared/src/chat-outbox.ts` genera la estructura idéntica de mensajes de texto pendientes para Android y PWA mediante `createQueuedChatMessage`.
+- Identificadores y fecha siguen generados por la plataforma propietaria; el paquete compartido no crea cola, sesión, WebSocket ni persistencia.
+- Nuevas pruebas verifican que se preservan `replyToSeq`, `pending`, `deliveryStatus` y que nunca se incrusta el token en el mensaje almacenado.

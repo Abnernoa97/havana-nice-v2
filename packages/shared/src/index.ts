@@ -217,7 +217,7 @@ export type {ChatReactionParticle} from './chat-reaction-burst';
 export {chatReactionPayload,chatTypingPayload,chatReadReceiptPayload,CHAT_TYPING_THROTTLE_MS} from './chat-presence';
 
 // Shared ordered offline outbox and ACK policy for both Chat clients.
-export {selectNextQueuedChatMessage,setOutgoingChatStatus,projectOutgoingChatStatus,CHAT_ACK_TIMEOUT_MS} from './chat-outbox';
+export {createQueuedChatMessage,selectNextQueuedChatMessage,setOutgoingChatStatus,projectOutgoingChatStatus,CHAT_ACK_TIMEOUT_MS} from './chat-outbox';
 export type {ChatOutboxState} from './chat-outbox';
 export {clearChatAckTimer,pauseChatOutbox,confirmChatOutgoingMessage,flushChatOutbox} from './chat-outbox-delivery';
 
