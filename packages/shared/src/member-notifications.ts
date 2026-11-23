@@ -30,18 +30,18 @@ export async function markMemberNoticesRead(token:string,id?:string,base=API):Pr
  const body=await result.json().catch(()=>({error:'No se pudo marcar como leído.'})) as {error?:string};
  if(!result.ok)throw new MemberNoticeApiError(body.error||'No se pudo marcar como leído.',result.status);
 }
-export function memberNoticeMessage(item:Pick<MemberNotice,'name'|'kind'|'emoji'>):string{
+export function memberNoticeMessage(item:Pick<MemberNotice,'name'|'kind'|'emoji'>&Partial<Pick<MemberNotice,'preview'>>):string{
  switch(item.kind){
-  case 'story.created':return item.name+' publicó un nuevo Estado';
+  case 'story.created':return item.name+(item.preview?.match(/^(\d+) nuevos Estados publicados$/)?' publicó '+item.preview.split(' ')[0]+' Estados':' publicó un nuevo Estado');
   case 'story.reaction':return item.name+' reaccionó '+(item.emoji||'❤️')+' a tu estado';
   case 'story.comment':return item.name+' comentó tu estado';
   case 'story.voice':return item.name+' te envió una nota de voz en tu estado';
-  case 'chat.reaction':return item.name+' reaccionó a tu mensaje';
-  case 'chat.message':return item.name+' envió un mensaje al equipo';
+  case 'chat.reaction':return item.name+' reaccionó '+(item.emoji||'❤️')+' a tu mensaje';
+  case 'chat.message':return item.name+(item.preview==='Nueva foto en Chat'?' envió una foto al Chat':item.preview==='Nuevo video en Chat'?' envió un video al Chat':' envió un mensaje al equipo');
   case 'calendar.event':return 'HAVANANICE-CALENDARIO📆';
-  case 'family.media':return 'Se agregó contenido al álbum de '+item.name;
+  case 'family.media':return 'Administración agregó '+(item.preview==='Nuevo video en Familia'?'un video':'una foto')+' al álbum de '+item.name;
   case 'profile.photo':return item.name+' actualizó su foto de perfil';
-  case 'repertoire.updated':return 'Se actualizó tu repertorio';
+  case 'repertoire.updated':return item.preview?.includes('repertorio general')?'Administración actualizó el repertorio general':'Administración actualizó tu repertorio del evento';
   case 'book.updated':return 'Administración actualizó el BOOK 3D';
   default:return 'Nueva actividad del equipo';
  }
