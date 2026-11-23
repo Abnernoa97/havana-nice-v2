@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {readFileSync} from 'node:fs';
+import {readFileSync,existsSync} from 'node:fs';
 import {runInNewContext} from 'node:vm';
 import ts from 'typescript';
 const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
@@ -63,4 +63,18 @@ test('Admin uses the same private multimedia gallery without a second media view
  assert.match(scopedCss,/\.hn-gallery-overlay\{/);
  assert.match(scopedCss,/\.hn-gallery-photo-surface\{/);
  assert.doesNotMatch(chatCss,/\.hn-gallery-overlay\{|\.hn-gallery-photo-surface\{/);
+});
+
+test('Removed private fullscreen modal implementations cannot creep back into the chat',()=>{
+ const inline=read('apps/pwa/src/features/chat/ChatMediaView.tsx');
+ const hook=read('apps/pwa/src/features/chat/useChatMediaPreview.ts');
+ const styles=read('apps/pwa/src/styles/chat/chat.css');
+ const old=['ChatPhotoViewer.tsx','ChatVideoPlayer.tsx'];
+ for(const name of old){
+  assert.equal(existsSync(new URL('../apps/pwa/src/features/chat/'+name,import.meta.url)),false);
+  assert.doesNotMatch(inline,new RegExp(name.replace('.tsx','')));
+ }
+ assert.doesNotMatch(inline,/photoOpen|videoOpen|videoRequest|videoGrant/);
+ assert.doesNotMatch(hook,/videoGrant|videoRequest|setVisible/);
+ assert.doesNotMatch(styles,/\.hn-photo-overlay|\.hn-chat-video-overlay/);
 });

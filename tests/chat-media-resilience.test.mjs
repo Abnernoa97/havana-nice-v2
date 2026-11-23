@@ -95,30 +95,28 @@ test('Retry keeps exactly one media message ID across app restart',()=>{
  }
 });
 
-test('Photo chat uses sharp previews and progressive fullscreen media',()=>{
+test('Photo Chat keeps sharp cached previews and one shared progressive fullscreen viewer',()=>{
  const web=read('apps/pwa/src/features/chat/ChatMediaView.tsx');
  const hook=read('apps/pwa/src/features/chat/useChatMediaPreview.ts');
  const thumb=read('apps/pwa/src/features/chat/chat-photo-preview.ts');
- const viewer=read('apps/pwa/src/features/chat/ChatPhotoViewer.tsx');
+ const viewer=read('apps/pwa/src/features/chat/ChatMediaGallery.tsx');
  const grant=read('apps/pwa/src/features/chat/chat-media-grant.ts');
  const css=read('apps/pwa/src/styles/chat/chat.css');
- assert.match(web,/useChatMediaPreview\(media,token,videoRequest\)/);
- assert.match(web,/photoOpen&&<ChatPhotoViewer media=\{media\}/);
+ assert.match(web,/useChatMediaPreview\(media,token\)/);
+ assert.match(web,/onClick=\{\(\)=>onOpen\(media\.assetId\)\}/);
  assert.match(hook,/fetchChatPhotoThumbnail\(signed,controller\.signal\)/);
  assert.match(hook,/IntersectionObserver/);
- assert.match(hook,/rootMargin:'320px'/);
  assert.match(hook,/rootMargin:'900px'/);
- assert.match(hook,/setVisible\(false\)/);
- assert.match(hook,/clearTimeout\(releaseTimer\)/);
+ assert.doesNotMatch(hook,/setVisible|videoGrant|videoRequest/);
  assert.match(hook,/URL\.revokeObjectURL\(previewUrl\)/);
  assert.match(thumb,/CHAT_PREVIEW_LONG_EDGE=1440/);
  assert.match(thumb,/CHAT_PREVIEW_JPEG_QUALITY=\.92/);
  assert.match(thumb,/CHAT_PREVIEW_MAX_ACTIVE=2/);
  assert.match(thumb,/canvas\.toBlob/);
  assert.match(thumb,/originalType==='image\/png'\?'image\/png':'image\/jpeg'/);
- assert.match(viewer,/requestChatMediaUrl\(media\.assetId,token,controller\.signal\)/);
+ assert.match(viewer,/requestChatMediaUrl\(media\.assetId,token,abort\.signal\)/);
  assert.match(viewer,/URL\.revokeObjectURL\(objectUrl\)/);
- assert.match(viewer,/\(original\|\|preview\)&&<img src=\{original\|\|preview\}/);
+ assert.match(viewer,/const showing=loaded\?url:cover/);
  assert.match(grant,/Authorization:'Bearer '\+token/);
  assert.match(css,/\.chat-media-queue-items\{max-height:190px/);
  assert.doesNotMatch(css,/\.chat-media-hidden-input\{display:none/);
@@ -174,17 +172,18 @@ test('a PWA sender reuses its local photo without changing video or R2 transport
  assert.doesNotMatch(src,/uploadChatFile\(session,thumb/);
 });
 
-test('iPhone video grants are request-on-tap, with fixed photo/video frames',()=>{
+test('iPhone videos obtain full playback grants only from the opened gallery',()=>{
  const media=read('apps/pwa/src/features/chat/ChatMediaView.tsx');
  const preview=read('apps/pwa/src/features/chat/useChatMediaPreview.ts');
+ const gallery=read('apps/pwa/src/features/chat/ChatMediaGallery.tsx');
  const css=read('apps/pwa/src/styles/chat/chat.css');
-  assert.match(media,/setVideoOpen\(true\);setVideoRequest\(1\)/);
-  const player=read('apps/pwa/src/features/chat/ChatVideoPlayer.tsx');
-  assert.match(player,/preload="metadata"/);
-  assert.match(player,/controls=\{false\}/);
+ assert.match(media,/onClick=\{\(\)=>onOpen\(media\.assetId\)\}/);
  assert.match(media,/hn-photo-placeholder/);
-  assert.match(media,/hn-chat-video-cover/);
- assert.match(preview,/media\.kind!=='video'\|\|!visible\|\|videoRequest===0/);
+ assert.match(media,/hn-chat-video-cover/);
+ assert.match(gallery,/preload="metadata"/);
+ assert.match(gallery,/controls=\{false\}/);
+ assert.match(gallery,/requestChatMediaUrl\(media\.assetId,token,abort\.signal\)/);
+ assert.doesNotMatch(preview,/videoGrant|videoRequest|setVisible/);
  assert.match(css,/\.hn-chat-image-button\{position:relative;display:block;aspect-ratio:1\/1/);
  assert.match(css,/\.hn-chat-video,\.hn-media-loading\.hn-video-placeholder\{width:100%;aspect-ratio:16\/9/);
  assert.match(css,/\.chat-messages\{-webkit-overflow-scrolling:touch;overflow-anchor:none;touch-action:pan-y\}/);
@@ -204,12 +203,14 @@ test('iPhone photo preparation is visible and isolated across actor switches',()
  assert.match(backend,/existing\.size_bytes!==size\|\|existing\.mime_type!==data\.mimeType/);
 });
 
-test('photo viewer displays cached preview immediately and inline photos are not forced square',()=>{
+test('shared photo gallery displays cached cover before remote image decode',()=>{
  const media=read('apps/pwa/src/features/chat/ChatMediaView.tsx');
- const viewer=read('apps/pwa/src/features/chat/ChatPhotoViewer.tsx');
+ const viewer=read('apps/pwa/src/features/chat/ChatMediaGallery.tsx');
  const css=read('apps/pwa/src/styles/chat/chat.css');
- assert.match(media,/token=\{token\} preview=\{preview\}/);
- assert.match(viewer,/\(original\|\|preview\)&&<img src=\{original\|\|preview\}/);
+ assert.match(media,/className="hn-chat-photo"/);
+ assert.match(viewer,/const showing=loaded\?url:cover/);
+ assert.match(viewer,/peekChatPhotoPreview\(token,media\)/);
+ assert.match(viewer,/URL\.createObjectURL\(blob\)/);
  assert.match(css,/\.hn-chat-image-button\{aspect-ratio:auto;background:transparent\}/);
 });
 

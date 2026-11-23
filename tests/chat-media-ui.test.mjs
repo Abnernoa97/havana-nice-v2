@@ -267,17 +267,18 @@ test('Native photo cache housekeeping touches only abandoned V2 transfers',()=>{
   assert.doesNotMatch(cache,/Paths\.cache\.delete\(\)|hn-v2-chat-photo-.*\.delete\(/);
 });
 
-test('Web/Admin previews display cache immediately and upgrade to R2 on tap',()=>{
+test('Web and Admin share one gallery with cached previews and deferred originals',()=>{
  const web=read('apps/pwa/src/features/chat/ChatMediaView.tsx');
  const thumb=read('apps/pwa/src/features/chat/chat-photo-preview.ts');
- const viewer=read('apps/pwa/src/features/chat/ChatPhotoViewer.tsx');
+ const viewer=read('apps/pwa/src/features/chat/ChatMediaGallery.tsx');
+ const admin=read('apps/pwa/src/features/chat/AdminChatGeneral.tsx');
  const css=read('apps/pwa/src/styles/chat/chat.css');
- assert.match(web,/useChatMediaPreview\(media,token,videoRequest\)/);
+ assert.match(web,/useChatMediaPreview\(media,token\)/);
  assert.match(web,/className="hn-chat-photo"/);
- assert.match(web,/photoOpen&&<ChatPhotoViewer media=\{media\}/);
- assert.match(viewer,/const blob=await response\.blob\(\)/);
+ assert.match(web,/onClick=\{\(\)=>onOpen\(media\.assetId\)\}/);
+ assert.match(admin,/<ChatMediaGallery items=\{gallery\.items\}/);
+ assert.match(viewer,/const showing=loaded\?url:cover/);
  assert.match(viewer,/URL\.createObjectURL\(blob\)/);
- assert.match(viewer,/<img src=\{original\|\|preview\}/);
  assert.match(thumb,/CHAT_PREVIEW_LONG_EDGE=1440/);
  assert.match(thumb,/CHAT_PREVIEW_JPEG_QUALITY=\.92/);
  assert.match(thumb,/canvas\.toBlob/);
