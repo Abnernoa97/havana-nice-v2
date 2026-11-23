@@ -191,8 +191,8 @@ export type {MemberModule,MemberScreen} from './memberModules';
 export {getAudioTracks,clearAudioTracksCache,privateAudioUrl,uploadAudioTrack,uploadAudioCover,removeAudioTrack,AudioApiError} from './audio';
 export type {AudioTrack} from './audio';
 
-export {getRepertoireSongs,getEventRepertoire,getAssignedEventRepertoire,safeRepertoireLink} from './repertoire';
-export type {RepertoireSong,RepertoireSongInput,RepertoireEventItem} from './repertoire';
+export {getRepertoireSongs,getEventRepertoire,getAssignedEventRepertoire,safeRepertoireLink,repertoireSection,REPERTOIRE_SECTIONS} from './repertoire';
+export type {RepertoireSong,RepertoireSongInput,RepertoireEventItem,RepertoireSection} from './repertoire';
 
 export {getFamilyDirectory,getFamilyAlbumMedia,uploadFamilyAlbumFile,uploadFamilyVideoPoster,updateFamilyAlbumFile,familyAlbumCount,FamilyApiError} from './family';
 export type {FamilyAlbum,FamilyDirectory,FamilyMediaItem} from './family';
