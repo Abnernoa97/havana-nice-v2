@@ -24,6 +24,12 @@ export default function MemberAudio({token,active=true}:{token:string;active?:bo
  const playOnChange=useRef(false);
  const requestedPlay=useRef(false);
  const current=tracks[selected]||null;
+ useEffect(()=>{
+  if(!playing||!current)return;
+  if(current.id===lastRecorded.current.id&&Date.now()-lastRecorded.current.at<30000)return;
+  lastRecorded.current={id:current.id,at:Date.now()};
+  void logMemberActivity(token,'audio.play',current.id,'iphone');
+ },[playing,current?.id,token]);
  const refresh=useCallback(async(force=false)=>{
   try{const value=await getAudioTracks(token,false,force);lastCatalogFetch.current=Date.now();
    setTracks(value);setSelected(n=>Math.max(0,Math.min(n,value.length-1)));
@@ -267,14 +273,7 @@ export default function MemberAudio({token,active=true}:{token:string;active?:bo
   </div>
   <audio ref={ref} preload="metadata"
    onPlay={()=>{requestedPlay.current=true;setBuffering(true);}}
-   onPlaying={()=>{
-    requestedPlay.current=true;setPlaying(true);setBuffering(false);
-    const track=tracks[selected];
-    if(track&&(track.id!==lastRecorded.current.id||Date.now()-lastRecorded.current.at>30000)){
-     lastRecorded.current={id:track.id,at:Date.now()};
-     void logMemberActivity(token,'audio.play',track.id,'iphone');
-    }
-   }}
+   onPlaying={()=>{requestedPlay.current=true;setPlaying(true);setBuffering(false);}}
    onWaiting={()=>{setPlaying(false);setBuffering(true);}}
    onStalled={()=>{setPlaying(false);setBuffering(true);}}
    onPause={()=>{requestedPlay.current=false;setPlaying(false);setBuffering(false);}}
