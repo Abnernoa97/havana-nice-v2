@@ -32,6 +32,9 @@ export default function NativeFamily({token}:{token:string}){
  const [error,setError]=useState('');
  const {width:screenWidth,height:screenHeight}=useWindowDimensions();
  const generation=useRef(0),mediaGeneration=useRef(0);
+ // Temporary signed grants, reused in memory during this musician session.
+ // Never write R2 media URLs or private files to persistent storage.
+ const albumCache=useRef(new Map<string,{at:number;items:FamilyMediaItem[]}>());
  const selectedRef=useRef<string|null>(null);
  selectedRef.current=selected;
  const refresh=useCallback(async()=>{
@@ -40,15 +43,32 @@ export default function NativeFamily({token}:{token:string}){
    const data=await getFamilyDirectory(token);
    if(id!==generation.current)return;
    setDirectory(data);setError('');
+   // Start fetching the first visible album covers before the user taps.
+   for(const album of data.albums.slice(0,5)){
+    const cover=privateUrl(album.coverUrl);
+    if(cover)void Image.prefetch(cover).catch(()=>{});
+   }
   }catch(e){if(id===generation.current)setError(e instanceof Error?e.message:'No se pudo abrir Familia HAVANA NICE.');}
   finally{if(id===generation.current)setLoading(false);}
  },[token]);
- const loadAlbum=useCallback(async(actorId:string)=>{
+ const loadAlbum=useCallback(async(actorId:string,force=false)=>{
   const id=++mediaGeneration.current;
-  setMediaLoading(true);
+  const cached=albumCache.current.get(actorId);
+  if(!force&&cached&&Date.now()-cached.at<4*60_000){
+   setItems(cached.items);setMediaLoading(false);return;
+  }
+  // Keep the previous media visible on a realtime refresh.
+  if(!cached)setMediaLoading(true);
   try{
    const data=await getFamilyAlbumMedia(token,actorId);
-   if(id===mediaGeneration.current){setItems(data.items);setError('');}
+   if(id!==mediaGeneration.current)return;
+   albumCache.current.set(actorId,{items:data.items,at:Date.now()});
+   setItems(data.items);setError('');
+   // Photo JPEGs and video posters only; never prefetch video originals.
+   for(const item of data.items.slice(0,8)){
+    const thumbnail=privateUrl(item.thumbnailUrl);
+    if(thumbnail)void Image.prefetch(thumbnail).catch(()=>{});
+   }
   }catch(e){
    if(id===mediaGeneration.current)setError(e instanceof Error?e.message:'No se pudo cargar el álbum.');
   }finally{if(id===mediaGeneration.current)setMediaLoading(false);}
@@ -64,10 +84,11 @@ export default function NativeFamily({token}:{token:string}){
    if(timer!==null){clearTimeout(timer);timer=null;}
    if(watchdog!==null){clearTimeout(watchdog);watchdog=null;}
   };
-  const synchronize=()=>{
+  const synchronize=(force=false)=>{
    setBookTick(value=>value+1);
    void refresh();
-   if(selectedRef.current)void loadAlbum(selectedRef.current);
+   if(force)albumCache.current.clear();
+   if(selectedRef.current)void loadAlbum(selectedRef.current,force);
   };
   const connect=()=>{
    if(!active||AppState.currentState==='background'||AppState.currentState==='inactive')return;
@@ -76,7 +97,8 @@ export default function NativeFamily({token}:{token:string}){
    try{
     const opened=openFamilyRealtime(token,false,event=>{
      if(!active||socket!==opened)return;
-     if(event.type==='family.ready'||event.type==='family.invalidate')synchronize();
+     if(event.type==='family.ready'||event.type==='family.invalidate')
+      synchronize(event.type==='family.invalidate');
     });
     socket=opened;
     watchdog=setTimeout(()=>{
@@ -110,6 +132,7 @@ export default function NativeFamily({token}:{token:string}){
     retryDelay=Math.min(20000,retryDelay*2);
    }
   };
+  albumCache.current.clear();
   setSelected(null);setDirectory(null);setItems([]);setLoading(true);
   synchronize();
   connect();
@@ -127,7 +150,10 @@ export default function NativeFamily({token}:{token:string}){
   };
  },[token,refresh,loadAlbum]);
  const open=(album:FamilyAlbum)=>{
-  setSelected(album.actorId);setItems([]);setFocused(null);
+  setSelected(album.actorId);setFocused(null);
+  const cached=albumCache.current.get(album.actorId);
+  if(cached&&Date.now()-cached.at<4*60_000)setItems(cached.items);
+  else setItems([]);
   if(album.mediaReady)void loadAlbum(album.actorId);
  };
  const back=()=>{++mediaGeneration.current;setSelected(null);setFocused(null);};
@@ -147,7 +173,7 @@ export default function NativeFamily({token}:{token:string}){
    <FlatList
     style={styles.albumList}
     contentContainerStyle={styles.albumListContent}
-    data={mediaLoading?[]:ready}
+    data={mediaLoading&&!ready.length?[]:ready}
     keyExtractor={item=>item.id}
     numColumns={3}
     columnWrapperStyle={styles.galleryRow}
@@ -160,14 +186,15 @@ export default function NativeFamily({token}:{token:string}){
      <Pressable accessibilityRole="button" accessibilityLabel="Regresar a Familia HAVANA NICE"
       onPress={back} style={styles.back}><Text style={styles.backArrow}>‹</Text></Pressable>
      <View style={styles.hero}>
-      {cover?<Image source={{uri:cover}} style={styles.heroImage} resizeMode="cover"/>:
+      {cover?<Image source={{uri:cover,cache:'default'}} style={styles.heroImage}
+       resizeMode="cover" fadeDuration={0}/>:
        <Text style={styles.monogram}>{active.name.slice(0,1).toUpperCase()}</Text>}
       <View style={styles.heroCaption}>
        <Text style={styles.heroTitle}>{active.name}</Text>
        <Text style={styles.heroCount}>{familyAlbumCount(active)}</Text>
       </View>
      </View>
-     {mediaLoading?<ActivityIndicator color="#917252" style={styles.mediaSpinner}/>:null}
+     {mediaLoading&&!ready.length?<ActivityIndicator color="#917252" style={styles.mediaSpinner}/>:null}
     </>}
     ListEmptyComponent={!mediaLoading
      ?<Text style={styles.empty}>{active.mediaReady?'Todavía no hay fotos ni videos en este álbum.':'El almacenamiento privado aún no está disponible.'}</Text>
@@ -176,7 +203,8 @@ export default function NativeFamily({token}:{token:string}){
      accessibilityRole="button" accessibilityLabel={'Abrir '+(item.kind==='photo'?'foto':'video')}
      style={[styles.media,{width:(screenWidth-72)/3,height:(screenWidth-72)/3}]}
      onPress={()=>setFocused(index)}>
-     {item.image?<Image source={{uri:item.image}} style={styles.fill} resizeMode="cover"/>:
+     {item.image?<Image source={{uri:item.image,cache:'default'}}
+      style={styles.fill} resizeMode="cover" fadeDuration={0}/>:
       <Text style={styles.play}>▶</Text>}
      {item.kind==='video'&&<Text style={styles.videoMark}>▶</Text>}
     </Pressable>}
@@ -186,7 +214,8 @@ export default function NativeFamily({token}:{token:string}){
      const image=privateUrl(album.coverUrl);
      return <Pressable key={album.actorId} accessibilityRole="button" style={styles.album}
       onPress={()=>open(album)}>
-      {image?<Image source={{uri:image}} style={styles.fill} resizeMode="cover"/>:
+      {image?<Image source={{uri:image,cache:'default'}}
+       style={styles.fill} resizeMode="cover" fadeDuration={0}/>:
        <Text style={styles.monogram}>{album.name.slice(0,1).toUpperCase()}</Text>}
       <View style={styles.albumOverlay}><Text style={styles.albumName}>{album.name}</Text>
        <Text style={styles.heroCount}>{familyAlbumCount(album)}</Text></View>
@@ -233,14 +262,16 @@ const styles=StyleSheet.create({
  action:{color:'#856243',fontWeight:'700',fontSize:13},error:{color:'#b23d2e',fontSize:13},
  empty:{fontSize:13,color:'#81756b',lineHeight:20,marginVertical:8},
  albums:{flexDirection:'row',flexWrap:'wrap',gap:11},
- album:{width:'48%',height:183,backgroundColor:'#675f51',borderRadius:16,overflow:'hidden',justifyContent:'center'},
+ album:{width:'48%',aspectRatio:1,backgroundColor:'#675f51',borderRadius:14,overflow:'hidden',justifyContent:'center'},
  fill:{width:'100%',height:'100%',position:'absolute'},monogram:{fontSize:65,color:'#e4ddd0',fontWeight:'700',textAlign:'center'},
  albumOverlay:{position:'absolute',bottom:0,left:0,right:0,padding:13,backgroundColor:'rgba(17,17,17,.66)'},
  albumName:{fontSize:19,color:'#fff',fontWeight:'700'},heroCount:{fontSize:12,color:'#fff',marginTop:4},
- hero:{height:220,backgroundColor:'#756d60',borderRadius:17,overflow:'hidden',justifyContent:'center'},
+ hero:{width:'100%',aspectRatio:16/9,maxHeight:260,backgroundColor:'#756d60',
+  borderRadius:15,overflow:'hidden',justifyContent:'center'},
  heroImage:{width:'100%',height:'100%',position:'absolute'},
- heroCaption:{position:'absolute',bottom:0,left:0,right:0,padding:20,backgroundColor:'rgba(17,17,17,.63)'},
- heroTitle:{color:'#fff',fontSize:29,fontWeight:'700'},
+ heroCaption:{position:'absolute',bottom:0,left:0,right:0,padding:13,
+  backgroundColor:'rgba(17,17,17,.63)'},
+ heroTitle:{color:'#fff',fontSize:25,fontWeight:'700'},
  gallery:{flexDirection:'row',flexWrap:'wrap',gap:5},media:{backgroundColor:'#ddd9d1',borderRadius:6,overflow:'hidden',justifyContent:'center'},
  play:{color:'#555',fontSize:30,textAlign:'center'},
  videoMark:{position:'absolute',bottom:5,right:6,color:'#fff',fontSize:16,fontWeight:'700'},

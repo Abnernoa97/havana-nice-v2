@@ -27,7 +27,7 @@ test('Both PWA Family screens refresh albums and media on the one live signal',(
  for(const [source,role] of [[member,'false'],[admin,'true']]){
   assert.match(source,new RegExp('useFamilyLive\\(token,'+role+','));
   assert.match(source,/setMediaTick\(t=>t\+1\)/);
-  assert.match(source,/getFamilyAlbumMedia\(token,selected/);
+  assert.match(source,role==='false'?/loadCached\(selected\)/:/getFamilyAlbumMedia\(token,selected/);
  }
  assert.doesNotMatch(member,/new WebSocket/);
  assert.doesNotMatch(admin,/new WebSocket/);
@@ -39,7 +39,7 @@ test('Android Familia uses the same socket, with one AppState-aware connection a
  assert.match(native,/event\.type==='family.ready'\|\|event\.type==='family.invalidate'/);
  assert.match(native,/AppState\.addEventListener\('change',state=>/);
  assert.match(native,/socket\?\.close\(\)/);
- assert.match(native,/if\(selectedRef\.current\)void loadAlbum\(selectedRef\.current\)/);
+ assert.match(native,/if\(selectedRef\.current\)void loadAlbum\(selectedRef\.current,force\)/);
  assert.doesNotMatch(native,/setInterval|WebView|new WebSocket/);
  assert.match(native,/getFamilyDirectory\(token\)/);
 });

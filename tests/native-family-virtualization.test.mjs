@@ -6,7 +6,7 @@ const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
 test('Familia Android mounts a virtualized 3-column photo grid instead of all media at once',()=>{
  const f=read('apps/android/features/family/NativeFamily.tsx');
  assert.match(f,/<FlatList/);
- assert.match(f,/data=\{mediaLoading\?\[\]:ready\}/);
+ assert.match(f,/data=\{mediaLoading&&!ready\.length\?\[\]:ready\}/);
  assert.match(f,/keyExtractor=\{item=>item.id\}/);
  assert.match(f,/numColumns=\{3\}/);
  assert.match(f,/initialNumToRender=\{12\}/);
@@ -14,7 +14,7 @@ test('Familia Android mounts a virtualized 3-column photo grid instead of all me
  assert.match(f,/windowSize=\{5\}/);
  assert.match(f,/useMemo<ReadyMedia\[\]>/);
  assert.doesNotMatch(f,/ready\.map\(/);
- assert.match(f,/item\.image\?<Image source=\{\{uri:item\.image\}\}/);
+ assert.match(f,/item\.image\?<Image source=\{\{uri:item\.image,cache:'default'\}\}/);
  assert.match(f,/onPress=\{\(\)=>setFocused\(index\)\}/);
 });
 test('HOME must not nest Familia FlatList inside its all-modules ScrollView',()=>{
@@ -30,7 +30,7 @@ test('Family stays private, modal video is only mounted on demand, BOOK unchange
  assert.match(f,/openFamilyRealtime\(token,false/);
  assert.match(f,/getFamilyAlbumMedia\(token,actorId\)/);
  assert.match(f,/url\.pathname\.startsWith\('\/api\/family\/media\/'\)/);
- assert.match(f,/<NativeBook token=\{token\} refreshKey=\{bookTick\} onClose=\{back\}/);
+ assert.match(f,/<NativeBook token=\{token\} refreshKey=\{bookTick\} embedded/);
  assert.match(f,/chosen\?\.kind==='video'\?<NativeVideo key=\{chosen\.id\} url=\{chosen\.file\}/);
  assert.match(f,/useVideoPlayer\(\{uri:url\}/);
  assert.match(f,/surfaceType="surfaceView"/);

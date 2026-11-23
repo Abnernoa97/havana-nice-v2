@@ -47,13 +47,18 @@ export default function FamilyMediaGallery({items,onDelete,onSetCover,onMakePost
  };
  return <div className="hn-family-media-gallery" aria-label="Archivos del álbum">
   <div className="hn-family-media-grid">
-   {validItems.map((item,index)=><button type="button" key={item.id}
-    className="hn-family-media-thumb" onClick={()=>setActive(index)}
-    aria-label={'Abrir '+item.alt+', '+(index+1)+' de '+validItems.length}>
-    {item.thumbnail?<img src={item.thumbnail} alt="" loading="lazy" decoding="async"/>:
-     <span className="hn-family-media-video-fallback" aria-hidden="true">{item.kind==='video'?'▶':'◻'}</span>}
-    {item.kind==='video'&&<span className="hn-family-media-play-marker" aria-hidden="true">▶</span>}
-   </button>)}
+   {validItems.map((item,index)=><div key={item.id} className="hn-family-media-thumb">
+    <button type="button" className="hn-family-media-open" onClick={()=>setActive(index)}
+     aria-label={'Abrir '+item.alt+', '+(index+1)+' de '+validItems.length}>
+     {item.thumbnail?<img src={item.thumbnail} alt=""
+      loading={index<6?'eager':'lazy'} decoding="async"/>:
+      <span className="hn-family-media-video-fallback" aria-hidden="true">{item.kind==='video'?'▶':'◻'}</span>}
+     {item.kind==='video'&&<span className="hn-family-media-play-marker" aria-hidden="true">▶</span>}
+    </button>
+    {onSetCover&&item.kind==='photo'&&<button type="button"
+     className="hn-family-choose-cover" onClick={()=>void onSetCover(item.id)}
+     aria-label={'Usar foto '+(index+1)+' como portada'}>Portada</button>}
+   </div>)}
   </div>
   <dialog ref={modal} className="hn-family-media-dialog" aria-label="Visor del álbum"
    onClose={()=>setActive(null)} onCancel={()=>setActive(null)} onKeyDown={handleKeys}>
