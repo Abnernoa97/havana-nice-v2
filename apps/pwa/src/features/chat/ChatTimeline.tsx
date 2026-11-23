@@ -251,7 +251,7 @@ function ChatTimeline({
                <div className="hn-chat-media-mosaic">{group.map(renderMessage)}</div>
                {mine&&<span className="hn-chat-group-ticks" aria-label={group[group.length-1]!.seq>0&&display.lastReadByOther>=group[group.length-1]!.seq?'Leído':'Enviado'}>
                 {group[group.length-1]!.seq>0&&display.lastReadByOther>=group[group.length-1]!.seq?'✓✓':'✓'}
-               </span>
+               </span>}
               </div>;
             })}
             {windowed.hasNewer&&<div className="chat-window-actions">
