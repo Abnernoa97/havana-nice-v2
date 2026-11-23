@@ -38,7 +38,7 @@ test('Android native and iPhone PWA share the same Chat decisions, not alternate
  const common=[
   'restoreNamedChatSession','getChatSnapshot','reconcileChatSnapshot',
   'reconcileUpdatedMessage','reconcileDeletedMessage','reconcileReactions',
-  'messageDeliveryLabel','newClientMessageId','validateChatMediaSelection',
+  'groupChatMediaMessages','newClientMessageId','validateChatMediaSelection',
   'CHAT_MEDIA_MAX_PER_SEND','getChatMediaAvailability(session)'
  ];
  for(const [label,src] of [['Android',android+sharedEvents],['PWA',pwa+sharedEvents]]){
@@ -157,15 +157,21 @@ test('Android native: two gallery filters, camera direct, no legacy extra menu',
  assert.equal(existsSync(new URL('../apps/android/media-upload.ts',import.meta.url)),false);
 });
 
-test('Emoji stays enabled; microphone is informative until M03',()=>{
- const pwa=read('apps/pwa/src/app/App.tsx');
- const native=read('apps/android/app/NativeApp.tsx');
+test('Emoji and real voice microphone share one Chat composer on iPhone and Android',()=>{
+ const pwa=read('apps/pwa/src/features/chat/PwaChatSurface.tsx');
+ const native=read('apps/android/features/chat/NativeChatSurface.tsx');
+ const pwaVoice=read('apps/pwa/src/features/chat/PwaChatVoiceRecorder.tsx');
+ const nativeVoice=read('apps/android/features/chat/NativeChatVoiceRecorder.tsx');
  assert.match(pwa,/aria-label="Insertar emoji"/);
  assert.match(native,/accessibilityLabel="Insertar emoji"/);
- assert.match(pwa,/Los mensajes de voz se habilitarán después de fotos y videos/);
- assert.match(native,/Los audios estarán disponibles después de las fotografías y los videos/);
- assert.doesNotMatch(native,/requestMicrophonePermissionsAsync|startRecording\(/);
- assert.doesNotMatch(pwa,/getUserMedia|MediaRecorder/);
+ assert.match(pwa,/<PwaChatVoiceRecorder disabled/);
+ assert.match(native,/<NativeChatVoiceRecorder disabled/);
+ assert.match(pwaVoice,/getUserMedia/);
+ assert.match(pwaVoice,/MediaRecorder/);
+ assert.match(nativeVoice,/useAudioRecorder/);
+ assert.match(nativeVoice,/requestRecordingPermissionsAsync/);
+ assert.doesNotMatch(pwa,/Los mensajes de voz se habilitarán/);
+ assert.doesNotMatch(native,/Los audios estarán disponibles/);
 });
 
 test('V2 does not contain an external storage service binding',()=>{
@@ -231,7 +237,7 @@ test('Native photos and videos run in separate modules with preserved quality',(
   assert.match(media,/<NativeChatVideo media=\{media\}/);
   assert.match(photo,/cached\.exists&&cached\.size===media\.sizeBytes/);
   assert.match(photo,/setPhoto\(uri\)/);
-  assert.match(photo,/<Modal visible=\{enlarged&&!!photo\}/);
+  assert.match(photo,/<Modal visible=\{!onOpen&&enlarged&&!!photo\}/);
   assert.match(photo,/cacheWholePhoto\(media,signed\)/);
   assert.match(video,/useVideoPlayer/);
   assert.match(video,/<VideoView player=\{player\} nativeControls/);
