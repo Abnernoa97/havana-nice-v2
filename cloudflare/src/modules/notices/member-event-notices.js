@@ -68,8 +68,7 @@ export async function notifyTeamFamilyMedia(env,albumActorId,mediaId,kind){
  });
 }
 
-// Admin changes to an event's Repertoire are SYSTEM activity, never a
-// counterfeit musician message. Only Calendar-assigned musicians receive it.
+// Publishing a State is a real team event; the author never alerts themselves.
 export async function notifyTeamStoryPublished(env,actor,storyId,count=1){
  if(!actor?.actorId||!storyId)return 0;
  try{
@@ -128,5 +127,3 @@ export async function notifyStoryOwner(env,storyId,actor,kind,{emoji='',preview=
   targetId:storyId,emoji,preview,dedupeKey});
 }
 
-// Calendar is emitted by the Administrator, not by a musician. Keep system
-// notices apart from member-to-member reactions: no forged actor ID or login.
