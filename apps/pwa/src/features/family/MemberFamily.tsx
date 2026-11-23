@@ -26,6 +26,7 @@ export default function MemberFamily({token}:{token:string}){
  const [mediaLoading,setMediaLoading]=useState(false);
  const [mediaTick,setMediaTick]=useState(0);
  const seq=useRef(0);
+ const albumEdge=useRef<{x:number;y:number}|null>(null);
  // Private 10-minute grants: reuse only for a bounded interval in this
  // signed-in component. No indexedDB, CacheStorage, or persistent R2 URLs.
  const albumCache=useRef(new Map<string,{items:FamilyMediaItem[];at:number}>());
@@ -120,7 +121,18 @@ export default function MemberFamily({token}:{token:string}){
  const cover=album?.mediaReady?familyPrivateMediaUrl(album.coverUrl):null;
  const readyItems=album?.mediaReady&&itemsActor===selected?items:undefined;
  const goBack=()=>setSelected(null);
- return <section className="hn-family hn-family-minimal" aria-label="Familia HAVANA NICE">
+ return <section className="hn-family hn-family-minimal" aria-label="Familia HAVANA NICE"
+  onTouchStart={event=>{
+   const t=event.changedTouches[0];
+   albumEdge.current=album&&t&&t.clientX<26?{x:t.clientX,y:t.clientY}:null;
+  }}
+  onTouchEnd={event=>{
+   const s=albumEdge.current,t=event.changedTouches[0];albumEdge.current=null;
+   if(!s||!t||(event.target as HTMLElement).closest('dialog'))return;
+   if(t.clientX-s.x>95&&Math.abs(t.clientY-s.y)<65){
+    event.stopPropagation();goBack();
+   }
+  }}>
   {album&&<button type="button" className="hn-family-return" onClick={goBack}
     aria-label="Regresar a Familia HAVANA NICE">‹</button>}
   {error&&<p role="alert" className="hn-cal-error">{error}</p>}

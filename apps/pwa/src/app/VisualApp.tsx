@@ -1,4 +1,4 @@
-import {lazy,Suspense,memo,useEffect,useLayoutEffect,useState} from 'react';
+import {lazy,Suspense,memo,useEffect,useLayoutEffect,useRef,useState,type TouchEvent} from 'react';
 import {usePwaMemberProfiles,PwaProfileLive} from '../features/profile/usePwaMemberProfiles';
 import MemberProfilePanel from '../features/profile/MemberProfilePanel';
 import PrivateProfileAvatar from '../features/profile/PrivateProfileAvatar';
@@ -42,6 +42,7 @@ function VisualApp({displayName,active,onNavigate,preview=false,token,actorId,ca
   const profile=usePwaMemberProfiles(token,actorId);
   const own=profile.own;
   const [previewScreen,setPreviewScreen]=useState<MemberScreen>('home');
+  const edgeStart=useRef<{x:number;y:number}|null>(null);
   const screen=active??previewScreen;
   // iOS standalone HOME must never drag the document itself: only the Lounge
   // scrolls. Release the lock on navigation so Chat, BOOK and dialogs retain
@@ -62,9 +63,20 @@ function VisualApp({displayName,active,onNavigate,preview=false,token,actorId,ca
     if(onNavigate)onNavigate(target);
     else setPreviewScreen(target);
   };
+  const edgeBegin=(event:TouchEvent<HTMLDivElement>)=>{
+    const t=event.changedTouches[0];
+    edgeStart.current=t&&t.clientX<26?{x:t.clientX,y:t.clientY}:null;
+  };
+  const edgeFinish=(event:TouchEvent<HTMLDivElement>)=>{
+    const s=edgeStart.current,t=event.changedTouches[0];edgeStart.current=null;
+    if(!s||!t||screen==='home'||screen==='chat')return;
+    if((event.target as HTMLElement).closest('dialog,[role="dialog"],input,textarea,[contenteditable]'))return;
+    if(t.clientX-s.x>95&&Math.abs(t.clientY-s.y)<65)navigate('home');
+  };
   const selected=MEMBER_MODULES.find(item=>item.id===screen);
   const tabs=MEMBER_MODULES;
-  return <div className={screen==='home'?'visual-shell hn-home-route':'visual-shell'}>
+  return <div className={screen==='home'?'visual-shell hn-home-route':'visual-shell'}
+   onTouchStart={edgeBegin} onTouchEnd={edgeFinish}>
     <header className="visual-header">
       <div><div className="visual-brand">HAVANA NICE</div><div className="visual-subtitle">ESPACIO DEL EQUIPO</div></div>
       <button type="button" className="visual-account" disabled={preview||profile.phase==='legacy'||profile.phase==='offline'||profile.phase==='checking'} onClick={()=>setProfileOpen(true)}

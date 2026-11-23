@@ -1,4 +1,4 @@
-import {useEffect,useRef,useState,type KeyboardEvent} from 'react';
+import {useEffect,useRef,useState,type KeyboardEvent,type TouchEvent} from 'react';
 import {HAVANA_V2_DEV_API_BASE_URL,type FamilyMediaItem} from '@havana/shared';
 import '../../styles/family/gallery.css';
 
@@ -15,6 +15,24 @@ export function familyPrivateMediaUrl(value:string|null|undefined):string|null{
 }
 
 type ReadyItem={id:string;kind:'photo'|'video';thumbnail:string|null;file:string;alt:string};
+function FamilyVideo({file,poster,alt}:{file:string;poster:string|null;alt:string}){
+ const ref=useRef<HTMLVideoElement>(null);
+ const [playing,setPlaying]=useState(false);
+ const toggle=()=>{
+  const video=ref.current;if(!video)return;
+  if(!video.paused){video.pause();return;}
+  void video.play().catch(()=>setPlaying(false));
+ };
+ return <div className="hn-family-player">
+  <video ref={ref} src={file} poster={poster||undefined} playsInline preload="metadata"
+   aria-label={alt} onPlay={()=>setPlaying(true)} onPause={()=>setPlaying(false)}
+   onEnded={()=>setPlaying(false)} onClick={toggle}/>
+  {!playing&&<button type="button" className="hn-family-center-play"
+   aria-label="Reproducir video" onClick={toggle}>▶</button>}
+  {playing&&<button type="button" className="hn-family-playing-pause"
+   aria-label="Pausar video" onClick={toggle}>Ⅱ</button>}
+ </div>;
+}
 
 export default function FamilyMediaGallery({items,onDelete,onSetCover,onMakePoster}:{items:readonly FamilyMediaItem[];onDelete?:(id:string)=>Promise<void>;onSetCover?:(id:string)=>Promise<void>;onMakePoster?:(id:string,sourceUrl:string)=>Promise<void>}){
  const validItems:ReadyItem[]=items.flatMap(item=>{
@@ -27,6 +45,7 @@ export default function FamilyMediaGallery({items,onDelete,onSetCover,onMakePost
  });
  const [active,setActive]=useState<number|null>(null);
  const modal=useRef<HTMLDialogElement|null>(null);
+ const touchStart=useRef<{x:number;y:number}|null>(null);
  useEffect(()=>{
   const dialog=modal.current;
   if(!dialog)return;
@@ -40,6 +59,17 @@ export default function FamilyMediaGallery({items,onDelete,onSetCover,onMakePost
  const current=active!==null?validItems[active]:undefined;
  const advance=(step:number)=>{
   setActive(index=>index===null?null:(index+step+validItems.length)%validItems.length);
+ };
+ const swipeBegin=(e:TouchEvent<HTMLDivElement>)=>{
+  const t=e.changedTouches[0];if(t)touchStart.current={x:t.clientX,y:t.clientY};
+ };
+ const swipeFinish=(e:TouchEvent<HTMLDivElement>)=>{
+  const s=touchStart.current,t=e.changedTouches[0];touchStart.current=null;
+  if(!s||!t)return;
+  const dx=t.clientX-s.x,dy=t.clientY-s.y;
+  if(Math.abs(dx)<65||Math.abs(dx)<Math.abs(dy)*1.5)return;
+  if(s.x<25&&dx>100){setActive(null);return;}
+  advance(dx<0?1:-1);
  };
  const handleKeys=(event:KeyboardEvent<HTMLDialogElement>)=>{
   if(event.key==='ArrowRight'){event.preventDefault();advance(1);}
@@ -79,9 +109,9 @@ export default function FamilyMediaGallery({items,onDelete,onSetCover,onMakePost
       <button type="button" onClick={()=>setActive(null)} aria-label="Cerrar visor">✕</button>
      </div>
     </div>
-    <div className="hn-family-media-stage" key={current.id}>
+    <div className="hn-family-media-stage" key={current.id} onTouchStart={swipeBegin} onTouchEnd={swipeFinish}>
      {current.kind==='photo'?<img src={current.file} alt={current.alt} decoding="async"/>:
-      <video src={current.file} poster={current.thumbnail||undefined} controls playsInline preload="metadata" aria-label={current.alt}/>}
+      <FamilyVideo file={current.file} poster={current.thumbnail} alt={current.alt}/>}
     </div>
     <div className="hn-family-media-dialog-nav">
      <button type="button" onClick={()=>advance(-1)} aria-label="Archivo anterior">‹</button>

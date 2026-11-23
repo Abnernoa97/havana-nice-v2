@@ -9,3 +9,11 @@
  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]),
  textarea,select{font-size:16px!important}
 }
+
+/* Limit iOS text-callout to editable fields: preserve all typing and accessibility. */
+.visual-shell,.hn-story-overlay,.hn-family-media-dialog{
+ -webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+.visual-shell input,.visual-shell textarea,.visual-shell select,.visual-shell [contenteditable="true"],
+.hn-story-overlay input,.hn-story-overlay textarea,.hn-story-overlay [contenteditable="true"]{
+ -webkit-user-select:text;user-select:text;-webkit-touch-callout:default}
+.visual-shell img,.hn-story-overlay img,.hn-family-media-dialog img{-webkit-user-drag:none}
