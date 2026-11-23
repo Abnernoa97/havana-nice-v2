@@ -16,20 +16,37 @@ function Film({url}:{url:string}){
  const player=useVideoPlayer({uri:url},p=>{p.loop=false;p.timeUpdateEventInterval=.2;});
  const [playing,setPlaying]=useState(false),[at,setAt]=useState(0),[duration,setDuration]=useState(0);
  const [bar,setBar]=useState(0);
+ const [ready,setReady]=useState(false),[error,setError]=useState(false),[posterOk,setPosterOk]=useState(true);
  useEffect(()=>{
   const a=player.addListener('playingChange',e=>setPlaying(e.isPlaying));
   const b=player.addListener('timeUpdate',e=>setAt(e.currentTime));
-  const c=player.addListener('sourceLoad',()=>setDuration(player.duration));
-  return()=>{player.pause();a.remove();b.remove();c.remove();};
+  const c=player.addListener('sourceLoad',()=>{setDuration(player.duration);setReady(true);});
+  const d=player.addListener('statusChange',event=>{
+   if(event.status==='readyToPlay'){setReady(true);setDuration(player.duration);}
+   if(event.status==='error'){setError(true);setReady(false);}
+  });
+  return()=>{player.pause();a.remove();b.remove();c.remove();d.remove();};
  },[player]);
+ const poster=(()=>{
+  try{
+   const link=new URL(url);
+   if(!link.pathname.endsWith('/file')||!link.searchParams.has('token'))return null;
+   link.pathname=link.pathname.slice(0,-4)+'poster';return link.toString();
+  }catch{return null;}
+ })();
  return <View style={s.film}>
   <VideoView player={player} nativeControls={false} contentFit="contain" surfaceType="surfaceView"
    style={{width,height:Math.max(220,height-90)}}/>
-  <Pressable accessibilityRole="button" accessibilityLabel={playing?'Pausar':'Reproducir'}
+  {!ready&&!error&&poster&&posterOk&&<Image source={{uri:poster}} resizeMode="contain"
+   onError={()=>setPosterOk(false)}
+   style={{position:'absolute',width,height:Math.max(220,height-90)}}/>}
+  {!ready&&!error&&<ActivityIndicator color="#fff" style={s.loading}/>}
+  {error&&<Text style={s.videoError}>No se pudo reproducir este video.</Text>}
+  {!error&&<Pressable accessibilityRole="button" accessibilityLabel={playing?'Pausar':'Reproducir'}
    style={s.play} onPress={()=>{if(playing)player.pause();else player.play();}}>
    <Text style={s.playText}>{playing?'Ⅱ':'▶'}</Text>
-  </Pressable>
-  <View style={s.transport}>
+  </Pressable>}
+  {ready&&<View style={s.transport}>
    <Text style={s.time}>{time(at)}</Text>
    <Pressable accessibilityRole="adjustable" accessibilityLabel="Tiempo de video"
     style={s.bar} onLayout={e=>setBar(e.nativeEvent.layout.width)}
@@ -39,7 +56,7 @@ function Film({url}:{url:string}){
     </View>
    </Pressable>
    <Text style={s.time}>{time(duration)}</Text>
-  </View>
+  </View>}
  </View>;
 }
 // First render the verified local original. On a cold hit render the R2
@@ -124,6 +141,8 @@ const s=StyleSheet.create({
   justifyContent:'center',alignItems:'center',backgroundColor:'#17382dbb'},
  arrow:{fontSize:30,color:'#fff'},
  status:{color:'#fff',fontSize:14},
+ loading:{position:'absolute',top:'41%',alignSelf:'center'},
+ videoError:{position:'absolute',top:'47%',textAlign:'center',color:'#fff',fontSize:13},
  film:{flex:1,alignItems:'center',justifyContent:'center'},
  play:{position:'absolute',top:'44%',width:68,height:68,borderRadius:34,
   backgroundColor:'#193c30c9',alignItems:'center',justifyContent:'center',
