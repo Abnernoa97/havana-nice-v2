@@ -1,53 +1,55 @@
 # HAVANA NICE V2 — CONTINUIDAD EXACTA
 
-**Fecha de referencia: 20/11/2026.** La descripción vigente y la lista única de pendientes están en [PLAN-MAESTRO.md](./PLAN-MAESTRO.md). No guardar otro plan paralelo: cualquier modificación debe actualizar aquel tablero. El historial completo de implementación se consulta en Git, no en archivos obsoletos dentro de la app.
+**Estado operativo: 23 de noviembre de 2026.** Este documento es la guía técnica vigente de continuidad. El [PLAN-MAESTRO.md](./PLAN-MAESTRO.md) es el único tablero de pendientes. Las versiones anteriores y sus decisiones se consultan en el historial Git; no reutilizar cifras antiguas como si fueran actuales.
 
-## Identificación precisa
+## Infraestructura y versiones verificadas
 
-- Repositorio: `Abnernoa97/havana-nice-v2`, única rama `main`; en la auditoría, PRs abiertos **0**. PWA: `https://havana-nice-v2.pages.dev`; acceso habitual de músico `/`, vista visual `/visual.html`, Admin `/admin.html`, BOOK canónico `/book` (`book.html` en el código fuente).
-- Worker único `havana-nice-v2-dev` (en Cloudflare bajo cuenta y proyecto V2, no HAVANA CLOUD). **Worker vivo, carátulas de Chat:** `96100737-ce2d-4056-bb1e-bc00bd7067e6` al 100 % desde el 12/11; versión v66 (`87e6d28a-f1eb-43ed-974b-eb1884198533`) conservada para reversión. Siete bindings iguales y sin migraciones adicionales.
-- D1 única `6a4abd3a-c01b-4d4f-b0ed-49f7eaca0cc5`. Bucket R2 único privado `havana-nice-v2-media` → `MEDIA_BUCKET`. DO `CHAT_ROOMS` clase `ChatRoom` y `CALENDAR_ROOMS` clase `CalendarRoom`. Siete bindings conservados; credencial Admin solo secreto de Cloudflare, nunca fuente.
-- Android package ID `com.havananice.v2`; APK más reciente publicada **0.0.21**, `versionCode 21`, firmada y compatible con 0.0.20 según CI; corrige sesión nativa en BOOK y Recuerdos mediante puente directo tras `boot`. **Usuario confirmó BOOK en Android 0.0.21 y PWA, incluidos retroceso y mayor fluidez del giro. Recuerdos y QA integral pendientes.** Solo se crea una nueva versión mediante lote explícitamente autorizado.
-- GitHub Actions: exactamente dos workflows, `.github/workflows/v2-foundation-check.yml` y `v2-android-apk.yml`. CI verde de Android 0.0.21: [42571102335](https://github.com/Abnernoa97/havana-nice-v2/actions/runs/42571102335); CI general/BOOK: [42571102501](https://github.com/Abnernoa97/havana-nice-v2/actions/runs/42571102501). La exportación Android de la CI general **no** publica APK; la versión firmada se libera únicamente mediante el workflow de lote.
+- **Repositorio:** `Abnernoa97/havana-nice-v2`, única rama `main`, cero PR abiertos. PWA de músico `https://havana-nice-v2.pages.dev/`, panel Admin `/admin.html`, HOME `/visual.html`, BOOK canónico `/book`.
+- **PWA:** Cloudflare Pages despliega únicamente desde `main` con `npm ci && npm run build:pwa`. Tras el refactor de galería del 23/11, se verificaron **129 pruebas aprobadas, cero fallos**, TypeScript PWA/Android y controles estructurales. La certificación de gestos/velocidad en teléfonos sigue siendo física.
+- **Android:** `com.havananice.v2`, versión publicada **0.0.30**, `versionCode 30`, [firma y lote aprobados](https://github.com/Abnernoa97/havana-nice-v2/actions/runs/45090812813). Cambios posteriores de código nativo **no** forman parte de la APK hasta aprobar otro lote. Conservar PREVIOUS y actualizar siempre sobre la instalada, sin borrar datos.
+- **Backend:** Worker único `havana-nice-v2-dev`, despliegue activo `ec52c4fe-384a-4b37-bdd0-4bf7d847c7c8`, versión `ea9e96b2-b36c-4e45-988f-11f9d8d99ead` al 100 %. **10 bindings**: `DB`, `MEDIA_BUCKET`, `CHAT_ROOMS`, `CALENDAR_ROOMS`, `HAVANA_ENV`, `V2_ADMIN_LOGIN_MODE` y cuatro secretos para FCM, VAPID y Admin. No publicar el Worker solo porque cambió Pages.
+- **Datos:** D1 `havana-nice-v2-dev`, R2 privado `havana-nice-v2-media`, Durable Objects `ChatRoom` y `CalendarRoom`. Ninguna limpieza de código puede eliminar/modificar medios, sesiones, accesos, migraciones aplicadas ni el producto HAVANA CLOUD original.
 
-## Principios no negociables
+## Arquitectura por responsables
 
-1. Un `main`, sin ramas temporales, bridges a Google Drive/HAVANA CLOUD/Supabase, motores duplicados, archivos obsoletos ni datos de demostración falsos.
-2. No tocar app original ni cloud original. No destruir fotos, videos, mensajes, sesiones, identificadores, fechas ni autorizaciones. Migraciones D1 aditivas; no cambiar histórico ya aplicado.
-3. PWA iPhone y nativa Android son interfaces distintas para mismos contratos. HOME central, módulos Chat, Calendario, Repertorio, Familia, BOOK, Músicos y Multimedia independientes por responsabilidad. Una sola autorización por nombre aprobada por Admin; una sola instalación/músico; Admin con sesión separada.
-4. Los anexos de Chat y Familia se suben como originales, sin reducir calidad ni forzar transcodificación; máximo cinco archivos combinados en Chat. R2 rápido. Derivados WebP exclusivamente para BOOK y recuerdos de eventos, conservando original. Cuota global de aviso 9.0 GB y corte preventivo 9.5 GB.
-5. UI estética *después* de funcionamiento, sincronización y estructura. BOOK con el mismo motor StPageFlip y diseño aprobado por usuario; pergamino y sello de evento realizado en Calendario ya aprobados.
+```text
+apps/pwa/src/app/                        entradas ligeras PWA, visual, Admin, BOOK
+apps/pwa/src/features/{chat,...}/        funciones de usuario separadas por dominio
+apps/pwa/src/services/                   adaptadores navegador/API
+apps/pwa/src/styles/                     estilos generales que comparte más de un módulo
+apps/android/app/                         entrypoint y HOME nativo
+apps/android/features/{chat,...}/        UI y hooks nativos por dominio
+apps/android/services/,storage/          subida R2, sockets y caché nativa
+packages/shared/src/                     contratos, reconexión, ACK, outbox y galería
+cloudflare/src/index.ts                  único router/entrada Worker
+cloudflare/src/modules/                  Chat, Admin, Audio, Familia, Estados, Calendario, BOOK, avisos
+cloudflare/migrations/                   historial D1 inmutable; no depurar como código muerto
+tests/,cloudflare/tests/,scripts/         pruebas, verificadores y políticas de seguridad
+```
 
-## Mapa de fuente y estado
+- **Un solo propietario de sesión/Chat por plataforma.** `useNativeChatController.ts` y `usePwaChatController.ts` gestionan identidad, socket, historial, outbox; vistas y media no abren sockets adicionales.
+- **Mosaicos vs visor:** `groupChatMediaMessages` agrupa burbujas consecutivas; `selectChatGalleryMedia` selecciona todas las fotos y videos **cargados** del Chat, incluyendo archivos separados por textos, notas de voz y autores. Los visores individuales de Chat en Admin siguen siendo consumidores activos; no borrarlos por el nombre antiguo.
+- **Audio/BOOK:** el Audio aprobado es independiente del BOOK 3D. BOOK Android utiliza el mismo lector web autorizado y su puente de sesión; no sustituir ni animar con motores 3D nuevos.
+- **Push:** FCM Android 0.0.30 probado en dispositivos; PWA iOS requiere validar permisos Web Push en instalación real. Notificaciones de pantalla bloqueada nunca contienen mensajes privados ni credenciales.
+- **Archivos multimedia:** Chat iPhone puede preparar fotografías optimizadas antes de R2; no asumir conservación obligatoria del fichero original de cámara. Android, Familia y BOOK tienen políticas independientes y verificables.
 
-`apps/pwa/src/app/App.tsx`: dueño de sesión músico, controlador Chat web y navegación HOME. `VisualApp.tsx` y sus Calendar/Repertoire/Family son lazy. Admin en `features/admin/AdminChatAccess.tsx` es único dueño de sesión Administrador; sus pestañas son lazy. BOOK: `features/book/BookReader.tsx` + `book-image-optimizer.ts`. Calendario de recuerdos: `features/calendar/CalendarMemories.tsx` y `AdminCalendarMemories.tsx`, el editor sólo monta cuando se abre una fecha. El Service Worker cachéa solo shells/recursos públicos y evita privadas.
+## Cómo verificar cambios seguros
 
-`apps/android/App.tsx`: entrada Expo. `apps/android/app/NativeApp.tsx`: entrada de 10 líneas; `features/chat/useNativeChatController.ts` conserva el único dueño de sesión/Chat; `features/chat/NativeChatSurface.tsx` muestra UI; `features/chat/useNativeChatViewport.ts` controla historial; `hooks/useNativeMemberNavigation.ts` maneja botón Atrás/gestos; HOME usa `NativeMemberHome`. Módulos en `features/{calendar,repertoire,family,book,chat,musicians}`. El BOOK nativo abre la ruta canónica `/book` y recibe la sesión existente tras `boot`, mediante un único puente en memoria. Control del picker separado en `features/chat/useNativeMediaSelection.ts`; PWA tiene `features/chat/usePwaMediaSelection.ts`.
+```bash
+npm ci
+npm run check:structure
+npm run audit:guard
+npm run typecheck
+npm run build:pwa
+```
 
-`packages/shared/src/index.ts`: contrato compartido, importador de `chat-media-batch.ts` para envíos originales de ambos sistemas, Chat offline/outbox/ACK, reconexión, display, APIs de Calendar, R2, Repertorio y BOOK. El guard `scripts/check-structure.mjs` valida también este paquete y resuelve importaciones ESM/TS.
+La publicación Pages sucede automáticamente tras cambios en `main`. La APK firmada requiere aprobación explícita del lote `releases/android-batch.json`; el backend Worker requiere otra publicación controlada. Verificar SHAs concretos en Cloudflare, no inferir que GitHub y producción son idénticos porque ambos usan el nombre `main`.
 
-`cloudflare/src/index.ts`: ÚNICA entrada Worker (~265 líneas tras limpieza). `modules/chat/chat-room.ts`: UNA clase `ChatRoom`, preserva WebSockets de Chat/Admin/Familia, presencia, envío, edición y borrado. `modules/chat/chat-session.ts`: validación única de token y propiedad de instalación para Worker y DO; `shared/worker-types.ts` y `shared/worker-http.ts` contienen tipos y respuesta no-cache. Nunca reintroducir `ChatRoom` en index.ts. `modules/calendar/calendar-realtime.js`: una clase `CalendarRoom`. Otros módulos por dominio bajo `cloudflare/src/modules/`.
+## Pendientes que no deben esconderse
 
-## Última auditoría y realidad en D1
+- Depurar por partes los controladores grandes de Chat, con cobertura de socket/reconexión/outbox/scroll.
+- QA de gestos, rendimiento y carga de fotos/video en dispositivos Android/iPhone; el visor actual navega multimedia *cargada*, no consulta automáticamente toda la historia en D1.
+- Inspeccionar estilos por consumidor real y viewport antes de eliminar selectores repetidos entre media queries.
+- Corregir desviaciones de documentación y código mediante cambios atomizados; no generar ramas, reiniciar D1/R2, borrar versiones anteriores ni recompilar APK sin necesidad.
 
-- Calendario: cuatro fechas y cuatro recuerdos fotográficos, **tres** optimizados WebP. Se confirmó que el editor sólo carga al abrir una fecha; optimización: eliminar consulta repetida `adminMembers` al procesar cada invalidación, tomando la lista ya sincronizada por Admin.
-- BOOK general: siete originales (29,333,701 bytes), **cero** derivados WebP al control; abrir Administración de BOOK para crear sus copias ligeras. No afirmar un ahorro de archivos todavía inexistentes.
-- Familia: dieciséis archivos privados al control. El motor de subida rápida es modelo aprobado por el usuario y no debe alterarse.
-- Colas de borrado de BOOK, recuerdos y bajas de músicos: cero pendientes; reservas R2 en vuelo: cero. Si hay errores R2 futuros, revisar persistencia y recuperación segura sin cron innecesario.
-- Chat multimedia refactor: Android y PWA tienen selectores separados, subida original con los mismos transportes, y **una** política compartida de progreso/confirmación; las colas fallidas siguen disponibles para reintento.
-- Worker refactor: una clase Durable Object y un `index.ts` delgado. Worker de carátulas publicado desde el 12/11; siete bindings preservados. El control del 20/11 validó las fuentes y pruebas, sin subir otro Worker ni compilar nueva APK. Los smoke tests históricos de v66 siguen documentados en Git.
-- No confundir compilación + pruebas con experiencia física. En iPhone la navegación modular fue confirmada por usuario; el lector BOOK 3D Android/PWA también fue confirmado después de la corrección. Siguen pendientes modo avión, Recuerdos y QA integral de Chat/Familia/Calendario.
-
-**21/11 · Android paridad en main:** PWA ya tiene Estados 24h con voz, comentarios, ❤️/👏/😂 y 6s/foto. Android candidato 0.0.23 code23 implementado en módulos nativos (React Native y expo-audio AAC/M4A, expo-image-manipulator JPG 720px, álbum hasta 5, misma API D1/R2). No cambia Chat/BOOK ni introduce WebView. La nueva APK solo se entrega si workflow verifica build standalone, `versionCode` superior y certificado idéntico a 0.0.21; QA física aún pendiente.
-
-## Próximos pasos en orden
-
-1. **Worker de carátulas activo y alineado con PWA:** conservar siete bindings y v66 como reversión; sin cambios al backend durante el refactor nativo.
-2. **NativeApp modularizado en main (20/11):** Cloudflare Build `b0cb0fab` verificó `check:structure`, `audit:guard`, los tres typechecks, build PWA y **300/300 pruebas**. No hay APK nueva y falta QA físico de reconexión/offline. Se completó la separación de `apps/pwa/src/app/App.tsx`: entrada de 9 líneas. `features/chat/usePwaChatController.ts` posee sesión, socket, reconexión, historial y offline; `PwaChatSurface.tsx` presenta el Chat, `app/usePwaMemberNavigation.ts` gestiona historial/navegación, y `usePwaChatMediaUpload.ts` conserva el envío R2 original con misma cola/identificadores. El acceso visual sigue en `PwaMemberAccessPanel.tsx`. La publicación Pages ejecuta estructura, auditoría, typecheck y pruebas de acceso/lazy chunks; QA real de iPhone offline sigue pendiente.
-3. Comprobar cache offline PWA de módulos abiertos/no abiertos en iPhone real; conservar semántica y no cachear APIs ni archivos privados.
-4. **Conservar APK 0.0.21:** BOOK y el gesto 3D están confirmados por el usuario; verificar Recuerdos y sincronización Chat/Familia/Calendario en pruebas independientes. La próxima APK requiere un lote explícito, manteniendo la firma.
-5. Completar Músicos y Multimedia, después detalles One UI y diseño; medir tiempos reales antes de prometer velocidad.
-
-## Regla de trabajo del siguiente chat
-
-No repetir preguntas ya contestadas. Inspeccionar `main`, el Plan Maestro y la última CI. Trabajar directamente por módulos **sin crear ramas ni motores**, confirmar no romper D1/R2 ni las apps de producción y marcar cada bloque sólo cuando haya evidencia. Si el proceso está en CI o pendiente de dispositivo, decirlo explícitamente. Mantener el historial de Git como registro técnico, sin acumular cronologías contradiciendo este estado.
+**Una sola `main`, una sola fuente de verdad, una sola sesión, cero datos destruidos.**

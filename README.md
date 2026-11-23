@@ -2,7 +2,7 @@
 
 **Aplicación autónoma del equipo HAVANA NICE.** Un repositorio, una rama `main`, una PWA instalable para iPhone, una app nativa React Native para Android y un único backend Cloudflare (Workers + D1 + Durable Objects + R2). **No es HAVANA CLOUD original**. Ni su código, datos ni despliegues deben tocarse.
 
-**Estado de referencia: 09/11/2026.** Worker V2 **v66** (`87e6d28a-f1eb-43ed-974b-eb1884198533`) publicado al 100 % mediante despliegue controlado, con el refactor de ChatRoom integrado; v65 permanece como versión anterior disponible para reversión. APK Android firmada y publicada **0.0.21** (`versionCode 21`): BOOK/Recuerdos conservan la ruta canónica `/book` y ahora reciben la misma sesión nativa por un puente directo `boot → injectJavaScript → sesión validada`, sin depender de `injectedObjectJson()`. [CI general/BOOK: SUCCESS](https://github.com/Abnernoa97/havana-nice-v2/actions/runs/42571102501) y [CI APK/firma/release: SUCCESS](https://github.com/Abnernoa97/havana-nice-v2/actions/runs/42571102335). Se preserva 0.0.20 como PREVIOUS. **BOOK 3D confirmado en uso por el usuario en Android y PWA el 09/11; siguen pendientes las pruebas físicas completas de Recuerdos y de sincronización entre módulos.**
+**Estado operativo: 23/11/2026.** Rama única `main`. APK Android **0.0.30** (`versionCode 30`) firmada mediante [ejecución aprobada](https://github.com/Abnernoa97/havana-nice-v2/actions/runs/45090812813); la limpieza posterior de Chat está en `main` pero **todavía no se incluye en esa APK**. PWA de músicos e interfaz Admin conectadas a Cloudflare Pages con despliegue por `main`. Worker activo `havana-nice-v2-dev`: versión `ea9e96b2-b36c-4e45-988f-11f9d8d99ead` al 100 %, **10 bindings** (incluidos secretos FCM/VAPID/Admin). BOOK 3D, historial de Chat y R2 se preservan. El estado vigente y las pruebas pendientes se encuentran en [PLAN-MAESTRO.md](docs/PLAN-MAESTRO.md).
 
 ## Aplicaciones
 
@@ -35,15 +35,15 @@ cloudflare/migrations/   evolución D1 aditiva
 tests/, cloudflare/tests/, scripts/  comprobaciones y prevención de residuos
 ```
 
-**Chat Android/PWA:** el módulo de selección de archivos es independiente (`useNativeMediaSelection.ts` / `usePwaMediaSelection.ts`). La cola de subida secuencial y el progreso son una sola función `packages/shared/src/chat-media-batch.ts` que mantiene el original y reintenta solo lo que no se confirmó. Los transportes de R2 de Android y navegador siguen adaptados a cada plataforma; ChatRoom continúa siendo el único backend de mensajes.
+**Chat Android/PWA:** el visor continuo de fotos y videos de todo el historial **ya cargado** utiliza una sola política en `packages/shared/src/chat-gallery-selection.ts`; la paginación histórica permanece en los controladores. El módulo de selección de archivos es independiente (`useNativeMediaSelection.ts` / `usePwaMediaSelection.ts`). La cola de subida secuencial y el progreso son una sola función `packages/shared/src/chat-media-batch.ts` que mantiene el original y reintenta solo lo que no se confirmó. Los transportes de R2 de Android y navegador siguen adaptados a cada plataforma; ChatRoom continúa siendo el único backend de mensajes.
 
-**Worker reorganizado:** `cloudflare/src/modules/chat/chat-room.ts` define la única clase `ChatRoom`; `chat-session.ts` contiene la verificación de sesión y los grants no se sustituyen. `cloudflare/src/shared/worker-types.ts` conserva los siete bindings y `worker-http.ts` una respuesta HTTP común no cacheable. `cloudflare/src/index.ts` exporta la clase para que Wrangler mantenga el nombre del Durable Object; el Worker v66 ya está desplegado; cualquier cambio posterior requiere publicación controlada tras verificar el bundle canónico.
+**Worker reorganizado:** `cloudflare/src/modules/chat/chat-room.ts` define la única clase `ChatRoom`; `chat-session.ts` contiene la verificación de sesión y los grants no se sustituyen. `cloudflare/src/shared/worker-types.ts` tipa los bindings vigentes y `worker-http.ts` establece respuestas HTTP comunes no cacheables. `cloudflare/src/index.ts` exporta la clase para que Wrangler conserve el nombre del Durable Object. El Worker activo tiene 10 bindings y exige una publicación independiente y verificada para futuros cambios de servidor.
 
 ## Privacidad, almacenamiento y rendimiento
 
 R2 privado de V2 **activado el 01/11/2026**. Un solo `MEDIA_BUCKET`, D1 y dos Durable Objects (`CHAT_ROOMS`, `CALENDAR_ROOMS`). Nada de puentes a Google Drive, Supabase, OneCloud ni al HAVANA CLOUD original.
 
-- Chat/Familia reciben fotografías/videos originales sin compresión automática, con hasta cinco medios por envío de Chat y multiparte eficiente. Familia privada por integrante y avisos en tiempo real; no sustituir el transporte que ya demostró rapidez.
+- Chat PWA puede optimizar fotografías antes de subirlas; videos conservan el archivo admitido por el servidor. Android y Familia usan sus propios flujos verificados. El Chat limita la selección a cinco medios por envío y confirma cada archivo con R2; no alterar transporte ni pérdida/recuperación sin prueba de regresión. Familia privada por integrante y avisos en tiempo real.
 - BOOK usa el mismo motor StPageFlip de giro de páginas que los recuerdos del Calendario. Originales R2 intactos, opcionales derivados WebP de alta calidad para el lector. Admin puede ordenar, publicar, borrar, previsualizar y optimizar.
 - Calendario marca eventos confirmados realizados con cuño y pergamino de recuerdos, calculado por zona horaria del evento; fotos privadas solo para músicos asignados. En Admin los editores de fotos solo se montan al expandir la fecha.
 - Almacenamiento: aviso preventivo de cuota en 9.0 GB; rechazo de nuevas subidas en 9.5 GB, contabilizando originales, derivados y borrados R2 pendientes. **No equivale a garantía de ausencia de cargos de Cloudflare**.
@@ -69,5 +69,6 @@ La CI `.github/workflows/v2-foundation-check.yml` añade pruebas por dominio, ai
 
 - [PLAN-MAESTRO.md](docs/PLAN-MAESTRO.md) — tablero de avance único, prioridades y decisiones.
 - [CONTINUIDAD-EXACTA.md](docs/CONTINUIDAD-EXACTA.md) — estado operativo resumido, ubicación exacta de módulos y verificación.
+- [AUDITORIA-DEPURACION-2026-11-23.md](docs/AUDITORIA-DEPURACION-2026-11-23.md) — inventario y límites de la limpieza del 23 de noviembre.
 
 **Regla esencial:** actuar directamente en una `main`, sin parches ni duplicados, preservar lo que funciona y no declarar terminado algo sin pruebas. El historial de Git conserva el registro de trabajos anteriores: no acumular notas antiguas y contradictorias en archivos nuevos.

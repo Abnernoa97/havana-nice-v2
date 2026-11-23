@@ -1,0 +1,32 @@
+# HAVANA NICE V2 — Auditoría y depuración controlada · 23/11/2026
+
+**Repositorios y alcance:** `Abnernoa97/havana-nice-v2`, única `main`. Inventario de Git, estructura de directorios, CSS, entradas, Chat, Worker en vivo, Pages, release Android y contratos de tests. La revisión no afirma análisis semántico línea por línea de 411 archivos ni QA física.
+
+## Inventario comprobado
+- 411 archivos / 75 directorios de Git antes de la limpieza, 20 CSS, 37 migraciones SQL históricas. No se encontraron archivos exactamente duplicados por SHA; eso no excluye código parcialmente duplicado.
+- Una rama `main` y cero PR abiertos. Los cuatro documentos PWA son entradas independientes; las funciones mantienen carpetas `features` y `services`.
+- Última APK firmada: 0.0.30, workflow [45090812813](https://github.com/Abnernoa97/havana-nice-v2/actions/runs/45090812813). Worker en producción: versión `ea9e96b2-b36c-4e45-988f-11f9d8d99ead` al 100 %, **10** bindings, secretos no expuestos.
+- Cloudflare Pages tras el primer refactor `1297588`: deploy **correcto**, control estructural PASS, auditoría preventiva PASS, TypeScript PWA/Android PASS, **129 pruebas aprobadas y 0 fallos**.
+
+## Depuración realizada
+1. Se consolidó la selección de medios visibles del Chat en `packages/shared/src/chat-gallery-selection.ts`. Android y PWA dejan de duplicar esa lógica, conservan el mosaico y recorren fotos/video de todo el historial ya cargado.
+2. Se eliminaron reglas CSS para flechas inexistentes y estilos nativos de botones anterior/siguiente que el visor no renderiza.
+3. Se consolidaron declaraciones CSS del grabador de voz y se conservó el aspecto final definido por la cascada.
+4. Se incorporaron tres pruebas de selección: intercalación de texto/voz, cambio de autor, mensajes eliminados, selección consistente y paridad de ambos clientes.
+5. Se retiraron dos constantes de agrupación ilimitada declaradas como compatibilidad antigua, no utilizadas en la lógica; siguen los mosaicos consecutivos.
+6. Se actualizan README, continuidad y plan vigente, manteniendo los hechos históricos explícitamente como registro antiguo.
+
+## Residuo real vs dependencia legítima
+- `ChatPhotoViewer.tsx` y `ChatVideoPlayer.tsx` no están muertos: `ChatMediaView.tsx` los utiliza como visores individuales y **AdminChatGeneral** llama a ese componente sin el manejador `onOpen`. No eliminarlos hasta migrar Administración y validar.
+- `cloudflare/migrations` contiene historia de D1 aplicada. Las 37 migraciones no se tratan como basura, ni se compactan.
+- Algunos selectores CSS aparecen repetidos por breakpoints o variaciones de contexto. Eliminar por coincidencia de nombre, sin estudiar cascada y uso, dañaría la UI aprobada.
+- `useNativeChatController.ts` y `usePwaChatController.ts` siguen concentrando un volumen elevado de estado y callbacks. Refactorizar únicamente con pruebas específicas de socket, reconexión, outbox, scroll, notificaciones y sesión.
+
+## Pendientes antes de declarar 100 %
+- Recorrido a páginas históricas todavía no cargadas por el servidor; no está incluido en la selección actual.
+- Pruebas físicas Android/iPhone de carga de miniaturas/video y gesto del visor; confirmar build nueva APK si se autoriza.
+- Revisión profunda de código muerto de módulos fuera de Chat y CSS en viewports reales; revisión de alertas npm cuando el control de dependencias vuelva a ejecutarse.
+- Comprobación diferencial Worker fuente vs versión en vivo cuando se programe una publicación backend; no se ha recompilado ni desplegado el Worker.
+- Política de protección de `main` y un linter de referencias/estilo acordes con los costos de CI.
+
+**Regla:** no borrar datos R2/D1, migraciones, Durable Objects, credenciales, historial, APK instalada ni BOOK 3D. No crear ramas ni una APK por refactor de estructura.

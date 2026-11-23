@@ -46,4 +46,5 @@ test('Android and PWA share the one gallery policy, not two independent implemen
  assert.match(index,/export \{selectChatGalleryMedia\} from '\.\/chat-gallery-selection';/);
  assert.doesNotMatch(css,/\.hn-gallery-prev|\.hn-gallery-next/);
  assert.doesNotMatch(nativeViewer,/\n (left|right|arrow):\{/);
+ assert.doesNotMatch(index,/CHAT_MEDIA_CLUSTER_GAP_MS|CHAT_MEDIA_CLUSTER_LIMIT/);
 });

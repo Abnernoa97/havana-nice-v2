@@ -1,6 +1,25 @@
 # HAVANA NICE V2 — PLAN MAESTRO ÚNICO
 
-**Estado verificado: 22 de noviembre de 2026.** Fuente de verdad: [GitHub](https://github.com/Abnernoa97/havana-nice-v2), rama única `main`. Mantener estado ACTUAL, sin mezclar hitos históricos. Historia detallada en Git; auditoría de código: [22/11](AUDITORIA-DEPURACION-2026-11-22.md).
+**Estado vigente: 23 de noviembre de 2026.** Fuente de verdad: GitHub `main`, despliegues por SHA y [auditoría actual](AUDITORIA-DEPURACION-2026-11-23.md). Las entradas posteriores al encabezado «Registro histórico» documentan hitos antiguos; no reinterpretarlas como pendientes activos.
+
+## Estado actual y prioridades · 23/11
+
+- [x] **Una sola rama `main`**, cero PR abiertos; Android/PWA, backend, librerías compartidas y tests en carpetas por responsabilidades.
+- [x] **Android 0.0.30** firmado y publicado en [run 45090812813](https://github.com/Abnernoa97/havana-nice-v2/actions/runs/45090812813); los cambios de código nativo del 23/11 requieren un lote posterior para aparecer en la APK. No desinstalar.
+- [x] **Worker `havana-nice-v2-dev`** en vivo: versión `ea9e96b2-b36c-4e45-988f-11f9d8d99ead` al 100 %, 10 bindings conservados. No tocar sin validación independiente.
+- [x] **Push Android:** recepción real comprobada en 0.0.30 según [PUSH-CENTER-V2.md](PUSH-CENTER-V2.md); Web Push iPhone pendiente de prueba física.
+- [x] **Chat galería:** selección compartida para todos los medios ya cargados, sin detenerse por intercalación de texto/audio/músicos, y estilos de flechas obsoletas retirados. Despliegue de Pages validado para el primer bloque, **129/129 pruebas**.
+- [ ] **PWA Chat y Android:** medir navegación y decodificación de fotos/videos en dispositivos; confirmar actualización de versión nativa.
+- [ ] **Historial antiguo:** paginar automáticamente cuando la galería llegue a un extremo y aún existan mensajes en el servidor; no confundir con el recorrido de lo ya cargado.
+- [ ] **Chat controladores:** aislar lógica grande sin crear otro dueño de sesión, socket ni cola offline; añadir pruebas por cada extracción.
+- [ ] **CSS:** analizar selector por selector y validar visualmente HOME, Estados, Audio, Admin y BOOK antes de nuevas eliminaciones. Declaraciones repetidas en distintos breakpoints no son automáticamente basura.
+- [ ] **Control de calidad:** ampliar controles de código muerto y revisar protección de `main` compatible con el flujo de trabajo directo. Sin tocar datos D1/R2 ni migraciones.
+
+## Registro histórico (22/11 y anterior; NO representa el estado actual)
+
+> Las notas de versiones anteriores, como APK 0.0.21–0.0.27, Worker v66/v93 y pruebas de 22/11, se conservan para trazabilidad. La sección «Estado actual» tiene precedencia.
+
+
 
 ## QA · Estados, Chat, notificaciones · 22/11
 

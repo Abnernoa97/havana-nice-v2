@@ -2,9 +2,6 @@
 // Upload time, gallery selection batches and the former five-file limit do not split it.
 // A voice note, text, reply, deletion or sender change is a real boundary.
 import type {ChatMessage} from './index';
-/** Legacy exports maintained for old imports; not enforced by the grouper. */
-export const CHAT_MEDIA_CLUSTER_LIMIT=Number.POSITIVE_INFINITY;
-export const CHAT_MEDIA_CLUSTER_GAP_MS=Number.POSITIVE_INFINITY;
 export function groupChatMediaMessages(messages:readonly ChatMessage[]):ChatMessage[][]{
  const groups:ChatMessage[][]=[];
  const visual=(media:ChatMessage['media'])=>media?.kind==='photo'||media?.kind==='video';

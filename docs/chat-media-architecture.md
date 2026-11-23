@@ -34,8 +34,9 @@ ni modificar datos existentes durante una limpieza estructural.
    habrá que volver a seleccionar los videos pendientes.
 6. **Lectura:** `useChatMediaPreview.ts` consulta primero la miniatura de
    caché y solo ante fallo pide permiso a R2 y genera una miniatura.
-   `ChatPhotoViewer.tsx` muestra al abrir la miniatura disponible e
-   intercambia a la foto confirmada en R2 en cuanto termine de bajarla.
+   `ChatMediaGallery.tsx` muestra al abrir la miniatura disponible e
+   intercambia a la foto confirmada en R2 en cuanto termine de bajarla. 
+   `ChatPhotoViewer.tsx` sigue en uso para el acceso individual de Administración.
    Esa foto puede ser WebP optimizado, no necesariamente el original de cámara.
 
 No prometer que toda imagen será WebP: iOS puede conservar el original
@@ -57,7 +58,9 @@ no en Cloudflare.
 | `chat-photo-thumbnail-cache.ts` | LRU de miniaturas en memoria e IndexedDB |
 | `useChatMediaPreview.ts` | Precargar fotos una vez por mensaje montado; liberar al desmontar; video solo visible |
 | `ChatMediaView.tsx` | Burbuja; no realiza subidas |
-| `ChatPhotoViewer.tsx` | Visor progresivo; libera la URL temporal |
+| `ChatMediaGallery.tsx` | Visor principal: fotos y videos cargados de toda la conversación; grants temporales |
+| `ChatPhotoViewer.tsx` | Visor progresivo individual para Administración; libera la URL temporal |
+| `packages/shared/src/chat-gallery-selection.ts` | Política única Android/PWA de selección global de medios ya cargados |
 
 Las miniaturas usan un máximo de 1440 px en el lado largo, JPEG 0.92 para
 fotografías y PNG cuando corresponde. Hasta dos decodificaciones simultáneas.
@@ -92,6 +95,8 @@ la PWA**, pero comparte el contrato de servidor y mensajes.
 `NativeChatPhoto.tsx` y `chatPhotoCache.ts` muestran fotos ya
 verificadas sin esperar otra descarga ni el cálculo inicial de relación.
 `NativeChatVideo.tsx` usa el reproductor Expo.
+
+La navegación del visor principal no depende de grupos de mosaico: atraviesa textos, audios y cambios de autor. Solo incluye mensajes cargados en el cliente; la paginación histórica del servidor continúa separada.
 
 Cambiar la PWA en Cloudflare **no instala una APK nueva**.
 
