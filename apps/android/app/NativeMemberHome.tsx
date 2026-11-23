@@ -74,7 +74,7 @@ function NativeMemberHome({displayName,actorId,token,active,calendarRevision=0,o
    <Text style={[styles.title,active==='repertoire'&&styles.repertoireTitle,active==='family'&&styles.familyTitle]}>
     {active==='family'?'Familia HAVANA NICE':active==='calendar'?'Calendario':selected?.label||'Módulo'}
    </Text>
-   {active!=='calendar'&&active!=='repertoire'&&active!=='family'&&<Text style={styles.lead}>{selected?.description}</Text>
+   {active!=='calendar'&&active!=='repertoire'&&active!=='family'&&<Text style={styles.lead}>{selected?.description}</Text>}
    {active==='repertoire'&&<Pressable accessibilityRole="button" accessibilityLabel="Abrir Audio HAVANA NICE"
      onPress={()=>onNavigate('audio')} style={styles.openAudio}>
      <Text style={styles.openAudioLabel}>♫  Abrir Audio HAVANA NICE</Text>
