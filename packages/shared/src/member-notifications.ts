@@ -2,7 +2,7 @@ import {HAVANA_V2_DEV_API_BASE_URL as API} from './api-base';
 
 export type MemberNoticeKind=
  'story.created'|'story.reaction'|'story.comment'|'story.voice'|
- 'chat.reaction'|'chat.message'|'calendar.event'|'family.media'|'repertoire.updated'|'profile.photo';
+ 'chat.reaction'|'chat.message'|'calendar.event'|'family.media'|'repertoire.updated'|'profile.photo'|'book.updated';
 export interface MemberNotice {
  id:string;actorId:string;name:string;kind:MemberNoticeKind;
  targetId:string;emoji:string;preview:string;createdAt:number;readAt:number|null;
@@ -42,6 +42,7 @@ export function memberNoticeMessage(item:Pick<MemberNotice,'name'|'kind'|'emoji'
   case 'family.media':return 'Se agregó contenido al álbum de '+item.name;
   case 'profile.photo':return item.name+' actualizó su foto de perfil';
   case 'repertoire.updated':return 'Se actualizó tu repertorio';
+  case 'book.updated':return 'Administración actualizó el BOOK 3D';
   default:return 'Nueva actividad del equipo';
  }
 }
