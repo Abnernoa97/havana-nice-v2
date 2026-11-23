@@ -1,5 +1,5 @@
 .visual-shell{--hn-forest:#133B30;--hn-deep:#0D2A23;--hn-gold:#B69358;--hn-gold-light:#DBC59A;--hn-ink:#1B332B;--hn-muted:#657269;--hn-cream:#F7F4ED;--hn-paper:#FFFCF7;--hn-edge:#E4DDD1;min-height:100dvh;max-width:1200px;margin:0 auto;padding-bottom:env(safe-area-inset-bottom);background:var(--hn-cream);color:var(--hn-ink)}
-.visual-header{position:relative;isolation:isolate;overflow:hidden;display:flex;justify-content:space-between;align-items:center;gap:12px;padding:23px clamp(20px,5vw,50px);background:radial-gradient(ellipse at 75% 125%,#266b4c 0%,transparent 57%),linear-gradient(110deg,#082c21,#124433 55%,#082c21);color:#F7F2E9;border-bottom:1px solid #3B584B}
+.visual-header{position:relative;isolation:isolate;overflow:hidden;display:flex;justify-content:space-between;align-items:center;gap:12px;padding:23px clamp(20px,5vw,50px);background:var(--hn-deep);color:#F7F2E9;border-bottom:1px solid #3B584B}
 .visual-brand{font:700 16px/1.1 Georgia,serif;letter-spacing:.19em;color:var(--hn-gold-light)}.visual-subtitle{font-size:9px;letter-spacing:.17em;color:#D3DED5;margin-top:7px}
 .visual-preview{font-size:10px;border:1px solid #BCA37A66;border-radius:99px;color:#F1EDE1;background:#FFFFFF0B;padding:8px 11px;white-space:nowrap}
 .visual-layout{display:grid;grid-template-columns:230px minmax(0,1fr);min-height:calc(100dvh - 88px)}
@@ -172,6 +172,7 @@
 .visual-bottom-nav button:has(.hn-notices-count){position:relative}
 .visual-bottom-nav .hn-notices-count{position:absolute;top:1px;right:10%;margin:0;min-width:16px;height:16px;font-size:9px}
 
+.visual-shell .visual-header{background:radial-gradient(ellipse at 75% 125%,#266b4c 0%,transparent 57%),linear-gradient(110deg,#082c21,#124433 55%,#082c21)}
 /* Persistent shared HAVANA NICE header: visible emerald motion from first frame.
    Decorative layers never intercept the account/profile button. */
 .visual-header>div,.visual-header>.visual-account{position:relative;z-index:1}
