@@ -287,3 +287,9 @@ h1 span { font-weight:400; }
 .hn-chat-gallery-tile .retry-message{position:absolute;bottom:28px;left:4px;
  background:#fff8;color:#10231b;border-radius:8px}
 @media(max-width:380px){.hn-chat-media-cluster{width:min(94%,390px)}}
+
+/* One discreet tick indicator for the whole grouped media burst. */
+.hn-chat-ticks{font-size:14px;font-weight:750;letter-spacing:-2px;opacity:.86}
+.hn-chat-group-ticks{align-self:flex-end;margin-right:8px;color:#bbdcca;
+ font-size:14px;font-weight:750;letter-spacing:-2px;line-height:1.2}
+.hn-chat-media-cluster .hn-chat-gallery-tile .message-meta{display:none}

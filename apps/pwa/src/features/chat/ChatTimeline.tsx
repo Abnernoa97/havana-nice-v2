@@ -1,6 +1,6 @@
 import {memo,useEffect,useLayoutEffect,useMemo,useRef,useState,type RefObject,type UIEvent,type KeyboardEvent,type TouchEvent,type WheelEvent} from 'react';
 import {
- buildChatDisplayIndex,groupChatMediaMessages,messageDeliveryLabel,
+ buildChatDisplayIndex,groupChatMediaMessages,
  type ChatMessage,type ChatReaction,type ChatReadReceipt
 } from '@havana/shared';
 import SwipeMessage,{type MessageAnchor} from './SwipeMessage';
@@ -226,12 +226,10 @@ function ChatTimeline({
                   <div className="reaction-counts">
                    {badges.map(({emoji,count})=><span key={emoji}>{emoji}{count}</span>)}
                   </div>}
-                 <span className="message-meta">
-                  {new Date(message.sentAt).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}
-                  {message.editedAt&&!message.deletedAt?' · editado':''}
-                  {owned?' · '+messageDeliveryLabel(message):''}
-                  {owned&&!message.pending&&display.lastReadByOther>=message.seq?' · leído':''}
-                 </span>
+                 {!tiled&&owned&&<span className="message-meta hn-chat-ticks"
+                   aria-label={!message.pending&&message.seq>0&&display.lastReadByOther>=message.seq?'Leído':'Enviado'}>
+                   {!message.pending&&message.seq>0&&display.lastReadByOther>=message.seq?'✓✓':'✓'}
+                 </span>}
                  {owned&&message.pending&&message.deliveryStatus==='error'&&
                   <button type="button" className="retry-message"
                    onClick={()=>onRetry(message.clientMessageId)}>Reintentar envío</button>}
@@ -243,6 +241,9 @@ function ChatTimeline({
                aria-label={group.length+' archivos recibidos juntos'}>
                {!mine&&<span className="hn-chat-cluster-sender">{group[0]!.senderName}</span>}
                <div className="hn-chat-media-mosaic">{group.map(renderMessage)}</div>
+               {mine&&<span className="hn-chat-group-ticks" aria-label={group[group.length-1]!.seq>0&&display.lastReadByOther>=group[group.length-1]!.seq?'Leído':'Enviado'}>
+                {group[group.length-1]!.seq>0&&display.lastReadByOther>=group[group.length-1]!.seq?'✓✓':'✓'}
+               </span>
               </div>;
             })}
             {windowed.hasNewer&&<div className="chat-window-actions">

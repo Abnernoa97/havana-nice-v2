@@ -1,7 +1,7 @@
 import React,{memo,useMemo,type RefObject} from 'react';
 import {FlatList,View,Text,Pressable,type NativeScrollEvent,type NativeSyntheticEvent} from 'react-native';
 import {
- buildChatDisplayIndex,groupChatMediaMessages,messageDeliveryLabel,
+ buildChatDisplayIndex,groupChatMediaMessages,
  type ChatMessage,type ChatReaction,type ChatReadReceipt,type ChatSession,type ChatEmoji,
 } from '@havana/shared';
 import SwipeableBubble,{type BubbleAnchor} from './SwipeableBubble';
@@ -40,19 +40,12 @@ function NativeChatTimeline({
    [messages,reactions,receipts,session.actorId]);
  const liveRenderData=useMemo(()=>({display,onlineActorIds,connected}),
    [display,onlineActorIds,connected]);
- const visibleMessages=useMemo(
-  ()=>messages.filter(message=>!message.deletedAt).reverse(),[messages]);
  const galleries=useMemo(()=>groupChatMediaMessages(messages.filter(message=>!message.deletedAt)),[messages]);
+ const visibleMessages=useMemo(()=>galleries.map(group=>group[group.length-1]!).reverse(),[galleries]);
  const groupLeads=useMemo(()=>{
   const map=new Map<string,ChatMessage[]>();
   for(const group of galleries)if(group.length>1)map.set(group[group.length-1]!.clientMessageId,group);
   return map;
- },[galleries]);
- const groupFollowers=useMemo(()=>{
-  const hidden=new Set<string>();
-  for(const group of galleries)if(group.length>1)
-   for(const item of group.slice(0,-1))hidden.add(item.clientMessageId);
-  return hidden;
  },[galleries]);
  const renderBubble=(message:ChatMessage,compact=false)=>{
   const mine=message.senderId===session.actorId;
@@ -84,13 +77,10 @@ function NativeChatTimeline({
     style={styles.reactionTrigger} onPress={event=>onMessageLongPress(message,{
      x:event.nativeEvent.pageX-20,y:event.nativeEvent.pageY-20,width:40,height:40
     })}><Text style={styles.reactionTriggerText}>♡ +</Text></Pressable>}
-   <Text style={[styles.messageTime,mine&&styles.mineMeta,online&&styles.onlineMeta,
-    compact&&styles.galleryTime]}>
-    {new Date(message.sentAt).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}
-    {message.editedAt&&!message.deletedAt?' · editado':''}
-    {mine?' · '+messageDeliveryLabel(message):''}
-    {mine&&!message.pending&&display.lastReadByOther>=message.seq?' · leído':''}
-   </Text>
+   {mine&&!compact&&<Text accessibilityLabel={!message.pending&&message.seq>0&&display.lastReadByOther>=message.seq?'Leído':'Enviado'}
+     style={[styles.messageTime,styles.deliveryTicks,styles.mineMeta,online&&styles.onlineMeta]}>
+     {!message.pending&&message.seq>0&&display.lastReadByOther>=message.seq?'✓✓':'✓'}
+   </Text>}
   </SwipeableBubble>;
  };
 
@@ -126,7 +116,6 @@ function NativeChatTimeline({
     ?<Text style={styles.empty}>¡Hola! Envía el primer mensaje. Aparecerá en los dos dispositivos.</Text>
     :undefined}
    renderItem={({item:message})=>{
-    if(groupFollowers.has(message.clientMessageId))return null;
     const grouped=groupLeads.get(message.clientMessageId);
     if(!grouped)return renderBubble(message);
     const mine=message.senderId===session.actorId;
@@ -136,6 +125,10 @@ function NativeChatTimeline({
       {grouped.map(item=><View key={item.senderId+':'+item.clientMessageId}
        style={styles.galleryCell}>{renderBubble(item,true)}</View>)}
      </View>
+     {mine&&<Text style={styles.galleryDelivery}
+      accessibilityLabel={message.seq>0&&display.lastReadByOther>=message.seq?'Leído':'Enviado'}>
+      {message.seq>0&&display.lastReadByOther>=message.seq?'✓✓':'✓'}
+     </Text>}
     </View>;
    }}
   />

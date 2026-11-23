@@ -43,6 +43,8 @@ export const styles = StyleSheet.create({
   bubbleText: { color: '#1b1b18', fontSize: 15, lineHeight: 22 },
   mineText: { color: '#fff' },
   messageTime: { color: '#8a857b', fontSize: 10, textAlign: 'right', marginTop: 5 },
+  deliveryTicks:{fontWeight:'700',fontSize:14,letterSpacing:-2},
+  galleryDelivery:{fontSize:14,letterSpacing:-2,fontWeight:'700',color:'#b9e8c9',alignSelf:'flex-end',paddingHorizontal:8,paddingTop:1},
   galleryCluster:{width:'85%',maxWidth:390,marginBottom:11,padding:4,
    borderRadius:16,alignSelf:'flex-start',backgroundColor:'#fffaf4'},
   galleryMine:{alignSelf:'flex-end',backgroundColor:'#252621'},
