@@ -1,6 +1,6 @@
 import {memo,useEffect,useLayoutEffect,useMemo,useRef,useState,type RefObject,type UIEvent,type KeyboardEvent,type TouchEvent,type WheelEvent} from 'react';
 import {
- buildChatDisplayIndex,messageDeliveryLabel,
+ buildChatDisplayIndex,groupChatMediaMessages,messageDeliveryLabel,
  type ChatMessage,type ChatReaction,type ChatReadReceipt
 } from '@havana/shared';
 import SwipeMessage,{type MessageAnchor} from './SwipeMessage';
@@ -205,34 +205,45 @@ function ChatTimeline({
               {loadingOlder?'Cargando…':windowed.hasOlder?'Ver mensajes anteriores':'Cargar mensajes anteriores'}
             </button>}
             {messages.length === 0 && <p className="empty-chat">¡Hola! Escribe el primer mensaje.</p>}
-            {windowed.rows.map(message => {
-              const mine = message.senderId === actorId;
-              const badges=display.reactionBadges.get(message.seq)??[];
-              return <SwipeMessage className={`bubble ${mine?'mine':'theirs'}${connected&&onlineActorIds.has(message.senderId)?' online':''}`}
-                key={message.senderId+':'+message.clientMessageId}
-                messageKey={chatWindowKey(message)}
-                onSwipeRight={()=>onReply(message)}
-                onLongPress={anchor=>onMessageLongPress(message,anchor)}>
-                {!mine&&<span className="sender">{message.senderName}</span>}
-                {message.replyToSeq&&<div className="reply-original">
+            {groupChatMediaMessages(windowed.rows).map(group=>{
+              const tiled=group.length>1;
+              const mine=group[0]!.senderId===actorId;
+              const renderMessage=(message:ChatMessage)=>{
+               const badges=display.reactionBadges.get(message.seq)??[];
+               const owned=message.senderId===actorId;
+               return <SwipeMessage className={`bubble ${owned?'mine':'theirs'}${connected&&onlineActorIds.has(message.senderId)?' online':''}${tiled?' hn-chat-gallery-tile':''}`}
+                 key={message.senderId+':'+message.clientMessageId}
+                 messageKey={chatWindowKey(message)}
+                 onSwipeRight={()=>onReply(message)}
+                 onLongPress={anchor=>onMessageLongPress(message,anchor)}>
+                 {!owned&&!tiled&&<span className="sender">{message.senderName}</span>}
+                 {message.replyToSeq&&<div className="reply-original">
                   ↪ {display.replySnippets.get(message.replyToSeq)||'Mensaje anterior'}
-                </div>}
-                {!message.media&&<div>{message.text}</div>}
-                 {message.media&&<ChatMediaView media={message.media} token={token}/>}
-                {message.seq>0&&!message.deletedAt&&badges.length>0&&
+                 </div>}
+                 {!message.media&&<div>{message.text}</div>}
+                 {message.media&&<ChatMediaView media={message.media} token={token} compact={tiled}/>}
+                 {message.seq>0&&!message.deletedAt&&badges.length>0&&
                   <div className="reaction-counts">
-                    {badges.map(({emoji,count})=><span key={emoji}>{emoji}{count}</span>)}
+                   {badges.map(({emoji,count})=><span key={emoji}>{emoji}{count}</span>)}
                   </div>}
-                <span className="message-meta">
+                 <span className="message-meta">
                   {new Date(message.sentAt).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}
                   {message.editedAt&&!message.deletedAt?' · editado':''}
-                  {mine?' · '+messageDeliveryLabel(message):''}
-                  {mine&&!message.pending&&display.lastReadByOther>=message.seq?' · leído':''}
-                </span>
-                {mine&&message.pending&&message.deliveryStatus==='error'&&
+                  {owned?' · '+messageDeliveryLabel(message):''}
+                  {owned&&!message.pending&&display.lastReadByOther>=message.seq?' · leído':''}
+                 </span>
+                 {owned&&message.pending&&message.deliveryStatus==='error'&&
                   <button type="button" className="retry-message"
-                    onClick={()=>onRetry(message.clientMessageId)}>Reintentar envío</button>}
-              </SwipeMessage>;
+                   onClick={()=>onRetry(message.clientMessageId)}>Reintentar envío</button>}
+               </SwipeMessage>;
+              };
+              if(!tiled)return renderMessage(group[0]!);
+              return <div key={'album:'+group[0]!.clientMessageId}
+               className={'hn-chat-media-cluster '+(mine?'mine':'theirs')}
+               aria-label={group.length+' archivos recibidos juntos'}>
+               {!mine&&<span className="hn-chat-cluster-sender">{group[0]!.senderName}</span>}
+               <div className="hn-chat-media-mosaic">{group.map(renderMessage)}</div>
+              </div>;
             })}
             {windowed.hasNewer&&<div className="chat-window-actions">
               <button type="button" onClick={showNext}>Ver mensajes siguientes</button>

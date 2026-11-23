@@ -264,3 +264,26 @@ h1 span { font-weight:400; }
  position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:7px}
 .hn-chat-media.is-tile .hn-chat-video-cover{height:100%;aspect-ratio:1;border-radius:7px}
 .hn-chat-media.is-tile .hn-media-loading{height:100%;aspect-ratio:1}
+
+/* WhatsApp-like contiguous media mosaics. No Chat storage or message merger. */
+.hn-chat-media-cluster{width:min(86%,390px);max-width:100%;min-width:0;
+ border-radius:17px;padding:4px;background:#fffaf4;box-sizing:border-box;
+ display:flex;flex-direction:column;gap:3px}
+.hn-chat-media-cluster.mine{align-self:flex-end;margin-left:auto;background:#262722}
+.hn-chat-media-cluster.theirs{align-self:flex-start}
+.hn-chat-cluster-sender{font-size:11px;font-weight:750;color:#294133;
+ padding:5px 6px 0}
+.hn-chat-media-mosaic{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+ gap:3px;width:100%}
+.hn-chat-media-cluster .hn-chat-gallery-tile{position:relative;box-sizing:border-box;
+ width:100%;max-width:none;min-width:0;margin:0;aspect-ratio:1;
+ border-radius:8px;padding:2px;overflow:hidden;background:transparent}
+.hn-chat-media-cluster .hn-chat-gallery-tile .hn-chat-media{width:100%;height:100%}
+.hn-chat-gallery-tile .message-meta{position:absolute;bottom:3px;right:3px;
+ margin:0;max-width:95%;font-size:9px;line-height:1.1;padding:3px 5px;
+ border-radius:10px;background:#101710ac;color:white;opacity:1;white-space:nowrap}
+.hn-chat-gallery-tile .reaction-counts{position:absolute;top:3px;right:3px;z-index:2}
+.hn-chat-gallery-tile .reaction-counts span{background:#f4f1e6e6}
+.hn-chat-gallery-tile .retry-message{position:absolute;bottom:28px;left:4px;
+ background:#fff8;color:#10231b;border-radius:8px}
+@media(max-width:380px){.hn-chat-media-cluster{width:min(94%,390px)}}
