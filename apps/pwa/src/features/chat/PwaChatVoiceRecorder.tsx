@@ -70,7 +70,7 @@ export default function PwaChatVoiceRecorder({disabled,onSend}:{
   {recording?<div className="hn-chat-voice-actions">
     <span>{paused?'Ⅱ':'●'} {Math.floor(seconds/60)}:{String(seconds%60).padStart(2,'0')}</span>
     <button type="button" aria-label="Borrar nota de voz"
-     onClick={()=>{discard.current=true;recorder.current?.stop();}}>▤</button>
+     onClick={()=>{discard.current=true;recorder.current?.stop();}}>🗑</button>
     <button type="button" aria-label={paused?'Continuar grabación':'Pausar grabación'}
      onClick={togglePause}>{paused?'▶':'Ⅱ'}</button>
     <button type="button" aria-label="Enviar nota de voz"

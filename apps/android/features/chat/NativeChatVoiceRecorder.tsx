@@ -78,7 +78,7 @@ export default function NativeChatVoiceRecorder({disabled,onSend}:{
   {recording?<View style={s.actions}>
    <Text style={s.time}>{paused?'Ⅱ':'●'} {Math.floor(seconds/60)}:{String(seconds%60).padStart(2,'0')}</Text>
    <Pressable accessibilityRole="button" accessibilityLabel="Borrar nota de voz"
-     onPress={()=>void stop(true)} style={s.action}><Text style={[s.actionText,{color:'#9e3530'}]}>▤</Text></Pressable>
+     onPress={()=>void stop(true)} style={s.action}><Text style={[s.actionText,{color:'#9e3530'}]}>🗑</Text></Pressable>
    <Pressable accessibilityRole="button" accessibilityLabel={paused?'Continuar grabación':'Pausar grabación'}
      onPress={togglePause} style={s.action}><Text style={s.actionText}>{paused?'▶':'Ⅱ'}</Text></Pressable>
    <Pressable accessibilityRole="button" accessibilityLabel="Enviar nota de voz"
