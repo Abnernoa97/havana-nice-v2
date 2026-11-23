@@ -17,21 +17,51 @@ function installedPwa(){
  return window.matchMedia?.('(display-mode: standalone)').matches===true||
   (navigator as Navigator&{standalone?:boolean}).standalone===true;
 }
-const supported=()=>typeof window!=='undefined'&&'serviceWorker' in navigator&&
- 'PushManager' in window&&'Notification' in window&&
+// Check the actual ServiceWorkerRegistration.pushManager below. A missing
+// *global* window.PushManager is not sufficient to reject a Web Push device.
+const supported=()=>typeof window!=='undefined'&&window.isSecureContext&&
+ 'serviceWorker' in navigator&&typeof Notification!=='undefined'&&
+ typeof Notification.requestPermission==='function'&&
  (!isAppleMobile()||installedPwa());
 
+function pushPlatform(){
+ if(isAppleMobile())return 'iPhone/iPad';
+ if(typeof navigator!=='undefined'&&/Android/i.test(navigator.userAgent))return 'Android';
+ return 'Otro';
+}
+export function pwaPushDiagnostics():string{
+ if(typeof window==='undefined'||typeof navigator==='undefined')return 'Sin acceso al navegador';
+ const sw='serviceWorker' in navigator;
+ const proto=typeof ServiceWorkerRegistration!=='undefined'&&
+  'pushManager' in ServiceWorkerRegistration.prototype;
+ const notification=typeof Notification!=='undefined'&&
+  typeof Notification.requestPermission==='function';
+ const ios=navigator.userAgent.match(/(?:iPhone|iPad|iPod).*OS (\\d+)[_.](\\d+)/);
+ return [
+  'Sistema: '+pushPlatform()+(ios?' (iOS '+ios[1]+'.'+ios[2]+')':''),
+  'Instalada como app: '+(installedPwa()?'sí':'no'),
+  'Conexión segura: '+(window.isSecureContext?'sí':'no'),
+  'Service Worker: '+(sw?'sí':'no'),
+  'Permiso de notificaciones disponible: '+(notification?'sí':'no'),
+  'Push del Service Worker: '+(proto?'sí':'no'),
+ ].join(' · ');
+}
 export function pwaPushUnavailableMessage():string{
- if(typeof navigator==='undefined')return 'Las notificaciones externas no están disponibles en esta vista.';
- if(isAppleMobile()){
-  return installedPwa()?
-   'Esta versión del navegador no admite notificaciones Web Push.':
-   'En iPhone, abre HAVANA NICE desde su ícono en la pantalla de inicio para activar los avisos.';
- }
- if(/Android/i.test(navigator.userAgent)){
-  return 'Esta vista de Android no admite Web Push. Abre HAVANA NICE en Chrome para recibir avisos de la PWA. La APK nativa actual todavía no tiene FCM.';
- }
- return 'Este navegador no admite notificaciones externas. Prueba un navegador compatible.';
+ if(typeof window==='undefined'||typeof navigator==='undefined')
+  return 'Esta vista no permite comprobar las notificaciones.';
+ if(!window.isSecureContext)
+  return 'Las notificaciones requieren una conexión HTTPS segura.';
+ if(isAppleMobile()&&!installedPwa())
+  return 'En iPhone, abre HAVANA NICE desde el ícono instalado en la pantalla de inicio.';
+ if(!('serviceWorker' in navigator))
+  return 'Este navegador no ofrece Service Workers para recibir avisos con la app cerrada.';
+ if(typeof Notification==='undefined'||typeof Notification.requestPermission!=='function')
+  return isAppleMobile()?
+   'Este iPhone no ofrece el permiso Web Push a esta PWA. Requiere iOS 16.4 o posterior y abrirla como app instalada.':
+   'Este navegador no ofrece permiso para notificaciones Web Push.';
+ if(/Android/i.test(navigator.userAgent))
+  return 'Esta vista Android no ofrece la suscripción Web Push. Prueba en Chrome; la APK nativa antigua todavía no incorpora FCM.';
+ return 'El navegador no expone las funciones de Web Push necesarias.';
 }
 const keyBytes=(publicKey:string):ArrayBuffer=>{
  const raw=atob(publicKey.replace(/-/g,'+').replace(/_/g,'/')
@@ -66,6 +96,13 @@ export function usePwaPush(token:string){
     setPublicKey(opts.publicKey);
     if(Notification.permission==='denied'){setState('blocked');return;}
     const registration=await navigator.serviceWorker.ready;
+    // Some WebKit builds do not expose window.PushManager, even though the
+    // installed service worker owns a valid pushManager. Inspect the real API.
+    if(!registration.pushManager||
+     typeof registration.pushManager.getSubscription!=='function'){
+     if(active)setState('unavailable');
+     return;
+    }
     const subscription=await registration.pushManager.getSubscription();
     if(!active)return;
     if(subscription&&Notification.permission==='granted'){
