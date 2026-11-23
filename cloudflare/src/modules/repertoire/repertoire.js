@@ -1,7 +1,7 @@
 // HAVANA NICE V2 — Repertoire is a self-contained module sharing the EXISTING
 // admin/musician auth, Calendar event recipient visibility and D1 binding.
 import {verifyAdminSession} from '../admin/admin-auth.js';
-import {notifyRepertoireMembers} from '../notices/member-notifications.js';
+import {notifyRepertoireMembers,notifyGeneralRepertoireMembers} from '../notices/member-notifications.js';
 const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const PAGE=250;
 const SONG_COLS='id,title,artist,category,position,active,reference_url,version,updated_at';
@@ -57,6 +57,10 @@ export async function handleRepertoireApi(request,env,url,origin,respond,verifyM
   const task=notifyRepertoireMembers(env,eventId,action,crypto.randomUUID()).catch(()=>{});
   if(ctx?.waitUntil)ctx.waitUntil(task);else void task;
  };
+ const reportGeneral=(action,title)=>{
+  const task=notifyGeneralRepertoireMembers(env,action,title,crypto.randomUUID()).catch(()=>{});
+  if(ctx?.waitUntil)ctx.waitUntil(task);else void task;
+ };
  const path=url.pathname,admin=path.startsWith('/api/repertoire/admin/');
  let member=null;
  if(admin){
@@ -95,6 +99,7 @@ export async function handleRepertoireApi(request,env,url,origin,respond,verifyM
    const id=crypto.randomUUID(),now=new Date().toISOString();
    await env.DB.prepare('INSERT INTO repertoire_songs(id,title,artist,category,position,active,reference_url,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?)')
     .bind(id,value.title,value.artist,value.category,value.position,value.active?1:0,value.referenceUrl,now,now).run();
+   reportGeneral('added',value.title);
    return reply({song:{id,...value,version:1,updatedAt:now}},201);
   }
   const songPath=/^\/api\/repertoire\/admin\/songs\/([0-9a-f-]+)$/.exec(path);
@@ -106,13 +111,17 @@ export async function handleRepertoireApi(request,env,url,origin,respond,verifyM
     const result=await env.DB.prepare('UPDATE repertoire_songs SET title=?,artist=?,category=?,position=?,active=?,reference_url=?,version=version+1,updated_at=? WHERE id=? AND version=?')
      .bind(value.title,value.artist,value.category,value.position,value.active?1:0,value.referenceUrl,now,id,data.version).run();
     if(result.meta?.changes!==1)return reply({error:'La canción cambió; actualiza antes de editar.'},409);
+    reportGeneral('updated',value.title);
     return reply({song:{id,...value,version:data.version+1,updatedAt:now}});
    }
    if(request.method==='DELETE'){
     // Event copies keep their title/artist/link snapshots via ON DELETE SET NULL.
+    const old=await env.DB.prepare('SELECT title FROM repertoire_songs WHERE id=? AND version=?')
+     .bind(id,data.version).first();
     const result=await env.DB.prepare('DELETE FROM repertoire_songs WHERE id=? AND version=?')
      .bind(id,data.version).run();
     if(result.meta?.changes!==1)return reply({error:'La canción cambió; actualiza antes de borrar.'},409);
+    reportGeneral('removed',old?.title);
     return reply({ok:true});
    }
   }
