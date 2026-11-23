@@ -10,7 +10,7 @@ const stamp=(n:number)=>{
  if(!Number.isFinite(n)||n<0)return '0:00';
  const sec=Math.floor(n);return Math.floor(sec/60)+':'+String(sec%60).padStart(2,'0');
 };
-function Frame({media,token,warmUrl}:{media:ChatMedia;token:string;warmUrl?:string}){
+function Frame({media,token,warmUrl}:{media:ChatMedia;token:string;warmUrl?:string|undefined}){
  const [url,setUrl]=useState(''),[cover,setCover]=useState('');
  const [loaded,setLoaded]=useState(false),[error,setError]=useState('');
  const [playing,setPlaying]=useState(false),[at,setAt]=useState(0),[duration,setDuration]=useState(0);
@@ -83,7 +83,7 @@ export default function ChatMediaGallery({items,initial,token,onClose}:{
  items:ChatMedia[];initial:number;token:string;onClose:()=>void;
 }){
  const [index,setIndex]=useState(initial);
- const [revision,setRevision]=useState(0);
+ const [,setRevision]=useState(0);
  const grants=useRef(new Map<string,{url:string;at:number}>());
  const start=useRef<{x:number;y:number}|null>(null);
  const turn=(delta:number)=>setIndex(i=>Math.max(0,Math.min(items.length-1,i+delta)));

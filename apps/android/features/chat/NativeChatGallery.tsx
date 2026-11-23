@@ -89,12 +89,13 @@ export default function NativeChatGallery({items,initial,session,onClose}:{
   return()=>abort.abort();
  },[index,items,session.token]);
  const start=useRef<{x:number;y:number}|null>(null);
+ const {height:screenHeight}=useWindowDimensions();
  const move=(direction:number)=>setIndex(i=>Math.max(0,Math.min(items.length-1,i+direction)));
  const current=items[index];
  return <Modal visible animationType="fade" statusBarTranslucent
   onRequestClose={onClose}>
   <View style={s.root}
-   onTouchStart={e=>{start.current={x:e.nativeEvent.pageX,y:e.nativeEvent.pageY};}}
+   onTouchStart={e=>{start.current=e.nativeEvent.pageY>screenHeight-90?null:{x:e.nativeEvent.pageX,y:e.nativeEvent.pageY};}}
    onTouchEnd={e=>{
     const from=start.current;start.current=null;
     if(!from)return;

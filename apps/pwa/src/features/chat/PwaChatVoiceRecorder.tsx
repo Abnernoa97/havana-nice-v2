@@ -9,7 +9,7 @@ export default function PwaChatVoiceRecorder({disabled,onSend}:{
  const recorder=useRef<MediaRecorder|null>(null),stream=useRef<MediaStream|null>(null);
  const timer=useRef<ReturnType<typeof setInterval>|null>(null);
  const deadline=useRef<ReturnType<typeof setTimeout>|null>(null);
- const discard=useRef(false);
+ const discard=useRef(false),pausedRef=useRef(false);
  const clean=()=>{
   if(timer.current)clearInterval(timer.current);
   if(deadline.current)clearTimeout(deadline.current);
@@ -42,15 +42,15 @@ export default function PwaChatVoiceRecorder({disabled,onSend}:{
    writer.ondataavailable=e=>{if(e.data.size)chunks.push(e.data);};
    writer.onerror=()=>setError('Falló la grabación.');
    writer.onstop=()=>{
-    const cancelled=discard.current;clean();recorder.current=null;setRecording(false);setPaused(false);
+    const cancelled=discard.current;clean();recorder.current=null;setRecording(false);setPaused(false);pausedRef.current=false;
     if(cancelled)return;
     const mime=format.split(';')[0]!,blob=new Blob(chunks,{type:mime});
     if(blob.size<1||blob.size>3_000_000){setError('Audio vacío o mayor a 3 MB.');return;}
     const ext=mime==='audio/mp4'?'m4a':mime==='audio/ogg'?'ogg':'webm';
     void submit({file:new File([blob],'Voz.'+ext,{type:mime}),id:crypto.randomUUID()});
    };
-   writer.start(300);setRecording(true);setPaused(false);
-   timer.current=setInterval(()=>setSeconds(s=>s+1),1000);
+   writer.start(300);setRecording(true);setPaused(false);pausedRef.current=false;
+   timer.current=setInterval(()=>{if(!pausedRef.current)setSeconds(s=>s+1);},1000);
    deadline.current=setTimeout(()=>{if(writer.state==='recording')writer.stop();},45000);
   }catch(e){clean();setRecording(false);setError(e instanceof Error?e.message:'Sin permiso de micrófono.');}
  };
@@ -58,10 +58,10 @@ export default function PwaChatVoiceRecorder({disabled,onSend}:{
   const writer=recorder.current;if(!writer)return;
   try{
    if(writer.state==='recording'){
-    writer.pause();setPaused(true);
+    writer.pause();setPaused(true);pausedRef.current=true;
     if(deadline.current){clearTimeout(deadline.current);deadline.current=null;}
    }else if(writer.state==='paused'){
-    writer.resume();setPaused(false);
+    writer.resume();setPaused(false);pausedRef.current=false;
     deadline.current=setTimeout(()=>{if(writer.state==='recording')writer.stop();},Math.max(1000,(45-seconds)*1000));
    }
   }catch{setError('No se pudo pausar la grabación.');}
