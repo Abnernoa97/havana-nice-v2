@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {DatabaseSync} from 'node:sqlite';
 import {readFileSync} from 'node:fs';
-import {notifyStoryOwner,notifyTeamStoryPublished,notifyTeamChatMessage,notifyChatReaction,notifyCalendarMembers,notifyTeamProfilePhoto,notifyTeamFamilyMedia,notifyRepertoireMembers,handleMemberNotices} from '../src/modules/notices/member-notifications.js';
+import {notifyStoryOwner,notifyTeamStoryPublished,notifyTeamChatMessage,notifyChatReaction,notifyCalendarMembers,notifyTeamProfilePhoto,notifyTeamFamilyMedia,notifyRepertoireMembers,notifyGeneralRepertoireMembers,notifyBookPublished,handleMemberNotices} from '../src/modules/notices/member-notifications.js';
 
 const FER='member:fer',NOA='member:noa',STORY='123e4567-e89b-42d3-a456-426614174000';
 const ROOT='https://havana-nice-v2-dev.soloaplicaciones97.workers.dev';
@@ -16,6 +16,8 @@ function setup(){
  raw.exec(readFileSync(new URL('../migrations/0034_member_notifications.sql',import.meta.url),'utf8'));
  raw.exec(readFileSync(new URL('../migrations/0037_calendar_member_notifications.sql',import.meta.url),'utf8'));
  raw.exec(readFileSync(new URL('../migrations/0039_member_system_notifications.sql',import.meta.url),'utf8'));
+ raw.exec(readFileSync(new URL('../migrations/0040_book_member_notifications.sql',import.meta.url),'utf8'));
+ raw.exec('CREATE TABLE calendar_events(id TEXT PRIMARY KEY,title TEXT)');
 
  raw.prepare('INSERT INTO chat_members VALUES(?,?,1)').run(FER,'Fer');
  raw.prepare('INSERT INTO chat_members VALUES(?,?,1)').run(NOA,'Noa');
@@ -222,4 +224,41 @@ test('Repertoire admin edit sends actorless notification only to assigned musici
  assert.equal((await (await api('fer')).json()).unread,0);
  raw.prepare('UPDATE chat_members SET active=0 WHERE actor_id=?').run(FER);
  assert.equal(await notifyRepertoireMembers(env,STORY,'reordered','revision-2'),0);
+});
+
+
+test('A general repertoire edit creates one actorless notice for every active musician',async()=>{
+ const {env,api}=setup();
+ assert.equal(await notifyGeneralRepertoireMembers(env,'added','Careless Whisper','rev-a'),2);
+ assert.equal(await notifyGeneralRepertoireMembers(env,'added','Careless Whisper','rev-a'),0);
+ for(const who of ['fer','noa']){
+  const inbox=await (await api(who)).json();
+  assert.equal(inbox.unread,1);
+  assert.equal(inbox.items[0].kind,'repertoire.updated');
+  assert.equal(inbox.items[0].name,'HAVANA NICE');
+  assert.match(inbox.items[0].preview,/Careless Whisper/);
+  assert.match(inbox.items[0].preview,/repertorio general/);
+ }
+});
+test('General BOOK 3D new pages notify only once in an upload burst and are individually readable',async()=>{
+ const {env,api,raw}=setup();
+ const pageA='90a0c47d-d839-4ce7-ac48-752baa000001';
+ const pageB='90a0c47d-d839-4ce7-ac48-752baa000002';
+ assert.equal(await notifyBookPublished(env,pageA),2);
+ assert.equal(await notifyBookPublished(env,pageA),0);
+ assert.equal(await notifyBookPublished(env,pageB),0,'Multiple new pages in one burst do not flood phones');
+ const fer=await (await api('fer')).json();
+ const noa=await (await api('noa')).json();
+ for(const inbox of [fer,noa]){
+  assert.equal(inbox.unread,1);
+  assert.equal(inbox.items[0].kind,'book.updated');
+  assert.equal(inbox.items[0].name,'HAVANA NICE');
+  assert.match(inbox.items[0].preview,/BOOK 3D/);
+ }
+ assert.equal((await api('noa','/api/notices/read',{id:fer.items[0].id})).status,200);
+ assert.equal((await (await api('fer')).json()).unread,1);
+ assert.equal((await api('fer','/api/notices/read',{id:fer.items[0].id})).status,200);
+ assert.equal((await (await api('fer')).json()).unread,0);
+ raw.prepare('UPDATE chat_members SET active=0 WHERE actor_id=?').run(FER);
+ assert.equal(await notifyBookPublished(env,'another-page'),0,'No new notice in current burst');
 });
