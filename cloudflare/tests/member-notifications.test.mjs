@@ -39,7 +39,7 @@ function setup(){
    }catch(error){raw.exec('ROLLBACK');throw error;}
   }
  };
- const env={DB};
+ const env={DB,NOTIFICATION_DEBUG:true};
  const identity=(env,token)=>token==='fer'?{actorId:FER,displayName:'Fer'}:
   token==='noa'?{actorId:NOA,displayName:'Noa'}:null;
  const api=async(who,path='/api/notices',body=null)=>{
