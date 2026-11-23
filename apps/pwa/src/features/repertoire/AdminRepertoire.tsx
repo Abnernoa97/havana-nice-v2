@@ -1,6 +1,6 @@
 import {useCallback,useEffect,useRef,useState,type FormEvent} from 'react';
 import {getCalendarEvents,calendarDate,CalendarHttpError,HAVANA_V2_DEV_API_BASE_URL,getRepertoireSongs,
- getEventRepertoire,safeRepertoireLink,type RepertoireSong,type RepertoireSongInput,
+ getEventRepertoire,safeRepertoireLink,repertoireSection,type RepertoireSong,type RepertoireSongInput,
  type RepertoireEventItem,type CalendarEvent} from '@havana/shared';
 import {watchRepertoire} from '../../services/calendar-live';
 import {adminCreateSong,adminEditSong,adminDeleteSong,adminAddEventSongs,
@@ -158,8 +158,12 @@ export default function AdminRepertoire({token,onExpired}:{token:string;onExpire
         onChange={e=>setForm(v=>({...v,title:e.target.value}))}/>
        <input type="text" value={form.artist} placeholder="Artista"
         onChange={e=>setForm(v=>({...v,artist:e.target.value}))}/>
-       <input type="text" value={form.category} placeholder="ENGLISH o ESPAÑOL"
-        onChange={e=>setForm(v=>({...v,category:e.target.value}))}/>
+       <select aria-label="Categoría" value={form.category}
+        onChange={e=>setForm(v=>({...v,category:e.target.value}))}>
+        <option value="ENGLISH">ENGLISH</option>
+        <option value="ESPAÑOL">ESPAÑOL</option>
+        <option value="INSTRUMENTALES">INSTRUMENTALES</option>
+       </select>
        <input type="text" value={form.referenceUrl} placeholder="Link de referencia · https://"
         onChange={e=>setForm(v=>({...v,referenceUrl:e.target.value}))}/>
        <label><input type="checkbox" checked={form.active}
@@ -180,7 +184,7 @@ export default function AdminRepertoire({token,onExpired}:{token:string;onExpire
           target="_blank" rel="noopener noreferrer">REVISAR LINK ↗</a>}
          <div className="hn-admin-rep-actions">
           <button type="button" disabled={busy} onClick={()=>{setEditing(song);setGeneralTools(true);
-           setForm({title:song.title,artist:song.artist,category:song.category,
+           setForm({title:song.title,artist:song.artist,category:repertoireSection(song.category),
             referenceUrl:song.referenceUrl,position:song.position,active:song.active});}}>
            Editar
           </button>

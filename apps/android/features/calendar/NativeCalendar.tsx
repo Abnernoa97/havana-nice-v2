@@ -1,6 +1,6 @@
 import React,{useCallback,useEffect,useRef,useState} from 'react';
 import {Linking,Pressable,StyleSheet,Text,View} from 'react-native';
-import {getCalendarEvents,calendarDate,calendarEventCompleted,safeCalendarMapUrl,HAVANA_V2_DEV_API_BASE_URL,type CalendarEvent} from '@havana/shared';
+import {getCalendarEvents,getEventRepertoire,calendarDate,calendarEventCompleted,safeCalendarMapUrl,safeRepertoireLink,HAVANA_V2_DEV_API_BASE_URL,type CalendarEvent,type RepertoireEventItem} from '@havana/shared';
 import NativeBook from '../book/NativeBook';
 
 // One authorized V2 session; no new identity, token persistence, WebView or Chat.
@@ -95,7 +95,37 @@ export default function NativeCalendar({token,calendarRevision=0}:{token:string;
      {!!item.notes&&<Text style={styles.info}><Text style={styles.bold}>Notas: </Text>{item.notes}</Text>}
      {(!!item.statusText||item.status!=='confirmed')&&<Text style={styles.info}>Estado: {item.statusText|| (item.status==='tentative'?'Tentativo':'Cancelado')}</Text>}
     </View>)}
+    {open===item.id&&<NativeEventRepertoire token={token} eventId={item.id} revision={revision}/>}
    </View>})}
+ </View>;
+}
+function NativeEventRepertoire({token,eventId,revision}:{token:string;eventId:string;revision:number}){
+ const [items,setItems]=useState<RepertoireEventItem[]>([]);
+ const [loading,setLoading]=useState(true);
+ const [error,setError]=useState('');
+ useEffect(()=>{
+  let alive=true;setItems([]);setLoading(true);setError('');
+  void getEventRepertoire(token,eventId).then(rows=>{if(alive)setItems(rows);})
+   .catch(e=>{if(alive)setError(e instanceof Error?e.message:'No se pudo cargar el repertorio.');})
+   .finally(()=>{if(alive)setLoading(false);});
+  return()=>{alive=false;};
+ },[token,eventId,revision]);
+ const link=(value:string)=>{const url=safeRepertoireLink(value);
+  if(url)void Linking.openURL(url).catch(()=>setError('No se pudo abrir el enlace.'));};
+ return <View style={styles.repPanel}>
+  <Text style={styles.repTitle}>Repertorio del evento</Text>
+  {loading?<Text style={styles.repNote}>Cargando canciones…</Text>:
+   error?<Text accessibilityRole="alert" style={styles.error}>{error}</Text>:
+   !items.length?<Text style={styles.repNote}>Aún no hay canciones asignadas a esta fecha.</Text>:<>
+    <Text style={styles.repNote}>{items.filter(item=>item.completed).length} / {items.length} realizadas</Text>
+    {items.map((item,i)=><View key={item.id} style={styles.repRow}>
+     <View style={styles.repSong}><Text style={styles.repSongTitle}>{i+1}. {item.title}</Text>
+      {!!item.artist&&<Text style={styles.repNote}>{item.artist}</Text>}
+      <Text style={styles.repNote}>{item.completed?'✓ Realizada':item.songId?'Pendiente':'Especial · pendiente'}</Text></View>
+     {!!safeRepertoireLink(item.referenceUrl)&&<Pressable accessibilityRole="link" onPress={()=>link(item.referenceUrl)}>
+      <Text style={styles.repLink}>REVISAR LINK ↗</Text></Pressable>}
+    </View>)}
+   </>}
  </View>;
 }
 const styles=StyleSheet.create({
@@ -126,5 +156,12 @@ const styles=StyleSheet.create({
  memoryGallery:{marginTop:3,gap:10},
  memoryGalleryTitle:{textAlign:'center',fontSize:11,letterSpacing:1,color:'#785436',fontWeight:'800'},
  memoryEmpty:{padding:15,textAlign:'center',fontSize:12,color:'#826749'},
+ repPanel:{padding:17,backgroundColor:'#f1e5cb',borderTopWidth:1,borderTopColor:'#d5bb97',gap:5},
+ repTitle:{fontFamily:'serif',fontSize:19,fontWeight:'700',color:'#234235'},
+ repNote:{fontSize:11,color:'#73654f',lineHeight:17},
+ repRow:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:9,
+  paddingVertical:12,borderBottomWidth:1,borderBottomColor:'rgba(125,94,55,0.22)'},
+ repSong:{flex:1,gap:3},repSongTitle:{fontSize:13,fontWeight:'700',color:'#274033'},
+ repLink:{fontSize:10,fontWeight:'700',color:'#725532'},
 
 });

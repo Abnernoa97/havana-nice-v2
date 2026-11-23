@@ -46,7 +46,7 @@ export function watchCalendar(token:string,admin:boolean,onInvalidate:(reason?:'
     const message=JSON.parse(String(event.data)) as {type?:string};
     // Calendar recipient changes also alter visible event setlists.
     if(message.type==='calendar.invalidate')onInvalidate('changed');
-    if(message.type==='repertoire.invalidate'&&topic==='repertoire')onInvalidate();
+    if(message.type==='repertoire.invalidate'&&(topic==='repertoire'||topic==='calendar'))onInvalidate();
    }catch{}
   };
   next.onclose=()=>{if(socket!==next)return;disconnect();schedule();};

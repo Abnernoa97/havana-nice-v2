@@ -1,0 +1,7 @@
+.hn-cal-event-repertoire{padding:16px 16px 18px;border-top:1px solid #d8c9ae;
+ background:linear-gradient(145deg,#f7edd9 0%,#eee0c3 100%)}
+.hn-cal-event-repertoire h4{margin:0;color:#204336;font:700 18px/1.3 Georgia,serif}
+.hn-cal-rep-note{font-size:12px;color:#71654e;margin:9px 0 6px}
+.hn-cal-event-repertoire .hn-cal-rep-row{padding:12px 2px;border-bottom:1px solid #c5ad8966}
+.hn-cal-event-repertoire .hn-cal-rep-row:last-child{border-bottom:0}
+.hn-cal-event-repertoire .hn-cal-rep-row strong{color:#243e31}

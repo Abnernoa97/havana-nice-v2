@@ -42,6 +42,16 @@ export async function getAssignedEventRepertoire(token:string):Promise<Repertoir
  }
  throw Error('Demasiadas canciones por evento. Contacta al Administrador.');
 }
+/** Exactly three musician sections. Unknown legacy categories remain visible
+ * in ESPAÑOL until Administration reclassifies them. */
+export const REPERTOIRE_SECTIONS=['ENGLISH','ESPAÑOL','INSTRUMENTALES'] as const;
+export type RepertoireSection=typeof REPERTOIRE_SECTIONS[number];
+export function repertoireSection(value:string):RepertoireSection{
+ const key=value.trim().normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase();
+ if(key.includes('INSTRUMENT'))return 'INSTRUMENTALES';
+ if(key==='ENGLISH'||key==='INGLES')return 'ENGLISH';
+ return 'ESPAÑOL';
+}
 export function safeRepertoireLink(value:string):string|null{
  try{const u=new URL(value);return u.protocol==='https:'?u.toString():null;}catch{return null;}
 }
