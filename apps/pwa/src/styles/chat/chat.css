@@ -353,3 +353,12 @@ h1 span { font-weight:400; }
 .hn-chat-voice-actions button{width:35px;min-width:35px;height:35px;padding:0!important;
  border-radius:50%!important;display:grid;place-items:center;font-size:18px!important}
 .hn-chat-voice-actions button:first-of-type{color:#a23936}
+
+/* The small cached photo stays visible until the high-quality original decodes. */
+.hn-gallery-photo-surface{width:100%;height:100%;display:flex;align-items:center;
+ justify-content:center;overflow:hidden;position:relative}
+.hn-gallery-photo-surface .hn-gallery-image{max-width:100%;max-height:100%;object-fit:contain}
+.hn-gallery-photo-hint{position:absolute;bottom:12%;font-size:11px;color:#ffffff8c}
+.hn-gallery-video-poster{width:100%;height:100%;object-fit:contain}
+.hn-gallery-video-error{position:absolute;top:12%;left:10%;right:10%;
+ text-align:center;color:#fff;background:#242b27bb;padding:11px;border-radius:12px;font-size:13px}
