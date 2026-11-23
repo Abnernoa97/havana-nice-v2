@@ -4,6 +4,7 @@ import {getRepertoireSongs,safeRepertoireLink,repertoireSection,REPERTOIRE_SECTI
  type RepertoireSection,type RepertoireSong} from '@havana/shared';
 import './member-repertoire.css';
 
+// Only one live section. Switching replaces its contents; no duplicate lists.
 export default function MemberRepertoire({token}:{token:string}){
  const [songs,setSongs]=useState<RepertoireSong[]>([]);
  const [open,setOpen]=useState<RepertoireSection|null>('ENGLISH');
@@ -31,25 +32,29 @@ export default function MemberRepertoire({token}:{token:string}){
    <h2>Repertorio general</h2><button type="button" onClick={()=>void refresh()}>Actualizar</button>
   </div>
   {!!error&&<p role="alert" className="hn-cal-error">{error}</p>}
-  <div className="hn-rep-parchment"><div className="hn-rep-parchment-content">
+  <div className="hn-rep-panel">
    <div className="hn-rep-tabs" role="group" aria-label="Categorías de repertorio">
     {REPERTOIRE_SECTIONS.map(section=><button key={section} type="button"
      className={'hn-rep-tab'+(open===section?' is-open':'')}
      aria-expanded={open===section} aria-controls="hn-repertoire-list"
      onClick={()=>setOpen(v=>v===section?null:section)}>
-     {section}<span aria-hidden="true">{open===section?'−':'+'}</span>
+     <span className="hn-rep-tab-title">{section}</span>
+     <span className="hn-rep-tab-symbol" aria-hidden="true">{open===section?'−':'+'}</span>
     </button>)}
    </div>
-   {open&&<div id="hn-repertoire-list" className="hn-rep-song-list" role="region" aria-label={'Canciones: '+open}>
-    {loading?<p className="hn-rep-empty">Cargando canciones…</p>:
-     !visible.length?<p className="hn-rep-empty">No hay canciones en {open.toLowerCase()}.</p>:
-     visible.map(song=><article key={song.id} className="hn-rep-row">
-      <div><strong>{song.title}</strong>{song.artist&&<small>{song.artist}</small>}</div>
-      {safeRepertoireLink(song.referenceUrl)&&<a target="_blank" rel="noopener noreferrer"
-       href={safeRepertoireLink(song.referenceUrl)!}>REVISAR LINK ↗</a>}
-     </article>)}
+   {open&&<div key={open} id="hn-repertoire-list" className="hn-rep-reveal"
+    role="region" aria-label={'Canciones: '+open}>
+    <div className="hn-rep-song-list">
+     {loading?<p className="hn-rep-empty">Cargando canciones…</p>:
+      !visible.length?<p className="hn-rep-empty">No hay canciones en {open.toLowerCase()}.</p>:
+      visible.map(song=><article key={song.id} className="hn-rep-row">
+       <div><strong>{song.title}</strong>{song.artist&&<small>{song.artist}</small>}</div>
+       {safeRepertoireLink(song.referenceUrl)&&<a target="_blank" rel="noopener noreferrer"
+        href={safeRepertoireLink(song.referenceUrl)!}>REVISAR LINK ↗</a>}
+      </article>)}
+    </div>
    </div>}
-  </div></div>
+  </div>
   <p className="hn-rep-calendar-hint">El repertorio de cada evento está en Calendario, dentro de su fecha.</p>
  </section>;
 }
