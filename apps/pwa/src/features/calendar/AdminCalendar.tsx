@@ -29,6 +29,7 @@ export default function AdminCalendar({token,members,onExpired}:Props){
  const [loading,setLoading]=useState(true);
  const [revision,setRevision]=useState(0);
  const requestId=useRef(0);
+ const editFormRef=useRef<HTMLFormElement|null>(null);
  const pending=useRef<AbortController|null>(null);
  const [error,setError]=useState('');
  const [notice,setNotice]=useState('');
@@ -69,8 +70,13 @@ export default function AdminCalendar({token,members,onExpired}:Props){
  function edit(event:CalendarEvent){
   const {id,version,updatedAt,dateSort,memoryCount,...content}=event;
   setForm({...content,recipientIds:event.recipientIds||[]});
-  setEditing(event);setDraftOpen(true);setError('');setNotice('');
+  setExpanded(event.id);setEditing(event);setDraftOpen(true);setError('');setNotice('');
  }
+ useEffect(()=>{
+  if(!draftOpen||!editing)return;
+  const frame=requestAnimationFrame(()=>editFormRef.current?.scrollIntoView({block:'nearest',behavior:'smooth'}));
+  return()=>cancelAnimationFrame(frame);
+ },[draftOpen,editing?.id]);
  async function save(event:FormEvent){
   event.preventDefault();if(busy)return;
   if(!form.recipientIds.length){setError('Selecciona al menos un músico.');return;}
@@ -92,15 +98,7 @@ export default function AdminCalendar({token,members,onExpired}:Props){
   }catch(e){if(isAdminUnauthorized(e))onExpired();setError(e instanceof Error?e.message:'No se pudo borrar.');}
   finally{setBusy(false);}
  }
- return <section className="a-panel a-calendar hn-calendar" aria-label="Calendario del Administrador">
-  <div className="a-cal-toolbar">
-   <div><h2>Calendario de eventos</h2><p className="a-detail">Crea cada fecha y elige quién la recibe.</p></div>
-   <div className="a-cal-actions"><button type="button" onClick={()=>void refresh()} disabled={busy}>Actualizar</button>
-    <button type="button" onClick={startNew} disabled={busy}>+ Nueva fecha</button></div>
-  </div>
-  {notice&&<p className="a-cal-notice" role="status">{notice}</p>}
-  {error&&<p className="a-admin-error" role="alert">{error}</p>}
-  {draftOpen&&<form className="a-cal-form" onSubmit={e=>void save(e)}>
+ const editor=<form ref={editFormRef} className="a-cal-form hn-cal-inline-editor" onSubmit={e=>void save(e)}>
    <h3>{editing?'Editar fecha':'Nueva fecha'}</h3>
    <div className="a-cal-fields">
     {fields.map(([key,label])=><label key={key} className="a-cal-field">
@@ -132,10 +130,18 @@ export default function AdminCalendar({token,members,onExpired}:Props){
     <button type="submit" disabled={busy||!active.length}>{busy?'Guardando…':editing?'Guardar cambios':'Añadir al calendario'}</button>
     <button type="button" disabled={busy} onClick={()=>{setDraftOpen(false);setEditing(null);setError('');}}>Cancelar</button>
    </div>
-  </form>}
+  </form>;
+ return <section className="a-panel a-calendar hn-calendar" aria-label="Calendario del Administrador">
+  <div className="a-cal-toolbar">
+   <div><h2>Calendario</h2></div>
+   <div className="a-cal-actions"><button type="button" onClick={startNew} disabled={busy}>+ Nueva fecha</button></div>
+  </div>
+  {notice&&<p className="a-cal-notice" role="status">{notice}</p>}
+  {error&&<p className="a-admin-error" role="alert">{error}</p>}
+  {draftOpen&&!editing&&editor}
   <div className="a-cal-list" aria-label="Todas las fechas">
    {loading?<p>Cargando fechas…</p>:!events.length?<p>No hay eventos en Calendario V2.</p>:
-    events.map(item=>{const past=calendarEventCompleted(item);return <article key={item.id} className={'a-cal-event hn-cal-event'+(past?' a-cal-completed':'')}>
+    events.map(item=>{const past=calendarEventCompleted(item);return <article key={item.id} className={'a-cal-event hn-cal-event'+(past?' a-cal-completed':'')+(editing?.id===item.id?' is-editing':'')+(editing&&editing.id!==item.id?' is-muted':'')}>
      <button type="button" className="a-cal-summary hn-cal-event-head"
       aria-expanded={expanded===item.id} onClick={()=>setExpanded(v=>v===item.id?null:item.id)}>
       <span className="a-cal-summary-main"><small>{calendarDate(item.date)}</small><strong>{item.title}</strong>
@@ -151,6 +157,7 @@ export default function AdminCalendar({token,members,onExpired}:Props){
       {item.statusText&&<p>Estado: {item.statusText}</p>}
       <div className="a-cal-actions"><button type="button" onClick={()=>edit(item)}>Editar</button>
        <button type="button" className="a-cal-danger" onClick={()=>void remove(item)}>Borrar fecha</button></div>
+      {draftOpen&&editing?.id===item.id&&editor}
       <Suspense fallback={<p role="status">Abriendo fotografías del evento…</p>}><AdminCalendarMemories token={token} eventId={item.id} title={item.title} revision={revision}/></Suspense>
      </div>}
     </article>})}

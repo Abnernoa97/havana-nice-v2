@@ -205,3 +205,11 @@
 .hn-admin-minimal .a-chat-bubble .hn-chat-image-button{width:100%;max-width:100%;height:auto}
 .hn-admin-minimal .a-chat-bubble .hn-chat-video-cover{width:100%;max-width:100%;aspect-ratio:16/9}
 .hn-admin-minimal .a-chat-bubble .hn-chat-video-poster{object-fit:contain;background:#172721}
+
+/* Inline Calendar editing: active event in focus, remaining days neutral. */
+.hn-admin-minimal .hn-cal-event.is-editing{position:relative;z-index:2;box-shadow:0 0 0 2px #74a780,0 12px 30px #162d1e26}
+.hn-admin-minimal .hn-cal-event.is-muted{opacity:.5;filter:saturate(.42)}
+.hn-admin-minimal .hn-cal-inline-editor{background:#ecf2e9;border:1px solid #a4bca4;
+ border-radius:14px;padding:15px;margin:12px 0 17px;scroll-margin-top:105px}
+.hn-admin-minimal .hn-cal-inline-editor h3{color:#1d4832}
+.hn-admin-minimal .hn-cal-inline-editor input,.hn-admin-minimal .hn-cal-inline-editor textarea{background:#fffefa}
