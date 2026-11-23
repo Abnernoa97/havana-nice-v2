@@ -4,7 +4,7 @@ import React,{useEffect,useRef,useState} from 'react';
 import {ActivityIndicator,Image,Modal,Pressable,StyleSheet,Text,View,useWindowDimensions} from 'react-native';
 import {VideoView,useVideoPlayer} from 'expo-video';
 import type {ChatMessage,ChatSession} from '@havana/shared';
-import {photoPath,cacheWholePhoto} from '../../storage/chatPhotoCache';
+import {photoPath} from '../../storage/chatPhotoCache';
 import {requestNativeChatMediaUrl} from './native-chat-media-grant';
 type Media=NonNullable<ChatMessage['media']>;
 const time=(n:number)=>{
@@ -23,7 +23,7 @@ function Film({url}:{url:string}){
   return()=>{player.pause();a.remove();b.remove();c.remove();};
  },[player]);
  return <View style={s.film}>
-  <VideoView player={player} nativeControls={false} contentFit="contain"
+  <VideoView player={player} nativeControls={false} contentFit="contain" surfaceType="surfaceView"
    style={{width,height:Math.max(220,height-90)}}/>
   <Pressable accessibilityRole="button" accessibilityLabel={playing?'Pausar':'Reproducir'}
    style={s.play} onPress={()=>{if(playing)player.pause();else player.play();}}>
@@ -42,33 +42,52 @@ function Film({url}:{url:string}){
   </View>
  </View>;
 }
-function Frame({media,session}:{media:Media;session:ChatSession}){
+// First render the verified local original. On a cold hit render the R2
+// image directly instead of blocking on a complete original-file download.
+function Frame({media,session,warmUrl}:{media:Media;session:ChatSession;warmUrl?:string}){
  const {width,height}=useWindowDimensions();
  const [url,setUrl]=useState(''),[error,setError]=useState('');
  useEffect(()=>{
   const abort=new AbortController();let live=true;
-  void(async()=>{
+  setUrl('');setError('');
+  void (async()=>{
    if(media.kind==='photo'){
     const cached=photoPath(media);
     if(cached.exists&&cached.size===media.sizeBytes)return cached.uri;
    }
-   const grant=await requestNativeChatMediaUrl(media.assetId,session.token,abort.signal);
-   return media.kind==='photo'?await cacheWholePhoto(media,grant):grant;
+   return warmUrl||await requestNativeChatMediaUrl(media.assetId,session.token,abort.signal);
   })().then(uri=>{if(live)setUrl(uri);}).catch(()=>{
-   if(live&&!abort.signal.aborted)setError('No se pudo abrir el archivo');
+   if(live&&!abort.signal.aborted)setError('Archivo no disponible');
   });
   return()=>{live=false;abort.abort();};
- },[media.assetId,media.sizeBytes,media.kind,session.token]);
+ },[media.assetId,media.sizeBytes,media.kind,session.token,warmUrl]);
  if(error)return <Text style={s.status}>{error}</Text>;
  if(!url)return <ActivityIndicator size="large" color="#fff"/>;
- if(media.kind==='photo')return <Image source={{uri:url}} resizeMode="contain"
-  style={{width,height:Math.max(200,height-20)}}/>;
+ if(media.kind==='photo')return <Image source={{uri:url}} resizeMode="contain" fadeDuration={0}
+  style={{width,height:Math.max(200,height-100)}}/>;
  return <Film url={url}/>;
 }
 export default function NativeChatGallery({items,initial,session,onClose}:{
  items:Media[];initial:number;session:ChatSession;onClose:()=>void;
 }){
  const [index,setIndex]=useState(initial);
+ // Short-lived, view-local grants only. Warm the adjacent asset's permission
+ // while the current media is visible; do not prefetch enormous originals.
+ const grants=useRef(new Map<string,{url:string;at:number}>());
+ const [,setRevision]=useState(0);
+ useEffect(()=>{
+  const abort=new AbortController();
+  for(const pos of [index-1,index+1]){
+   const item=items[pos];if(!item)continue;
+   const cached=grants.current.get(item.assetId);
+   if(cached&&Date.now()-cached.at<8*60*1000)continue;
+   void requestNativeChatMediaUrl(item.assetId,session.token,abort.signal).then(url=>{
+    if(abort.signal.aborted)return;
+    grants.current.set(item.assetId,{url,at:Date.now()});setRevision(n=>n+1);
+   }).catch(()=>{});
+  }
+  return()=>abort.abort();
+ },[index,items,session.token]);
  const start=useRef<{x:number;y:number}|null>(null);
  const move=(direction:number)=>setIndex(i=>Math.max(0,Math.min(items.length-1,i+direction)));
  const current=items[index];
@@ -82,7 +101,9 @@ export default function NativeChatGallery({items,initial,session,onClose}:{
     const dx=e.nativeEvent.pageX-from.x,dy=e.nativeEvent.pageY-from.y;
     if(Math.abs(dx)>55&&Math.abs(dx)>Math.abs(dy)*1.2)move(dx<0?1:-1);
    }}>
-   {current&&<Frame key={current.assetId} media={current} session={session}/>}
+   {current&&<Frame key={current.assetId} media={current} session={session}
+    warmUrl={(grants.current.get(current.assetId)?.at??0)>Date.now()-8*60*1000?
+     grants.current.get(current.assetId)?.url:undefined}/>} 
    <Pressable style={s.close} accessibilityRole="button" accessibilityLabel="Cerrar galería"
     onPress={onClose}><Text style={s.x}>×</Text></Pressable>
    <Text style={s.counter}>{index+1}/{items.length}</Text>
