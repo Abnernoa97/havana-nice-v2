@@ -4,6 +4,7 @@ import {verifyAdminSession} from '../admin/admin-auth.js';
 import {sha256Hex} from '../../shared/crypto-helpers.js';
 import {reserveFamilyStorage,releaseFamilyStorage} from '../family/family-quota.js';
 import {notifyFamilyClients} from '../family/family-realtime.js';
+import {notifyBookPublished} from '../notices/member-notifications.js';
 
 const MIMES=new Set(['image/jpeg','image/png','image/webp','image/heic','image/heif']);
 const MAX_BYTES=15*1024*1024;
@@ -241,15 +242,24 @@ export async function handleBookApi(request,env,url,origin,verifyMember,ctx){
   if(url.pathname===(admin?'/api/book/admin/pages':'/api/book/pages')&&request.method==='GET')
    return await listBook(env,admin,origin);
   if(!admin)return reply({error:'Método no permitido'},405,origin);
-  const signal=async result=>{
+  const signal=async(result,newPublishedPage=false)=>{
    if(result.ok){
-    const task=notifyFamilyClients(env);
+    const task=(async()=>{
+     // Only a committed new published page informs the team. A page turn,
+     // optimized WebP, layout edit or preview never generates a push.
+     if(newPublishedPage&&result.status===201){
+      const data=await result.clone().json().catch(()=>null);
+      if(data?.id&&data.published)
+       await notifyBookPublished(env,data.id).catch(()=>{});
+     }
+     await notifyFamilyClients(env);
+    })();
     if(ctx?.waitUntil)ctx.waitUntil(task);else void task;
    }
    return result;
   };
   if(url.pathname==='/api/book/admin/pages'&&request.method==='POST')
-   return signal(await uploadBookPage(request,env,origin));
+   return signal(await uploadBookPage(request,env,origin),true);
   const m=/^\/api\/book\/admin\/pages\/([0-9a-f-]{36})$/.exec(url.pathname);
   if(m&&ID.test(m[1])){
    if(request.method==='PUT')return signal(await editBookPage(request,env,m[1],origin));
