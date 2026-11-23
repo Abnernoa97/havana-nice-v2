@@ -83,7 +83,7 @@ export default function NativeStories({token,actorId,displayName,profiles,canPub
     </Pressable>}
    </View>
    <Text style={s.name} numberOfLines={1}>{person.name}</Text>
-   {count>0&&<Text style={s.storyLabel}>ESTADO · {count}</Text>
+   {count>0&&<Text style={s.storyLabel}>ESTADO · {count}</Text>}
   </View>;
  };
  return <>
