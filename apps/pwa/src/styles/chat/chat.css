@@ -346,3 +346,10 @@ h1 span { font-weight:400; }
 
 /* Hide any legacy navigation arrows; gallery navigation is gesture-only. */
 .hn-gallery-prev,.hn-gallery-next{display:none!important}
+
+/* Compact Chat voice controls, one horizontal bar. */
+.hn-chat-voice-actions{border-radius:27px;gap:5px;padding:5px 7px;white-space:nowrap}
+.hn-chat-voice-actions span{font-size:12px;min-width:47px;font-variant-numeric:tabular-nums}
+.hn-chat-voice-actions button{width:35px;min-width:35px;height:35px;padding:0!important;
+ border-radius:50%!important;display:grid;place-items:center;font-size:18px!important}
+.hn-chat-voice-actions button:first-of-type{color:#a23936}

@@ -3,7 +3,7 @@ import {useEffect,useRef,useState} from 'react';
 export default function PwaChatVoiceRecorder({disabled,onSend}:{
  disabled:boolean;onSend:(file:File,id:string)=>Promise<boolean>;
 }){
- const [recording,setRecording]=useState(false),[seconds,setSeconds]=useState(0);
+ const [recording,setRecording]=useState(false),[paused,setPaused]=useState(false),[seconds,setSeconds]=useState(0);
  const [sending,setSending]=useState(false),[error,setError]=useState('');
  const [pending,setPending]=useState<{file:File;id:string}|null>(null);
  const recorder=useRef<MediaRecorder|null>(null),stream=useRef<MediaStream|null>(null);
@@ -42,23 +42,39 @@ export default function PwaChatVoiceRecorder({disabled,onSend}:{
    writer.ondataavailable=e=>{if(e.data.size)chunks.push(e.data);};
    writer.onerror=()=>setError('Falló la grabación.');
    writer.onstop=()=>{
-    const cancelled=discard.current;clean();recorder.current=null;setRecording(false);
+    const cancelled=discard.current;clean();recorder.current=null;setRecording(false);setPaused(false);
     if(cancelled)return;
     const mime=format.split(';')[0]!,blob=new Blob(chunks,{type:mime});
     if(blob.size<1||blob.size>3_000_000){setError('Audio vacío o mayor a 3 MB.');return;}
     const ext=mime==='audio/mp4'?'m4a':mime==='audio/ogg'?'ogg':'webm';
     void submit({file:new File([blob],'Voz.'+ext,{type:mime}),id:crypto.randomUUID()});
    };
-   writer.start(300);setRecording(true);
+   writer.start(300);setRecording(true);setPaused(false);
    timer.current=setInterval(()=>setSeconds(s=>s+1),1000);
    deadline.current=setTimeout(()=>{if(writer.state==='recording')writer.stop();},45000);
   }catch(e){clean();setRecording(false);setError(e instanceof Error?e.message:'Sin permiso de micrófono.');}
  };
+ const togglePause=()=>{
+  const writer=recorder.current;if(!writer)return;
+  try{
+   if(writer.state==='recording'){
+    writer.pause();setPaused(true);
+    if(deadline.current){clearTimeout(deadline.current);deadline.current=null;}
+   }else if(writer.state==='paused'){
+    writer.resume();setPaused(false);
+    deadline.current=setTimeout(()=>{if(writer.state==='recording')writer.stop();},Math.max(1000,(45-seconds)*1000));
+   }
+  }catch{setError('No se pudo pausar la grabación.');}
+ };
  return <div className="hn-chat-voice-recorder">
   {recording?<div className="hn-chat-voice-actions">
-    <span>● {seconds}s</span>
-    <button type="button" onClick={()=>{discard.current=true;recorder.current?.stop();}}>Cancelar</button>
-    <button type="button" onClick={()=>{discard.current=false;recorder.current?.stop();}}>Enviar</button>
+    <span>{paused?'Ⅱ':'●'} {Math.floor(seconds/60)}:{String(seconds%60).padStart(2,'0')}</span>
+    <button type="button" aria-label="Borrar nota de voz"
+     onClick={()=>{discard.current=true;recorder.current?.stop();}}>▤</button>
+    <button type="button" aria-label={paused?'Continuar grabación':'Pausar grabación'}
+     onClick={togglePause}>{paused?'▶':'Ⅱ'}</button>
+    <button type="button" aria-label="Enviar nota de voz"
+     onClick={()=>{discard.current=false;recorder.current?.stop();}}>➤</button>
    </div>:pending?<div className="hn-chat-voice-actions">
     <button type="button" onClick={()=>{setPending(null);setError('');}}>Descartar</button>
     <button type="button" disabled={sending} onClick={()=>void submit(pending)}>Reintentar</button>
