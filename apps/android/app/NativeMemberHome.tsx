@@ -69,10 +69,12 @@ function NativeMemberHome({displayName,actorId,token,active,calendarRevision=0,o
    accessibilityLabel="Private Listening Lounge">
     <NativeAudioEditorialView inline/>
   </View>:<>
-   {active!=='calendar'&&active!=='repertoire'&&<Pressable accessibilityRole="button" accessibilityLabel="Volver a Inicio"
+   {active!=='calendar'&&active!=='repertoire'&&active!=='family'&&<Pressable accessibilityRole="button" accessibilityLabel="Volver a Inicio"
     style={styles.back} onPress={()=>onNavigate('home')}><Text style={styles.backLabel}>‹ Inicio</Text></Pressable>}
-   <Text style={[styles.title,active==='repertoire'&&styles.repertoireTitle]}>{active==='calendar'?'Calendario':selected?.label||'Módulo'}</Text>
-   {active!=='calendar'&&active!=='repertoire'&&<Text style={styles.lead}>{selected?.description}</Text>}
+   <Text style={[styles.title,active==='repertoire'&&styles.repertoireTitle,active==='family'&&styles.familyTitle]}>
+    {active==='family'?'Familia HAVANA NICE':active==='calendar'?'Calendario':selected?.label||'Módulo'}
+   </Text>
+   {active!=='calendar'&&active!=='repertoire'&&active!=='family'&&<Text style={styles.lead}>{selected?.description}</Text>
    {active==='repertoire'&&<Pressable accessibilityRole="button" accessibilityLabel="Abrir Audio HAVANA NICE"
      onPress={()=>onNavigate('audio')} style={styles.openAudio}>
      <Text style={styles.openAudioLabel}>♫  Abrir Audio HAVANA NICE</Text>
@@ -172,6 +174,7 @@ const styles=StyleSheet.create({
  bottomLabel:{fontSize:9,color:'#708077'},activeLabel:{fontWeight:'800',color:'#133B30'},
  title:{fontSize:36,fontWeight:'700',marginTop:8,color:'#1B332B'},
  repertoireTitle:{fontSize:40,color:'#0d3c2d',marginTop:8,marginBottom:22},
+ familyTitle:{fontSize:34,color:'#0d3c2d',lineHeight:39,marginTop:8,marginBottom:21},
  lead:{fontSize:14,lineHeight:21,color:'#657269',marginTop:8,marginBottom:23},
  openAudio:{marginBottom:26,paddingVertical:16,paddingHorizontal:16,borderWidth:1,
   borderColor:'#bbd3c2',backgroundColor:'#edf5ea',borderRadius:32,alignSelf:'stretch',alignItems:'center'},

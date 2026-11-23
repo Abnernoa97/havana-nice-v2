@@ -19,7 +19,6 @@ function FamilyAlbumCard({album,onOpen}:{album:FamilyAlbum;onOpen:()=>void}){
 export default function MemberFamily({token}:{token:string}){
  const [directory,setDirectory]=useState<FamilyDirectory|null>(null);
  const [selected,setSelected]=useState<string|null>(null);
- const [bookOpen,setBookOpen]=useState(false);
  const [error,setError]=useState('');
  const [loading,setLoading]=useState(true);
  const [items,setItems]=useState<FamilyMediaItem[]>([]);
@@ -35,7 +34,7 @@ export default function MemberFamily({token}:{token:string}){
   finally{if(id===seq.current)setLoading(false);}
  },[token]);
  useEffect(()=>{
-  setDirectory(null);setSelected(null);setBookOpen(false);setLoading(true);
+  setDirectory(null);setSelected(null);setLoading(true);
   void refresh();
   const resume=()=>{if(!document.hidden)void refresh();};
   window.addEventListener('online',resume);document.addEventListener('visibilitychange',resume);
@@ -59,17 +58,12 @@ export default function MemberFamily({token}:{token:string}){
  const album=directory?.albums.find(x=>x.actorId===selected);
  const cover=album?.mediaReady?familyPrivateMediaUrl(album.coverUrl):null;
  const readyItems=album?.mediaReady?items:undefined;
- const goBack=()=>{setSelected(null);setBookOpen(false);};
- return <section className="hn-family" aria-label="Familia HAVANA NICE">
-  <div className="hn-family-toolbar">
-   {bookOpen||album?<button type="button" onClick={goBack}>‹ Todos los álbumes</button>:
-    <strong>ÁLBUMES DEL EQUIPO</strong>}
-   <button type="button" onClick={()=>{void refresh();setMediaTick(t=>t+1);}}>Actualizar</button>
-  </div>
+ const goBack=()=>setSelected(null);
+ return <section className="hn-family hn-family-minimal" aria-label="Familia HAVANA NICE">
+  {album&&<button type="button" className="hn-family-return" onClick={goBack}
+    aria-label="Regresar a Familia HAVANA NICE">‹</button>}
   {error&&<p role="alert" className="hn-cal-error">{error}</p>}
-  {loading?<p>Cargando integrantes autorizados…</p>:bookOpen?<>
-   <Suspense fallback={<p className="hn-family-empty" role="status">Abriendo BOOK…</p>}><MemberBook token={token} tick={mediaTick}/></Suspense>
-  </>:album?<>
+  {loading?<p>Cargando integrantes autorizados…</p>:album?<>
    <div className="hn-family-cover">
     {cover?<img className="hn-family-cover-photo" src={cover} alt="" decoding="async"/>:
      <div className="hn-family-cover-placeholder" aria-hidden="true">{album.name.slice(0,1).toUpperCase()}</div>}
@@ -80,18 +74,15 @@ export default function MemberFamily({token}:{token:string}){
     readyItems?.length?<FamilyMediaGallery items={readyItems}/>:
     <p className="hn-family-empty">{album.mediaReady?'Todavía no hay fotos ni videos en este álbum.':'El almacenamiento privado de Familia HAVANA NICE aún no está disponible.'}</p>}
   </>:<>
-   <p className="hn-family-intro">Álbumes de los integrantes autorizados de HAVANA NICE.</p>
    {directory?.albums.length?<div className="hn-family-grid">
     {directory.albums.map(person=><FamilyAlbumCard key={person.actorId} album={person}
-     onOpen={()=>{setBookOpen(false);setSelected(person.actorId);}}/>)}
+     onOpen={()=>setSelected(person.actorId)}/>)}
    </div>:<p className="hn-family-empty">No hay integrantes autorizados para mostrar.</p>}
-   <button type="button" className="hn-family-book" onClick={()=>{setSelected(null);setBookOpen(true);}}
-    aria-label="Abrir BOOK HAVANA NICE">
-    <span className="hn-family-book-eyebrow">EDICIONES EDITORIALES</span>
-    <strong>BOOK HAVANA NICE</strong>
-    <span className="hn-family-book-info">La revista fotográfica de HAVANA NICE</span>
-    <small>Ver sección editorial <span aria-hidden="true">→</span></small>
-   </button>
+   <div className="hn-family-inline-book" aria-label="Revista de Familia HAVANA NICE">
+    <Suspense fallback={<p className="hn-family-empty" role="status">Abriendo revista…</p>}>
+     <MemberBook token={token} tick={mediaTick}/>
+    </Suspense>
+   </div>
   </>}
  </section>;
 }

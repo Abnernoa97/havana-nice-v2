@@ -35,6 +35,6 @@ export default function MemberBook({token,tick=0}:{token:string;tick?:number}){
  },[pages,refresh]);
  return <section aria-label="BOOK HAVANA NICE">
   {error?<p className="hn-book-admin-error" role="alert">{error}</p>:null}
-  {loading?<p className="hn-family-empty">Preparando la revista…</p>:<BookReader pages={pages}/>}
+  {loading?<p className="hn-family-empty">Preparando la revista…</p>:<BookReader pages={pages} showModeSwitch={false}/>}
  </section>;
 }

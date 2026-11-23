@@ -99,6 +99,8 @@ function VisualApp({displayName,active,onNavigate,preview=false,token,actorId,ca
             <h1>Repertorio</h1>
             <button type="button" className="hn-open-audio"
               onClick={()=>navigate('audio')}>♫ Abrir Audio HAVANA NICE</button>
+          </div>:screen==='family'?<div className="visual-section-header hn-family-page-title">
+            <h1>Familia HAVANA NICE</h1>
           </div>:screen!=='audio'&&<div className="visual-section-header">
             <button className="visual-back" type="button" onClick={()=>navigate('home')}>‹ Inicio</button>
             <span className="visual-overline">HAVANA NICE / {selected?.label.toUpperCase()}</span>

@@ -24,7 +24,6 @@ function NativeVideo({url,width}:{url:string;width:number}){
 export default function NativeFamily({token}:{token:string}){
  const [directory,setDirectory]=useState<FamilyDirectory|null>(null);
  const [selected,setSelected]=useState<string|null>(null);
- const [book,setBook]=useState(false);
  const [bookTick,setBookTick]=useState(0);
  const [items,setItems]=useState<FamilyMediaItem[]>([]);
  const [focused,setFocused]=useState<number|null>(null);
@@ -111,7 +110,7 @@ export default function NativeFamily({token}:{token:string}){
     retryDelay=Math.min(20000,retryDelay*2);
    }
   };
-  setSelected(null);setBook(false);setDirectory(null);setItems([]);setLoading(true);
+  setSelected(null);setDirectory(null);setItems([]);setLoading(true);
   synchronize();
   connect();
   const sub=AppState.addEventListener('change',state=>{
@@ -128,10 +127,10 @@ export default function NativeFamily({token}:{token:string}){
   };
  },[token,refresh,loadAlbum]);
  const open=(album:FamilyAlbum)=>{
-  setSelected(album.actorId);setBook(false);setItems([]);setFocused(null);
+  setSelected(album.actorId);setItems([]);setFocused(null);
   if(album.mediaReady)void loadAlbum(album.actorId);
  };
- const back=()=>{++mediaGeneration.current;setSelected(null);setBook(false);setFocused(null);};
+ const back=()=>{++mediaGeneration.current;setSelected(null);setFocused(null);};
  const active=directory?.albums.find(a=>a.actorId===selected);
  const cover=privateUrl(active?.coverUrl);
  const ready=useMemo<ReadyMedia[]>(()=>items.flatMap(item=>{
@@ -143,15 +142,8 @@ export default function NativeFamily({token}:{token:string}){
  const change=(step:number)=>setFocused(current=>current===null||!ready.length?null:
   (current+step+ready.length)%ready.length);
  return <View style={styles.root}>
-  <View style={styles.toolbar}>
-   <Text style={styles.eyebrow}>{active||book?'FAMILIA HAVANA NICE':'ÁLBUMES DEL EQUIPO'}</Text>
-   <Pressable accessibilityRole="button" onPress={()=>{void refresh();if(selected)void loadAlbum(selected);}}>
-    <Text style={styles.action}>Actualizar</Text>
-   </Pressable>
-  </View>
   {!!error&&<Text accessibilityRole="alert" style={styles.error}>{error}</Text>}
-  {loading?<ActivityIndicator color="#917252"/>:book?
-   <NativeBook token={token} refreshKey={bookTick} onClose={back}/>:active?
+  {loading?<ActivityIndicator color="#917252"/>:active?
    <FlatList
     style={styles.albumList}
     contentContainerStyle={styles.albumListContent}
@@ -165,7 +157,8 @@ export default function NativeFamily({token}:{token:string}){
     removeClippedSubviews={false}
     keyboardShouldPersistTaps="handled"
     ListHeaderComponent={<>
-     <Pressable onPress={back} style={styles.back}><Text style={styles.action}>‹ Todos los álbumes</Text></Pressable>
+     <Pressable accessibilityRole="button" accessibilityLabel="Regresar a Familia HAVANA NICE"
+      onPress={back} style={styles.back}><Text style={styles.backArrow}>‹</Text></Pressable>
      <View style={styles.hero}>
       {cover?<Image source={{uri:cover}} style={styles.heroImage} resizeMode="cover"/>:
        <Text style={styles.monogram}>{active.name.slice(0,1).toUpperCase()}</Text>}
@@ -189,7 +182,6 @@ export default function NativeFamily({token}:{token:string}){
     </Pressable>}
    />:
    <ScrollView style={styles.albumList} contentContainerStyle={styles.directoryContent}>
-    <Text style={styles.empty}>Álbumes de los integrantes autorizados de HAVANA NICE.</Text>
     <View style={styles.albums}>{directory?.albums.map(album=>{
      const image=privateUrl(album.coverUrl);
      return <Pressable key={album.actorId} accessibilityRole="button" style={styles.album}
@@ -200,13 +192,9 @@ export default function NativeFamily({token}:{token:string}){
        <Text style={styles.heroCount}>{familyAlbumCount(album)}</Text></View>
      </Pressable>;
     })}</View>
-    <Pressable style={styles.bookButton} accessibilityRole="button"
-     onPress={()=>{setSelected(null);setBook(true);}}>
-     <Text style={styles.eyebrow}>EDICIONES EDITORIALES</Text>
-     <Text style={styles.bookName}>BOOK HAVANA NICE</Text>
-     <Text style={styles.empty}>La revista fotográfica de HAVANA NICE</Text>
-     <Text style={styles.action}>Ver sección editorial →</Text>
-    </Pressable>
+    <View style={styles.inlineBook} accessibilityLabel="Revista de Familia HAVANA NICE">
+     <NativeBook token={token} refreshKey={bookTick} embedded/>
+    </View>
    </ScrollView>}
   <Modal visible={chosen!==null} animationType="fade" statusBarTranslucent
    onRequestClose={()=>setFocused(null)}>
@@ -233,9 +221,13 @@ const styles=StyleSheet.create({
  root:{flex:1,minHeight:0,gap:15},toolbar:{flexDirection:'row',justifyContent:'space-between'},
  albumList:{flex:1,minHeight:0},
  albumListContent:{paddingBottom:35},
- directoryContent:{paddingBottom:35},
+ directoryContent:{paddingBottom:42},
+ inlineBook:{marginTop:13,marginBottom:20,overflow:'hidden',borderRadius:12},
  galleryRow:{gap:5,marginBottom:5},
- back:{marginBottom:15},
+ back:{marginBottom:13,alignSelf:'flex-start',minWidth:44,minHeight:44,paddingHorizontal:10,
+  justifyContent:'center',alignItems:'center',borderRadius:24,borderColor:'#d2dfd0',borderWidth:1,
+  backgroundColor:'#f7faf2'},
+ backArrow:{fontSize:30,color:'#244936',lineHeight:34},
  mediaSpinner:{marginVertical:18},
  eyebrow:{color:'#917252',fontWeight:'700',fontSize:10,letterSpacing:1.4},
  action:{color:'#856243',fontWeight:'700',fontSize:13},error:{color:'#b23d2e',fontSize:13},

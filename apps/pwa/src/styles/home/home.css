@@ -199,3 +199,22 @@
  .visual-header:before{opacity:.2}
  .visual-header:after{transform:translateX(60%) rotate(-12deg);opacity:.34}
 }
+
+/* Familia member route: remove duplicated banners; keep album cards and real PageFlip. */
+.hn-family-page-title h1{margin:0 0 19px;color:#113b2e;line-height:1.05}
+.hn-family-minimal{gap:15px}
+.hn-family-minimal .hn-family-return{display:grid;place-items:center;align-self:start;
+ min-width:44px;min-height:44px;padding:0 13px;border:1px solid #d2dfd0;
+ border-radius:999px;background:#f6f9f3;color:#244936;font-size:30px;cursor:pointer}
+.hn-family-minimal .hn-family-return:focus-visible{outline:3px solid #6c987e;outline-offset:3px}
+.hn-family-inline-book{min-width:0;margin-top:12px;padding-bottom:28px}
+.hn-family-inline-book .hn-book-reader{min-width:0}
+.hn-family-inline-book .hn-book-controls{position:relative;z-index:3;
+ border-radius:999px;background:#f8f7f1e8;padding:9px 7px;max-width:400px}
+@media(max-width:750px){
+ .visual-content:has(> .hn-family-page-title){padding-top:15px}
+ .hn-family-page-title h1{font-size:clamp(34px,9vw,43px);margin:0 0 22px}
+ .hn-family-inline-book{margin-left:-6px;margin-right:-6px;padding-bottom:32px}
+ .hn-family-inline-book .hn-book-controls{gap:9px;max-width:100%}
+ .hn-family-inline-book .hn-book-controls>button{flex:0 0 44px}
+}
