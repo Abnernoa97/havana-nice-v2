@@ -15,6 +15,7 @@ import {handleProfileApi} from './modules/profile/profile.js';
 import {handleStoriesApi,cleanupExpiredStories} from './modules/stories/stories.js';
 import {handleMemberNotices} from './modules/notices/member-notifications.js';
 import {handleAdminAnnouncements} from './modules/notices/admin-announcements.js';
+import {handleMemberActivity} from './modules/admin/member-activity.js';
 import {handleMemberPushApi} from './modules/notices/push-center.js';
 import {dispatchDuePush,prunePushHistory} from './modules/notices/push-delivery.js';
 import {handleBookApi} from './modules/book/book.js';
@@ -129,6 +130,8 @@ export default {
     // Member profile photos: private R2, separate from Chat/Familia, same one session.
     if(url.pathname.startsWith('/api/profile/'))
       return handleProfileApi(request,env,url,origin,verifySession,ctx);
+    if(url.pathname==='/api/member/activity')
+      return handleMemberActivity(request,env,url,origin,respond,verifySession);
     // Authenticated, recipient-scoped notifications. Reuse the musician session.
     if(url.pathname==='/api/notices'||url.pathname==='/api/notices/read')
       return handleMemberNotices(request,env,url,origin,verifySession);
