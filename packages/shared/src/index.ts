@@ -38,7 +38,7 @@ export interface ChatMessage {
   senderName: string;
   text: string;
   sentAt: string;
-  media?: {assetId:string;kind:'photo'|'video';mimeType:string;sizeBytes:number;name:string}|null;
+  media?: {assetId:string;kind:'photo'|'video'|'audio';mimeType:string;sizeBytes:number;name:string}|null;
   pending?: boolean;
   failed?: boolean;
   deliveryStatus?: 'queued' | 'sending' | 'error' | 'sent';

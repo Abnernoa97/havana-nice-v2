@@ -33,7 +33,7 @@ function putBlob(token:string,url:string,blob:Blob,onProgress:(value:number)=>vo
  });
 }
 export async function uploadChatFile(
- session:ChatSession,file:File,kind:'photo'|'video',
+ session:ChatSession,file:File,kind:'photo'|'video'|'audio',
  onProgress:(loaded:number,total:number)=>void,stableId?:string,
  getPoster?:()=>Blob|null,
 ):Promise<{id:string;seq:number;posterUploaded:boolean}>{

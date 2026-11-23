@@ -2,7 +2,7 @@
 // Selection, upload and R2 storage retain their own independent types.
 export type ChatMedia={
  assetId:string;
- kind:'photo'|'video';
+ kind:'photo'|'video'|'audio';
  mimeType:string;
  sizeBytes:number;
  name:string;

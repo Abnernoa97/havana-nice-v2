@@ -5,12 +5,18 @@ import {sha256Hex} from '../../shared/crypto-helpers.js';
 import {notifyTeamChatMessage} from '../notices/member-notifications.js';
 
 const MIME=new Map([['image/jpeg','photo'],['image/png','photo'],['image/webp','photo'],
- ['image/heic','photo'],['image/heif','photo'],['video/mp4','video'],['video/quicktime','video']]);
+ ['image/heic','photo'],['image/heif','photo'],['video/mp4','video'],['video/quicktime','video'],
+ ['audio/mp4','audio'],['audio/webm','audio'],['audio/ogg','audio']]);
 const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 export const CHAT_PART_BYTES=5*1024*1024;
 export const CHAT_DIRECT_MAX=15*1024*1024;
 const MAX_PARTS=2000,GRANT_MS=10*60*1000,ROOM='main-chat-v2';
 export const CHAT_VIDEO_POSTER_MAX_BYTES=256*1024;
+// Existing D1 CHECK only allows 'photo' or 'video'. Short voice notes use the
+// same private R2 pipeline and a video-compatible storage discriminator,
+// while the public API exposes kind:'audio' based on its validated MIME.
+const storageKind=kind=>kind==='audio'?'video':kind;
+const mediaKind=row=>row.kind==='video'&&row.mime_type?.startsWith('audio/')?'audio':row.kind;
 export function chatVideoPosterKey(objectKey){return objectKey+'.poster.jpg';}
 function reply(data,status=200,origin=''){
  return new Response(JSON.stringify(data),{status,headers:{
@@ -22,7 +28,7 @@ async function asset(env,id){
   'multipart_upload_id,message_seq,created_at FROM chat_media_objects WHERE id=?').bind(id).first();
 }
 function publicMedia(row){
- return {assetId:row.id,kind:row.kind,mimeType:row.mime_type,sizeBytes:row.size_bytes,
+ return {assetId:row.id,kind:mediaKind(row),mimeType:row.mime_type,sizeBytes:row.size_bytes,
   name:row.original_name||''};
 }
 async function prune(env){
@@ -54,6 +60,7 @@ export async function startChatMedia(request,env,session,origin){
  if(typeof id!=='string'||!UUID.test(id)||!kind||data?.kind!==kind||
   !Number.isSafeInteger(size)||size<=0||size>9_500_000_000||
   (kind==='photo'&&size>100*1024*1024)||
+  (kind==='audio'&&size>3_000_000)||
   Math.ceil(size/CHAT_PART_BYTES)>MAX_PARTS)
   return reply({error:'Tipo o tamaño de archivo no admitido'},400,origin);
  const name=typeof data?.name==='string'?data.name.slice(0,120):'';
@@ -81,7 +88,7 @@ export async function startChatMedia(request,env,session,origin){
   const inserted=await env.DB.prepare('INSERT OR IGNORE INTO chat_media_objects '+
    '(id,sender_id,object_key,kind,mime_type,size_bytes,original_name,status,multipart_upload_id,created_at,updated_at) '+
    'VALUES (?,?,?,?,?,?,?,?,?,?,?)')
-   .bind(id,session.actorId,key,kind,data.mimeType,size,name,'pending',upload?.uploadId||null,Date.now(),Date.now()).run();
+   .bind(id,session.actorId,key,storageKind(kind),data.mimeType,size,name,'pending',upload?.uploadId||null,Date.now(),Date.now()).run();
   if(Number(inserted.meta?.changes)!==1){
    if(upload)await upload.abort().catch(()=>{});
    await releaseFamilyStorage(env,reserved);
@@ -101,7 +108,7 @@ export async function chatMediaStatus(env,session,id,origin){
  const parts=row.multipart_upload_id
   ?(await env.DB.prepare('SELECT part_number FROM chat_media_parts WHERE media_id=? ORDER BY part_number')
     .bind(id).all()).results||[]:[];
- return reply({id,kind:row.kind,ready:row.status==='ready',sent:row.message_seq!==null,
+ return reply({id,kind:mediaKind(row),ready:row.status==='ready',sent:row.message_seq!==null,
   multipart:!!row.multipart_upload_id,partSize:CHAT_PART_BYTES,
   partCount:Math.ceil(row.size_bytes/CHAT_PART_BYTES),
   completedParts:parts.map(x=>x.part_number)},200,origin);
@@ -183,7 +190,7 @@ export async function completeChatMedia(env,session,id,origin){
 export async function uploadChatVideoPoster(request,env,session,id,origin){
  const row=await asset(env,id);
  if(!row||row.sender_id!==session.actorId)return reply({error:'Archivo no encontrado'},404,origin);
- if(row.kind!=='video'||row.status!=='ready')
+ if(mediaKind(row)!=='video'||row.status!=='ready')
   return reply({error:'El video todavía no está disponible'},409,origin);
  const bytes=Number(request.headers.get('content-length'));
  if(request.headers.get('content-type')?.split(';')[0]!=='image/jpeg'||
@@ -203,7 +210,8 @@ export async function sendChatMedia(env,session,id,origin){
  if(!row||row.sender_id!==session.actorId||row.status!=='ready')
   return reply({error:'Primero debe finalizar la carga original'},409,origin);
  // A media file owns one canonical message; retries never create duplicates.
- const text=row.kind==='photo'?'Foto':'Video';
+ const kind=mediaKind(row);
+ const text=kind==='photo'?'Foto':kind==='audio'?'Audio':'Video';
  try{
   const existing=await env.DB.prepare('SELECT seq FROM chat_messages WHERE sender_id=? AND client_message_id=?')
    .bind(session.actorId,id).first();
@@ -223,7 +231,7 @@ export async function sendChatMedia(env,session,id,origin){
    // Every confirmed photo/video is a Chat message. Emit exactly once,
    // not for uploads, posters, or retries with the same client ID.
    try{await notifyTeamChatMessage(env,session.actorId,saved.seq,
-    row.kind==='video'?'Nuevo video en Chat':'Nueva foto en Chat');}
+    kind==='audio'?'Nuevo mensaje de voz en Chat':kind==='video'?'Nuevo video en Chat':'Nueva foto en Chat');}
    catch{/* Saved media is not rolled back if a notice fails. */}
    try{
     await env.CHAT_ROOMS.get(env.CHAT_ROOMS.idFromName(ROOM)).fetch(
@@ -243,7 +251,7 @@ export async function decorateChatMessages(env,messages){
   "WHERE message_seq IN ("+ids.map(()=>'?').join(',')+") AND status='ready'"
  ).bind(...ids).all()).results||[];
  const media=new Map(rows.map(row=>[row.message_seq,{
-  assetId:row.id,kind:row.kind,mimeType:row.mime_type,sizeBytes:row.size_bytes,
+  assetId:row.id,kind:mediaKind(row),mimeType:row.mime_type,sizeBytes:row.size_bytes,
   name:row.original_name||''
  }]));
  return messages.map(message=>media.has(message.seq)?
@@ -270,7 +278,7 @@ export async function readChatMedia(request,env,id,url,origin,poster=false){
   'WHERE g.token_hash=? AND g.media_id=? AND g.expires_at>?')
   .bind(await sha256Hex(token),id,Date.now()).first();
  if(!row)return reply({error:'Permiso caducado'},403,origin);
- if(poster&&row.kind!=='video')return reply({error:'Carátula no disponible'},404,origin);
+ if(poster&&mediaKind(row)!=='video')return reply({error:'Carátula no disponible'},404,origin);
  const range=request.headers.get('range');
  if(range&&!/^bytes=\d*-\d*$/.test(range))return reply({error:'Rango inválido'},416,origin);
  const object=await env.MEDIA_BUCKET.get(poster?chatVideoPosterKey(row.object_key):row.object_key,

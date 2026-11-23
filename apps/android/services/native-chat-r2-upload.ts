@@ -5,7 +5,7 @@ import {File,UploadType} from 'expo-file-system';
 import {fetch as expoFetch} from 'expo/fetch';
 import {HAVANA_V2_DEV_API_BASE_URL as API,type ChatSession,type ChatMediaSelection} from '@havana/shared';
 
-type NativeFile=ChatMediaSelection&{id:string};
+type NativeFile=(ChatMediaSelection|{kind:'audio';source:'camera';name:string;mimeType:string;sizeBytes:number;uri:string})&{id:string};
 type Start={id:string;ready:boolean;multipart:boolean;partSize:number;
  partCount:number;completedParts:number[];sent?:boolean};
 const ids=new Map<string,string>();
