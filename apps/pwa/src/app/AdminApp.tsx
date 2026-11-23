@@ -3,19 +3,27 @@ import AdminChatAccess from '../features/admin/AdminChatAccess';
 
 // The admin-only navigation is deliberately flat. Authentication/session,
 // permissions and every destructive action stay in their original modules.
-type Tab='home'|'chat'|'repertoire'|'calendar'|'family'|'access'|'memory'|'audio';
+type Tab='home'|'chat'|'repertoire'|'calendar'|'family'|'access'|'memory'|'audio'|'notices';
 type WorkTab=Exclude<Tab,'home'>;
 const tabs:{id:WorkTab;name:string;icon:string;description:string}[]=[
  {id:'chat',name:'Chat',icon:'◉',description:'Conversación del equipo y moderación'},
  {id:'repertoire',name:'Repertorio',icon:'♫',description:'Canciones y repertorio por evento'},
  {id:'calendar',name:'Calendario',icon:'▦',description:'Fechas, horarios y músicos asignados'},
  {id:'family',name:'Familia',icon:'▣',description:'Fotografías, videos y BOOK'},
- {id:'audio',name:'Audio',icon:'♪',description:'Canciones y portadas del reproductor HAVANA NICE'},
+ {id:'audio',name:'Audio',icon:'♪',description:'Biblioteca de audio'},
+ {id:'notices',name:'Notificaciones',icon:'✉',description:'Enviar avisos al equipo'},
  {id:'access',name:'Acceso a músicos',icon:'♙',description:'Integrantes y dispositivos autorizados'},
  {id:'memory',name:'Resumen de memoria',icon:'◫',description:'Archivos, almacenamiento y espacio disponible'},
 ];
 export default function AdminApp(){
  const [tab,setTab]=useState<Tab>('home');
+ useEffect(()=>{
+  window.history.replaceState({...window.history.state,havanaAdminTab:'home'},'');
+  const back=()=>{const state=window.history.state as {havanaAdminTab?:Tab}|null;
+   setTab(state?.havanaAdminTab||'home');window.scrollTo({top:0,behavior:'instant'});};
+  window.addEventListener('popstate',back);
+  return()=>window.removeEventListener('popstate',back);
+ },[]);
  const [installEvent,setInstallEvent]=useState<Event|null>(null);
  const [updatePending,setUpdatePending]=useState(false);
  const current=tabs.find(item=>item.id===tab);
@@ -35,7 +43,12 @@ export default function AdminApp(){
   if(!e)return;
   void e.prompt().then(()=>e.userChoice).finally(()=>setInstallEvent(null));
  }
- const navigate=(next:Tab)=>{setTab(next);window.scrollTo({top:0,behavior:'instant'});};
+ const navigate=(next:Tab)=>{
+  if(next===tab)return;
+  window.history.pushState({...window.history.state,havanaAdminTab:next},'');
+  setTab(next);window.scrollTo({top:0,behavior:'instant'});
+ };
+ const goBack=()=>{if(tab!=='home')window.history.back();};
  const navButton=(item:(typeof tabs)[number])=><button key={item.id} type="button"
   aria-current={tab===item.id?'page':undefined}
   className={tab===item.id?'active':''} onClick={()=>navigate(item.id)}>
@@ -66,7 +79,7 @@ export default function AdminApp(){
       <span aria-hidden="true" className="hn-admin-plain-arrow">›</span>
      </button>)}
     </div>:<div className="a-title hn-admin-simple-title">
-      <button type="button" onClick={()=>navigate('home')} aria-label="Volver al menú">‹</button>
+      <button type="button" onClick={goBack} aria-label="Regresar">‹</button>
       <h1>{current?.name}</h1>
      </div>}
     {updatePending&&<div className="a-admin-update-pending" role="status">
@@ -80,7 +93,7 @@ export default function AdminApp(){
    </main>
   </div>
   <nav className="a-bottom visual-bottom-nav" aria-label="Funciones del Administrador">
-   {tabs.filter(item=>item.id!=='audio').map(navButton)}
+   {tabs.filter(item=>item.id!=='audio'&&item.id!=='memory').map(navButton)}
   </nav>
  </div>;
 }

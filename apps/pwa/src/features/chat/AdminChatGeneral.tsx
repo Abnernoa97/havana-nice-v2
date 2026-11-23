@@ -132,16 +132,11 @@ export default function AdminChatGeneral({token,connected,liveEvent,onExpired}:P
  }
  return <section className="a-panel a-chat-general" aria-label="Chat general de todos los músicos">
   <header className="a-chat-general-head">
-   <div><h2>Chat general</h2>
-    <p className="a-detail">Una sola conversación con todos los músicos. Vista y moderación, sin enviar mensajes.</p></div>
+   <div><h2>Chat</h2></div>
    <div className="a-chat-general-status">
     <small>{connected?'● Sincronizado en vivo':'○ Reconectando'}</small>
-    <button type="button" disabled={loading} onClick={()=>void load()}>Actualizar</button>
    </div>
   </header>
-  <p className="a-chat-general-presence" aria-live="polite">
-   {online.length?'Conectados: '+online.join(', '):'Sin músicos conectados o conexión pendiente'}
-  </p>
   {error&&<p className="a-admin-error" role="alert">{error}</p>}
   <div ref={scroll} className="a-chat-general-history" aria-label="Mensajes de todos los músicos"
    onScroll={e=>{
@@ -180,6 +175,5 @@ export default function AdminChatGeneral({token,connected,liveEvent,onExpired}:P
     })}
   </div>
   {typing&&<p className="a-chat-typing">{typing.name} está escribiendo…</p>}
-  <p className="a-chat-viewer-note">Administrador: historial del Chat de los músicos. Fotos y videos privados en HAVANA NICE R2.</p>
  </section>;
 }

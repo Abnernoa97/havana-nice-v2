@@ -194,3 +194,14 @@
  .hn-admin-minimal .hn-admin-plain-item{min-height:64px}
  .hn-admin-minimal .a-bottom button span:last-child{font-size:8px}
 }
+
+/* Keep original photo/video proportions inside the administrator chat. */
+.hn-admin-minimal .a-chat-general-history{overflow-x:hidden;min-width:0;width:100%;box-sizing:border-box}
+.hn-admin-minimal .a-chat-message-row{min-width:0;width:100%;max-width:100%;align-items:flex-end}
+.hn-admin-minimal .a-chat-message-row .a-chat-bubble{width:min(100%,440px);max-width:calc(100% - 46px);
+ box-sizing:border-box;overflow:hidden;min-width:0;flex:0 1 auto}
+.hn-admin-minimal .a-chat-bubble .hn-chat-media{width:100%;max-width:100%;min-width:0;margin:0}
+.hn-admin-minimal .a-chat-bubble .hn-chat-photo{width:100%;height:auto;display:block;object-fit:contain}
+.hn-admin-minimal .a-chat-bubble .hn-chat-image-button{width:100%;max-width:100%;height:auto}
+.hn-admin-minimal .a-chat-bubble .hn-chat-video-cover{width:100%;max-width:100%;aspect-ratio:16/9}
+.hn-admin-minimal .a-chat-bubble .hn-chat-video-poster{object-fit:contain;background:#172721}

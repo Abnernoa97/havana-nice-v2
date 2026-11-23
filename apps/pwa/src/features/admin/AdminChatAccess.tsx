@@ -446,10 +446,8 @@ export default function AdminChatAccess({section}:{section:Section}){
  return <div className="a-access-workspace">
    <section className="a-panel a-admin-private">
      <div className="a-admin-toolbar">
-       <div><h2>Administrador autorizado</h2>
-         <p className="a-detail">{realtime==='connected'?'Sincronización automática activa':'Conectando con Cloudflare…'}</p></div>
+       <div><h2>Administrador autorizado</h2></div>
        <div className="a-admin-toolbar-actions">
-         <button type="button" onClick={()=>{void refreshMembers(session.token);void refreshOtherSessions(session.token);void refreshDuplicateAlerts(session.token);}}>Actualizar</button>
          <button type="button" onClick={()=>void logout()}>Cerrar sesión</button>
        </div>
      </div>
@@ -479,7 +477,6 @@ export default function AdminChatAccess({section}:{section:Section}){
    </section>
    {duplicateAlerts.some(a=>a.reviewed_at===null)&&<section className="a-panel a-admin-duplicate-alerts" role="region" aria-label="Intentos de acceso duplicado">
      <h2><span aria-hidden="true">⚠</span> Intentos de acceso duplicado</h2>
-     <p className="a-detail">Otro dispositivo intentó entrar con un nombre ya vinculado. Su acceso fue rechazado.</p>
      {duplicateAlerts.filter(a=>a.reviewed_at===null).map(a=><div className="a-duplicate-alert" key={a.id}>
        <div><strong>{a.display_name}</strong>
          <small>{new Date(a.attempted_at).toLocaleString('es-MX',{dateStyle:'medium',timeStyle:'short'})}</small>
@@ -493,7 +490,6 @@ export default function AdminChatAccess({section}:{section:Section}){
    </section>}
    <section className="a-panel a-member-add">
      <h2>Añadir miembro</h2>
-     <p className="a-detail">Solo los nombres creados aquí podrán entrar al Chat. Los músicos nuevos vincularán su primer dispositivo automáticamente, sin claves ni aprobaciones adicionales.</p>
      <form className="a-member-form" onSubmit={addMember}>
        <label htmlFor="new-musician-name">Nombre del músico</label>
        <input id="new-musician-name" type="text" value={name}

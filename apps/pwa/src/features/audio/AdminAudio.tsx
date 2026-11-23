@@ -87,9 +87,7 @@ export default function AdminAudio({token,onExpired}:{token:string;onExpired:()=
   finally{setBusy(false);}
  };
  return <section className="hn-admin-audio">
-  <div className="hn-admin-audio-top"><h2>Biblioteca de audio</h2>
-   <button type="button" onClick={()=>void refresh()}>Actualizar</button></div>
-  <p className="a-detail">Los audios que publiques aparecerán en el reproductor del equipo. Al elegir un MP3 reconocemos su portada y los datos que tenga guardados.</p>
+  <div className="hn-admin-audio-top"><h2>Biblioteca de audio</h2></div>
   {serverReady===false&&<p className="hn-audio-server-warning" role="status">
    La biblioteca necesita la actualización del servidor. Puedes preparar el audio y su portada, pero Guardar y publicar estará deshabilitado hasta que la conexión funcione.
   </p>}

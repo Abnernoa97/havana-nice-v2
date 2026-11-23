@@ -72,7 +72,7 @@ export default function AdminMemberDirectory({
            </button>
          </div>
          {expanded===person.actor_id&&<div className="a-member-history">
-           <h3>Historial de accesos</h3>
+           <h3>Actividad registrada</h3>
            {historyLoading===person.actor_id?<p>Cargando datos desde Cloudflare…</p>:
              historyErrors[person.actor_id]?<p className="a-admin-error" role="alert">{historyErrors[person.actor_id]}</p>:
              !history[person.actor_id]?<p>Sin datos de historial disponibles.</p>:
@@ -105,7 +105,6 @@ export default function AdminMemberDirectory({
                aria-label={'Consultar datos asociados a '+person.display_name}>
                {impactLoading===person.actor_id?'Consultando Cloudflare…':'Ver datos asociados'}
              </button>
-             <small>Consulta de solo lectura. No elimina ni modifica información.</small>
              {impactErrors[person.actor_id]&&<p className="a-admin-error" role="alert">{impactErrors[person.actor_id]}</p>}
              {impact[person.actor_id]&&<MemberImpactSummary
                name={person.display_name} preview={impact[person.actor_id]!}/>}

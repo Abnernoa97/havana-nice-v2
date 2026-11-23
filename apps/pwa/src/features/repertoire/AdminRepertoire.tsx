@@ -132,9 +132,7 @@ export default function AdminRepertoire({token,onExpired}:{token:string;onExpire
   (s.title+' '+s.artist).toLocaleLowerCase('es').includes(query.toLocaleLowerCase('es')));
  return <section className="a-panel a-repertoire hn-repertoire" aria-label="Repertorio Administrador">
   <div className="a-cal-toolbar hn-rep-toolbar">
-   <div><h2>Repertorio del equipo</h2>
-    <p className="a-detail">Las mismas canciones de los músicos, con controles de Administración.</p></div>
-   <button type="button" onClick={()=>void refreshAll()} disabled={busy}>Actualizar</button>
+   <div><h2>Repertorio</h2></div>
   </div>
   {!!error&&<p className="a-admin-error" role="alert">{error}</p>}
   {!!notice&&<p className="a-cal-notice" role="status">{notice}</p>}
@@ -142,7 +140,7 @@ export default function AdminRepertoire({token,onExpired}:{token:string;onExpire
    <article className="a-rep-section hn-rep-admin-section">
     <button type="button" className="a-cal-summary hn-cal-event-head" aria-expanded={open==='general'}
      onClick={()=>setOpen(v=>v==='general'?null:'general')}>
-     <span><strong>Repertorio general</strong><small>{songs.length} canciones del equipo</small></span>
+     <span><strong>Canciones</strong><small>{songs.length}</small></span>
      <b aria-hidden="true">{open==='general'?'−':'+'}</b>
     </button>
     {open==='general'&&<div className="a-rep-body">
@@ -198,7 +196,7 @@ export default function AdminRepertoire({token,onExpired}:{token:string;onExpire
    <article className="a-rep-section hn-rep-admin-section">
     <button type="button" className="a-cal-summary hn-cal-event-head" aria-expanded={open==='event'}
      onClick={()=>setOpen(v=>v==='event'?null:'event')}>
-     <span><strong>Repertorio por evento</strong><small>Listas, orden y canciones especiales</small></span>
+     <span><strong>Por evento</strong></span>
      <b aria-hidden="true">{open==='event'?'−':'+'}</b>
     </button>
     {open==='event'&&<div className="a-rep-body">
@@ -248,7 +246,6 @@ export default function AdminRepertoire({token,onExpired}:{token:string;onExpire
        <button type="button" disabled={busy||checked.length===0}
         onClick={()=>void addSelected()}>Añadir {checked.length} seleccionada(s)</button>
        <h3>Crear canción especial</h3>
-       <p className="a-detail">Solo para esta fecha, sin modificar el repertorio general.</p>
        <form className="a-rep-fields" onSubmit={e=>void addSpecial(e)}>
         <input type="text" required value={special.title} placeholder="Título"
          onChange={e=>setSpecial(v=>({...v,title:e.target.value}))}/>

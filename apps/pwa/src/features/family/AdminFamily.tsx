@@ -185,20 +185,11 @@ export default function AdminFamily({token,onExpired}:{token:string;onExpired:()
  const goBack=()=>{setSelected(null);setBookOpen(false);};
  return <section className="a-panel a-family" aria-label="Familia HAVANA NICE Administrador">
   <div className="a-cal-toolbar">
-   <div><h2>Familia HAVANA NICE</h2>
-    <p className="a-detail">Álbumes asociados al acceso autorizado de cada integrante.</p></div>
-   <button type="button" disabled={busy} onClick={()=>{void refresh();setMediaTick(t=>t+1);}}>Actualizar</button>
+   <div><h2>Familia HAVANA NICE</h2></div>
   </div>
-  {storage?<div className={'a-family-storage'+(storage.warning?' a-family-storage-warn':'')}
-   role={storage.warning?'alert':'status'} aria-live="polite">
-   <strong>Almacenamiento privado · {formatStorageGB(storage.usedBytes)} GB de 9.5 GB</strong>
-   <progress max={storage.maxBytes} value={Math.min(storage.maxBytes,storage.usedBytes+storage.pendingBytes)}
-    aria-label="Almacenamiento ocupado en Familia"/>
-   <small>{storage.pendingBytes?formatFileMB(storage.pendingBytes)+' reservados en subidas · ':''}
-    {formatStorageGB(storage.remainingBytes)} GB disponibles</small>
-   {storage.stopped?<p>Almacenamiento detenido para proteger el límite gratuito. Elimina archivos antes de subir más.</p>:
-    storage.warning?<p>Aviso: Familia alcanzó 9 GB. Se detendrán nuevas cargas al llegar a 9.5 GB.</p>:null}
-  </div>:null}
+  {(storage?.stopped||storage?.warning)&&<p role="alert" className="a-admin-error">
+    {storage.stopped?'Almacenamiento lleno: elimina archivos antes de subir más.':'Almacenamiento cerca del límite.'}
+   </p>}
   {error&&<p className="a-admin-error" role="alert">{error}</p>}
   {bookOpen||album?<button type="button" className="a-family-back" onClick={goBack}>‹ Todos los álbumes</button>:null}
   {bookOpen?<>
@@ -210,7 +201,7 @@ export default function AdminFamily({token,onExpired}:{token:string;onExpired:()
     <div><h3>{album.name}</h3><p>{familyAlbumCount(album)}</p></div>
    </div>
    {album.mediaReady?<div className="a-family-upload">
-    <label htmlFor="a-family-media-file">Añadir fotos o videos al álbum (hasta 5 por selección · sujeto al espacio libre)</label>
+    <label htmlFor="a-family-media-file">+ Añadir fotos o videos</label>
     <input id="a-family-media-file" type="file" multiple disabled={uploading||storage?.stopped}
      accept="image/jpeg,image/png,image/webp,image/heic,image/heif,video/mp4,video/quicktime"
      onChange={event=>void uploadFiles(event)}/>
@@ -230,7 +221,6 @@ export default function AdminFamily({token,onExpired}:{token:string;onExpired:()
     readyItems?.length?<FamilyMediaGallery items={readyItems} onDelete={id=>changeFile(id,'delete')} onSetCover={id=>changeFile(id,'cover')} onMakePoster={createExistingPoster}/>:
     <p className="a-detail">{album.mediaReady?'Este álbum todavía no tiene fotos ni videos.':'La carga privada estará disponible cuando se publique el nuevo Worker y su esquema D1.'}</p>}
   </>:<>
-   <p className="a-detail">Los integrantes se administran desde «Acceso a músicos». Aquí aparecen únicamente los nombres autorizados; no se crean cuentas paralelas.</p>
    {!data&&!error?<p>Cargando integrantes…</p>:<div className="a-family-list hn-family-grid">
     {data?.albums.map(item=>{
      const photo=item.mediaReady?familyPrivateMediaUrl(item.coverUrl):null;
