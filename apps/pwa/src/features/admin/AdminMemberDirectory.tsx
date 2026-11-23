@@ -41,6 +41,29 @@ function MemberImpactSummary({name,preview}:{name:string;preview:AdminDeletionPr
 }
 
 
+
+function groupedDays(events:AdminMemberHistory['events']){
+ const days=new Map<string,AdminMemberHistory['events']>();
+ for(const event of events){
+  const day=new Date(event.occurred_at).toLocaleDateString('es-MX',{
+   weekday:'long',day:'numeric',month:'long',year:'numeric'
+  });
+  days.set(day,[...(days.get(day)||[]),event]);
+ }
+ return [...days.entries()];
+}
+const modules:Record<string,string>={
+ home:'Inicio',chat:'Chat',calendar:'Calendario',repertoire:'Repertorio',
+ family:'Familia',audio:'Audio',notices:'Notificaciones',musicians:'Músicos'
+};
+function actionLabel(item:AdminMemberHistory['events'][number]):string{
+ if(item.event_type==='module.open')return 'Abrió '+(modules[item.detail||'']||item.detail||'una sección');
+ if(item.event_type==='audio.play')return 'Escuchó: '+(item.detail||'audio');
+ if(item.event_type==='login')return 'Inició sesión';
+ if(item.event_type==='connect')return 'Conectó al Chat';
+ return 'Desconectó del Chat';
+}
+
 export default function AdminMemberDirectory({
  members,loaded,expanded,history,historyLoading,historyErrors,impact,impactLoading,
  impactErrors,removing,busy,releaseBusy,onToggleMember,onRemoveMember,
@@ -80,12 +103,18 @@ export default function AdminMemberDirectory({
                <p className="a-member-count">Entradas registradas: <strong>{history[person.actor_id]?.entries ?? 0}</strong></p>
                {history[person.actor_id]?.events.length===0?
                  <p>Sin historial registrado. Las entradas anteriores a la activación de este registro no se pueden reconstruir.</p>:
-                 <div className="a-member-events">{history[person.actor_id]?.events.map((event,index)=>
-                   <div className="a-member-event" key={event.occurred_at+'-'+index}>
-                     <strong>{event.event_type==='login'?'Entrada':event.event_type==='connect'?'Conectó al Chat':'Desconectó del Chat'} · {new Date(event.occurred_at).toLocaleString('es-MX',{dateStyle:'medium',timeStyle:'short'})}</strong>
-                     <span>{event.platform} · {event.device_model==='K'&&event.operating_system==='Android 10'?'Android (versión no disponible)':event.operating_system}</span>
-                     <span>{event.device_name}{event.device_model&&event.device_model!=='K'?' · Modelo: '+event.device_model:' · Modelo no disponible'}</span>
-                   </div>)}</div>}
+                 <div className="a-member-events">
+                  {groupedDays(history[person.actor_id]!.events).map(([day,events])=>
+                   <section key={day} className="a-member-day">
+                    <h4>{day}</h4>
+                    {events.map((event,index)=><div className="a-member-event"
+                     key={event.occurred_at+'-'+index}>
+                     <strong>{actionLabel(event)} · {new Date(event.occurred_at).toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'})}</strong>
+                     <span>{event.platform}{event.operating_system?' · '+event.operating_system:''}</span>
+                     {event.device_name&&<span>{event.device_name}{event.device_model&&event.device_model!=='K'?' · '+event.device_model:''}</span>}
+                    </div>)}
+                   </section>)}
+                 </div>}
                <small>{history[person.actor_id]?.since}</small>
              </>}
            <div className="a-member-impact">

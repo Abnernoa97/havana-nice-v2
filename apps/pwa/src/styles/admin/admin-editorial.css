@@ -237,3 +237,10 @@
 .hn-admin-notice-history p{margin:0 0 7px;overflow-wrap:anywhere}
 .hn-admin-notice-history small{display:block;margin-top:7px;color:#7b7d72}
 .hn-admin-notice-history a{color:#235e42}
+
+/* Member history grouped by actual recorded calendar days. */
+.hn-admin-minimal .a-member-day{border:1px solid #e4ddcf;border-radius:12px;
+ overflow:hidden;margin:10px 0;background:#fffcf6}
+.hn-admin-minimal .a-member-day h4{margin:0;padding:10px 12px;background:#e9f0e8;
+ color:#214932;font-size:12px;text-transform:capitalize}
+.hn-admin-minimal .a-member-day .a-member-event{padding:10px 12px;border-top:1px solid #eee5d9}
