@@ -85,6 +85,7 @@ export default function NativeAudio({token,visible,onClose}:{
  useEffect(()=>{
   registerNativeAudioHandlers({
    play,next:()=>step(1),previous:()=>step(-1),
+   suspendForChat:()=>{player.pause();try{player.setActiveForLockScreen(false);}catch{}},
    select,seek:time=>{void player.seekTo(time);},
    refresh:()=>{void refresh(true);}
   });

@@ -4,6 +4,7 @@ import {Pressable,StyleSheet,Text,View} from 'react-native';
 import {useAudioPlayer,useAudioPlayerStatus} from 'expo-audio';
 import type {ChatMessage,ChatSession} from '@havana/shared';
 import {requestNativeChatMediaUrl} from './native-chat-media-grant';
+import {sendNativeAudioCommand} from '../audio/nativeAudioStore';
 type Media=NonNullable<ChatMessage['media']>;
 const stamp=(value:number)=>{
  if(!Number.isFinite(value)||value<0)return '0:00';
@@ -21,6 +22,7 @@ export default function NativeChatVoiceMessage({media,session}:{media:Media;sess
  },[media.assetId,session.token,player]);
  const toggle=async()=>{
   if(busy)return;
+  sendNativeAudioCommand('suspendForChat');
   if(available){
    try{if(status.playing)player.pause();else player.play();}
    catch{setError('No se pudo reproducir el audio.');}

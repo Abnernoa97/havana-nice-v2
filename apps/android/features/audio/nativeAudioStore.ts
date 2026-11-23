@@ -8,9 +8,9 @@ export type NativeAudioSnapshot={
  tracks:AudioTrack[];index:number;playing:boolean;loading:boolean;
  elapsed:number;duration:number;error:string;
 };
-type NativeAudioCommand='play'|'next'|'previous'|'refresh';
+type NativeAudioCommand='play'|'next'|'previous'|'refresh'|'suspendForChat';
 type Handlers={
- play:()=>void;next:()=>void;previous:()=>void;refresh:()=>void;
+ play:()=>void;next:()=>void;previous:()=>void;refresh:()=>void;suspendForChat:()=>void;
  select:(index:number)=>void;seek:(time:number)=>void;
 };
 const initial:NativeAudioSnapshot={
