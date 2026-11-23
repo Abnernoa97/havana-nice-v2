@@ -4,7 +4,7 @@ import StoryVoiceRecorder from './StoryVoiceRecorder';
 import {useStoryConversation} from './useStoryConversation';
 import type {StoryReactionBurst} from './StoryReactionShower';
 
-type Props={story:MemberStory;token:string;myId?:string;refreshVersion:number;
+type Props={story:MemberStory;token:string;myId?:string|undefined;refreshVersion:number;
  onPause:(paused:boolean)=>void;onBurst:(burst:StoryReactionBurst)=>void};
 
 // A two-row overlay ON the photo, never a separate Chat-like panel.
