@@ -146,7 +146,7 @@ export default function NativeChatSurface({ui}:{ui:ReturnType<typeof useNativeCh
                     <NativeComposerIcon name="send" color="#fff"/>
                   </Pressable>
                  :<NativeChatVoiceRecorder disabled={!mediaReady||mediaUploading}
-                    onSend={sendVoice}/>} }
+                    onSend={sendVoice}/>}
              </View>
           </>
         )}
