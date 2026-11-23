@@ -38,7 +38,7 @@
 - [ ] **P1 · QA físico del Chat:** fotos, videos, mosaicos, gesto horizontal, notas de voz, carga fría y caliente en Android/iPhone; medir tiempos reales y memoria, no aproximaciones.
 - [ ] **P2 · APK:** solo después de validar todos los cambios nativos y aprobar un lote explícito; firmar sobre la instalación 0.0.30, preservar rollback y datos. No recompilar por cambios de documentación o CSS web.
 - [ ] **P3 · Historial remoto de galería:** añadir navegación y solicitud segura de páginas anteriores cuando el visor alcance un extremo. Hoy solo abarca los archivos ya cargados en el cliente.
-- [ ] **P4 · Controladores grandes:** dividir gradualmente Chat con pruebas de socket, reconexión, sesión, outbox, paginación, escritura y notificaciones; prohibido segundo dueño de sesión.
+- [ ] **P4 · Controladores grandes:** Android ya tiene subida multimedia en `useNativeChatMediaUpload.ts`, equivalente a la PWA, sin otro WebSocket. Seguir dividiendo gradualmente Chat con pruebas de socket, reconexión, sesión, outbox, paginación, escritura y notificaciones; prohibido segundo dueño de sesión.
 - [ ] **P5 · CSS y lógica histórica:** contrastar selectores con consumidores vivos y breakpoints reales. No confundir media queries o compatibilidades de Admin con código muerto. Refactorizar únicamente con regresiones y QA visual.
 - [ ] **P6 · Integración:** verificar Calendario Admin→Android/iPhone, repertorio por evento, Estados cruzados, reacciones, Familia y BOOK/Recuerdos sin borrar datos reales.
 - [ ] **P7 · PWA instalada:** probar cambios de versión, rotación, teclado, modo avión, resync y permisos Web Push iOS; evitar caché privado en Service Worker.

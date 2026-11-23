@@ -39,3 +39,10 @@
 - Se retiraron `ChatPhotoViewer.tsx` y `ChatVideoPlayer.tsx`, los estilos de esos modales y el estado `videoRequest`/`videoGrant` que les pertenecía. `ChatMediaView` es exclusivamente presentación y abre el visor compartido mediante `onOpen`.
 - La compilación de Cloudflare Pages confirmó estructura, auditoría preventiva, TypeScript Android/PWA y **131 pruebas aprobadas con 0 fallos**; commit `2e0bfaa` publicado.
 - Esta fase no modifica Cloudflare Worker, datos, migraciones, BOOK 3D, Android nativo ni APK instalada.
+
+## Tercera fase · Subida multimedia Android aislada (23/11)
+- La lógica de disponibilidad R2, envío de nota de voz y lote de fotos/videos salió de `useNativeChatController.ts` a `useNativeChatMediaUpload.ts`, equivalente al hook PWA existente.
+- El nuevo hook mantiene el transporte `uploadNativeChatFile`, IDs y progreso; **no** crea sesiones, sockets, outbox ni otros servicios.
+- Las confirmaciones revalidan el token activo antes de refrescar historial o retirar archivos, evitando que una subida tardía mezcle la conversación de otro músico.
+- El grafo de pruebas `tests/helpers/native-source.mjs` incluye el nuevo hook y se añaden pruebas de aislamiento y paridad.
+- **Límite:** se requiere una APK nueva para reflejar cambios nativos. La firma y BOOK 3D vigentes no se modifican.

@@ -2,12 +2,11 @@
 // View, navigation and scroll lifetime are separate modules; no new engine.
 import {useCallback,useEffect,useLayoutEffect,useRef,useState} from 'react';
 import {AppState,StatusBar,useWindowDimensions} from 'react-native';
-import {File} from 'expo-file-system';
 import {
   chatReactionPayload,chatTypingPayload,chatReadReceiptPayload,
-  logMemberActivity,fetchBackendHealth,getChatMediaAvailability,getChatSnapshot,getOlderChatMessages,getChatMenuState,
+  logMemberActivity,fetchBackendHealth,getChatSnapshot,getOlderChatMessages,getChatMenuState,
   getChatMessagePermissions,isWithinChatEditWindow,setOutgoingChatStatus,projectOutgoingChatStatus,
-  clearChatAckTimer,pauseChatOutbox,confirmChatOutgoingMessage,flushChatOutbox,newClientMessageId,uploadChatMediaBatch,
+  clearChatAckTimer,pauseChatOutbox,confirmChatOutgoingMessage,flushChatOutbox,newClientMessageId,
   reconcileChatMessages,reconcileChatSnapshot,applyChatIncomingEvent,startNamedChatSession,
   restoreNamedChatSession,recoverChatAccess,chatSessionExpired,ChatConnectionTimers,ChatResumeGate,
   withoutRemovedChatMessages,ChatHistoryRequestGate,oldestConfirmedChatSeq,mergeOlderChatReactions,
@@ -18,9 +17,9 @@ import {
 import {loadNativeLocalChat,saveNativeLocalChat} from '../../storage/chatStorage';
 import type {BubbleAnchor} from './SwipeableBubble';
 import type {ReactionShowerBurst} from './NativeChatReactionShower';
-import {uploadNativeChatFile} from '../../services/native-chat-r2-upload';
 import {openNativeChatSocket} from '../../services/native-chat-socket';
 import {useNativeMediaSelection} from './useNativeMediaSelection';
+import {useNativeChatMediaUpload} from './useNativeChatMediaUpload';
 import {useNativeKeyboardVisibility} from '../../hooks/useNativeKeyboardVisibility';
 import {useNativeMemberNavigation} from '../../hooks/useNativeMemberNavigation';
 import {useNativeChatViewport} from './useNativeChatViewport';
@@ -47,9 +46,6 @@ export function useNativeChatController(){
       uploadBusy:mediaUploadBusy,onCloseMenu:()=>setComposerPanel(null),
       onRecovered:()=>setActiveScreen('chat'),
     });
-  const [mediaReady,setMediaReady]=useState(false);
-  const [mediaUploading,setMediaUploading]=useState(false);
-  const [mediaProgress,setMediaProgress]=useState(0);
   const [error, setError] = useState('');
   const [connection, setConnection] = useState('desconectado');
   const [joining, setJoining] = useState(false);
@@ -78,14 +74,6 @@ export function useNativeChatController(){
   const socket = useRef<WebSocket | null>(null);
   const removedSeq = useRef<Set<number>>(new Set());
   const historyRequests=useRef(new ChatHistoryRequestGate());
-  useEffect(()=>{
-    if(!session){setMediaReady(false);return;}
-    let active=true;
-    void getChatMediaAvailability(session).then(enabled=>{
-      if(active)setMediaReady(enabled);
-    }).catch(()=>{if(active)setMediaReady(false);});
-    return()=>{active=false;};
-  },[session?.token]);
   const activeSession = useRef<ChatSession | null>(null);
   const appLifecycle = useRef(AppState.currentState);
   const connectionTimers=useRef(new ChatConnectionTimers());
@@ -109,6 +97,12 @@ export function useNativeChatController(){
   const editPending = useRef<{seq:number;text:string}|null>(null);
   const editTimeout = useRef<ReturnType<typeof setTimeout>|null>(null);
   const [savingEdit,setSavingEdit] = useState(false);
+  // Upload owns only multimedia progress; Chat session and transport stay here.
+  const {mediaReady,mediaUploading,mediaProgress,sendVoice,sendSelectedMedia}=
+    useNativeChatMediaUpload({
+      session,activeSession,selectedMedia,mediaUploadBusy,setMediaError,
+      confirmUploadedMedia,syncLatest,
+    });
 
   // Android 16: keep the legacy navigation padding only when the IME is hidden.
   // The keyboard avoidance wrapper is responsible for lifting the composer.
@@ -566,44 +560,6 @@ export function useNativeChatController(){
     }
   }
 
-  async function sendVoice(uri:string,id:string):Promise<boolean>{
-    if(!session||mediaUploadBusy.current||!mediaReady)return false;
-    const file=new File(uri);
-    if(!file.exists||file.size<=0||file.size>3_000_000){
-     setMediaError('El audio está vacío o es mayor a 3 MB.');return false;
-    }
-    mediaUploadBusy.current=true;setMediaUploading(true);setMediaError('');
-    try{
-     await uploadNativeChatFile(session,{
-      id,kind:'audio',source:'camera',uri,mimeType:'audio/mp4',
-      sizeBytes:file.size,name:'Voz.m4a'
-     },()=>{});
-     syncMessages(session);
-     return true;
-    }catch(e){
-     setMediaError(e instanceof Error?e.message:'No se pudo enviar el audio.');
-     return false;
-    }finally{mediaUploadBusy.current=false;setMediaUploading(false);}
-  }
-  async function sendSelectedMedia(){
-    if(!session||!selectedMedia.length||mediaUploadBusy.current)return;
-    if(!mediaReady){setMediaError('El almacenamiento R2 no está disponible.');return;}
-    mediaUploadBusy.current=true;setMediaUploading(true);setMediaProgress(0);setMediaError('');
-    try{
-      await uploadChatMediaBatch([...selectedMedia],{
-        sizeOf:item=>item.sizeBytes,
-        upload:(item,onSent)=>uploadNativeChatFile(session,item,onSent),
-        progress:setMediaProgress,
-        confirmed:item=>{
-          // Only confirmed originals leave the queue; errors remain retryable.
-          confirmUploadedMedia(item.id);
-          syncMessages(session);
-        },
-      });
-    }catch(e){
-      setMediaError(e instanceof Error?e.message:'Se interrumpió la carga. Reintenta solo lo pendiente.');
-    }finally{mediaUploadBusy.current=false;setMediaUploading(false);}
-  }
   function send() {
     const text = draft.trim();
     if(editing){

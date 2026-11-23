@@ -4,6 +4,7 @@ import {readFileSync} from 'node:fs';
 export const NATIVE_CHAT_FILES=[
  'apps/android/app/NativeApp.tsx',
  'apps/android/features/chat/useNativeChatController.ts',
+ 'apps/android/features/chat/useNativeChatMediaUpload.ts',
  'apps/android/features/chat/NativeChatSurface.tsx',
  'apps/android/features/chat/useNativeChatViewport.ts',
  'apps/android/hooks/useNativeMemberNavigation.ts',

@@ -78,3 +78,23 @@ test('Removed private fullscreen modal implementations cannot creep back into th
  assert.doesNotMatch(hook,/videoGrant|videoRequest|setVisible/);
  assert.doesNotMatch(styles,/\.hn-photo-overlay|\.hn-chat-video-overlay/);
 });
+
+test('native multimedia upload is a single isolated hook, with no duplicate connection',()=>{
+ const controller=read('apps/android/features/chat/useNativeChatController.ts');
+ const upload=read('apps/android/features/chat/useNativeChatMediaUpload.ts');
+ const pwa=read('apps/pwa/src/features/chat/usePwaChatMediaUpload.ts');
+ const helper=read('tests/helpers/native-source.mjs');
+ assert.match(controller,/useNativeChatMediaUpload\(\{/);
+ assert.match(controller,/syncLatest,/);
+ assert.doesNotMatch(controller,/uploadNativeChatFile|uploadChatMediaBatch|getChatMediaAvailability/);
+ assert.match(upload,/getChatMediaAvailability\(session\)/);
+ assert.match(upload,/uploadNativeChatFile\(session,/);
+ assert.match(upload,/uploadChatMediaBatch\(\[\.\.\.selectedMedia\]/);
+ assert.match(upload,/confirmUploadedMedia\(item\.id\)/);
+ assert.match(upload,/activeSession\.current\?\.token===session\.token/);
+ assert.match(upload,/mediaUploadBusy\.current=true;setMediaUploading\(true\)/);
+ assert.match(upload,/file\.size>3_000_000/);
+ assert.doesNotMatch(upload,/new WebSocket|startNamedChatSession|reconcileChatSnapshot|setSession\(/);
+ assert.match(pwa,/usePwaChatMediaUpload/);
+ assert.match(helper,/useNativeChatMediaUpload\.ts/);
+});
