@@ -64,28 +64,42 @@ export function useNativePush(token:string|null,onNavigate:(screen:MemberScreen)
  const navigate=useRef(onNavigate);
  navigate.current=onNavigate;
  const enabledSession=useRef<string|null>(null);
+ const liveSession=useRef<string|null>(token);
+ liveSession.current=token;
  const optedOut=useRef(false);
  const sync=useCallback(async(currentToken:string)=>{
   await ensureChannel(); // Android 13+ requires channel before requesting FCM token.
   const credential=(await Notifications.getDevicePushTokenAsync()).data;
   if(typeof credential!=='string'||credential.length<32)
    throw Error('Firebase no entregó un identificador válido.');
-  // A rotated FCM token must not leave the previous token enrolled.
-  const prior=registered.current;
-  if(prior&&prior.session===currentToken&&prior.device!==credential)
-   await revokeFcm(currentToken,prior.device).catch(()=>{});
+  // Stop a delayed Firebase callback from re-enrolling a signed-out user.
+  if(liveSession.current!==currentToken||optedOut.current)return;
   await bindFcm(currentToken,credential);
+  if(liveSession.current!==currentToken||optedOut.current){
+   await revokeFcm(currentToken,credential).catch(()=>{});
+   return;
+  }
+  const prior=registered.current;
   registered.current={session:currentToken,device:credential};
   enabledSession.current=currentToken;
   setState('enabled');setError('');
+  // Revoke the replaced token only after the new token has committed.
+  if(prior&&(prior.session!==currentToken||prior.device!==credential))
+   await revokeFcm(prior.session,prior.device).catch(()=>{});
  },[]);
  useEffect(()=>{
   if(Platform.OS!=='android'){setState('unavailable');return;}
+  // A restored session is authoritative; close the former device registration
+  // if the server owner changed, without disturbing the rest of Chat.
+  const prev=registered.current;
+  if(prev&&prev.session!==token){
+   registered.current=null;enabledSession.current=null;
+   void revokeFcm(prev.session,prev.device).catch(()=>{});
+  }
   if(!token){
    setTestStatus('');
-   const prev=registered.current;
-   registered.current=null;enabledSession.current=null;setState('checking');
-   if(prev)void revokeFcm(prev.session,prev.device).catch(()=>{});
+   optedOut.current=false;
+   setState('checking');
    return;
   }
   let active=true;
