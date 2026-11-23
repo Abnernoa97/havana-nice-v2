@@ -32,6 +32,22 @@ export default function MemberFamily({token}:{token:string}){
  const albumCacheOwner=useRef(token);
  const cacheEpoch=useRef(0);
  const albumInflight=useRef(new Map<string,Promise<FamilyMediaItem[]>>());
+ const predecoded=useRef(new Map<string,HTMLImageElement>());
+ const warmThumbnails=(media:readonly FamilyMediaItem[])=>{
+  for(const item of media.slice(0,6)){
+   const src=familyPrivateMediaUrl(item.thumbnailUrl);
+   if(!src||predecoded.current.has(src))continue;
+   const image=new Image();
+   image.decoding='async';image.src=src;
+   predecoded.current.set(src,image);
+  }
+  // Keep only a small bounded set of private transient image elements.
+  while(predecoded.current.size>24){
+   const oldest=predecoded.current.keys().next().value;
+   if(!oldest)break;
+   predecoded.current.delete(oldest);
+  }
+ };
  const loadCached=useCallback((actorId:string)=>{
   const cached=albumCache.current.get(actorId);
   if(cached&&Date.now()-cached.at<4*60_000)return Promise.resolve(cached.items);
@@ -39,8 +55,10 @@ export default function MemberFamily({token}:{token:string}){
   if(pending)return pending;
   const epoch=cacheEpoch.current;
   const job=getFamilyAlbumMedia(token,actorId).then(data=>{
-   if(albumCacheOwner.current===token&&cacheEpoch.current===epoch)
+   if(albumCacheOwner.current===token&&cacheEpoch.current===epoch){
     albumCache.current.set(actorId,{items:data.items,at:Date.now()});
+    warmThumbnails(data.items);
+   }
    return data.items;
   }).finally(()=>albumInflight.current.delete(actorId));
   albumInflight.current.set(actorId,job);
@@ -56,7 +74,7 @@ export default function MemberFamily({token}:{token:string}){
  },[token]);
  useEffect(()=>{
   albumCacheOwner.current=token;cacheEpoch.current++;
-  albumCache.current.clear();albumInflight.current.clear();
+  albumCache.current.clear();albumInflight.current.clear();predecoded.current.clear();
   setDirectory(null);setSelected(null);setLoading(true);
   void refresh();
   const resume=()=>{if(!document.hidden)void refresh();};
@@ -94,7 +112,7 @@ export default function MemberFamily({token}:{token:string}){
   // Signed metadata becomes stale only on a server-side family update;
   // retain the currently rendered thumbnails until fresh data arrives.
   cacheEpoch.current++;
-  albumCache.current.clear();albumInflight.current.clear();
+  albumCache.current.clear();albumInflight.current.clear();predecoded.current.clear();
   void refresh();
   setMediaTick(t=>t+1);
  });
