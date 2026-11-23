@@ -25,3 +25,4 @@
  padding:9px 12px;background:#173d30;color:white;font:inherit;
  font-weight:650;cursor:pointer}
 .hn-push-control small{width:100%;color:#97554a}
+.hn-push-control .hn-push-diagnostics{font-size:11px;line-height:1.5;color:#587063;overflow-wrap:anywhere;padding-top:4px;border-top:1px solid #e3dccd}
