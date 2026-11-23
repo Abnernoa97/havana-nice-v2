@@ -1,5 +1,5 @@
 import React,{useCallback,useEffect,useRef,useState} from 'react';
-import {AppState,Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
+import {AppState,Linking,Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
 import type {NativePushControl} from './useNativePush';
 import {getMemberNotices,markMemberNoticesRead,memberNoticeMessage,
  openFamilyRealtime,FAMILY_WS_HANDSHAKE_TIMEOUT_MS,
@@ -115,6 +115,10 @@ export default function NativeNotices({token,calendarRevision=0,push}:{token:str
      <View style={s.copy}>
       <Text style={s.name}>{memberNoticeMessage(item)}</Text>
       {!!item.preview&&<Text style={s.preview}>{item.preview}</Text>}
+      {item.kind==='admin.announcement'&&item.targetId.startsWith('https://')&&
+       <Pressable accessibilityRole="link" onPress={()=>{void Linking.openURL(item.targetId).catch(()=>{});}}>
+        <Text style={s.link}>Abrir enlace</Text>
+       </Pressable>}
       <Text style={s.time}>{new Date(item.createdAt).toLocaleString('es-MX')}</Text>
      </View>
      {!item.readAt&&<Pressable accessibilityRole="button"

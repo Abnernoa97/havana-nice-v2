@@ -77,6 +77,8 @@ export default function MemberNotices({token,calendarRevision=0}:{token:string;c
      <div className="hn-notice-copy">
       <strong>{memberNoticeMessage(item)}</strong>
       {item.preview&&<p>{item.preview}</p>}
+      {item.kind==='admin.announcement'&&item.targetId.startsWith('https://')&&
+       <a href={item.targetId} target="_blank" rel="noopener noreferrer" className="hn-notice-external-link">Abrir enlace</a>}
       <small>{new Date(item.createdAt).toLocaleString('es-MX',
        {dateStyle:'medium',timeStyle:'short'})}</small>
      </div>
