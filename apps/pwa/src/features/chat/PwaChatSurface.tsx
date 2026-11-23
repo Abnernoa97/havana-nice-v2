@@ -1,5 +1,5 @@
-import {lazy,Suspense,useLayoutEffect} from 'react';
-import {getChatMenuState} from '@havana/shared';
+import {lazy,Suspense,useLayoutEffect,useEffect} from 'react';
+import {getChatMenuState,logMemberActivity} from '@havana/shared';
 import type {PwaChatUI} from './usePwaChatController';
 import ChatTimeline from './ChatTimeline';
 import PwaChatMessageMenu from './PwaChatMessageMenu';
@@ -25,6 +25,9 @@ export default function PwaChatSurface({ui}:{ui:PwaChatUI}){
   send,draft,draftInput,typeText,openCamera
   }=ui;
   const calendarSignals=useMemberCalendarSignals(session?.token);
+  useEffect(()=>{
+   if(session?.token)void logMemberActivity(session.token,'module.open',activeScreen,'iphone');
+  },[session?.token,activeScreen]);
   useLayoutEffect(()=>{
     const field=draftInput.current;
     if(!field)return;

@@ -4,7 +4,7 @@ import {useCallback,useEffect,useLayoutEffect,useRef,useState} from 'react';
 import {AppState,StatusBar,useWindowDimensions} from 'react-native';
 import {
   chatReactionPayload,chatTypingPayload,chatReadReceiptPayload,
-  fetchBackendHealth,getChatMediaAvailability,getChatSnapshot,getOlderChatMessages,getChatMenuState,
+  logMemberActivity,fetchBackendHealth,getChatMediaAvailability,getChatSnapshot,getOlderChatMessages,getChatMenuState,
   getChatMessagePermissions,isWithinChatEditWindow,setOutgoingChatStatus,projectOutgoingChatStatus,
   clearChatAckTimer,pauseChatOutbox,confirmChatOutgoingMessage,flushChatOutbox,newClientMessageId,uploadChatMediaBatch,
   reconcileChatMessages,reconcileChatSnapshot,applyChatIncomingEvent,startNamedChatSession,
@@ -31,6 +31,9 @@ export function useNativeChatController(){
   const [session, setSession] = useState<ChatSession | null>(null);
   // Access remains the same ChatSession; only the destination changes to HOME.
   const [activeScreen,setActiveScreen]=useState<MemberScreen>('home');
+  useEffect(()=>{
+   if(session?.token)void logMemberActivity(session.token,'module.open',activeScreen,'android');
+  },[session?.token,activeScreen]);
   const [restoringAccess,setRestoringAccess] = useState(true);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [draft, setDraft] = useState('');

@@ -50,7 +50,8 @@ export function adminCreateMember(token:string,displayName:string){
  return api<{member:AdminMember}>('/api/chat/admin/members',authenticated(token,{method:'POST',body:JSON.stringify({displayName})}));
 }
 export type AdminMemberHistoryEvent={
- event_type:'login'|'connect'|'disconnect';occurred_at:number;
+ event_type:'login'|'connect'|'disconnect'|'module.open'|'audio.play';occurred_at:number;
+ detail?:string;
  platform:string;operating_system:string;device_name:string;device_model:string|null;
 };
 export type AdminMemberHistory={
