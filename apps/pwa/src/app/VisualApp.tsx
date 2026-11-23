@@ -95,13 +95,15 @@ function VisualApp({displayName,active,onNavigate,preview=false,token,actorId,ca
         </Suspense>:<>
           {screen==='calendar'?<div className="visual-section-header visual-calendar-heading">
             <h1>Calendario</h1>
+          </div>:screen==='repertoire'?<div className="visual-section-header hn-repertoire-title">
+            <h1>Repertorio</h1>
+            <button type="button" className="hn-open-audio"
+              onClick={()=>navigate('audio')}>♫ Abrir Audio HAVANA NICE</button>
           </div>:screen!=='audio'&&<div className="visual-section-header">
             <button className="visual-back" type="button" onClick={()=>navigate('home')}>‹ Inicio</button>
             <span className="visual-overline">HAVANA NICE / {selected?.label.toUpperCase()}</span>
             <h1>{selected?.label}</h1>
             <p className="visual-intro">{selected?.description}</p>
-            {screen==='repertoire'&&<button type="button" className="hn-open-audio"
-              onClick={()=>navigate('audio')}>♫ Abrir Audio HAVANA NICE</button>}
           </div>}
           <Suspense fallback={<div className="visual-empty" role="status" aria-live="polite">Abriendo módulo…</div>}>
            {screen==='calendar'&&token?<CalendarAccordion token={token} calendarRevision={calendarRevision}/>:

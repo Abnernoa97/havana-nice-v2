@@ -1,73 +1,110 @@
-/* HAVANA NICE: refined beige panel + breathing emerald buttons and reveal. */
-.hn-member-repertoire .hn-rep-heading{align-items:center}
-.hn-member-repertoire .hn-rep-heading h2{margin:0;font-size:23px;color:#153d30}
-.hn-member-repertoire .hn-rep-panel{margin:12px 0 5px;padding:13px 12px 11px;
- border:1px solid #e3e3dc;border-radius:18px;
- background:#fcfaf5;box-shadow:0 4px 17px #173a3010}
-.hn-member-repertoire .hn-rep-tabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));
- gap:7px;padding:0}
-.hn-member-repertoire .hn-rep-tab{position:relative;isolation:isolate;overflow:hidden;
- display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
- min-width:0;min-height:60px;padding:10px 3px;border:1px solid #a4bba9;
- border-radius:13px;cursor:pointer;
- color:#163f30;font:700 clamp(9px,2.45vw,13px)/1.18 system-ui;
- background:linear-gradient(125deg,#d4e6d6,#b4d1bd,#e0efdf,#bad7c4,#d5e6d4);
- background-size:280% 280%;
- animation:hn-green-shift 14s ease-in-out infinite}
-.hn-member-repertoire .hn-rep-tab:nth-child(2){animation-delay:-4s}
-.hn-member-repertoire .hn-rep-tab:nth-child(3){animation-delay:-8s}
-.hn-member-repertoire .hn-rep-tab:before{content:"";position:absolute;z-index:0;
- inset:-20% auto -20% -52%;width:32%;pointer-events:none;
- background:linear-gradient(100deg,transparent,#ffffff86 52%,transparent);
- transform:skewX(-19deg) translateX(-150%);
- animation:hn-green-glint 14s ease-in-out infinite}
-.hn-member-repertoire .hn-rep-tab:nth-child(2):before{animation-delay:-4s}
-.hn-member-repertoire .hn-rep-tab:nth-child(3):before{animation-delay:-8s}
-.hn-member-repertoire .hn-rep-tab.is-open{color:#f8f6ec;border-color:#184738;
- background:linear-gradient(125deg,#10372d,#28634c,#174a39,#397259,#123c30);
- background-size:280% 280%;box-shadow:0 3px 8px #153b3025}
-.hn-member-repertoire .hn-rep-tab-title,.hn-member-repertoire .hn-rep-tab-symbol{position:relative;z-index:1}
-.hn-member-repertoire .hn-rep-tab-title{letter-spacing:-.025em;overflow-wrap:anywhere;text-align:center}
-.hn-member-repertoire .hn-rep-tab-symbol{font-size:13px;line-height:1}
-.hn-member-repertoire .hn-rep-tab:focus-visible{outline:3px solid #ac9169;outline-offset:3px}
-@keyframes hn-green-shift{0%,100%{background-position:0% 45%}50%{background-position:100% 55%}}
-@keyframes hn-green-glint{
- 0%,12%,42%,100%{opacity:0;transform:skewX(-19deg) translateX(-150%)}
- 19%{opacity:.22}
- 31%{opacity:.14;transform:skewX(-19deg) translateX(530%)}
- 40%{opacity:0;transform:skewX(-19deg) translateX(530%)}
-}
-/* Smooth unrolling of the *actual song list*, with a gentle moving green wash. */
-.hn-member-repertoire .hn-rep-reveal{position:relative;isolation:isolate;overflow:hidden;
- margin-top:11px;border:1px solid #d5e0d3;border-radius:14px;
- background:linear-gradient(140deg,#fbfcf8,#ecf4ea,#fffdf6,#eaf2e8);
- background-size:280% 280%;
- box-shadow:inset 0 2px 12px #33604a0b,0 2px 6px #233d300c;
- transform-origin:top center;
- animation:hn-rep-unroll .52s cubic-bezier(.16,1,.3,1) both,
-  hn-green-shift 15s ease-in-out .52s infinite}
-.hn-member-repertoire .hn-rep-reveal:before{content:"";position:absolute;
- top:0;left:0;right:0;height:3px;
- background:linear-gradient(90deg,#e2eee1,#8eaf99,#cde7d0,#5e896c,#e7efe5);
- background-size:260% 100%;
- animation:hn-green-shift 12s ease-in-out infinite}
-@keyframes hn-rep-unroll{
- 0%{clip-path:inset(0 0 99% 0 round 12px);opacity:.3;transform:translateY(-11px) scaleY(.97)}
- 100%{clip-path:inset(0 0 0 0 round 12px);opacity:1;transform:translateY(0) scaleY(1)}
-}
-.hn-member-repertoire .hn-rep-song-list{position:relative;padding:8px 12px 4px;min-width:0}
-.hn-member-repertoire .hn-rep-row{padding:15px 4px;border-bottom:1px solid #d9e2d7}
+/* Premium clean repertoire: an immediate moving emerald sheen and living wave.
+   No parchment, texture image, shimmer library, timers or backend changes. */
+.hn-member-repertoire{display:grid;gap:0;padding-bottom:28px}
+.hn-member-repertoire .hn-rep-tabs{
+ display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;
+ width:100%;margin:0 0 12px}
+.hn-member-repertoire .hn-rep-tab{
+ position:relative;isolation:isolate;overflow:hidden;min-width:0;min-height:64px;
+ display:flex;align-items:center;justify-content:center;padding:12px 4px;
+ border:1px solid #adcdb8;border-radius:20px;
+ background:linear-gradient(122deg,#b6d5c0,#e3eee3 26%,#b3d6c2 55%,#dbecdd 79%,#a5cbb0);
+ background-size:260% 260%;
+ color:#123b2d;font:750 clamp(9px,2.55vw,13px)/1.12 system-ui,sans-serif;
+ box-shadow:inset 0 1px 1px #ffffffa3,0 3px 12px #27544312;
+ cursor:pointer;animation:hn-rep-green-flow 5.8s ease-in-out infinite}
+.hn-member-repertoire .hn-rep-tab:nth-child(2){animation-delay:-1.8s}
+.hn-member-repertoire .hn-rep-tab:nth-child(3){animation-delay:-3.3s}
+.hn-member-repertoire .hn-rep-tab.is-open{
+ background:linear-gradient(120deg,#063528 0%,#176043 26%,#083b2d 49%,#276b4b 72%,#073729 100%);
+ background-size:260% 260%;color:#fffdf5;border-color:#155e43;
+ box-shadow:inset 0 1px 1px #ffffff45,0 5px 17px #10433127}
+.hn-member-repertoire .hn-rep-tab:before{
+ content:"";position:absolute;z-index:0;left:-28%;top:-45%;height:190%;width:50%;
+ pointer-events:none;opacity:.7;transform:rotate(15deg) translateX(0);
+ background:linear-gradient(90deg,transparent,#ffffff12 23%,#e4fff1b5 49%,#ffffff14 76%,transparent);
+ filter:blur(1px);animation:hn-rep-sheen 4.6s cubic-bezier(.3,.4,.4,.8) infinite}
+.hn-member-repertoire .hn-rep-tab:nth-child(2):before{animation-delay:-1.6s}
+.hn-member-repertoire .hn-rep-tab:nth-child(3):before{animation-delay:-3.1s}
+.hn-member-repertoire .hn-rep-tab:after{
+ content:"";position:absolute;inset:auto -15% -75% -15%;height:120%;
+ background:radial-gradient(ellipse at 50% 20%,#f7fff66b,transparent 64%);
+ pointer-events:none;opacity:.22;animation:hn-rep-breath 3.8s ease-in-out infinite}
+.hn-member-repertoire .hn-rep-tab.is-open:after{opacity:.17}
+.hn-member-repertoire .hn-rep-tab-title{position:relative;z-index:1;text-align:center;
+ overflow-wrap:anywhere;letter-spacing:-.015em;text-shadow:0 1px 1px #0e2c271c}
+.hn-member-repertoire .hn-rep-tab:focus-visible{outline:3px solid #a4854e;outline-offset:3px}
+@keyframes hn-rep-green-flow{
+ 0%,100%{background-position:2% 35%}
+ 50%{background-position:98% 65%}}
+@keyframes hn-rep-sheen{
+ 0%{opacity:.72;transform:rotate(15deg) translateX(0)}
+ 49%{opacity:.75;transform:rotate(15deg) translateX(325%)}
+ 60%,100%{opacity:0;transform:rotate(15deg) translateX(325%)}}
+@keyframes hn-rep-breath{0%,100%{opacity:.2}50%{opacity:.5}}
+
+/* Animated expansion of natural content height, not a rectangle dropping in. */
+.hn-member-repertoire .hn-rep-drop{
+ display:grid;grid-template-rows:0fr;overflow:hidden;min-width:0;
+ margin-top:1px;border-radius:34px 42px 30px 46px;
+ opacity:0;transform:translateY(-13px);
+ animation:hn-rep-open .7s cubic-bezier(.18,.79,.23,1) forwards}
+.hn-member-repertoire .hn-rep-drop-inner{
+ position:relative;isolation:isolate;min-width:0;min-height:0;overflow:hidden;
+ border-radius:34px 42px 30px 46px;background:
+ radial-gradient(ellipse 85% 95px at 45% -10%,#c3e3caba,transparent 94%),
+ linear-gradient(175deg,#eaf4e9 0%,#fffdf8 21%,#fffdfa 82%,#f7faf4 100%);
+ border:1px solid #e5ebdf;box-shadow:0 9px 28px #18432b18,inset 0 1px 0 #ffffffd9}
+@keyframes hn-rep-open{
+ 0%{grid-template-rows:0fr;opacity:.2;transform:translateY(-13px)}
+ 100%{grid-template-rows:1fr;opacity:1;transform:translateY(0)}}
+.hn-member-repertoire .hn-rep-wave{
+ position:relative;overflow:hidden;width:100%;height:57px;pointer-events:none;
+ margin-bottom:-20px;z-index:1}
+.hn-member-repertoire .hn-rep-wave-svg{
+ display:block;width:116%;height:76px;margin-left:-8%;
+ transform:translateX(-2%);animation:hn-rep-wave-sway 3.8s ease-in-out infinite}
+@keyframes hn-rep-wave-sway{
+ 0%,100%{transform:translateX(-4%) translateY(2px)}
+ 50%{transform:translateX(5%) translateY(-4px)}}
+.hn-member-repertoire .hn-rep-drop-inner:before{
+ content:"";position:absolute;z-index:2;top:22px;left:-55%;
+ width:65%;height:18px;transform:rotate(-6deg);
+ pointer-events:none;opacity:.65;filter:blur(5px);
+ background:linear-gradient(90deg,transparent,#fffdfb,#ddfff0,transparent);
+ animation:hn-rep-list-sheen 4.3s linear infinite}
+@keyframes hn-rep-list-sheen{
+ 0%{opacity:.65;left:-55%}
+ 65%{opacity:.8;left:115%}
+ 66%,100%{opacity:0;left:115%}}
+.hn-member-repertoire .hn-rep-song-list{position:relative;z-index:1;padding:15px 20px 13px;min-width:0}
+.hn-member-repertoire .hn-rep-row{padding:17px 3px;gap:12px;border-bottom:1px solid #d7e0d5}
 .hn-member-repertoire .hn-rep-row:last-child{border-bottom:0}
-.hn-member-repertoire .hn-rep-row strong{font-size:14px;color:#213d31}
-.hn-member-repertoire .hn-rep-row a{color:#54735e}
-.hn-member-repertoire .hn-rep-empty{font-size:13px;color:#687a68;margin:14px 4px}
-.hn-member-repertoire .hn-rep-calendar-hint{font-size:12px;line-height:1.5;color:#697668;margin:5px 0 0}
+.hn-member-repertoire .hn-rep-row strong{font-size:15px;color:#153a2c}
+.hn-member-repertoire .hn-rep-row small{font-size:12px}
+.hn-member-repertoire .hn-rep-row a{color:#174e38;text-decoration:underline;text-underline-offset:3px}
+.hn-member-repertoire .hn-rep-empty{font-size:13px;color:#647a68;margin:17px 4px}
+.hn-repertoire-title h1{margin:0 0 23px;color:#103c2f}
+.hn-repertoire-title .hn-open-audio{
+ display:flex;width:min(100%,500px);justify-content:center;align-items:center;
+ margin:0 auto 28px;padding:17px 19px;border-radius:999px;
+ background:linear-gradient(105deg,#eff7ed,#e5efe5,#f3f8f1);
+ border-color:#bed4c2;color:#143c2e;font-size:14px;letter-spacing:.01em;
+ box-shadow:0 3px 14px #1c45300f}
+@media(max-width:750px){
+ .visual-content:has(> .hn-repertoire-title){padding-top:15px}
+ .hn-repertoire-title h1{font-size:43px;margin:0 0 24px}
+ .hn-repertoire-title .hn-open-audio{margin-bottom:29px}
+ .hn-member-repertoire .hn-rep-song-list{padding:13px 14px 10px}
+}
 @media(max-width:390px){
- .hn-member-repertoire .hn-rep-panel{padding-left:9px;padding-right:9px}
  .hn-member-repertoire .hn-rep-tabs{gap:5px}
- .hn-member-repertoire .hn-rep-tab-title{letter-spacing:-.06em}
+ .hn-member-repertoire .hn-rep-tab{border-radius:16px;padding:10px 2px}
+ .hn-member-repertoire .hn-rep-song-list{padding:11px 10px}
 }
 @media(prefers-reduced-motion:reduce){
  .hn-member-repertoire .hn-rep-tab,.hn-member-repertoire .hn-rep-tab:before,
- .hn-member-repertoire .hn-rep-reveal,.hn-member-repertoire .hn-rep-reveal:before{animation:none}
+ .hn-member-repertoire .hn-rep-tab:after,.hn-member-repertoire .hn-rep-drop,
+ .hn-member-repertoire .hn-rep-wave-svg,.hn-member-repertoire .hn-rep-drop-inner:before{animation:none!important}
+ .hn-member-repertoire .hn-rep-drop{grid-template-rows:1fr;opacity:1;transform:none}
 }

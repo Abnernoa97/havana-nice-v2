@@ -1,5 +1,5 @@
-import React,{useState} from 'react';
-import {ActivityIndicator,Image,Modal,Platform,Pressable,ScrollView,StatusBar,StyleSheet,Text,View} from 'react-native';
+import React,{useEffect,useRef,useState} from 'react';
+import {AccessibilityInfo,ActivityIndicator,Animated,Easing,Image,Modal,Platform,Pressable,ScrollView,StatusBar,StyleSheet,Text,useWindowDimensions,View} from 'react-native';
 import {MEMBER_MODULES,type MemberScreen} from '@havana/shared';
 import NativeCalendar from '../features/calendar/NativeCalendar';
 import NativeRepertoire from '../features/repertoire/NativeRepertoire';
@@ -21,6 +21,27 @@ function NativeMemberHome({displayName,actorId,token,active,calendarRevision=0,o
  const profile=useNativeMemberProfile(token,actorId,true);
  const unreadNotices=useNativeUnreadNotices(token,profile.liveVersion+calendarRevision);
  const [profileOpen,setProfileOpen]=useState(false);
+ const {width:screenWidth}=useWindowDimensions();
+ const headerPhase=useRef(new Animated.Value(0)).current;
+ const [reduceHeaderMotion,setReduceHeaderMotion]=useState(false);
+ useEffect(()=>{
+  let alive=true;
+  void AccessibilityInfo.isReduceMotionEnabled().then(v=>{if(alive)setReduceHeaderMotion(v);}).catch(()=>{});
+  const listener=AccessibilityInfo.addEventListener('reduceMotionChanged',setReduceHeaderMotion);
+  return()=>{alive=false;listener.remove();};
+ },[]);
+ useEffect(()=>{
+  if(reduceHeaderMotion){headerPhase.stopAnimation();headerPhase.setValue(0);return;}
+  const motion=Animated.loop(Animated.timing(headerPhase,{
+   toValue:1,duration:4700,easing:Easing.linear,useNativeDriver:true
+  }));
+  motion.start();
+  return()=>motion.stop();
+ },[headerPhase,reduceHeaderMotion]);
+ const headerShineTravel=headerPhase.interpolate({inputRange:[0,1],outputRange:[-55,screenWidth+170]});
+ const headerShineOpacity=headerPhase.interpolate({inputRange:[0,.12,.7,.83,1],outputRange:[.7,.96,.83,.25,0]});
+ const headerBloomTravel=headerPhase.interpolate({inputRange:[0,1],outputRange:[-65,screenWidth*.48]});
+ const headerBloomOpacity=headerPhase.interpolate({inputRange:[0,.4,1],outputRange:[.22,.42,.16]});
  const selected=MEMBER_MODULES.find(item=>item.id===active);
  const mustAdd=profile.phase==='missing',checking=profile.phase==='checking';
  const avatar=(photo:string|null|undefined,name:string,size:number)=>
@@ -28,7 +49,13 @@ function NativeMemberHome({displayName,actorId,token,active,calendarRevision=0,o
    <Text style={styles.initial}>{name.charAt(0).toUpperCase()}</Text>;
  const header=<>
   <View style={styles.top}>
-   <View><Text style={styles.brand}>HAVANA NICE</Text>
+   {!reduceHeaderMotion&&<>
+    <Animated.View pointerEvents="none" style={[styles.headerBloom,{
+     opacity:headerBloomOpacity,transform:[{translateX:headerBloomTravel}]}]}/>
+    <Animated.View pointerEvents="none" style={[styles.headerShine,{
+     opacity:headerShineOpacity,transform:[{translateX:headerShineTravel},{rotate:'-12deg'}]}]}/>
+   </>}
+   <View style={styles.headerIdentity}><Text style={styles.brand}>HAVANA NICE</Text>
     <Text style={styles.subheading}>ESPACIO DEL EQUIPO</Text></View>
    <Pressable accessibilityRole="button" accessibilityLabel="Abrir mi perfil"
     onPress={()=>setProfileOpen(true)}
@@ -42,10 +69,10 @@ function NativeMemberHome({displayName,actorId,token,active,calendarRevision=0,o
    accessibilityLabel="Private Listening Lounge">
     <NativeAudioEditorialView inline/>
   </View>:<>
-   {active!=='calendar'&&<Pressable accessibilityRole="button" accessibilityLabel="Volver a Inicio"
+   {active!=='calendar'&&active!=='repertoire'&&<Pressable accessibilityRole="button" accessibilityLabel="Volver a Inicio"
     style={styles.back} onPress={()=>onNavigate('home')}><Text style={styles.backLabel}>‹ Inicio</Text></Pressable>}
-   <Text style={styles.title}>{active==='calendar'?'Calendario':selected?.label||'Módulo'}</Text>
-   {active!=='calendar'&&<Text style={styles.lead}>{selected?.description}</Text>}
+   <Text style={[styles.title,active==='repertoire'&&styles.repertoireTitle]}>{active==='calendar'?'Calendario':selected?.label||'Módulo'}</Text>
+   {active!=='calendar'&&active!=='repertoire'&&<Text style={styles.lead}>{selected?.description}</Text>}
    {active==='repertoire'&&<Pressable accessibilityRole="button" accessibilityLabel="Abrir Audio HAVANA NICE"
      onPress={()=>onNavigate('audio')} style={styles.openAudio}>
      <Text style={styles.openAudioLabel}>♫  Abrir Audio HAVANA NICE</Text>
@@ -123,10 +150,17 @@ const styles=StyleSheet.create({
  top:{backgroundColor:'#0D2A23',paddingHorizontal:20,paddingBottom:16,
   paddingTop:Platform.OS==='android'?(StatusBar.currentHeight||24)+12:16,
   minHeight:95,marginHorizontal:0,marginTop:0,
-  marginBottom:0,flexDirection:'row',justifyContent:'space-between',alignItems:'center'},
+  marginBottom:0,flexDirection:'row',justifyContent:'space-between',alignItems:'center',
+  position:'relative',overflow:'hidden'},
+ headerIdentity:{zIndex:1},
+ headerBloom:{position:'absolute',width:230,height:145,top:0,left:-60,
+  borderRadius:95,backgroundColor:'#387d5e'},
+ headerShine:{position:'absolute',height:3,width:185,left:0,top:'75%',
+  borderRadius:50,backgroundColor:'#f6e8bb',
+  shadowColor:'#f8e8b4',shadowOpacity:.9,shadowRadius:12,elevation:4},
  brand:{fontFamily:'serif',fontSize:19,fontWeight:'700',letterSpacing:2,color:'#DBC59A'},
  subheading:{fontSize:11,letterSpacing:1.4,color:'#D3DED5',marginTop:8},
- myProfile:{padding:2},headerAvatar:{width:40,height:40,borderRadius:20,
+ myProfile:{padding:2,zIndex:1},headerAvatar:{width:40,height:40,borderRadius:20,
   borderWidth:2,borderColor:'#DBC59A',backgroundColor:'#f2f4ec',alignItems:'center',justifyContent:'center',overflow:'hidden'},
  initial:{fontSize:20,color:'#285343',fontWeight:'700'},
  bottomNav:{flexDirection:'row',backgroundColor:'#FFFCF7',borderTopWidth:1,borderColor:'#E4DDD1',paddingVertical:8},
@@ -137,10 +171,11 @@ const styles=StyleSheet.create({
  unreadCount:{color:'#fff',fontSize:10,fontWeight:'700'},
  bottomLabel:{fontSize:9,color:'#708077'},activeLabel:{fontWeight:'800',color:'#133B30'},
  title:{fontSize:36,fontWeight:'700',marginTop:8,color:'#1B332B'},
+ repertoireTitle:{fontSize:40,color:'#0d3c2d',marginTop:8,marginBottom:22},
  lead:{fontSize:14,lineHeight:21,color:'#657269',marginTop:8,marginBottom:23},
- openAudio:{marginBottom:18,paddingVertical:14,paddingHorizontal:16,borderWidth:1,
-  borderColor:'#c9c6b6',backgroundColor:'#f1f6ef',borderRadius:13,alignSelf:'stretch'},
- openAudioLabel:{color:'#205640',fontSize:13,fontWeight:'700'},
+ openAudio:{marginBottom:26,paddingVertical:16,paddingHorizontal:16,borderWidth:1,
+  borderColor:'#bbd3c2',backgroundColor:'#edf5ea',borderRadius:32,alignSelf:'stretch',alignItems:'center'},
+ openAudioLabel:{color:'#164431',fontSize:13,fontWeight:'700'},
  back:{paddingVertical:8,alignSelf:'flex-start'},backLabel:{fontSize:15,color:'#133B30',fontWeight:'700'},
  pending:{marginTop:24,padding:22,backgroundColor:'#f7f7f7',borderRadius:15,minHeight:140},
  pendingTitle:{fontSize:19,color:'#1B332B',fontWeight:'700'},
