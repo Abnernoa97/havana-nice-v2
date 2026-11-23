@@ -36,7 +36,7 @@ export function pwaPushDiagnostics():string{
   'pushManager' in ServiceWorkerRegistration.prototype;
  const notification=typeof Notification!=='undefined'&&
   typeof Notification.requestPermission==='function';
- const ios=navigator.userAgent.match(/(?:iPhone|iPad|iPod).*OS (\\d+)[_.](\\d+)/);
+ const ios=navigator.userAgent.match(/(?:iPhone|iPad|iPod).*OS (\d+)[_.](\d+)/);
  return [
   'Sistema: '+pushPlatform()+(ios?' (iOS '+ios[1]+'.'+ios[2]+')':''),
   'Instalada como app: '+(installedPwa()?'sí':'no'),
