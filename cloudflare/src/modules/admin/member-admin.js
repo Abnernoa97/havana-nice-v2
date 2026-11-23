@@ -91,8 +91,21 @@ export async function handleAdminMemberManagement(request,env,url,origin,respond
        'FROM chat_access_events WHERE actor_id=? ORDER BY occurred_at DESC LIMIT 100'
      ).bind(actorId).all()
    ]);
-   return reply(respond,origin,{entries:Number(counts?.entries||0),events:events.results||[],
-     since:'Solo desde la activación del historial; no se inventan registros anteriores.'});
+   let activity=[];
+   try{
+    const recent=await env.DB.prepare(
+     'SELECT event_type,detail,occurred_at,platform FROM member_activity_events '+
+     'WHERE actor_id=? ORDER BY occurred_at DESC LIMIT 150'
+    ).bind(actorId).all();
+    activity=(recent.results||[]).map(row=>({
+     event_type:row.event_type,detail:row.detail,occurred_at:row.occurred_at,
+     platform:row.platform,operating_system:'',device_name:'',device_model:null
+    }));
+   }catch{/* Migration is additive: the existing access history stays available. */}
+   const combined=[...(events.results||[]),...activity]
+    .sort((a,b)=>b.occurred_at-a.occurred_at).slice(0,180);
+   return reply(respond,origin,{entries:Number(counts?.entries||0),events:combined,
+     since:'Solo actividad registrada desde su activación; no se inventan acciones anteriores.'});
  }
  if(url.pathname==='/api/chat/admin/member-delete-preview' && request.method==='GET'){
    const actorId=url.searchParams.get('actorId')||'';
