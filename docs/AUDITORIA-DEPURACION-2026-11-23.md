@@ -89,3 +89,11 @@
 - `AdminApp.tsx`: eliminadas ocho descripciones de pestañas nunca renderizadas. Identificadores, nombres, iconos, orden y navegación permanecen idénticos.
 - Dos pruebas nuevas recorren los fuentes activos para impedir referencias a selectores eliminados y preservar los ocho accesos vigentes.
 - Sin alteraciones de Worker, R2/D1, migraciones, FCM ni APK firmada; CSS solo se evalúa en el build y requiere prueba visual posterior.
+
+## Undécima fase · Calendario y Repertorio: responsabilidades aisladas (23/11)
+- Auditoría por consumidores: `event-repertoire.css`, `calendar-memories.css`, `calendar-live-notice.css` y `member-repertoire.css` siguen en uso. Se conservan (incluidos estilos internos del lector BOOK).
+- El acordeón del Calendario delega la vista y petición D1 del repertorio de cada evento a `features/calendar/EventRepertoire.tsx`; ahora el CSS de la sección se importa desde su propio componente.
+- Se mantiene el mismo `getEventRepertoire(token,eventId)`, el mismo estado de error/carga, la protección contra respuesta tardía y las mismas props `token/eventId/revision`; no se crea otra sesión, conexión ni canal.
+- En Administración de Repertorio se elimina el segundo efecto de limpieza de `itemsRequest`, redundante porque el efecto dueño de la suscripción ya invalida ese contador al desmontar o cambiar token.
+- Pruebas de modularidad cubren la propiedad del CSS, el esquema de peticiones, las invalidaciones al salir y el montaje únicamente al expandir una fecha.
+- No se modifican Worker, schema D1, objetos R2, EPUB/BOOK, ni APK Android.

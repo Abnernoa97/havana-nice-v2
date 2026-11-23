@@ -76,7 +76,6 @@ export default function AdminRepertoire({token,onExpired}:{token:string;onExpire
   return()=>{catalogRequest.current++;itemsRequest.current++;stop();};
  },[token,refreshAll]);
  useEffect(()=>{void refreshItems(eventId);setChecked([]);},[eventId,refreshItems]);
- useEffect(()=>()=>{itemsRequest.current+=1;},[]);
  const wrap=async(action:()=>Promise<unknown>,message:string)=>{
   if(busy)return;
   setBusy(true);setError('');setNotice('');
