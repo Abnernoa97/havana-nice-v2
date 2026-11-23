@@ -178,11 +178,12 @@ test('iPhone video grants are request-on-tap, with fixed photo/video frames',()=
  const media=read('apps/pwa/src/features/chat/ChatMediaView.tsx');
  const preview=read('apps/pwa/src/features/chat/useChatMediaPreview.ts');
  const css=read('apps/pwa/src/styles/chat/chat.css');
- assert.match(media,/videoRequest===0\?/);
- assert.match(media,/onClick=\{\(\)=>setVideoRequest\(1\)\}/);
- assert.match(media,/preload="none"/);
+  assert.match(media,/setVideoOpen\(true\);setVideoRequest\(1\)/);
+  const player=read('apps/pwa/src/features/chat/ChatVideoPlayer.tsx');
+  assert.match(player,/preload="metadata"/);
+  assert.match(player,/controls=\{false\}/);
  assert.match(media,/hn-photo-placeholder/);
- assert.match(media,/hn-video-placeholder/);
+  assert.match(media,/hn-chat-video-cover/);
  assert.match(preview,/media\.kind!=='video'\|\|!visible\|\|videoRequest===0/);
  assert.match(css,/\.hn-chat-image-button\{position:relative;display:block;aspect-ratio:1\/1/);
  assert.match(css,/\.hn-chat-video,\.hn-media-loading\.hn-video-placeholder\{width:100%;aspect-ratio:16\/9/);
@@ -198,7 +199,7 @@ test('iPhone photo preparation is visible and isolated across actor switches',()
  assert.match(picker,/setPhotoPreparing\(true\)/);
  assert.match(picker,/setPhotoPreparing\(\[\.\.\.photoEncodeTasks\.current\.keys\(\)\]\.some/);
  assert.match(app,/photoPreparing=\{photoPreparing\}/);
- assert.match(view,/photoPreparing\?'Preparando imágenes ligeras/);
+  assert.match(view,/photoPreparing\?'Preparando fotos/);
  assert.match(backend,/\['image\/webp','photo'\]/);
  assert.match(backend,/existing\.size_bytes!==size\|\|existing\.mime_type!==data\.mimeType/);
 });
@@ -286,7 +287,7 @@ test('video JPEG posters use one isolated decoder, same private R2 grant and scr
  assert.match(maker,/URL\.revokeObjectURL\(url\)/);
  assert.match(pick,/posterChain\.current=posterChain\.current\.catch/);
  assert.match(pick,/prepareVideoPoster\(item,actorId\)/);
- assert.match(queue,/chat-video-selected-poster/);
+  assert.match(queue,/item\.videoPoster\.url/);
  assert.doesNotMatch(queue,/<video\b/);
  assert.match(upload,/posterUploaded=false/);
  assert.match(upload,/base\+id\+'\/poster'/);

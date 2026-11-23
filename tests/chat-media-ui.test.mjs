@@ -215,7 +215,7 @@ test('Native Chat timeline is presentation-only; original scroll ownership stays
  assert.match(timeline,/onMomentumScrollEnd=\{onScrollEndDrag\}/);
  assert.match(timeline,/onLongPress=\{\(anchor\) => onMessageLongPress\(message,anchor\)\}/);
  assert.match(timeline,/onReply=\{\(\) => onReply\(message\)\}/);
- assert.match(timeline,/<NativeChatMediaView media=\{message\.media\} session=\{session\}/);
+  assert.match(timeline,/<NativeChatMediaView media=\{message\.media\} session=\{session\} compact=\{compact\}/);
  assert.doesNotMatch(timeline,/new WebSocket|openChatSocket\(|startNamedChatSession\(|saveNativeLocalChat\(|uploadNativeChatFile\(/);
  assert.doesNotMatch(controller,/<SwipeableBubble|<NativeChatMediaView/);
 });
@@ -237,8 +237,8 @@ test('Native photos and videos run in separate modules with preserved quality',(
   assert.match(video,/<VideoView player=\{player\} nativeControls/);
   assert.match(video,/surfaceType="surfaceView"/);
   assert.doesNotMatch(video,/surfaceType="textureView"/);
-  assert.match(video,/useEvent\(player,'statusChange'/);
-  assert.match(video,/onRetry=\{\(\)=>setAttempt/);
+   assert.match(video,/player\.addListener\('statusChange'/);
+   assert.match(video,/onPress=\{\(\)=>setAttempt/);
   assert.match(grant,/Authorization:'Bearer '\+token/);
   assert.match(cache,/File\.downloadFileAsync/);
   assert.match(cache,/finished\.size!==media\.sizeBytes/);
