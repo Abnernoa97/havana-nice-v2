@@ -90,7 +90,7 @@ export function usePwaChatController(){
   const [savingEdit,setSavingEdit] = useState(false);
   const connectLatest = useRef<(next: ChatSession) => void>(() => {});
   const refreshLatest = useRef<() => void>(() => {});
-  const {mediaReady,mediaUploading,mediaProgress,sendSelectedMedia}=usePwaChatMediaUpload({
+  const {mediaReady,mediaUploading,mediaProgress,sendSelectedMedia,sendVoice}=usePwaChatMediaUpload({
     session,activeSession,mediaQueue,mediaUploadBusy,setMediaError,
     waitForMediaPreparation,confirmUploadedMedia,refreshLatest,
   });
@@ -595,7 +595,7 @@ export function usePwaChatController(){
   menuMessage,menuAnchor,setMenuMessage,react,reconnect,editing,savingEdit,finishEditing,
   replyTo,setReplyTo,typing,composerPanel,setComposerPanel,openGalleryMedia,insertEmoji,
   photosPicker,videoPicker,cameraPicker,chooseMedia,selectedMedia,mediaUploading,
-  photoPreparing,mediaProgress,mediaReady,removeSelectedMedia,mediaError,sendSelectedMedia,
+  photoPreparing,mediaProgress,mediaReady,removeSelectedMedia,mediaError,sendSelectedMedia,sendVoice,
   send,draft,draftInput,typeText,openCamera
   };
 }

@@ -318,3 +318,16 @@ h1 span { font-weight:400; }
 .hn-gallery-progress input{flex:1;min-width:0;accent-color:#eee5cd}
 .hn-gallery-progress span{font-size:11px}
 .hn-gallery-loading{color:#fff;font-size:14px}
+
+/* Voice composer appears in place of the old nonfunctional microphone. */
+.hn-chat-voice-recorder{position:relative;display:flex;align-items:center}
+.hn-chat-voice-recorder>.chat-action-circle{width:50px;height:50px;
+ background:#163b2d;color:white;border:0;border-radius:50%;font-size:23px}
+.hn-chat-voice-actions{display:flex;align-items:center;gap:5px;padding:5px 6px;
+ border-radius:21px;background:#173a2e;color:#fff;font-size:12px}
+.hn-chat-voice-actions button{background:#f0ede2;color:#163e2f;padding:8px;
+ border:0;border-radius:13px;font-size:12px;font-weight:700}
+.hn-chat-voice-actions span{font-variant-numeric:tabular-nums}
+.hn-chat-voice-error{position:absolute;right:0;bottom:52px;width:max-content;
+ max-width:240px;padding:8px;border-radius:9px;background:#fff3ea;
+ color:#9c2f26;font-size:11px}

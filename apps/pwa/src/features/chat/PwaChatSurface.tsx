@@ -4,6 +4,7 @@ import type {PwaChatUI} from './usePwaChatController';
 import ChatTimeline from './ChatTimeline';
 import PwaChatMessageMenu from './PwaChatMessageMenu';
 import PwaChatMediaQueuePreview from './PwaChatMediaQueuePreview';
+import PwaChatVoiceRecorder from './PwaChatVoiceRecorder';
 import PwaMemberAccessPanel from './PwaMemberAccessPanel';
 import ComposerIcon from './ChatComposerIcon';
 import {useMemberCalendarSignals} from '../calendar/useMemberCalendarSignals';
@@ -21,7 +22,7 @@ export default function PwaChatSurface({ui}:{ui:PwaChatUI}){
   menuMessage,menuAnchor,setMenuMessage,react,reconnect,editing,savingEdit,finishEditing,
   replyTo,setReplyTo,typing,composerPanel,setComposerPanel,openGalleryMedia,insertEmoji,
   photosPicker,videoPicker,cameraPicker,chooseMedia,selectedMedia,mediaUploading,
-  photoPreparing,mediaProgress,mediaReady,removeSelectedMedia,mediaError,sendSelectedMedia,
+  photoPreparing,mediaProgress,mediaReady,removeSelectedMedia,mediaError,sendSelectedMedia,sendVoice,
   send,draft,draftInput,typeText,openCamera
   }=ui;
   const calendarSignals=useMemberCalendarSignals(session?.token);
@@ -160,10 +161,8 @@ export default function PwaChatSurface({ui}:{ui:PwaChatUI}){
                   disabled={savingEdit||mediaUploading||(!selectedMedia.length&&!draft.trim())}>
                   <ComposerIcon name="send" size={24}/>
                 </button>
-              :<button type="button" className="chat-action-circle" aria-label="Grabar audio (próximamente)"
-                  onClick={()=>window.alert('Los mensajes de voz se habilitarán después de fotos y videos.')}>
-                  <ComposerIcon name="mic" size={25}/>
-                </button>}
+              :<PwaChatVoiceRecorder disabled={!mediaReady||mediaUploading}
+                  onSend={sendVoice}/>} 
           </form>
         </>
       )}

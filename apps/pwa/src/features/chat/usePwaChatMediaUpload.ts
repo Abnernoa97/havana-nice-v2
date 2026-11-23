@@ -31,6 +31,22 @@ export function usePwaChatMediaUpload({
     }).catch(()=>{if(live)setMediaReady(false);});
     return()=>{live=false;};
   },[session?.token]);
+  async function sendVoice(file:File,id:string):Promise<boolean>{
+    if(!session||mediaUploadBusy.current||!mediaReady)return false;
+    if(file.size<=0||file.size>3_000_000){
+      setMediaError('Audio inválido o superior a 3 MB.');return false;
+    }
+    mediaUploadBusy.current=true;setMediaUploading(true);setMediaError('');
+    try{
+      const {uploadChatFile}=await import('../../services/chat-media-upload');
+      await uploadChatFile(session,file,'audio',()=>{},id);
+      if(activeSession.current?.token===session.token)refreshLatest.current();
+      return true;
+    }catch(error){
+      setMediaError(error instanceof Error?error.message:'No se pudo enviar el audio.');
+      return false;
+    }finally{mediaUploadBusy.current=false;setMediaUploading(false);}
+  }
   async function sendSelectedMedia(){
     if(!session||!mediaQueue.current.length||mediaUploadBusy.current)return;
     if(!mediaReady){setMediaError('R2 todavía no está disponible.');return;}
@@ -74,5 +90,5 @@ export function usePwaChatMediaUpload({
       setMediaError(e instanceof Error?e.message:'La subida se interrumpió. Reintenta los archivos restantes.');
     }finally{mediaUploadBusy.current=false;setMediaUploading(false);}
   }
-  return {mediaReady,mediaUploading,mediaProgress,sendSelectedMedia};
+  return {mediaReady,mediaUploading,mediaProgress,sendSelectedMedia,sendVoice};
 }
