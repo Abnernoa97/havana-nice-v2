@@ -28,7 +28,7 @@ tests/,cloudflare/tests/,scripts/         pruebas, verificadores y políticas de
 ```
 
 - **Un solo propietario de sesión/Chat por plataforma.** `useNativeChatController.ts` y `usePwaChatController.ts` gestionan identidad, socket, historial, outbox; vistas y media no abren sockets adicionales.
-- **Mosaicos vs visor:** `groupChatMediaMessages` agrupa burbujas consecutivas; `selectChatGalleryMedia` selecciona todas las fotos y videos **cargados** del Chat, incluyendo archivos separados por textos, notas de voz y autores. Los visores individuales de Chat en Admin siguen siendo consumidores activos; no borrarlos por el nombre antiguo.
+- **Mosaicos vs visor:** `groupChatMediaMessages` agrupa burbujas consecutivas; `selectChatGalleryMedia` selecciona todas las fotos y videos **cargados** del Chat, incluyendo archivos separados por textos, notas de voz y autores. Músicos y Administración ya reutilizan `ChatMediaGallery`; sus viejos visores individuales, estado y CSS han sido retirados después de comprobar consumidores.
 - **Audio/BOOK:** el Audio aprobado es independiente del BOOK 3D. BOOK Android utiliza el mismo lector web autorizado y su puente de sesión; no sustituir ni animar con motores 3D nuevos.
 - **Push:** FCM Android 0.0.30 probado en dispositivos; PWA iOS requiere validar permisos Web Push en instalación real. Notificaciones de pantalla bloqueada nunca contienen mensajes privados ni credenciales.
 - **Archivos multimedia:** Chat iPhone puede preparar fotografías optimizadas antes de R2; no asumir conservación obligatoria del fichero original de cámara. Android, Familia y BOOK tienen políticas independientes y verificables.

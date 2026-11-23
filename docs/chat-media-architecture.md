@@ -36,7 +36,7 @@ ni modificar datos existentes durante una limpieza estructural.
    caché y solo ante fallo pide permiso a R2 y genera una miniatura.
    `ChatMediaGallery.tsx` muestra al abrir la miniatura disponible e
    intercambia a la foto confirmada en R2 en cuanto termine de bajarla. 
-   `ChatPhotoViewer.tsx` sigue en uso para el acceso individual de Administración.
+   Administración reutiliza también `ChatMediaGallery.tsx`, con su sesión privada y sin un segundo visor.
    Esa foto puede ser WebP optimizado, no necesariamente el original de cámara.
 
 No prometer que toda imagen será WebP: iOS puede conservar el original
@@ -56,10 +56,9 @@ no en Cloudflare.
 | `chat-media-grant.ts` | Permiso temporal de lectura |
 | `chat-photo-preview.ts` | Generación acotada de miniaturas |
 | `chat-photo-thumbnail-cache.ts` | LRU de miniaturas en memoria e IndexedDB |
-| `useChatMediaPreview.ts` | Precargar fotos una vez por mensaje montado; liberar al desmontar; video solo visible |
+| `useChatMediaPreview.ts` | Precargar miniaturas de fotos y carátulas de video cerca del viewport, sin solicitar permisos de reproducción completa |
 | `ChatMediaView.tsx` | Burbuja; no realiza subidas |
-| `ChatMediaGallery.tsx` | Visor principal: fotos y videos cargados de toda la conversación; grants temporales |
-| `ChatPhotoViewer.tsx` | Visor progresivo individual para Administración; libera la URL temporal |
+| `ChatMediaGallery.tsx` | Único visor de fotos y videos en PWA músico y Administración; permisos temporales y CSS propio en `chat-media-gallery.css` |
 | `packages/shared/src/chat-gallery-selection.ts` | Política única Android/PWA de selección global de medios ya cargados |
 
 Las miniaturas usan un máximo de 1440 px en el lado largo, JPEG 0.92 para

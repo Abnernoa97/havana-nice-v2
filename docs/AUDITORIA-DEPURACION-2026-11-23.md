@@ -19,7 +19,7 @@
 8. `.gitignore` evita incluir por accidente archivos binarios APK/AAB, keystores y carpetas locales de Wrangler/Gradle.
 
 ## Residuo real vs dependencia legítima
-- `ChatPhotoViewer.tsx` y `ChatVideoPlayer.tsx` no están muertos: `ChatMediaView.tsx` los utiliza como visores individuales y **AdminChatGeneral** llama a ese componente sin el manejador `onOpen`. No eliminarlos hasta migrar Administración y validar.
+- **Hallazgo resuelto:** al comenzar la auditoría, `ChatPhotoViewer.tsx` y `ChatVideoPlayer.tsx` atendían las aperturas individuales de Administración. Tras migrar Admin al visor continuo y validar los consumidores, ambos se retiraron en el commit `2e0bfaa`.
 - `cloudflare/migrations` contiene historia de D1 aplicada. Las 37 migraciones no se tratan como basura, ni se compactan.
 - Algunos selectores CSS aparecen repetidos por breakpoints o variaciones de contexto. Eliminar por coincidencia de nombre, sin estudiar cascada y uso, dañaría la UI aprobada.
 - `useNativeChatController.ts` y `usePwaChatController.ts` siguen concentrando un volumen elevado de estado y callbacks. Refactorizar únicamente con pruebas específicas de socket, reconexión, outbox, scroll, notificaciones y sesión.
@@ -36,5 +36,6 @@
 ## Segunda fase · Administración y estilos del visor (23/11)
 - Administración reutiliza ahora `ChatMediaGallery` para recorrer fotos/videos de todo el historial ya cargado, con la misma selección de `packages/shared`; sigue usando su token privado existente, sin nuevo socket ni sesión.
 - CSS del visor trasladado a `features/chat/chat-media-gallery.css`, importado por el propio visor. El resto de `chat.css` permanece en el chat músico, sin llevar estilos generales al panel Admin.
-- Los visores individuales anteriores aún existen como ruta de compatibilidad de `ChatMediaView` mientras se confirma que no quedan consumidores y pasan las pruebas de regresión. No eliminarlos sin demostrarlo.
+- Se retiraron `ChatPhotoViewer.tsx` y `ChatVideoPlayer.tsx`, los estilos de esos modales y el estado `videoRequest`/`videoGrant` que les pertenecía. `ChatMediaView` es exclusivamente presentación y abre el visor compartido mediante `onOpen`.
+- La compilación de Cloudflare Pages confirmó estructura, auditoría preventiva, TypeScript Android/PWA y **131 pruebas aprobadas con 0 fallos**; commit `2e0bfaa` publicado.
 - Esta fase no modifica Cloudflare Worker, datos, migraciones, BOOK 3D, Android nativo ni APK instalada.

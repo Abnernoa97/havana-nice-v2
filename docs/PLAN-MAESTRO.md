@@ -31,7 +31,7 @@
 - [x] Chat Android con `FlatList` virtualizada y Chat PWA con ventana de mensajes; la selección actual del visor recorre fotos/videos **ya cargados** aunque haya textos, audios o diferentes autores entre ellos.
 - [x] CSS de HOME/Audio/Perfil reorganizado por responsables en revisión del 22/11. Del Chat se quitaron estilos de botones que ya no existen y se consolidó la barra de grabación de voz.
 - [x] API privada de Chat, R2, notificaciones, Calendario, Familia y BOOK conservada; ninguna depuración de archivos destruye historial, R2/D1, sesiones o migraciones.
-- [x] Pruebas añadidas sobre selección global, multimedia intercalada, borrado y paridad Android/PWA. Los visores individuales todavía consumidos por Administración no se borraron.
+- [x] Pruebas de selección global, multimedia intercalada, borrado y paridad Android/PWA. Administración comparte el visor continuo, se retiraron los dos antiguos y se aisló el CSS del visor. Publicación del código web: **131/131 pruebas**.
 
 ## 4. Tablero único, por orden de riesgo
 
