@@ -135,3 +135,10 @@
 - Dos módulos pequeños, `family-request-coordination.ts` y `chat-gallery-grant-scope.ts`, aíslan estas reglas sin añadir almacenamiento persistente o sockets.
 - Pruebas dinámicas reproducen resolución tardía de promesas, cambio de usuario con el mismo assetId y reuso de concesiones dentro de una misma sesión; un guard adicional asegura que los controles y límites actuales siguen activos.
 - Sin modificación del Worker, R2/D1, BOOK 3D ni código de la APK; la mejora requiere verificar en dispositivos su impacto real.
+
+## Decimoctava fase · Control de precarga multimedia en Familia (23/11)
+- Familia PWA precargaba sin distinguir la conexión las fichas privadas de cinco álbumes y hasta seis miniaturas por álbum; estas lecturas competían con las portadas visibles y el BOOK.
+- Se establece un presupuesto explícito: 2 álbumes en red normal, 1 en 3G, 0 en 2G/Save-Data, con un máximo de 3 miniaturas de cada álbum precargado; se mantienen 6 para el álbum abierto.
+- Cuando existe un álbum seleccionado o la página está oculta, no se inicia precarga especulativa. Las cuatro primeras portadas cargan con prioridad normal y las restantes utilizan `loading=lazy`.
+- No se altera la carga del álbum seleccionado, el caché temporal de autorizaciones, el backend ni BOOK 3D. Tres pruebas nuevas protegen presupuestos, visibilidad, guarda de sesión y prioridad visual.
+- Aún se requiere una medición real en iPhone y Android para cuantificar la mejora; los límites no equivalen a una garantía de tiempo de carga.
