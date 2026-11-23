@@ -353,7 +353,7 @@ export default function BookReader({pages,edition='book',coverTitle,showModeSwit
   {showModeSwitch&&<div className="hn-book-switch" role="group" aria-label="Modo de lectura">
    <button type="button" aria-pressed={mode==='flip'} onClick={()=>setMode('flip')}>Revista 3D</button>
    <button type="button" aria-pressed={mode==='scroll'} onClick={()=>setMode('scroll')}>Desplazar</button>
-  </div>
+  </div>}
   {mode==='flip'&&!failure?<div className="hn-book-stage" data-orientation={orientation}
    // Intercept the library's native touch listeners at capture, not its
    // renderer. React pointer events arbitrate vertical vs horizontal gestures.
