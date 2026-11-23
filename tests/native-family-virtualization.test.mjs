@@ -22,7 +22,7 @@ test('HOME must not nest Familia FlatList inside its all-modules ScrollView',()=
  assert.match(home,/active==='family'\s*\?<View style=\{\[styles\.root,styles\.content,styles\.familyViewport\]\}>\{content\}<\/View>/);
  assert.match(home,/:<ScrollView style=\{styles\.root\} contentContainerStyle=\{styles\.content\}>\{content\}<\/ScrollView>/);
  assert.match(home,/familyViewport:\{flex:1,minHeight:0,paddingBottom:0\}/);
- assert.match(home,/active==='family'\?<NativeFamily token=\{token\}/);
+ assert.match(home,/active==='family'\?<NativeFamily token=\{token\} onBackHome=/);
 });
 test('Family stays private, modal video is only mounted on demand, BOOK unchanged',()=>{
  const f=read('apps/android/features/family/NativeFamily.tsx');
