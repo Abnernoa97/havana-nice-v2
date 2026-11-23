@@ -14,6 +14,9 @@ test('Android FCM is part of the SINGLE native shell, not a new login or Chat so
  assert.match(notices,/push\.enable\(\)/);
  assert.match(notices,/push\.disable\(\)/);
  assert.match(hook,/Notifications\.getDevicePushTokenAsync\(\)/);
+ assert.match(hook,/liveSession\.current!==currentToken/);
+ assert.match(hook,/revokeFcm\(prior\.session,prior\.device\)/);
+ assert.match(hook,/if\(liveSession\.current!==currentToken\|\|optedOut\.current\)/);
  assert.match(hook,/Notifications\.addPushTokenListener/);
  assert.match(hook,/Notifications\.addNotificationResponseReceivedListener/);
  assert.match(hook,/Notifications\.getLastNotificationResponseAsync/);
@@ -36,10 +39,9 @@ test('Native config points to the existing Firebase project and never builds pre
  assert.equal(config.android.googleServicesFile,'./google-services.json');
  assert.ok(config.plugins.some(entry=>Array.isArray(entry)&&
   entry[0]==='expo-notifications'&&entry[1]?.defaultChannel==='havana-team-activity'));
- assert.equal(config.version,'0.0.29');
- assert.equal(config.android.versionCode,29);
- assert.equal(batch.version,'0.0.29');
- assert.equal(batch.versionCode,29);
+ assert.equal(config.version,batch.version);
+ assert.equal(config.android.versionCode,batch.versionCode);
+ assert.ok(config.android.versionCode>=29);
 });
 test('Worker provider channel matches the Android channel and iPhone uses standard push',()=>{
  const sender=read('cloudflare/src/modules/notices/push-delivery.js');
