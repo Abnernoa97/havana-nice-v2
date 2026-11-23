@@ -97,3 +97,9 @@
 - En Administración de Repertorio se elimina el segundo efecto de limpieza de `itemsRequest`, redundante porque el efecto dueño de la suscripción ya invalida ese contador al desmontar o cambiar token.
 - Pruebas de modularidad cubren la propiedad del CSS, el esquema de peticiones, las invalidaciones al salir y el montaje únicamente al expandir una fecha.
 - No se modifican Worker, schema D1, objetos R2, EPUB/BOOK, ni APK Android.
+
+## Duodécima fase · Paginación única de Repertorio (23/11)
+- `packages/shared/src/repertoire.ts`: el catálogo general y los temas asignados utilizan la misma función privada `readPages`, manteniendo `offset=0..10000`, paso 250, los endpoints originales, autorización Bearer y cache `no-store`.
+- Cada API sigue devolviendo exactamente sus campos (`songs`/`items`) y sus errores de límite diferenciados, sin añadir consultas ni caches. El lector individual de eventos no cambia.
+- Pruebas dinámicas con HTTP simulado verifican ambos roles, orden, número de llamadas, cabeceras, límites, errores y codificación de nombres de evento. Android y PWA consumen los mismos exports sin nuevas conexiones.
+- No se modifica Worker, D1, R2, notificaciones ni la APK firmada.

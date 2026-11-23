@@ -14,15 +14,22 @@ async function read<T>(token:string,path:string):Promise<T>{
  if(!response.ok)throw Error(data.error||'No se pudo cargar Repertorio.');
  return data;
 }
-export async function getRepertoireSongs(token:string,admin=false):Promise<RepertoireSong[]>{
- const songs:RepertoireSong[]=[];
+// Both API collections share the exact 250-item offset policy and hard cap.
+async function readPages<T,K extends 'songs'|'items'>(
+ token:string,route:string,key:K,overflowError:string,
+):Promise<T[]>{
+ const values:T[]=[];
  for(let offset=0;offset<=10000;offset+=250){
-  const result=await read<{songs:RepertoireSong[];hasMore:boolean}>(token,
-   (admin?'/api/repertoire/admin/songs':'/api/repertoire/songs')+'?offset='+offset);
-  songs.push(...result.songs);
-  if(!result.hasMore)return songs;
+  const page=await read<Record<K,T[]>&{hasMore:boolean}>(token,route+'?offset='+offset);
+  values.push(...page[key]);
+  if(!page.hasMore)return values;
  }
- throw Error('Hay demasiadas canciones. Contacta al Administrador.');
+ throw Error(overflowError);
+}
+export function getRepertoireSongs(token:string,admin=false):Promise<RepertoireSong[]>{
+ return readPages<RepertoireSong,'songs'>(token,
+  admin?'/api/repertoire/admin/songs':'/api/repertoire/songs',
+  'songs','Hay demasiadas canciones. Contacta al Administrador.');
 }
 export async function getEventRepertoire(token:string,eventId:string,admin=false):Promise<RepertoireEventItem[]>{
  const prefix=admin?'/api/repertoire/admin/events/':'/api/repertoire/events/';
@@ -32,15 +39,10 @@ export async function getEventRepertoire(token:string,eventId:string,admin=false
 
 /** Read all songs in events currently assigned to this authenticated musician.
  * One paginated request per 250 songs, not one request per calendar event. */
-export async function getAssignedEventRepertoire(token:string):Promise<RepertoireEventItem[]>{
- const items:RepertoireEventItem[]=[];
- for(let offset=0;offset<=10000;offset+=250){
-  const page=await read<{items:RepertoireEventItem[];hasMore:boolean}>(
-   token,'/api/repertoire/events/assigned?offset='+offset);
-  items.push(...page.items);
-  if(!page.hasMore)return items;
- }
- throw Error('Demasiadas canciones por evento. Contacta al Administrador.');
+export function getAssignedEventRepertoire(token:string):Promise<RepertoireEventItem[]>{
+ return readPages<RepertoireEventItem,'items'>(
+  token,'/api/repertoire/events/assigned','items',
+  'Demasiadas canciones por evento. Contacta al Administrador.');
 }
 /** Exactly three musician sections. Unknown legacy categories remain visible
  * in ESPAÑOL until Administration reclassifies them. */
