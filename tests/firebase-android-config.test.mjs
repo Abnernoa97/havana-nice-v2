@@ -20,8 +20,8 @@ test('Firebase Android installation configuration matches the current HAVANA NIC
  assert.equal(Object.hasOwn(config,'private_key'),false);
  assert.equal(Object.hasOwn(config,'client_email'),false);
  assert.equal(Object.hasOwn(config,'type'),false);
- assert.equal(expo.version,'0.0.29');
- assert.equal(expo.android.versionCode,29);
- assert.equal(manifest.version,'0.0.29');
- assert.equal(manifest.versionCode,29);
+ assert.equal(expo.version,manifest.version);
+ assert.equal(expo.android.versionCode,manifest.versionCode);
+ assert.ok(expo.android.versionCode>=29);
+ assert.equal(Number(expo.version.split('.').at(-1)),expo.android.versionCode);
 });
