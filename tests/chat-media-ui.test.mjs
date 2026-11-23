@@ -284,7 +284,7 @@ test('Web and Admin share one gallery with cached previews and deferred original
  assert.match(thumb,/canvas\.toBlob/);
  assert.match(thumb,/originalType==='image\/png'\?'image\/png':'image\/jpeg'/);
  assert.doesNotMatch(css,/\.hn-chat-photo\{[^}]*max-height:/);
- assert.doesNotMatch(css,/\.hn-chat-video\{[^}]*aspect-ratio:4\/5/);
+ assert.doesNotMatch(css,/\.hn-chat-video-cover\{[^}]*aspect-ratio:4\/5/);
 });
 
 test('one real R2 uploader for optimized PWA photos and video originals',()=>{

@@ -64,3 +64,8 @@
 - Android y PWA conservan el límite de 15 minutos para editar y 48 horas para borrar, además de sus borradores, sesiones, WebSocket y outbox.
 - Se agregan cuatro pruebas nuevas sobre prioridad de decisiones, borde temporal, formatos exactos de protocolo y paridad entre plataformas.
 - No se modifican Worker, D1, R2, BOOK 3D ni la APK firmada.
+
+## Séptima fase · CSS residual de reproductor retirado (23/11)
+- Eliminadas las clases `.hn-chat-video` y `.hn-video-placeholder` de `chat.css`: correspondían al reproductor individual retirado; ningún componente actual las usa.
+- Se conservan los selectores reales `.hn-chat-video-cover`, `.hn-chat-video-poster`, y sus variaciones para el mosaico y Administración.
+- Las pruebas de interfaz se actualizaron a las clases existentes, y se añade un escaneo de fuentes para impedir reintroducciones sin estilos correspondientes.

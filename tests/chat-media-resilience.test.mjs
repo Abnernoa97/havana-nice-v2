@@ -185,7 +185,7 @@ test('iPhone videos obtain full playback grants only from the opened gallery',()
  assert.match(gallery,/requestChatMediaUrl\(media\.assetId,token,abort\.signal\)/);
  assert.doesNotMatch(preview,/videoGrant|videoRequest|setVisible/);
  assert.match(css,/\.hn-chat-image-button\{position:relative;display:block;aspect-ratio:1\/1/);
- assert.match(css,/\.hn-chat-video,\.hn-media-loading\.hn-video-placeholder\{width:100%;aspect-ratio:16\/9/);
+ assert.match(css,/\.hn-chat-video-cover\{width:100%;aspect-ratio:16\/9/);
  assert.match(css,/\.chat-messages\{-webkit-overflow-scrolling:touch;overflow-anchor:none;touch-action:pan-y\}/);
 });
 
