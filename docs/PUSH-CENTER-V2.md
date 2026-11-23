@@ -1,130 +1,91 @@
-# HAVANA NICE V2 · Push Center único
+# HAVANA NICE V2 — Centro de notificaciones
 
-## Regla de publicación
+**Estado auditado:** 22 de noviembre de 2026 (CDMX) · Android 0.0.30, backend Cloudflare y PWA.
 
-**Autorización posterior (22-Nov-2026):** el usuario pidió preparar ya Android
-nativo mientras termina la actualización iOS. Se autoriza un único lote
-incremental **0.0.30 (code 30)** para poder hacer la primera prueba física FCM.
-No considerar Android final hasta verificar que el token se registra y que la
-notificación de prueba se entrega con pantalla bloqueada.
-Mantener una sola rama `main`, el mismo Worker, D1, R2 y las sesiones existentes.
-Conservar APK anterior y validar certificado antes de reemplazar el enlace.
+## Estado comprobado
 
-## Arquitectura
+- **Android 0.0.30:** APK firmada y publicada. El propietario comprobó recepción con la app cerrada y el teléfono bloqueado para Chat (texto, fotografía y reacciones), Estados (publicaciones, emojis, comentarios y audios), Calendario, Familia, Repertorio y BOOK 3D. El FCM funciona en segundo plano.
+- **PWA iPhone:** Web Push incluido, pero la confirmación física completa depende de instalar una versión de iOS compatible (16.4 o superior), abrir la PWA desde pantalla de inicio y aceptar el permiso. No presentarlo como verificado antes de esa prueba.
+- **Servidor:** FCM HTTP v1 y Web Push VAPID configurados en Worker; registro autorizado de dispositivos en D1 y cola con reintentos. Las notificaciones cortas se emiten desde el servidor, no desde el navegador ni desde un segundo Chat.
+- **APK:** no se recompila para reorganizar los archivos del servidor, ajustar los textos de pantalla bloqueada o documentar el sistema. El comportamiento nativo de la 0.0.30 permanece intacto.
 
-1. Todos los módulos escriben avisos privados con `notifyMember` /
-   `notifyCalendarMembers` y deduplicación del evento. Nunca se reciben
-   destinatarios desde la petición del usuario.
-2. La migración `0038_member_push_center.sql` crea únicamente
-   `member_push_devices` y `member_push_outbox`: registros ligados al hash
-   de la sesión autorizada y entrega individual por dispositivo.
-3. `push-center.js` registra/desvincula el token nativo FCM o una
-   suscripción estándar Web Push (VAPID) para iPhone PWA.
-4. `push-delivery.js` entrega al instante y conserva intentos fallidos.
-   El cron de 1 minuto reintenta, separadamente de la limpieza existente
-   de 15 minutos. Nunca reenvía avisos de más de 6 horas.
-5. `sw.js` presenta avisos en la PWA instalada y abre la sección
-   Notificaciones al pulsarlos. Android requerirá `expo-notifications`
-   con token FCM, canal Android y permisos explícitos.
+## Estructura única (main)
 
-## Cobertura del evento (fuente central)
+```text
+cloudflare/src/modules/notices/
+  member-notifications.js    → entrada estable y API /api/notices, lectura y marcado
+  member-event-notices.js     → acciones entre músicos; identidades autorizadas
+  member-system-notices.js    → Calendario, Repertorio y BOOK de Administración
+  push-copy.js                → textos cortos de pantalla bloqueada
+  push-center.js              → configuración, registro y desvinculación, cola
+  push-delivery.js            → transportes FCM HTTP v1 y Web Push, reintentos
 
-| Evento | Notificación | Destino |
+apps/android/features/notices/
+  useNativePush.ts            → único registro/token FCM y permisos nativos
+  NativeNotices.tsx           → bandeja y botones del usuario
+  useNativeUnreadNotices.ts   → contador de avisos no leídos
+
+apps/pwa/src/features/notices/
+  usePwaPush.ts               → permiso y suscripción Web Push
+  MemberNotices.tsx           → bandeja y controles PWA
+  usePwaUnreadNotices.ts      → contador PWA
+
+apps/pwa/public/sw.js         → push y notificationclick en PWA
+packages/shared/src/member-notifications.ts → contrato API y nombres comunes
+cloudflare/migrations/0034_member_notifications.sql
+cloudflare/migrations/0037_calendar_member_notifications.sql
+cloudflare/migrations/0038_member_push_center.sql
+cloudflare/migrations/0039_member_system_notifications.sql
+cloudflare/migrations/0040_book_member_notifications.sql
+```
+
+La entrada `member-notifications.js` mantiene los mismos nombres exportados, de modo que Chat, Estados, Perfil, Familia, Calendario, Repertorio, BOOK y pruebas existentes siguen utilizando el contrato anterior. **Un Worker, un D1, un R2, un Durable Object de Chat existente, una rama `main`.**
+
+## Disparadores y destinatarios
+
+| Origen | Actividad que produce aviso | Destinatarios |
 | --- | --- | --- |
-| Texto nuevo en Chat | `chat.message` | Resto del equipo |
-| Foto/video confirmado en Chat | `chat.message` | Resto del equipo |
-| Reacción a mensaje Chat | `chat.reaction` | Autor original |
-| Uno a cinco Estados nuevos | `story.created` | Resto del equipo |
-| Comentario a Estado | `story.comment` | Propietario del Estado |
-| Nota de voz en Estado | `story.voice` | Propietario del Estado |
-| Corazón/emoji en Estado | `story.reaction` | Propietario del Estado |
-| Cambio de foto de perfil | `profile.photo` | Resto del equipo |
-| Foto/video nuevo en Familia por Admin | `family.media` | Todo el equipo incluido propietario del álbum |
-| Fecha creada/modificada/eliminada | `calendar.event` | Destinatarios asignados y anteriores aplicables |
-| Repertorio del evento modificado (añadir, quitar, orden, progreso) | `repertoire.updated` | Integrado para los músicos asignados |
-| Otras acciones futuras | Tipo específico | Según permisos y relevancia |
+| Chat | Mensaje de texto, foto o video guardado | Demás músicos activos |
+| Chat | Emoji nuevo en un mensaje | Autor del mensaje |
+| Estados | Publicación de 1–5 fotografías | Demás músicos activos, un aviso por lote |
+| Estados | Emoji, comentario o audio | Propietario del Estado |
+| Perfil | Cambio de foto de perfil | Demás músicos activos |
+| Familia | Foto o video nuevo y confirmado por Administración | Equipo activo, incluido titular del álbum |
+| Calendario | Crear, editar o eliminar evento | Músicos asignados y anteriores, cuando proceda |
+| Repertorio general | Administración añade, edita o elimina canción | Todo el equipo activo |
+| Repertorio de un evento | Añadir, quitar, ordenar o completar canciones | Únicamente músicos asignados |
+| BOOK 3D general | Administración publica página nueva | Equipo activo, agrupando lotes cercanos |
+| Prueba explícita | Pulsar «Probar aviso» | Dispositivos del propio músico, tras 15 segundos |
 
-**No enviar** notificaciones por lecturas, gestos, renders, progreso de subida,
-trozos multipart, portadas derivadas, consultas repetidas, borradores ni reintentos.
-Son acciones técnicas, no actividad útil del equipo.
+**No generan avisos:** abrir o leer mensajes, ver Estados, pasar páginas del BOOK, optimizar imágenes, renderizar vistas, editar portadas derivadas, guardar borradores, borrar elementos, reintentar subidas ni recibir ACK técnicos. La privacidad prohíbe incluir texto privado de Chat, notas de voz, rutas R2 y tokens en pantalla bloqueada.
 
-## Seguridad y privacidad
+## Seguridad y fiabilidad
 
-- `chat_sessions` y `chat_single_device_owners` siguen siendo autoridad:
-  un dispositivo con sesión caducada/revocada no recibe un push nuevo.
-- El endpoint Web Push y el token FCM son privados en D1, sin exposición
-  en GET. Se almacenan hashes para localizar, desvincular y evitar duplicados.
-- La pantalla bloqueada recibe solo metadatos cortos, **sin** contenido
-  completo del mensaje, enlaces privados, credenciales ni rutas R2.
-- `PUSH_VAPID_PRIVATE_KEY` y `FCM_SERVICE_ACCOUNT_JSON` deben permanecer
-  como secretos de Worker; `PUSH_VAPID_PUBLIC_KEY` es público.
-- Mensajes entrantes y archivos guardados no pueden revertirse por un
-  error de proveedor push; el inbox privado sigue funcionando.
-- En iPhone: PWA agregada a pantalla de inicio, iOS 16.4+, permiso
-  obtenido mediante toque del usuario.
+- La identidad del músico sale siempre de `chat_members` y su sesión válida, nunca de destinatarios enviados por el cliente.
+- `chat_sessions` y `chat_single_device_owners` conservan el control de acceso. Al desactivar un teléfono o invalidar sesión, no debe seguir recibiendo eventos de otras cuentas.
+- Los identificadores FCM y suscripciones Web Push son privados; el secreto `FCM_SERVICE_ACCOUNT_JSON`, la clave `PUSH_VAPID_PRIVATE_KEY` y las credenciales Admin nunca pertenecen al código fuente.
+- La cola guarda un aviso por evento/dispositivo, evita reenvíos duplicados y aplica reintentos limitados. El Worker procesa avisos inmediatamente o mediante cron de un minuto, y purga el historial antiguo sin borrar la bandeja privada.
+- Si falla la entrega externa, **no se revierte** el mensaje, comentario, cambio de calendario ni archivo guardado.
+- Las migraciones son aditivas; no reescribir las tablas 0034–0040 ni cambiar restricciones existentes. BOOK tiene tabla de sistema propia porque `0039` restringe expresamente su tipo al Repertorio.
+- Las notificaciones indican el destino mediante `kind` y `targetId`; Android 0.0.30 abre módulos. Al tocar un BOOK nuevo puede abrir la bandeja, no la página exacta. Cambiar ese comportamiento exige una futura compilación nativa explícitamente autorizada.
+- Las limitaciones del sistema operativo (teléfono sin energía, restricciones de batería o modo No molestar) siguen aplicando.
 
-## Puertas de calidad antes de construir APK
+## Pruebas y puertas de seguridad
 
-- [x] Migración aditiva D1 aplicada sin alterar chats ni estados existentes.
-- [x] Código de registro privado de dispositivos y cola deduplicada.
-- [x] Adaptadores cifrados Web Push (RFC 8291/8292) + FCM HTTP v1.
-- [x] Service Worker y control PWA de activación mediante toque.
-- [x] Validación inicial CI del Worker y PWA: Worker versión `41c1c56e` y Pages `4adc9bce` pasaron las pruebas. Repetir para cambios posteriores.
-- [x] Credenciales VAPID guardadas como secretos privados en Cloudflare (nombres comprobados).
-- [ ] Prueba real de notificación de pantalla bloqueada en PWA iPhone instalada.
-- [x] Proyecto Firebase `havana-nice-v2-push` registrado; `google-services.json` del paquete `com.havananice.v2` integrado en Expo mediante `android.googleServicesFile`.
-- [x] Cuenta de servicio FCM HTTP v1 guardada como secreto privado en Cloudflare (`FCM_SERVICE_ACCOUNT_JSON`), sin compartir la clave.
-- [ ] Verificación de OAuth FCM y entrega real; la existencia del secreto no garantiza permisos válidos.
-- [x] Código fuente nativo `expo-notifications` SDK 58 conectado al Chat shell con permisos, token FCM, renovación, revocación y navegación al tocar un aviso. **No hay APK nueva**.
-- [ ] Verificación de build nativo, firma y recepción real en Android al final del lote autorizado.
-- [x] Notificaciones actorless del Repertorio por evento mediante migración aditiva `0039_member_system_notifications.sql` y destinatarios asignados; falta verificar push en teléfono real.
-- [ ] Revisar cualquier otra acción futura de Admin que deba generar actividad útil, sin notificar acciones técnicas.
-- [ ] Prueba cruzada Android ↔ PWA con pantalla bloqueada, sin red y reconexión.
-- [x] APK 0.0.30 (code 30) compilada y firmada; flujo GitHub Actions #45090812813 terminó exitosamente. Se comprobó certificado compatible con 0.0.29, permiso Android POST_NOTIFICATIONS, JavaScript integrado, publicación y descarga del enlace estable. Se conserva 0.0.29 como rollback.
-- [ ] Probar físicamente en Android: activar permiso, inscribir FCM y confirmar el aviso de prueba con pantalla bloqueada y la app cerrada.
+1. `cloudflare/tests/member-notifications.test.mjs`: destinatarios, deduplicación, aislamiento, bandeja y sistemas Admin.
+2. `cloudflare/tests/push-center.test.mjs`: FCM, VAPID, envío, prueba diferida y reintentos.
+3. `cloudflare/tests/push-copy.test.mjs`: nombre real, emoji, foto/video y privacidad de la pantalla bloqueada.
+4. `cloudflare/tests/book.test.mjs`: subir/optimizar/ordenar y avisos solo por publicación real.
+5. `tests/notifications-module-boundaries.test.mjs`: responsabilidades separadas, sin segunda conexión Chat ni segundo motor FCM.
+6. `tests/native-push-integrity.test.mjs`, `tests/push-platform-support.test.mjs` y `tests/member-notifications-parity.test.mjs`: compatibilidad de ambas superficies sin cambios de APK.
 
-Una app totalmente apagada por el usuario, un teléfono sin corriente,
-el modo No molestar o restricciones del sistema pueden alterar la entrega;
-no prometer tiempo ni entrega absoluta de un proveedor externo.
+Estas pruebas forman parte de la compilación web de Cloudflare Pages. Para publicar cambios en el Worker, ejecutar también su compilación, validar los resultados y confirmar que se mantienen los bindings de D1, R2, DO, FCM y VAPID. Jamás desplazar una versión funcional sin comprobar su sustituta.
 
-## Estado confirmado · 22 de noviembre de 2026
+## Versiones estables y recuperación
 
-- Worker `havana-nice-v2-dev` desplegado con motor de push y siete bindings históricos intactos.
-- D1 contiene `member_push_devices` y `member_push_outbox`, ambos inicialmente vacíos.
-- PWA activa con permiso desde la bandeja privada y service worker para recepción; todavía no puede mostrar push reales sin claves VAPID.
-- Los nombres de las claves VAPID pública/privada y FCM aparecen en la versión activa del Worker como secretos. Nunca guardar valores en Git.
-- Firebase Android registrado: proyecto `havana-nice-v2-push`, número de proyecto `33085079931`, paquete `com.havananice.v2`; `google-services.json` integrado en `apps/android/` sin compilar APK. La credencial FCM HTTP v1 está en el secreto del Worker; faltan pruebas de su validez y de entrega.
-- Ninguna APK nueva, compilación Android ni lote `android-batch.json` realizados durante el desarrollo de push. Los cambios en `app.json` y `google-services.json` no activan el workflow de lanzamiento de APK.
-- Push en segundo plano sin probar en teléfonos físicos, no declarar finalizado.
-
-## Fase de integración nativa y Repertorio
-
-- Android: `useNativePush.ts` se monta una sola vez desde `NativeChatSurface`, usa el token FCM nativo, canal `havana-team-activity`, renovación, permiso explícito y apertura contextual. El control se muestra en `NativeNotices`. Desactivación persistente con `expo-sqlite/kv-store`. No publicar ni compilar APK todavía.
-- Repertorio: `0039_member_system_notifications.sql` aplicada en D1, avisos de los cambios reales del repertorio de evento a los músicos asignados. Se evita suplantar la identidad de un músico con un evento de Administración.
-- `expo-notifications` 58.1.6 añadido y fijado en el lockfile; compilación Java/Gradle no ejecutada.
-- El cierre del proyecto depende de registrar teléfonos reales, probar Android bloqueado + PWA iPhone instalada y verificar FCM y VAPID, además de la firma de la futura APK única cuando el usuario lo autorice.
-
-- Verificación asistida: `/api/push/test` crea **solo para la sesión autorizada** una notificación de prueba con entrega diferida, límite de una solicitud por minuto y control «Probar aviso» en Android/PWA. La aceptación de la solicitud no demuestra entrega hasta observarla físicamente.
-
-## Cambio de fase: Android 0.0.30 para prueba real
-
-La PWA en iPhone permanece sin pruebas de pantalla bloqueada por requisitos de iOS 16.4+; su actualización puede ocurrir en paralelo. Android SDK 58 tiene integración FCM nativa y configuración aprobada. Se añadió protección contra registros tardíos al cerrar sesión, y un gate de permiso `POST_NOTIFICATIONS` en el APK. El lote 0.0.30 se limita a notificaciones y no debe modificar Audio, BOOK 3D, los Estados ni Chat existentes.
-
-### APK firmada publicada
-
-- Versión de la aplicación: 0.0.30, versionCode 30.
-- Build exitoso: `https://github.com/Abnernoa97/havana-nice-v2/actions/runs/45090812813`.
-- Instalación: `https://github.com/Abnernoa97/havana-nice-v2/releases/download/v2-android-current/HAVANA-NICE-V2-LATEST.apk`.
-- Rollback certificado: `https://github.com/Abnernoa97/havana-nice-v2/releases/download/v2-android-current/HAVANA-NICE-V2-PREVIOUS.apk`.
-- Mantener la sesión y medios existentes: instalar encima, no desinstalar 0.0.29.
-- No se afirma recepción FCM antes de la prueba con dispositivo real.
-
-## Notificaciones específicas · 23 de noviembre de 2026
-
-- Android 0.0.30: el usuario confirmó entrega real con pantalla bloqueada y aplicación cerrada para mensaje, fotografía y reacción de Chat; Estado publicado, corazón, comentario y audio; cambio de Calendario y fotografía de Familia. No se modificó ni recompiló la APK.
-- La presentación *push* se construye en el Worker con nombres tomados de los músicos autorizados: “Rafa envió una foto al Chat”, “Orly reaccionó ❤️ a tu mensaje”, “Administración agregó una foto al álbum de Fer”, sin exponer texto privado, credenciales ni URL de R2.
-- Los cambios del **repertorio general** (agregar, editar o eliminar canciones) notifican a todos los músicos activos con título de canción; los cambios del repertorio por evento siguen llegando solo a sus músicos asignados y muestran el evento cuando hay nombre disponible.
-- El **BOOK 3D general** avisa al publicar una página nueva; evita enviar avisos por girar páginas, reordenar, cambiar encuadre, generar WebP o eliminar páginas. Las subidas consecutivas en la misma ventana de dos minutos se agrupan en un aviso por músico.
-- Migración aditiva `0040_book_member_notifications.sql` en D1, conservando la tabla de repertorio y el BOOK/3D PageFlip sin alteraciones. Bandeja cronológica compartida con Chat, Estados, Calendario y Familia.
-- La APK 0.0.30 ya puede mostrar la **notificación externa** con nombre, sección y acción gracias al texto enviado por FCM. En la bandeja interna Android, la nueva clase BOOK puede mantener el encabezado genérico hasta una siguiente compilación; su texto descriptivo sí identifica BOOK 3D. Pulsar la alerta BOOK abre Notificaciones, no el lector 3D directamente. La PWA actualizada sí etiqueta BOOK de forma explícita.
-- No se afirma haber probado físicamente el nuevo aviso del BOOK y el repertorio general: se deben probar sobre un cambio verdadero realizado desde Administración después de publicar el Worker.
+- Android estable verificado: **0.0.30 (versionCode 30)**.
+- Compilación firmada: https://github.com/Abnernoa97/havana-nice-v2/actions/runs/45090812813
+- APK actual: https://github.com/Abnernoa97/havana-nice-v2/releases/download/v2-android-current/HAVANA-NICE-V2-LATEST.apk
+- Respaldo de la APK anterior: https://github.com/Abnernoa97/havana-nice-v2/releases/download/v2-android-current/HAVANA-NICE-V2-PREVIOUS.apk
+- La versión de Worker anterior permanece como opción de reversión en Cloudflare Versions.
+- Conservar Android, BOOK 3D y Audio sin reconstrucción salvo solicitud expresa.
