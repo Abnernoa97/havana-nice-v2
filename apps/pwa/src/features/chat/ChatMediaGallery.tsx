@@ -3,6 +3,7 @@
 import {useEffect,useRef,useState,type TouchEvent} from 'react';
 import {createPortal} from 'react-dom';
 import {requestChatMediaUrl,chatVideoPosterUrl} from './chat-media-grant';
+import {keepChatGrantsForToken,type ChatGalleryGrantScope} from './chat-gallery-grant-scope';
 import {peekChatPhotoPreview,loadChatPhotoPreview} from './chat-photo-thumbnail-cache';
 import type {ChatMedia} from './chat-media-types';
 import './chat-media-gallery.css';
@@ -85,7 +86,8 @@ export default function ChatMediaGallery({items,initial,token,onClose}:{
 }){
  const [index,setIndex]=useState(initial);
  const [,setRevision]=useState(0);
- const grants=useRef(new Map<string,{url:string;at:number}>());
+ const grants=useRef<ChatGalleryGrantScope>({owner:token,entries:new Map()});
+ keepChatGrantsForToken(grants.current,token);
  const start=useRef<{x:number;y:number}|null>(null);
  const turn=(delta:number)=>setIndex(i=>Math.max(0,Math.min(items.length-1,i+delta)));
  // Warming just the neighboring grant removes a round trip on the next swipe.
@@ -94,11 +96,11 @@ export default function ChatMediaGallery({items,initial,token,onClose}:{
   const abort=new AbortController();
   for(const pos of [index-1,index+1]){
    const media=items[pos];if(!media)continue;
-   const prior=grants.current.get(media.assetId);
+   const prior=grants.current.entries.get(media.assetId);
    if(prior&&Date.now()-prior.at<8*60*1000)continue;
    void requestChatMediaUrl(media.assetId,token,abort.signal).then(url=>{
-    if(abort.signal.aborted)return;
-    grants.current.set(media.assetId,{url,at:Date.now()});setRevision(n=>n+1);
+    if(abort.signal.aborted||grants.current.owner!==token)return;
+    grants.current.entries.set(media.assetId,{url,at:Date.now()});setRevision(n=>n+1);
    }).catch(()=>{});
   }
   return()=>abort.abort();
@@ -123,7 +125,7 @@ export default function ChatMediaGallery({items,initial,token,onClose}:{
   const dx=t.clientX-begin.x,dy=t.clientY-begin.y;
   if(Math.abs(dx)>55&&Math.abs(dx)>Math.abs(dy)*1.2)turn(dx<0?1:-1);
  };
- const item=items[index],warm=item&&grants.current.get(item.assetId);
+ const item=items[index],warm=item&&grants.current.entries.get(item.assetId);
  return createPortal(<div className="hn-gallery-overlay" role="dialog"
   aria-modal="true" aria-label="Galería de fotos y videos"
   onTouchStart={touchStart} onTouchEnd={touchEnd} onTouchCancel={()=>{start.current=null;}}>

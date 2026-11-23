@@ -2,6 +2,7 @@ import {lazy,Suspense,useCallback,useEffect,useRef,useState} from 'react';
 import {familyAlbumCount,getFamilyDirectory,getFamilyAlbumMedia,type FamilyDirectory,type FamilyAlbum,type FamilyMediaItem} from '@havana/shared';
 import FamilyMediaGallery,{familyPrivateMediaUrl} from './FamilyMediaGallery';
 import {useFamilyLive} from '../../services/use-family-live';
+import {finishFamilyAlbumRequest} from './family-request-coordination';
 const MemberBook=lazy(()=>import('../book/MemberBook'));
 
 function FamilyAlbumCard({album,onOpen}:{album:FamilyAlbum;onOpen:()=>void}){
@@ -61,7 +62,7 @@ export default function MemberFamily({token}:{token:string}){
     warmThumbnails(data.items);
    }
    return data.items;
-  }).finally(()=>albumInflight.current.delete(actorId));
+  }).finally(()=>finishFamilyAlbumRequest(albumInflight.current,actorId,job));
   albumInflight.current.set(actorId,job);
   return job;
  },[token]);

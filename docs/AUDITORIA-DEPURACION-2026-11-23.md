@@ -128,3 +128,10 @@
 - Ahora se validan BOOK inline con regreso del álbum, el reproductor actual con botones de reproducir/pausar, miniaturas eager/lazy, y la guarda de `itemsActor===selected` que impide mostrar archivos del álbum equivocado.
 - El acceso a medios sigue pasando por URLs seguras del Worker. No se modificó código de interfaz, lógica de datos, servicios, backend, recursos privados ni la APK.
 - La publicación sigue bloqueada hasta aprobar todas las suites, incluidas las tres incorporadas al build de Pages.
+
+## Decimoséptima fase · Medios privados: eliminación segura de peticiones antiguas (23/11)
+- `MemberFamily.tsx`: la finalización de una solicitud anterior ya no puede borrar del mapa una nueva descarga `getFamilyAlbumMedia` del mismo álbum tras un aviso en tiempo real. Se comprueba identidad de promesa antes de limpiar `albumInflight`.
+- `ChatMediaGallery.tsx`: las concesiones temporales para precarga de fotos/videos se asocian explícitamente al token propietario, y al cambiar de sesión se descartan antes de renderizar. Una petición antigua tampoco puede escribir una URL en el mapa de la nueva sesión.
+- Dos módulos pequeños, `family-request-coordination.ts` y `chat-gallery-grant-scope.ts`, aíslan estas reglas sin añadir almacenamiento persistente o sockets.
+- Pruebas dinámicas reproducen resolución tardía de promesas, cambio de usuario con el mismo assetId y reuso de concesiones dentro de una misma sesión; un guard adicional asegura que los controles y límites actuales siguen activos.
+- Sin modificación del Worker, R2/D1, BOOK 3D ni código de la APK; la mejora requiere verificar en dispositivos su impacto real.
