@@ -24,11 +24,11 @@ export function useNativeMemberNavigation({
     onStartShouldSetPanResponder:()=>false,
     onMoveShouldSetPanResponderCapture:(_,gesture)=>
       Platform.OS==='ios'&&activeScreenRef.current.authorized&&
-      activeScreenRef.current.screen==='chat'&&gesture.x0<28&&
+      activeScreenRef.current.screen!=='home'&&activeScreenRef.current.screen!=='family'&&gesture.x0<28&&
       gesture.dx>24&&Math.abs(gesture.dy)<40,
     onPanResponderRelease:(_,gesture)=>{
       if(gesture.dx>72&&Math.abs(gesture.dy)<65){
-        Keyboard.dismiss();setMenuMessage(null);setActiveScreen(previousScreen.current);
+        Keyboard.dismiss();setMenuMessage(null);setActiveScreen(activeScreenRef.current.screen==='chat'?previousScreen.current:'home');
       }
     },
   })).current;

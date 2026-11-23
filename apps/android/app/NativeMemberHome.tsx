@@ -82,7 +82,7 @@ function NativeMemberHome({displayName,actorId,token,active,calendarRevision=0,o
    {active==='calendar'?<NativeCalendar token={token} calendarRevision={calendarRevision}/>:
     active==='repertoire'?<NativeRepertoire token={token}/>:
     active==='musicians'?<NativeMusicians token={token}/>:
-    active==='family'?<NativeFamily token={token}/>:
+    active==='family'?<NativeFamily token={token} onBackHome={()=>onNavigate('home')}/>:
     active==='notices'?<NativeNotices token={token} calendarRevision={calendarRevision} push={push}/>:
     active==='audio'?null:<View style={styles.pending}>
      <Text style={styles.pendingTitle}>Módulo en preparación</Text>
