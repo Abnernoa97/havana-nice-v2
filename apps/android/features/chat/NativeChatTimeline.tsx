@@ -1,7 +1,7 @@
 import React,{memo,useMemo,type RefObject} from 'react';
 import {FlatList,View,Text,Pressable,type NativeScrollEvent,type NativeSyntheticEvent} from 'react-native';
 import {
- buildChatDisplayIndex,messageDeliveryLabel,
+ buildChatDisplayIndex,groupChatMediaMessages,messageDeliveryLabel,
  type ChatMessage,type ChatReaction,type ChatReadReceipt,type ChatSession,type ChatEmoji,
 } from '@havana/shared';
 import SwipeableBubble,{type BubbleAnchor} from './SwipeableBubble';
@@ -42,6 +42,58 @@ function NativeChatTimeline({
    [display,onlineActorIds,connected]);
  const visibleMessages=useMemo(
   ()=>messages.filter(message=>!message.deletedAt).reverse(),[messages]);
+ const galleries=useMemo(()=>groupChatMediaMessages(messages.filter(message=>!message.deletedAt)),[messages]);
+ const groupLeads=useMemo(()=>{
+  const map=new Map<string,ChatMessage[]>();
+  for(const group of galleries)if(group.length>1)map.set(group[group.length-1]!.clientMessageId,group);
+  return map;
+ },[galleries]);
+ const groupFollowers=useMemo(()=>{
+  const hidden=new Set<string>();
+  for(const group of galleries)if(group.length>1)
+   for(const item of group.slice(0,-1))hidden.add(item.clientMessageId);
+  return hidden;
+ },[galleries]);
+ const renderBubble=(message:ChatMessage,compact=false)=>{
+  const mine=message.senderId===session.actorId;
+  const badges=display.reactionBadges.get(message.seq)??[];
+  const online=connected&&onlineActorIds.has(message.senderId);
+  return <SwipeableBubble
+   style={[styles.bubble,mine?styles.mine:styles.theirs,online&&styles.onlineBubble,
+    compact&&styles.galleryBubble]}
+   onReply={() => onReply(message)}
+   onLongPress={(anchor) => onMessageLongPress(message,anchor)}
+   onPress={() => {if(mine && message.pending && message.deliveryStatus==='error')onRetry(message.clientMessageId);}}>
+   {!mine&&!compact&&<Text style={[styles.sender,online&&styles.onlineText]}>{message.senderName}</Text>}
+   {message.replyToSeq?<Text style={[styles.replyLabel,mine&&styles.mineMeta,online&&styles.onlineMeta]}>
+    ↪ {display.replySnippets.get(message.replyToSeq)||'Mensaje anterior'}
+   </Text>:null}
+   {!message.media?<Text style={[styles.bubbleText,mine&&styles.mineText,online&&styles.onlineText]}>
+    {message.text}</Text>:null}
+   {message.media?<NativeChatMediaView media={message.media} session={session} compact={compact}/>:null}
+   {message.seq>0&&!message.deletedAt&&badges.length>0?<View
+    style={[styles.reactionBadges,compact&&styles.galleryReactions]}>
+    {badges.map(({emoji,count})=><Pressable key={emoji} accessibilityRole="button"
+     accessibilityLabel={'Reaccionar con '+emoji} disabled={!connected}
+     onPress={event=>onQuickReact(message,emoji as ChatEmoji,{
+      x:event.nativeEvent.pageX,y:event.nativeEvent.pageY
+     })}><Text style={styles.reactionBadge}>{emoji}{count}</Text></Pressable>)}
+   </View>:null}
+   {message.seq>0&&!message.deletedAt&&connected&&!compact&&<Pressable
+    accessibilityRole="button" accessibilityLabel={'Elegir reacción para mensaje de '+message.senderName}
+    style={styles.reactionTrigger} onPress={event=>onMessageLongPress(message,{
+     x:event.nativeEvent.pageX-20,y:event.nativeEvent.pageY-20,width:40,height:40
+    })}><Text style={styles.reactionTriggerText}>♡ +</Text></Pressable>}
+   <Text style={[styles.messageTime,mine&&styles.mineMeta,online&&styles.onlineMeta,
+    compact&&styles.galleryTime]}>
+    {new Date(message.sentAt).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}
+    {message.editedAt&&!message.deletedAt?' · editado':''}
+    {mine?' · '+messageDeliveryLabel(message):''}
+    {mine&&!message.pending&&display.lastReadByOther>=message.seq?' · leído':''}
+   </Text>
+  </SwipeableBubble>;
+ };
+
  return (
   <FlatList
    // Reverse the chronology once and use an inverted list: index zero is the
@@ -74,55 +126,17 @@ function NativeChatTimeline({
     ?<Text style={styles.empty}>¡Hola! Envía el primer mensaje. Aparecerá en los dos dispositivos.</Text>
     :undefined}
    renderItem={({item:message})=>{
-
-                const mine = message.senderId === session.actorId;
-                const badges=display.reactionBadges.get(message.seq)??[];
-                const online=connected&&onlineActorIds.has(message.senderId);
-                return (
-                  <SwipeableBubble
-                    style={[styles.bubble, mine ? styles.mine : styles.theirs, online&&styles.onlineBubble]}
-                    onReply={() => onReply(message)}
-                    onLongPress={(anchor) => onMessageLongPress(message,anchor)}
-                    onPress={() => {if(mine && message.pending && message.deliveryStatus==='error')onRetry(message.clientMessageId);}}
-                  >
-                    {!mine && <Text style={[styles.sender,online&&styles.onlineText]}>{message.senderName}</Text>}
-                    {message.replyToSeq ? (
-                      <Text style={[styles.replyLabel,mine && styles.mineMeta,online&&styles.onlineMeta]}>
-                        ↪ {display.replySnippets.get(message.replyToSeq)||'Mensaje anterior'}
-                      </Text>
-                    ) : null}
-                    {!message.media?<Text style={[styles.bubbleText,mine && styles.mineText,online&&styles.onlineText]}>
-                      {message.text}
-                    </Text>:null}
-                    {message.media?<NativeChatMediaView media={message.media} session={session}/>:null}
-                    {message.seq>0 && !message.deletedAt && badges.length>0 ? (
-                      <View style={styles.reactionBadges}>
-                        {badges.map(({emoji,count})=>(
-                          <Pressable key={emoji} accessibilityRole="button" accessibilityLabel={'Reaccionar con '+emoji}
-                           disabled={!connected}
-                           onPress={event=>onQuickReact(message,emoji as ChatEmoji,{
-                            x:event.nativeEvent.pageX,y:event.nativeEvent.pageY
-                           })}>
-                           <Text style={styles.reactionBadge}>{emoji}{count}</Text>
-                          </Pressable>
-                        ))}
-                      </View>
-                    ):null}
-                    {message.seq>0&&!message.deletedAt&&connected&&<Pressable
-                     accessibilityRole="button" accessibilityLabel={'Elegir reacción para mensaje de '+message.senderName}
-                     style={styles.reactionTrigger} onPress={event=>onMessageLongPress(message,{
-                      x:event.nativeEvent.pageX-20,y:event.nativeEvent.pageY-20,width:40,height:40
-                     })}>
-                     <Text style={styles.reactionTriggerText}>♡ +</Text>
-                    </Pressable>}
-                    <Text style={[styles.messageTime,mine && styles.mineMeta,online&&styles.onlineMeta]}>
-                      {new Date(message.sentAt).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}
-                      {message.editedAt&&!message.deletedAt?' · editado':''}
-                      {mine?' · '+messageDeliveryLabel(message):''}
-                      {mine&&!message.pending&&display.lastReadByOther>=message.seq?' · leído':''}
-                    </Text>
-                  </SwipeableBubble>
-                );
+    if(groupFollowers.has(message.clientMessageId))return null;
+    const grouped=groupLeads.get(message.clientMessageId);
+    if(!grouped)return renderBubble(message);
+    const mine=message.senderId===session.actorId;
+    return <View style={[styles.galleryCluster,mine?styles.galleryMine:styles.galleryTheirs]}>
+     {!mine&&<Text style={styles.gallerySender}>{message.senderName}</Text>}
+     <View style={styles.galleryGrid}>
+      {grouped.map(item=><View key={item.senderId+':'+item.clientMessageId}
+       style={styles.galleryCell}>{renderBubble(item,true)}</View>)}
+     </View>
+    </View>;
    }}
   />
  );

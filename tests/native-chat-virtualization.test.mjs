@@ -28,7 +28,7 @@ test('Virtual list preserves native video surfaces, old-page loading, deletes, r
   /hasMore\?<Pressable/,/onPress=\{\(\)=>void onLoadOlder\(\)\}/,
   /message=>!message.deletedAt/,/onReply=\{\(\) => onReply\(message\)\}/,
   /onLongPress=\{\(anchor\) => onMessageLongPress\(message,anchor\)\}/,
-  /<NativeChatMediaView media=\{message.media\} session=\{session\}/,
+  /<NativeChatMediaView media=\{message.media\} session=\{session\} compact=\{compact\}/,
   /display\.reactionBadges\.get\(message.seq\)/,
   /display\.lastReadByOther>=message.seq/,
   /onScrollBeginDrag=\{onScrollBeginDrag\}/,
