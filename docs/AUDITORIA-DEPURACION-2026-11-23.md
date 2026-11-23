@@ -51,3 +51,10 @@
 - `packages/shared/src/chat-outbox.ts` genera la estructura idéntica de mensajes de texto pendientes para Android y PWA mediante `createQueuedChatMessage`.
 - Identificadores y fecha siguen generados por la plataforma propietaria; el paquete compartido no crea cola, sesión, WebSocket ni persistencia.
 - Nuevas pruebas verifican que se preservan `replyToSeq`, `pending`, `deliveryStatus` y que nunca se incrusta el token en el mensaje almacenado.
+
+## Quinta fase · Historial y reconexión protegidos (23/11)
+- Se añadió `packages/shared/src/chat-history-requests.ts` para centralizar solicitud de páginas anteriores y snapshots, conservando el único controlador, WebSocket, sesión y desplazamiento por plataforma.
+- Las solicitudes solapadas y respuestas tardías tras revocación/cambio de músico se descartan con el mismo `ChatHistoryRequestGate` preexistente.
+- Las pruebas nuevas verifican solicitudes duplicadas, cambio de sesión, fallo de red, snapshots fuera de orden y ausencia de segundo socket.
+- PWA maneja ahora el error síncrono al abrir WebSocket, con mensaje y estado recuperables, tal como Android ya hacía.
+- Worker, Durable Objects, datos D1/R2, motor BOOK 3D, secreto FCM y APK firmada no se han alterado.

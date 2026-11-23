@@ -265,7 +265,13 @@ export function usePwaChatController(){
     socket.current = null;
     old?.close();
     setConnection('conectando…');
-    const ws = openChatSocket(next);
+    let ws:WebSocket;
+    try{ws=openChatSocket(next);}
+    catch{
+      setConnection('sin conexión');
+      setError('No se pudo iniciar la conexión. Comprueba Internet y pulsa Reconectar.');
+      return;
+    }
     persist();
     socket.current = ws;
     function retry() {
