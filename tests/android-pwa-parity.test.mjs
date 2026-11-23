@@ -55,7 +55,7 @@ test('one private Repertoire invalidation channel synchronizes Admin, PWA and An
  assert.match(nativeTransport,/if\(event\.type==='calendar.invalidate'\)onInvalidate\('changed'\)/);
  assert.match(admin,/void refreshAll\(\); \/\/ Carga D1 inmediata/);
  assert.match(admin,/watchRepertoire\(token,true/);
- assert.match(member,/void refresh\(\); \/\/ Initial D1 load/);
+ assert.match(member,/void refresh\(\);/);
  assert.match(member,/watchRepertoire\(token,false/);
  assert.match(android,/watchNativeRepertoire\(token/);
  for(const s of [admin,member,android])assert.doesNotMatch(s,/setInterval\(/);
@@ -84,15 +84,25 @@ test('Admin Repertorio does not overwrite newer edits with old Calendar/catalog 
  assert.match(src,/e instanceof CalendarHttpError&&e.status===401/);
  assert.match(src,/if\(request===catalogRequest\.current\)setLoading\(false\)/);
 });
-test('Android Repertorio consumes exactly the PWA member D1 catalog and assigned event contracts',()=>{
+test('Android and PWA Repertorio share the catalog; assigned event setlists live inside Calendario',()=>{
  const native=read('apps/android/features/repertoire/NativeRepertoire.tsx');
  const pwa=read('apps/pwa/src/features/repertoire/MemberRepertoire.tsx');
- for(const api of ['getRepertoireSongs','getCalendarEvents','getAssignedEventRepertoire','safeRepertoireLink','calendarDate']){
+ const nativeCalendar=read('apps/android/features/calendar/NativeCalendar.tsx');
+ const pwaCalendar=read('apps/pwa/src/features/calendar/CalendarAccordion.tsx');
+ const pwaSetlist=read('apps/pwa/src/features/calendar/EventRepertoire.tsx');
+ for(const api of ['getRepertoireSongs','safeRepertoireLink','repertoireSection']){
   assert.ok(native.includes(api)&&pwa.includes(api),api);
  }
  assert.match(native,/watchNativeRepertoire\(token/);
  assert.match(read('apps/android/services/native-calendar-live.ts'),/AppState\.addEventListener/);
- assert.match(native,/item\.completed/);
+ assert.match(nativeCalendar,/getCalendarEvents/);
+ assert.match(pwaCalendar,/getCalendarEvents/);
+ assert.match(nativeCalendar,/getEventRepertoire\(token,eventId\)/);
+ assert.match(pwaSetlist,/getEventRepertoire\(token,eventId\)/);
+ assert.match(nativeCalendar,/<NativeEventRepertoire token=\{token\} eventId=\{item\.id\}/);
+ assert.match(pwaCalendar,/<EventRepertoire token=\{token\} eventId=\{item\.id\}/);
+ assert.match(nativeCalendar,/item\.completed/);
+ assert.match(pwaSetlist,/item\.completed/);
  assert.doesNotMatch(native,/fetch\('https?:|chat_messages|startNamedChatSession|localStorage/);
 });
 
@@ -107,7 +117,7 @@ test('Android Familia reads the same albums, authorized grant URLs and real BOOK
  const book=read('apps/android/features/book/NativeBook.tsx');
  const pwaRoute=read('apps/pwa/src/app/PwaReaderRoute.tsx');
  const reader=read('apps/pwa/src/features/book/BookReader.tsx');
- assert.match(native,/<NativeBook token=\{token\} refreshKey=\{bookTick\} onClose=\{back\}\/>/);
+ assert.match(native,/<NativeBook token=\{token\} refreshKey=\{bookTick\} embedded\/>/);
  assert.match(book,/bookContextDeliveryScript\(nativeContext\)/);
  assert.doesNotMatch(book,/injectedJavaScriptObject=/);
  assert.match(book,/<WebView<object>/);

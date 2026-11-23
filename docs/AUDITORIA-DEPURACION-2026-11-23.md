@@ -116,3 +116,9 @@
 - Son pruebas locales Node sin conexión a D1/R2 productivos y sin dependencias nuevas; detectan sesiones/transportes duplicados, errores de límites de módulos y diferencias entre la PWA y Android.
 - No se modifica la aplicación, sus módulos, URLs, el Worker ni la APK. Los cambios de producción se siguen bloqueando si falla una prueba.
 - El workflow completo de GitHub permanece intacto y se mantiene su ejecución manual/programada para controlar minutos.
+
+## Decimoquinta fase · Actualización de pruebas de paridad obsoletas (23/11)
+- Se activaron las suites históricas del test de arquitectura en Pages y detectaron cinco afirmaciones antiguas que ya no representaban la estructura actual. La primera compilación del cambio de test quedó bloqueada sin publicar.
+- `tests/android-pwa-parity.test.mjs` comprueba que ambos Repertorios muestran el catálogo general y que las canciones del evento están dentro de Calendario (Android `NativeEventRepertoire`, PWA `EventRepertoire`). La prueba de Familia comprueba el BOOK integrado vigente en lugar del antiguo callback `onClose`.
+- `tests/module-boundaries.test.mjs` valida el contrato privado de repertorio por evento y el refresco automático de Administración, sin exigir un antiguo botón `Actualizar` que ya no existe.
+- No se modificaron componentes, rutas, contratos API, Worker, D1/R2 ni APK para silenciar tests; se corrigieron las aserciones para el comportamiento actual y se mantiene la nueva cobertura en cada build.

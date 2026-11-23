@@ -106,7 +106,12 @@ test('A04: Repertoire cannot create parallel sessions or mutate Chat/Calendar co
  const handler=read('cloudflare/src/index.ts');
  assert.match(handler,/handleRepertoireApi\(request,env,url,origin,respond,verifySession,ctx\)/);
  const ui=read('apps/pwa/src/features/repertoire/MemberRepertoire.tsx');
- assert.match(ui,/getAssignedEventRepertoire/);
+ assert.match(ui,/getRepertoireSongs/);
+ const setlist=read('apps/pwa/src/features/calendar/EventRepertoire.tsx');
+ const calendar=read('apps/pwa/src/features/calendar/CalendarAccordion.tsx');
+ assert.match(setlist,/getEventRepertoire\(token,eventId\)/);
+ assert.match(calendar,/<EventRepertoire token=\{token\} eventId=\{item\.id\}/);
+ assert.doesNotMatch(setlist,/adminCreateSong|adminDeleteSong|adminAddEventSongs|new WebSocket/);
  assert.doesNotMatch(ui,/adminCreateSong|adminDeleteSong|adminAddEventSongs/);
  assert.match(read('cloudflare/migrations/0020_repertoire.sql'),/REFERENCES calendar_events/);
 });
@@ -125,7 +130,8 @@ test('Admin Repertoire refresh always updates selected event, not just the maste
  const src=read('apps/pwa/src/features/repertoire/AdminRepertoire.tsx');
  assert.match(src,/const refreshAll=useCallback\(async\(\)=>\{/);
  assert.match(src,/await refresh\(\);\s*if\(eventIdRef\.current\)await refreshItems\(eventIdRef\.current\)/);
- assert.match(src,/onClick=\{\(\)=>void refreshAll\(\)\} disabled=\{busy\}>Actualizar/);
+ assert.match(src,/void refreshAll\(\); \/\/ Carga D1 inmediata/);
+ assert.match(src,/watchRepertoire\(token,true,\(\)=>\{if\(!document.hidden&&navigator.onLine\)void refreshAll\(\);\}\)/);
  assert.match(src,/try\{await action\(\);await refreshAll\(\);setNotice\(message\);\}/);
  assert.match(src,/const request=\+\+itemsRequest\.current/);
  assert.match(src,/request===itemsRequest\.current&&eventIdRef\.current===id/);
