@@ -13,7 +13,6 @@ export const storyStyles=StyleSheet.create({
  photo:{width:62,height:62,borderRadius:31},
  coverFrame:{width:62,height:62,borderRadius:31,backgroundColor:'#1e6549',
   overflow:'hidden',alignItems:'center',justifyContent:'center'},
- coverPending:{position:'absolute',fontSize:9,fontWeight:'800',letterSpacing:.5,color:'#fff8e8'},
  coverImage:{position:'absolute',top:0,left:0},
  coverInvisible:{opacity:0},
  countBadge:{position:'absolute',top:-5,right:-5,zIndex:4,minWidth:24,height:24,

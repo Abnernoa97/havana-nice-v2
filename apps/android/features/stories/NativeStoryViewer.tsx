@@ -6,10 +6,12 @@ import NativeStoryConversation from './NativeStoryConversation';
 import NativeStoryReactionShower,{type NativeStoryBurst} from './NativeStoryReactionShower';
 
 type Props={stories:readonly MemberStory[];actorId:string;token:string;version:number;
- onClose:()=>void;onDelete:(id:string)=>Promise<boolean>;onPhotoError:(id:string)=>void};
+ onClose:()=>void;onDelete:(id:string)=>Promise<boolean>;onPhotoError:(id:string)=>void;
+ onViewed:(id:string)=>void};
 
 // Entirely native: ONE stable bitmap, animated progress + floating social controls.
-export default function NativeStoryViewer({stories,actorId,token,version,onClose,onDelete,onPhotoError}:Props){
+export default function NativeStoryViewer({stories,actorId,token,version,
+ onClose,onDelete,onPhotoError,onViewed}:Props){
  const [position,setPosition]=useState(0);
  const [foreground,setForeground]=useState(true);
  const [paused,setPaused]=useState(false);
@@ -18,8 +20,17 @@ export default function NativeStoryViewer({stories,actorId,token,version,onClose
  const [burst,setBurst]=useState<NativeStoryBurst|null>(null);
  const progress=useRef(new Animated.Value(0)).current;
  const elapsed=useRef(0),lastId=useRef('');
+ const viewed=useRef(new Set<string>());
  const current=stories[Math.min(position,stories.length-1)];
  const photoFailed=useCallback(()=>{if(current)onPhotoError(current.id);},[current?.id,onPhotoError]);
+ const photoReady=()=>{
+  if(!current)return;
+  setReadyStoryId(current.id);
+  if(!viewed.current.has(current.id)){
+   viewed.current.add(current.id);
+   onViewed(current.id);
+  }
+ };
  const goNext=useCallback(()=>{
   if(position>=stories.length-1){onClose();return;}
   setPosition(v=>Math.min(v+1,stories.length-1));
@@ -66,7 +77,7 @@ export default function NativeStoryViewer({stories,actorId,token,version,onClose
   <View style={s.screen}>
    {!!current&&<View style={s.frame}>
     <NativeStoryPhoto key={current.id} uri={current.photoUrl} onError={photoFailed}
-     onReady={()=>setReadyStoryId(current.id)}/>
+     onReady={photoReady}/>
     <View pointerEvents="none" style={s.topShade}/>
     <View style={s.progressRow} accessibilityLabel={'Estado '+(position+1)+' de '+stories.length}>
      {stories.map((story,i)=><Pressable key={story.id} accessibilityRole="button"

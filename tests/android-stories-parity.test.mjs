@@ -109,3 +109,18 @@ test('Cold Android launch uses the real HAVANA NICE icon and branded loading scr
  assert.match(styles,/screenLaunch:\{backgroundColor:'#0D2A23',paddingBottom:0\}/);
  assert.match(shell,/restoringAccess&&styles\.screenLaunch/);
 });
+
+test('Native unread state badges persist by musician and disappear after an actual photo loads',()=>{
+ const strip=read('apps/android/features/stories/NativeStories.tsx');
+ const viewer=read('apps/android/features/stories/NativeStoryViewer.tsx');
+ const seen=read('apps/android/features/stories/native-story-seen-store.ts');
+ assert.match(strip,/!seenIds\.has\(st\.id\)/);
+ assert.match(strip,/person\.actorId===actorId\?0/);
+ assert.match(strip,/NUEVOS · \{count\}/);
+ assert.match(strip,/onViewed=\{markViewed\}/);
+ assert.match(viewer,/onViewed\(current\.id\)/);
+ assert.match(seen,/expo-sqlite\/kv-store/);
+ assert.match(seen,/getItemSync/);
+ assert.match(seen,/setItemSync/);
+ assert.doesNotMatch(strip,/>ESTADO<\/Text>/);
+});

@@ -90,3 +90,24 @@ test('Five-photo selection, stable image and timer stay independent of the 3D BO
  assert.match(native,/last\?\.photoUrl\|\|person\.photoUrl/);
  assert.match(native,/for\(const story of states\.stories\)/);
 });
+
+test('Only unseen story photos show counts; visible photos are marked on load per musician',()=>{
+ const pwa=read('apps/pwa/src/features/stories/MemberStories.tsx');
+ const strip=read('apps/pwa/src/features/home/TeamStoriesStrip.tsx');
+ const viewer=read('apps/pwa/src/features/stories/MemberStoryViewer.tsx');
+ const seen=read('apps/pwa/src/features/stories/story-seen-store.ts');
+ assert.match(strip,/!seenIds\.has\(s\.id\)/);
+ assert.match(strip,/person\.actorId===actorId\?0/);
+ assert.match(strip,/NUEVOS · \{count\}/);
+ assert.match(strip,/count>0&&<span className="hn-moment-count"/);
+ assert.match(pwa,/onViewed=\{markViewed\}/);
+ assert.match(viewer,/if\(item&&photo\.url\)onViewed\(item\.id\)/);
+ assert.match(seen,/localStorage\.setItem/);
+ assert.match(seen,/PREFIX\+actorId/);
+});
+test('No temporary ESTADO image; predecoded covers still replace the real profile only when ready',()=>{
+ const strip=read('apps/pwa/src/features/home/TeamStoriesStrip.tsx');
+ assert.match(strip,/return cover\?<img/);
+ assert.match(strip,/photoUrl=\{profilePhoto\}/);
+ assert.doesNotMatch(strip,/>ESTADO<\/span>/);
+});

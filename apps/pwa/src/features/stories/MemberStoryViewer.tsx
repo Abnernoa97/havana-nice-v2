@@ -8,12 +8,13 @@ import StoryPhotoSurface from './StoryPhotoSurface';
 import {useStoryPhotoCache} from './useStoryPhotoCache';
 
 type Props={items:MemberStory[];myId:string|undefined;token:string;refreshVersion:number;
- onClose:()=>void;onDelete:(id:string)=>Promise<boolean>;onPhotoError:(id:string)=>void};
+ onClose:()=>void;onDelete:(id:string)=>Promise<boolean>;onPhotoError:(id:string)=>void;
+ onViewed:(id:string)=>void};
 
 // ONE mounted photo; no 3D, transforms or animated image layers on iOS Safari.
 // All controls overlay the canvas instead of pushing its dimensions down.
 export default function MemberStoryViewer({items,myId,token,refreshVersion,
- onClose,onDelete,onPhotoError}:Props){
+ onClose,onDelete,onPhotoError,onViewed}:Props){
  const [position,setPosition]=useState(0);
  const [deleting,setDeleting]=useState(false);
  const [held,setHeld]=useState(false);
@@ -24,6 +25,10 @@ export default function MemberStoryViewer({items,myId,token,refreshVersion,
  const item=items[Math.min(position,items.length-1)];
  const photo=useStoryPhotoCache(items,position,onPhotoError);
  const failedPhoto=photo.failed;
+ // Count each photo as viewed only once its private bitmap is ready to show.
+ useEffect(()=>{
+  if(item&&photo.url)onViewed(item.id);
+ },[item?.id,photo.url,onViewed]);
  const paused=deleting||held||hidden||commentPaused||(!photo.url&&!failedPhoto);
  useEffect(()=>{
   const change=()=>setHidden(document.hidden);

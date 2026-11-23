@@ -1,9 +1,10 @@
-import {useEffect,useRef,useState,type ChangeEvent} from 'react';
+import {useEffect,useMemo,useRef,useState,type ChangeEvent} from 'react';
 import {createPortal} from 'react-dom';
 import {STORY_BATCH_MAX,type MemberProfile} from '@havana/shared';
 import TeamStoriesStrip from '../home/TeamStoriesStrip';
 import MemberStoryViewer from './MemberStoryViewer';
 import {useMemberStories} from './useMemberStories';
+import {readSeenStoryIds,saveSeenStoryId} from './story-seen-store';
 import './stories.css';
 
 type Props={token:string|undefined;displayName:string|undefined;actorId:string|undefined;
@@ -15,6 +16,13 @@ export default function MemberStories({token,displayName,actorId,profiles,previe
  canEditProfile,onPhotoError,refreshVersion}:Props){
  const data=useMemberStories(preview?undefined:token,refreshVersion);
  const [viewActor,setViewActor]=useState<string|null>(null);
+ const [seen,setSeen]=useState<string[]>(()=>readSeenStoryIds(actorId));
+ useEffect(()=>setSeen(readSeenStoryIds(actorId)),[actorId]);
+ const seenIds=useMemo(()=>new Set(seen),[seen]);
+ const markViewed=(id:string)=>{
+  if(!actorId||seenIds.has(id))return;
+  setSeen(saveSeenStoryId(actorId,id));
+ };
  const [selected,setSelected]=useState<SelectedPhoto[]>([]);
  const [selectionError,setSelectionError]=useState('');
  const input=useRef<HTMLInputElement|null>(null);
@@ -48,7 +56,8 @@ export default function MemberStories({token,displayName,actorId,profiles,previe
    aria-label="Elegir hasta cinco fotos para estados" onChange={pick}/>
   <TeamStoriesStrip displayName={displayName} actorId={actorId} profiles={profiles}
    preview={preview} canEditProfile={canEditProfile} onPhotoError={onPhotoError}
-   stories={visible} ready={data.initialReady} onStoryPhotoError={data.retryPhoto}
+   stories={visible} ready={data.initialReady} seenIds={seenIds}
+   onStoryPhotoError={data.retryPhoto}
    onOpenStory={setViewActor} onAddStory={()=>{setSelectionError('');input.current?.click();}}/>
   {(data.error||selectionError)&&!selected.length&&
    <p className="hn-story-error" role="status">{selectionError||data.error}
@@ -81,7 +90,8 @@ export default function MemberStories({token,displayName,actorId,profiles,previe
   </div>,document.body)}
   {viewActor&&viewing.length>0&&token&&createPortal(
    <MemberStoryViewer items={viewing} myId={actorId} token={token} refreshVersion={refreshVersion}
-    onClose={()=>setViewActor(null)} onDelete={data.remove} onPhotoError={data.retryPhoto}/>,
+    onClose={()=>setViewActor(null)} onDelete={data.remove} onPhotoError={data.retryPhoto}
+    onViewed={markViewed}/>,
    document.body)}
  </>;
 }

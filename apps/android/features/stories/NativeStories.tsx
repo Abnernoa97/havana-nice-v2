@@ -4,18 +4,21 @@ import {type MemberProfile,type MemberStory} from '@havana/shared';
 import {useNativeStories} from './useNativeStories';
 import NativeStoryViewer from './NativeStoryViewer';
 import {storyStyles as s} from './native-story-styles';
+import {readNativeSeenStoryIds,saveNativeSeenStoryId} from './native-story-seen-store';
 
 // The permanent avatar NEVER appears as a temporary status cover.
-const StoryAvatar=React.memo(function StoryAvatar({uri,name,hasStory,rosterReady,onFailure}:{
- uri:string|null|undefined;name:string;hasStory:boolean;rosterReady:boolean;onFailure:()=>void;
+const StoryAvatar=React.memo(function StoryAvatar({uri,profileUri,name,hasStory,onFailure}:{
+ uri:string|null|undefined;profileUri:string|null;name:string;
+ hasStory:boolean;onFailure:()=>void;
 }){
  const [failedUri,setFailedUri]=useState('');
  const [readyUri,setReadyUri]=useState('');
- if(!rosterReady)return <View style={s.coverFrame}><Text style={s.coverPending}>···</Text></View>;
  if(hasStory){
   const ready=!!uri&&readyUri===uri;
   return <View style={s.coverFrame}>
-   {!ready&&<Text style={s.coverPending}>ESTADO</Text>}
+   {!ready&&(profileUri?<Image source={{uri:profileUri,cache:'force-cache'}}
+    style={s.photo} resizeMode="cover" fadeDuration={0}/>:
+    <Text style={s.initial}>{name.charAt(0).toUpperCase()}</Text>)}
    {!!uri&&failedUri!==uri&&<Image source={{uri,cache:'force-cache'}}
     style={[s.photo,s.coverImage,!ready&&s.coverInvisible]}
     resizeMode="cover" fadeDuration={0} onLoad={()=>setReadyUri(uri)}
@@ -36,6 +39,13 @@ type Props={token:string;actorId:string;displayName:string;profiles:readonly Mem
 export default function NativeStories({token,actorId,displayName,profiles,canPublish,refreshVersion}:Props){
  const states=useNativeStories(token,refreshVersion);
  const [viewerActor,setViewerActor]=useState<string|null>(null);
+ const [seen,setSeen]=useState<string[]>(()=>readNativeSeenStoryIds(actorId));
+ useEffect(()=>{setSeen(readNativeSeenStoryIds(actorId));},[actorId]);
+ const seenIds=useMemo(()=>new Set(seen),[seen]);
+ const markViewed=(id:string)=>{
+  if(seenIds.has(id))return;
+  setSeen(saveNativeSeenStoryId(actorId,id));
+ };
  const [emptyMessage,setEmptyMessage]=useState('');
  const group=useMemo(()=>states.stories.filter(st=>st.actorId===viewerActor),
   [states.stories,viewerActor]);
@@ -59,18 +69,19 @@ export default function NativeStories({token,actorId,displayName,profiles,canPub
    (s.createdAt===best.createdAt&&s.id>best.id)?s:best,null);
   const member=(person:{actorId:string;name:string;photoUrl:string|null},self=false)=>{
   const last=newest(person.actorId);
-  const count=states.stories.filter(st=>st.actorId===person.actorId).length;
+  const count=person.actorId===actorId?0:states.stories.filter(st=>
+   st.actorId===person.actorId&&!seenIds.has(st.id)).length;
   return <View style={s.member} key={person.actorId}>
    <View style={s.slot}>
     <Pressable accessibilityRole="button"
-     accessibilityLabel={last?'Ver '+count+' estados de '+person.name:'Consultar estados de '+person.name}
+     accessibilityLabel={last?(count?'Ver '+count+' estados nuevos de ':'Ver estados vistos de ')+person.name:'Consultar estados de '+person.name}
      onPress={()=>{
       if(last){setEmptyMessage('');setViewerActor(person.actorId);}
       else setEmptyMessage(self?'Aún no tienes estados.':person.name+' aún no tiene estados.');
      }}
      style={[s.ring,self&&s.ownRing,!!last&&s.activeRing]}>
-     <StoryAvatar uri={last?.photoUrl||person.photoUrl} name={person.name}
-      hasStory={!!last} rosterReady={states.initialReady}
+     <StoryAvatar uri={last?.photoUrl||person.photoUrl} profileUri={person.photoUrl}
+      name={person.name} hasStory={!!last&&states.initialReady}
       onFailure={()=>{if(last)states.retryPhoto(last.id);}}/>
     </Pressable>
     {count>0&&<View pointerEvents="none" style={s.countBadge}>
@@ -83,7 +94,7 @@ export default function NativeStories({token,actorId,displayName,profiles,canPub
     </Pressable>}
    </View>
    <Text style={s.name} numberOfLines={1}>{person.name}</Text>
-   {count>0&&<Text style={s.storyLabel}>ESTADO · {count}</Text>}
+   {count>0&&<Text style={s.storyLabel}>NUEVOS · {count}</Text>}
   </View>;
  };
  return <>
@@ -102,6 +113,7 @@ export default function NativeStories({token,actorId,displayName,profiles,canPub
   </View>
   {viewerActor&&group.length>0&&<NativeStoryViewer key={viewerActor}
    stories={group} token={token} actorId={actorId} version={refreshVersion}
-   onClose={()=>setViewerActor(null)} onDelete={states.remove} onPhotoError={states.retryPhoto}/>}
+   onClose={()=>setViewerActor(null)} onDelete={states.remove} onPhotoError={states.retryPhoto}
+   onViewed={markViewed}/>}
  </>;
 }
