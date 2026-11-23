@@ -1,5 +1,6 @@
 import {sha256Hex} from '../../shared/crypto-helpers.js';
 import {queueNoticePush} from './push-center.js';
+import {memberPushCopy} from './push-copy.js';
 // Private per-member inbox. One existing musician session; no new socket or credentials.
 // Notifications contain short metadata, never private media URLs or tokens.
 const asJson=(value,status,origin)=>new Response(JSON.stringify(value),{
@@ -27,23 +28,13 @@ export async function notifyMember(env,{recipientId,actorId,kind,targetId,emoji=
   actorId,recipientId).run();
  const created=Number(response.meta?.changes||0)>0;
  if(created){
-  // Push is additional to the existing private inbox, never a replacement.
-  // Lock-screen previews contain only short activity metadata, no message
-  // contents, R2 URLs or device tokens.
-  const section=kind.startsWith('chat.')?'Chat':
-   kind.startsWith('story.')?'Estados':
-   kind==='profile.photo'?'Perfil':
-   kind==='family.media'?'Familia':'Actividad';
-  const detail=kind==='chat.message'?'Nuevo mensaje del equipo':
-   kind==='chat.reaction'?'Reacción a tu mensaje':
-   kind==='story.reaction'?'Reacción a tu Estado':
-   kind==='story.comment'?'Nuevo comentario en tu Estado':
-   kind==='story.voice'?'Nueva nota de voz en tu Estado':
-   kind==='story.created'?'Nuevo Estado del equipo':
-   kind==='profile.photo'?'Se actualizó una foto de perfil':
-   kind==='family.media'?'Nuevo archivo en Familia':'Nueva actividad';
-  await queueNoticePush(env,{noticeId,recipientId,kind,targetId,
-   title:'HAVANA NICE · '+section,body:detail});
+  // The roster owns the display name. Never expose a message body,
+  // audio content, R2 URL or login token on the lock screen.
+  const author=await env.DB.prepare(
+   'SELECT display_name FROM chat_members WHERE actor_id=? AND active=1'
+  ).bind(actorId).first();
+  const copy=memberPushCopy({kind,actorName:author?.display_name,emoji,preview});
+  await queueNoticePush(env,{noticeId,recipientId,kind,targetId,...copy});
  }
  return created;
 }
@@ -88,17 +79,22 @@ export async function notifyTeamFamilyMedia(env,albumActorId,mediaId,kind){
 // counterfeit musician message. Only Calendar-assigned musicians receive it.
 export async function notifyRepertoireMembers(env,eventId,action,changeId){
  if(!eventId||!changeId)return 0;
- const preview=action==='added'?'Se agregaron canciones a tu repertorio':
-  action==='removed'?'Se eliminó una canción de tu repertorio':
-  action==='reordered'?'Se actualizó el orden de tu repertorio':
-  action==='completed'?'Se actualizó el avance de tu repertorio':
-  'Se actualizó el repertorio de tu evento';
+ const intro=action==='added'?'Administración agregó canciones':
+  action==='removed'?'Administración quitó una canción':
+  action==='reordered'?'Administración reordenó las canciones':
+  action==='completed'?'Administración actualizó el avance':
+  'Administración actualizó el repertorio';
  try{
   const members=(await env.DB.prepare(
    'SELECT DISTINCT r.actor_id FROM calendar_event_recipients r '+
    'JOIN chat_members m ON m.actor_id=r.actor_id AND m.active=1 '+
    'WHERE r.event_id=?'
   ).bind(eventId).all()).results||[];
+  const event=await env.DB.prepare(
+   'SELECT title FROM calendar_events WHERE id=?'
+  ).bind(eventId).first();
+  const title=String(event?.title||'tu evento').replace(/[\r\n]/g,' ').slice(0,64);
+  const preview=(intro+' del repertorio de '+title).slice(0,160);
   const now=Date.now();
   const noticeIds=members.map(()=>crypto.randomUUID());
   if(!members.length)return 0;
@@ -126,6 +122,70 @@ export async function notifyRepertoireMembers(env,eventId,action,changeId){
 // New Android/PWA States are team activity, not a private author-only reply.
 // Each published batch creates ONE notice per other authorized musician.
 // The endpoint never trusts recipients supplied by the uploader.
+// Changes to the *general* song library are useful to every active musician;
+// this is an Admin system notice, not a forged message from an album owner.
+export async function notifyGeneralRepertoireMembers(env,action,songTitle,changeId){
+ if(!changeId)return 0;
+ const title=String(songTitle||'una canción').replace(/[\r\n]/g,' ').slice(0,72);
+ const preview=(action==='added'?'Administración agregó '+title+
+  ' al repertorio general':
+  action==='removed'?'Administración eliminó '+title+
+  ' del repertorio general':
+  'Administración actualizó '+title+' en el repertorio general').slice(0,160);
+ try{
+  const members=(await env.DB.prepare(
+   'SELECT actor_id FROM chat_members WHERE active=1'
+  ).all()).results||[];
+  if(!members.length)return 0;
+  const now=Date.now(),ids=members.map(()=>crypto.randomUUID());
+  const inserted=await env.DB.batch(members.map((member,i)=>env.DB.prepare(
+   "INSERT OR IGNORE INTO member_system_notifications "+
+   "(id,recipient_id,kind,target_id,preview,created_at,dedupe_key) "+
+   "VALUES(?,?,'repertoire.updated','general',?,?,?)"
+  ).bind(ids[i],member.actor_id,preview,now,
+   'repertoire:general:'+changeId+':'+member.actor_id)));
+  let count=0;
+  for(let i=0;i<members.length;i++){
+   if(Number(inserted[i]?.meta?.changes||0)!==1)continue;
+   count++;
+   await queueNoticePush(env,{noticeId:ids[i],recipientId:members[i].actor_id,
+    kind:'repertoire.updated',targetId:'general',
+    title:'HAVANA NICE · Repertorio general',body:preview});
+  }
+  return count;
+ }catch{return 0;}
+}
+
+// The approved general BOOK is a system publication, never a page turn.
+// A two-minute burst of uploads produces ONE notice per teammate.
+export async function notifyBookPublished(env,pageId){
+ if(!pageId)return 0;
+ try{
+  const members=(await env.DB.prepare(
+   'SELECT actor_id FROM chat_members WHERE active=1'
+  ).all()).results||[];
+  if(!members.length)return 0;
+  const now=Date.now(),bucket=Math.floor(now/120000);
+  const ids=members.map(()=>crypto.randomUUID());
+  const preview='Administración publicó nuevo contenido en el BOOK 3D';
+  const inserted=await env.DB.batch(members.map((member,i)=>env.DB.prepare(
+   'INSERT OR IGNORE INTO book_member_notifications '+
+   '(id,recipient_id,kind,target_id,preview,created_at,dedupe_key) '+
+   "VALUES(?,?,'book.updated',?,?,?,?)"
+  ).bind(ids[i],member.actor_id,pageId,preview,now,
+   'book:published:'+bucket+':'+member.actor_id)));
+  let count=0;
+  for(let i=0;i<members.length;i++){
+   if(Number(inserted[i]?.meta?.changes||0)!==1)continue;
+   count++;
+   await queueNoticePush(env,{noticeId:ids[i],recipientId:members[i].actor_id,
+    kind:'book.updated',targetId:'general',
+    title:'HAVANA NICE · BOOK 3D',body:preview});
+  }
+  return count;
+ }catch{return 0;}
+}
+
 export async function notifyTeamStoryPublished(env,actor,storyId,count=1){
  if(!actor?.actorId||!storyId)return 0;
  try{
@@ -224,7 +284,7 @@ export async function handleMemberNotices(request,env,url,origin,verifySession){
    const base='SELECT n.id,n.actor_id,a.display_name,n.kind,n.target_id,n.emoji,'+
     'n.preview,n.created_at,n.read_at FROM member_notifications n '+
     'JOIN chat_members a ON a.actor_id=n.actor_id WHERE n.recipient_id=?';
-   let rows=[],calendarUnread=0,systemUnread=0;
+   let rows=[],calendarUnread=0,systemUnread=0,bookUnread=0;
    // All three sources share the same chronological inbox. System events
    // remain actorless rather than pretending the administrator is a musician.
    const calendar="SELECT c.id,NULL AS actor_id,'HAVANA NICE' AS display_name,c.kind,"+
@@ -233,30 +293,51 @@ export async function handleMemberNotices(request,env,url,origin,verifySession){
    const system="SELECT s.id,NULL AS actor_id,'HAVANA NICE' AS display_name,s.kind,"+
     "s.target_id,'' AS emoji,s.preview,s.created_at,s.read_at "+
     'FROM member_system_notifications s WHERE s.recipient_id=?';
+   const book="SELECT b.id,NULL AS actor_id,'HAVANA NICE' AS display_name,b.kind,"+
+    "b.target_id,'' AS emoji,b.preview,b.created_at,b.read_at "+
+    'FROM book_member_notifications b WHERE b.recipient_id=?';
    try{
     const query='SELECT * FROM ('+base+' UNION ALL '+calendar+
-     ' UNION ALL '+system+') ORDER BY created_at DESC,id DESC LIMIT 60';
-    rows=(await env.DB.prepare(query).bind(actor.actorId,actor.actorId,actor.actorId).all()).results||[];
-    const [calendarCount,systemCount]=await Promise.all([
+     ' UNION ALL '+system+' UNION ALL '+book+
+     ') ORDER BY created_at DESC,id DESC LIMIT 60';
+    rows=(await env.DB.prepare(query).bind(actor.actorId,actor.actorId,actor.actorId,actor.actorId).all()).results||[];
+    const [calendarCount,systemCount,bookCount]=await Promise.all([
      env.DB.prepare('SELECT COUNT(*) AS total FROM calendar_member_notifications '+
       'WHERE recipient_id=? AND read_at IS NULL').bind(actor.actorId).first(),
      env.DB.prepare('SELECT COUNT(*) AS total FROM member_system_notifications '+
+      'WHERE recipient_id=? AND read_at IS NULL').bind(actor.actorId).first(),
+     env.DB.prepare('SELECT COUNT(*) AS total FROM book_member_notifications '+
       'WHERE recipient_id=? AND read_at IS NULL').bind(actor.actorId).first()
     ]);
     calendarUnread=Number(calendarCount?.total||0);
     systemUnread=Number(systemCount?.total||0);
+    bookUnread=Number(bookCount?.total||0);
    }catch{
-    // A partially migrated database keeps the older Chat + Calendar inbox.
+    // Roll back to the original three-way inbox if BOOK migration is absent.
     try{
+     rows=(await env.DB.prepare(
+      'SELECT * FROM ('+base+' UNION ALL '+calendar+' UNION ALL '+system+
+      ') ORDER BY created_at DESC,id DESC LIMIT 60'
+     ).bind(actor.actorId,actor.actorId,actor.actorId).all()).results||[];
+     const [cc,sc]=await Promise.all([
+      env.DB.prepare('SELECT COUNT(*) AS total FROM calendar_member_notifications WHERE recipient_id=? AND read_at IS NULL').bind(actor.actorId).first(),
+      env.DB.prepare('SELECT COUNT(*) AS total FROM member_system_notifications WHERE recipient_id=? AND read_at IS NULL').bind(actor.actorId).first()
+     ]);
+     calendarUnread=Number(cc?.total||0);
+     systemUnread=Number(sc?.total||0);
+    }catch{
+     // A partially migrated database keeps the older Chat + Calendar inbox.
+     try{
      const query='SELECT * FROM ('+base+' UNION ALL '+calendar+
       ') ORDER BY created_at DESC,id DESC LIMIT 60';
      rows=(await env.DB.prepare(query).bind(actor.actorId,actor.actorId).all()).results||[];
      const count=await env.DB.prepare('SELECT COUNT(*) AS total FROM calendar_member_notifications '+
       'WHERE recipient_id=? AND read_at IS NULL').bind(actor.actorId).first();
      calendarUnread=Number(count?.total||0);
-    }catch{
-     rows=(await env.DB.prepare(base+' ORDER BY n.created_at DESC,n.id DESC LIMIT 60')
-      .bind(actor.actorId).all()).results||[];
+     }catch{
+      rows=(await env.DB.prepare(base+' ORDER BY n.created_at DESC,n.id DESC LIMIT 60')
+       .bind(actor.actorId).all()).results||[];
+     }
     }
    }
    const unread=await env.DB.prepare(
@@ -267,7 +348,7 @@ export async function handleMemberNotices(request,env,url,origin,verifySession){
     id:row.id,actorId:row.actor_id||'',name:row.display_name,
     kind:row.kind,targetId:row.target_id,emoji:row.emoji,preview:row.preview,
     createdAt:row.created_at,readAt:row.read_at
-   })),unread:Number(unread?.total||0)+calendarUnread+systemUnread},200,origin);
+   })),unread:Number(unread?.total||0)+calendarUnread+systemUnread+bookUnread},200,origin);
   }
   if(url.pathname==='/api/notices/read'&&request.method==='POST'){
    let data;
@@ -285,6 +366,9 @@ export async function handleMemberNotices(request,env,url,origin,verifySession){
     try{await env.DB.prepare('UPDATE member_system_notifications SET read_at=? '+
      'WHERE id=? AND recipient_id=? AND read_at IS NULL').bind(now,id,actor.actorId).run();}
     catch{/* A missing optional migration cannot block other notices. */}
+    try{await env.DB.prepare('UPDATE book_member_notifications SET read_at=? '+
+     'WHERE id=? AND recipient_id=? AND read_at IS NULL').bind(now,id,actor.actorId).run();}
+    catch{/* A missing optional migration cannot block other notices. */}
    }else{
     await env.DB.prepare('UPDATE member_notifications SET read_at=? '+
      'WHERE recipient_id=? AND read_at IS NULL').bind(now,actor.actorId).run();
@@ -292,6 +376,9 @@ export async function handleMemberNotices(request,env,url,origin,verifySession){
      'WHERE recipient_id=? AND read_at IS NULL').bind(now,actor.actorId).run();}
     catch{/* Old schema remains readable. */}
     try{await env.DB.prepare('UPDATE member_system_notifications SET read_at=? '+
+     'WHERE recipient_id=? AND read_at IS NULL').bind(now,actor.actorId).run();}
+    catch{/* A missing optional migration cannot block other notices. */}
+    try{await env.DB.prepare('UPDATE book_member_notifications SET read_at=? '+
      'WHERE recipient_id=? AND read_at IS NULL').bind(now,actor.actorId).run();}
     catch{/* A missing optional migration cannot block other notices. */}
    }
