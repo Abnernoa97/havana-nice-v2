@@ -72,7 +72,7 @@ export default function NativeRepertoire({token}:{token:string}){
     accessibilityState={{expanded:open===section}}
     onPress={()=>changeSection(section)}
     style={[styles.tab,open===section&&styles.selectedTab]}>
-    <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFillObject,
+    <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill,
      styles.tabTint,{opacity:tintOpacity}]}/>
     <Animated.View pointerEvents="none" style={[styles.tabGlint,
      {opacity:glintOpacity,transform:[{translateX:glintTravel},{rotate:'18deg'}]}]}/>
@@ -84,7 +84,7 @@ export default function NativeRepertoire({token}:{token:string}){
     opacity:reveal,transform:[{translateY:reveal.interpolate({inputRange:[0,1],outputRange:[-12,0]})},
      {scaleY:reveal.interpolate({inputRange:[0,1],outputRange:[0.97,1]})}]
    }]}>
-    <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFillObject,
+    <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill,
      styles.panelTint,{opacity:panelOpacity}]}/>
     <View style={styles.greenRule}/>
     {loading?<Text style={styles.empty}>Cargando canciones…</Text>:
