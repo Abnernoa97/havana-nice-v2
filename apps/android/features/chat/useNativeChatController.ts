@@ -9,7 +9,7 @@ import {
   clearChatAckTimer,pauseChatOutbox,confirmChatOutgoingMessage,flushChatOutbox,newClientMessageId,createQueuedChatMessage,
   reconcileChatMessages,reconcileChatSnapshot,applyChatIncomingEvent,startNamedChatSession,
   restoreNamedChatSession,recoverChatAccess,chatSessionExpired,ChatConnectionTimers,ChatResumeGate,
-  withoutRemovedChatMessages,ChatHistoryRequestGate,oldestConfirmedChatSeq,mergeOlderChatReactions,
+  withoutRemovedChatMessages,ChatHistoryRequestGate,requestOlderChatPage,requestChatSnapshot,mergeOlderChatReactions,
   captureChatOfflineSnapshot,restoreChatOfflineOutbox,
   type ChatMessage,type ChatServerEvent,type ChatSession,type ChatReaction,type ChatEmoji,type ChatReadReceipt,
   type MemberScreen,
@@ -152,24 +152,18 @@ export function useNativeChatController(){
   }
   async function loadOlder() {
     if(!session || loadingOlder || !hasMore)return;
-    const oldest=oldestConfirmedChatSeq(messages);
-    if(oldest===null)return;
-    const request=historyRequests.current.beginOlder();
-    if(request===null)return;
-    setLoadingOlder(true);
-    autoScroll.current=false;
-    try{
-      const data=await getOlderChatMessages(session,oldest);
-      if(!historyRequests.current.isOlderCurrent(request)||activeSession.current?.token!==session.token)return;
-      setHasMore(data.hasMore);
-      setMessages(before=>reconcileChatMessages(before,withoutRemovedChatMessages(data.messages,removedSeq.current)));
-      setReactions(before=>mergeOlderChatReactions(before,data.reactions,removedSeq.current));
-    }catch(e){
-      if(historyRequests.current.isOlderCurrent(request)&&activeSession.current?.token===session.token)
-        setError(e instanceof Error?e.message:'No se pudo cargar el historial');
-    }finally{
-      if(historyRequests.current.finishOlder(request))setLoadingOlder(false);
-    }
+    await requestOlderChatPage({
+      session,messages,gate:historyRequests.current,fetchPage:getOlderChatMessages,
+      isCurrent:()=>activeSession.current?.token===session.token,
+      onStart:()=>{setLoadingOlder(true);autoScroll.current=false;},
+      onPage:data=>{
+        setHasMore(data.hasMore);
+        setMessages(before=>reconcileChatMessages(before,withoutRemovedChatMessages(data.messages,removedSeq.current)));
+        setReactions(before=>mergeOlderChatReactions(before,data.reactions,removedSeq.current));
+      },
+      onError:e=>setError(e instanceof Error?e.message:'No se pudo cargar el historial'),
+      onFinish:()=>setLoadingOlder(false),
+    });
   }
   function resetEditTimeout(){
     if(editTimeout.current){clearTimeout(editTimeout.current);editTimeout.current=null;}
@@ -260,32 +254,26 @@ export function useNativeChatController(){
 
 
   function syncMessages(next: ChatSession) {
-    const request=historyRequests.current.beginSnapshot();
-    void getChatSnapshot(next)
-      .then(({ messages:history, reactions:historyReactions, receipts:readHistory,hasMore:more }) => {
-        if (!disposed.current && activeSession.current?.token === next.token&&
-            historyRequests.current.isSnapshotCurrent(request)) {
-          if(initialHistoryPending.current)initialHistoryLoaded.current=true;
-          withoutRemovedChatMessages(history,removedSeq.current).forEach(confirmMessage);
-          setReactions(historyReactions.filter(reaction=>!removedSeq.current.has(reaction.messageSeq)));
-          setReceipts(readHistory);
-          setHasMore(more);
-          setMessages(before => reconcileChatSnapshot(before,withoutRemovedChatMessages(history,removedSeq.current)));
-          if(initialHistoryPending.current)requestAnimationFrame(scheduleInitialBottom);
-          sendReadReceipt(Math.max(0,...history.map(m=>m.seq)));
-          flushOutbox();
-        }
-      })
-      .catch(reason => {
-        if (!disposed.current && activeSession.current?.token === next.token&&
-            historyRequests.current.isSnapshotCurrent(request)) {
-          setError(reason instanceof Error ? reason.message : 'No se pudo actualizar el historial');
-          // A temporary history failure must not block queued outgoing messages.
-          flushOutbox();
-        }
-      });
+    void requestChatSnapshot({
+      session:next,gate:historyRequests.current,fetchSnapshot:getChatSnapshot,
+      isCurrent:()=>!disposed.current&&activeSession.current?.token===next.token,
+      onPage:({messages:history,reactions:historyReactions,receipts:readHistory,hasMore:more})=>{
+        if(initialHistoryPending.current)initialHistoryLoaded.current=true;
+        withoutRemovedChatMessages(history,removedSeq.current).forEach(confirmMessage);
+        setReactions(historyReactions.filter(reaction=>!removedSeq.current.has(reaction.messageSeq)));
+        setReceipts(readHistory);
+        setHasMore(more);
+        setMessages(before=>reconcileChatSnapshot(before,withoutRemovedChatMessages(history,removedSeq.current)));
+        if(initialHistoryPending.current)requestAnimationFrame(scheduleInitialBottom);
+        sendReadReceipt(Math.max(0,...history.map(m=>m.seq)));
+        flushOutbox();
+      },
+      onError:reason=>{
+        setError(reason instanceof Error?reason.message:'No se pudo actualizar el historial');
+        flushOutbox();
+      },
+    });
   }
-
   // React Native's Android WebSocket supports Authorization at handshake time.
   // Do not put secrets in the URL or Sec-WebSocket-Protocol.
   function connect(next: ChatSession) {

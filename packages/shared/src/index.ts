@@ -237,6 +237,7 @@ export {applyChatIncomingEvent} from './chat-incoming';
 export type {ChatIncomingEffects} from './chat-incoming';
 export {withoutRemovedChatMessages} from './chat-events';
 export {ChatHistoryRequestGate,oldestConfirmedChatSeq,mergeOlderChatReactions} from './chat-history';
+export {requestOlderChatPage,requestChatSnapshot} from './chat-history-requests';
 
 // One offline snapshot format: existing IndexedDB/SQLite keys remain unchanged.
 export {captureChatOfflineSnapshot,restoreChatOfflineOutbox} from './chat-offline';

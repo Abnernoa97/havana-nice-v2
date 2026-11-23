@@ -6,7 +6,7 @@ import {
   confirmChatOutgoingMessage,flushChatOutbox,newClientMessageId,createQueuedChatMessage,
   openChatSocket,reconcileChatMessages,startNamedChatSession,restoreNamedChatSession,
   recoverChatAccess,chatSessionExpired,ChatConnectionTimers,ChatResumeGate,
-  withoutRemovedChatMessages,ChatHistoryRequestGate,oldestConfirmedChatSeq,
+  withoutRemovedChatMessages,ChatHistoryRequestGate,requestOlderChatPage,requestChatSnapshot,
   mergeOlderChatReactions,captureChatOfflineSnapshot,restoreChatOfflineOutbox,
   reconcileChatSnapshot,applyChatIncomingEvent,
   type BackendHealth,type ChatMessage,type ChatServerEvent,type ChatSession,
@@ -137,24 +137,18 @@ export function usePwaChatController(){
   }
   async function loadOlder() {
     if(!session || !hasMore || loadingOlder || !messages.length)return;
-    const oldest=oldestConfirmedChatSeq(messages);
-    if(oldest===null)return;
-    const request=historyRequests.current.beginOlder();
-    if(request===null)return;
-    setLoadingOlder(true);
-    scrollOlderOnce.current=true;
-    try{
-      const data=await getOlderChatMessages(session,oldest);
-      if(!historyRequests.current.isOlderCurrent(request)||activeSession.current?.token!==session.token)return;
-      setMessages(prev=>reconcileChatMessages(prev,withoutRemovedChatMessages(data.messages,removedSeq.current)));
-      setHasMore(data.hasMore);
-      setReactions(prev=>mergeOlderChatReactions(prev,data.reactions,removedSeq.current));
-    }catch(e){
-      if(historyRequests.current.isOlderCurrent(request)&&activeSession.current?.token===session.token)
-        setError(e instanceof Error?e.message:'No se pudo cargar más mensajes');
-    }finally{
-      if(historyRequests.current.finishOlder(request))setLoadingOlder(false);
-    }
+    await requestOlderChatPage({
+      session,messages,gate:historyRequests.current,fetchPage:getOlderChatMessages,
+      isCurrent:()=>activeSession.current?.token===session.token,
+      onStart:()=>{setLoadingOlder(true);scrollOlderOnce.current=true;},
+      onPage:data=>{
+        setMessages(prev=>reconcileChatMessages(prev,withoutRemovedChatMessages(data.messages,removedSeq.current)));
+        setHasMore(data.hasMore);
+        setReactions(prev=>mergeOlderChatReactions(prev,data.reactions,removedSeq.current));
+      },
+      onError:e=>setError(e instanceof Error?e.message:'No se pudo cargar más mensajes'),
+      onFinish:()=>setLoadingOlder(false),
+    });
   }
   function resetEditTimeout(){
     if(editTimeout.current){clearTimeout(editTimeout.current);editTimeout.current=null;}
@@ -234,22 +228,19 @@ export function usePwaChatController(){
     flushChatOutbox(socket.current,outbox.current,ackTimers.current,markOutgoing,activeSession.current?.actorId);
   }
   function refresh(next: ChatSession) {
-    const request=historyRequests.current.beginSnapshot();
-    void getChatSnapshot(next).then(({messages:history,reactions:reactionHistory,receipts:readHistory,hasMore:more}) => {
-      if (disposed.current || activeSession.current?.token !== next.token||
-          !historyRequests.current.isSnapshotCurrent(request))return;
-      history.forEach(confirm);
-      setReactions(reactionHistory.filter(reaction=>!removedSeq.current.has(reaction.messageSeq)));
-      setReceipts(readHistory);
-      setHasMore(more);
-      setMessages(before => reconcileChatSnapshot(before,withoutRemovedChatMessages(history,removedSeq.current)));
-      sendReadReceipt(Math.max(0,...history.map(m=>m.seq)));
-      flushOutbox();
-    }).catch(e => {
-      if(disposed.current||activeSession.current?.token!==next.token||
-         !historyRequests.current.isSnapshotCurrent(request))return;
-      setError(e instanceof Error?e.message:'Error al sincronizar');
-      flushOutbox();
+    void requestChatSnapshot({
+      session:next,gate:historyRequests.current,fetchSnapshot:getChatSnapshot,
+      isCurrent:()=>!disposed.current&&activeSession.current?.token===next.token,
+      onPage:({messages:history,reactions:reactionHistory,receipts:readHistory,hasMore:more})=>{
+        history.forEach(confirm);
+        setReactions(reactionHistory.filter(reaction=>!removedSeq.current.has(reaction.messageSeq)));
+        setReceipts(readHistory);
+        setHasMore(more);
+        setMessages(before=>reconcileChatSnapshot(before,withoutRemovedChatMessages(history,removedSeq.current)));
+        sendReadReceipt(Math.max(0,...history.map(m=>m.seq)));
+        flushOutbox();
+      },
+      onError:e=>{setError(e instanceof Error?e.message:'Error al sincronizar');flushOutbox();},
     });
   }
   function reconnect(next: ChatSession) {

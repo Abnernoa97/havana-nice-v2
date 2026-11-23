@@ -54,15 +54,14 @@ test('PWA and Android history operations share one request gate and preserve the
  for(const path of ['apps/pwa/src/app/App.tsx','apps/android/app/NativeApp.tsx']){
   const app=read(path);
   assert.match(app,/historyRequests=useRef\(new ChatHistoryRequestGate\(\)\)/,path);
-  assert.match(app,/oldestConfirmedChatSeq\(messages\)/,path);
-  assert.match(app,/historyRequests\.current\.beginOlder\(\)/,path);
-  assert.match(app,/historyRequests\.current\.isOlderCurrent\(request\)/,path);
-  assert.match(app,/historyRequests\.current\.finishOlder\(request\)/,path);
+  assert.match(app,/requestOlderChatPage\(\{/,path);
+  assert.match(app,/gate:historyRequests\.current/,path);
+  assert.match(app,/fetchPage:getOlderChatMessages/,path);
   assert.match(app,/mergeOlderChatReactions\(/,path);
   // The shared request gate remains reusable, but the musician UI no longer starts search jobs.
   assert.doesNotMatch(app,/historyRequests\.current\.beginSearch\(\)|historyRequests\.current\.isSearchCurrent\(request\)/,path);
-  assert.match(app,/historyRequests\.current\.beginSnapshot\(\)/,path);
-  assert.match(app,/historyRequests\.current\.isSnapshotCurrent\(request\)/,path);
+  assert.match(app,/requestChatSnapshot\(\{/,path);
+  assert.match(app,/fetchSnapshot:getChatSnapshot/,path);
   assert.match(app,/activeSession\.current\?\.token===session\.token/,path);
   assert.match(app,/historyRequests\.current\.reset\(\)/,path);
   assert.match(app,/socket\.current=ws|socket\.current = ws/,path);
@@ -70,5 +69,11 @@ test('PWA and Android history operations share one request gate and preserve the
  const exports=read('packages/shared/src/index.ts');
  assert.match(exports,/export \{ChatHistoryRequestGate,oldestConfirmedChatSeq,mergeOlderChatReactions\} from '\.\/chat-history'/);
  const shared=read('packages/shared/src/chat-history.ts');
- assert.doesNotMatch(shared,/new WebSocket|fetch\(|localStorage|AsyncStorage|useState|useEffect/);
+ const runner=read('packages/shared/src/chat-history-requests.ts');
+ assert.match(runner,/const request=gate\.beginOlder\(\)/);
+ assert.match(runner,/gate\.isOlderCurrent\(request\)&&isCurrent\(\)/);
+ assert.match(runner,/gate\.finishOlder\(request\)/);
+ assert.match(runner,/const request=gate\.beginSnapshot\(\)/);
+ assert.match(runner,/gate\.isSnapshotCurrent\(request\)&&isCurrent\(\)/);
+ assert.doesNotMatch(shared+runner,/new WebSocket|fetch\(|localStorage|AsyncStorage|useState|useEffect/);
 });
