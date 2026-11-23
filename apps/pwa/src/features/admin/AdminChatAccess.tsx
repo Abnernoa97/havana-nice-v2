@@ -481,7 +481,6 @@ export default function AdminChatAccess({section}:{section:Section}){
         finally{setDeviceBusy(false);}
        })();
       }}>{deviceBusy?'Verificando…':devicePhase==='paired'?'Desvincular dispositivo':'Activar en este dispositivo'}</button>
-}
      </div>
    </section>
    {duplicateAlerts.some(a=>a.reviewed_at===null)&&<section className="a-panel a-admin-duplicate-alerts" role="region" aria-label="Intentos de acceso duplicado">
