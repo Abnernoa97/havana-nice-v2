@@ -1,4 +1,4 @@
-import React,{memo,useMemo,type RefObject} from 'react';
+import React,{memo,useMemo,useState,type RefObject} from 'react';
 import {FlatList,View,Text,Pressable,type NativeScrollEvent,type NativeSyntheticEvent} from 'react-native';
 import {
  buildChatDisplayIndex,groupChatMediaMessages,
@@ -6,6 +6,7 @@ import {
 } from '@havana/shared';
 import SwipeableBubble,{type BubbleAnchor} from './SwipeableBubble';
 import NativeChatMediaView from './NativeChatMediaView';
+import NativeChatGallery from './NativeChatGallery';
 import {styles} from '../../styles/chat-styles';
 
 // Only visible-window cells mount media/video; one NativeApp owns the socket,
@@ -36,6 +37,7 @@ function NativeChatTimeline({
  scrollRef,onContentSizeChange,onLayout,onScrollBeginDrag,onScroll,onScrollEndDrag,
  onLoadOlder,onReply,onMessageLongPress,onQuickReact,onRetry,
 }:Props){
+ const [gallery,setGallery]=useState<{items:NonNullable<ChatMessage['media']>[];initial:number}|null>(null);
  const display=useMemo(()=>buildChatDisplayIndex(messages,reactions,receipts,session.actorId),
    [messages,reactions,receipts,session.actorId]);
  const liveRenderData=useMemo(()=>({display,onlineActorIds,connected}),
@@ -63,7 +65,14 @@ function NativeChatTimeline({
    </Text>:null}
    {!message.media?<Text style={[styles.bubbleText,mine&&styles.mineText,online&&styles.onlineText]}>
     {message.text}</Text>:null}
-   {message.media?<NativeChatMediaView media={message.media} session={session} compact={compact}/>:null}
+   {message.media?<NativeChatMediaView media={message.media} session={session} compact={compact}
+    onOpen={id=>{
+     const group=groupLeads.get(message.clientMessageId)||
+      galleries.find(g=>g.some(m=>m.clientMessageId===message.clientMessageId))||[message];
+     const items=group.flatMap(m=>m.media&&(m.media.kind==='photo'||m.media.kind==='video')?[m.media]:[]);
+     const initial=items.findIndex(m=>m.assetId===id);
+     if(initial>=0)setGallery({items,initial});
+    }}/>:null}
    {message.seq>0&&!message.deletedAt&&badges.length>0?<View
     style={[styles.reactionBadges,compact&&styles.galleryReactions]}>
     {badges.map(({emoji,count})=><Pressable key={emoji} accessibilityRole="button"
@@ -85,6 +94,7 @@ function NativeChatTimeline({
  };
 
  return (
+  <>
   <FlatList
    // Reverse the chronology once and use an inverted list: index zero is the
    // latest message at the screen bottom, even before Android measures videos.
@@ -132,6 +142,9 @@ function NativeChatTimeline({
     </View>;
    }}
   />
+  {gallery&&<NativeChatGallery items={gallery.items} initial={gallery.initial}
+   session={session} onClose={()=>setGallery(null)}/>}
+  </>
  );
 }
 

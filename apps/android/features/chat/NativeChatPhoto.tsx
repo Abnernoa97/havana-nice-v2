@@ -9,8 +9,8 @@ type Media=NonNullable<ChatMessage['media']>;
 const photoRatios=new Map<string,number>();
 
 export default function NativeChatPhoto({
- media,session,width,screenWidth,screenHeight,compact=false
-}:{media:Media;session:ChatSession;width:number;screenWidth:number;screenHeight:number;compact?:boolean}){
+ media,session,width,screenWidth,screenHeight,compact=false,onOpen
+}:{media:Media;session:ChatSession;width:number;screenWidth:number;screenHeight:number;compact?:boolean;onOpen?:(assetId:string)=>void}){
  const [photo,setPhoto]=useState('');
  const [ratio,setRatio]=useState(1);
  const [enlarged,setEnlarged]=useState(false);
@@ -55,7 +55,7 @@ export default function NativeChatPhoto({
  return <>
    {photo?
      <Pressable accessibilityLabel="Ampliar fotografía" accessibilityRole="button"
-       onPress={()=>setEnlarged(true)}>
+       onPress={()=>onOpen?onOpen(media.assetId):setEnlarged(true)}>
        <Image source={{uri:photo}} resizeMode={compact?'cover':'contain'}
          style={{width,height,borderRadius:compact?7:12}}/>
      </Pressable>:
@@ -63,7 +63,7 @@ export default function NativeChatPhoto({
      <View style={{width,height:92,alignItems:'center',justifyContent:'center'}}>
        <ActivityIndicator color="#77736d"/>
      </View>}
-   <Modal visible={enlarged&&!!photo} animationType="fade" transparent
+   <Modal visible={!onOpen&&enlarged&&!!photo} animationType="fade" transparent
      statusBarTranslucent onRequestClose={()=>setEnlarged(false)}>
      <View style={{flex:1,backgroundColor:'#101010',justifyContent:'center',alignItems:'center'}}>
        <Image source={{uri:photo}} resizeMode="contain"

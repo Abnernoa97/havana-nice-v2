@@ -72,8 +72,8 @@ function NativeChatInlineVideo({url,onClose}:{url:string;onClose:()=>void}){
   </View>
  </View>;
 }
-export default function NativeChatVideo({media,session,width,compact=false}:{
- media:Media;session:ChatSession;width:number;compact?:boolean;
+export default function NativeChatVideo({media,session,width,compact=false,onOpen}:{
+ media:Media;session:ChatSession;width:number;compact?:boolean;onOpen?:(assetId:string)=>void;
 }){
  const [opened,setOpened]=useState(false);
  const [signed,setSigned]=useState('');
@@ -90,11 +90,11 @@ export default function NativeChatVideo({media,session,width,compact=false}:{
  },[opened,attempt,media.assetId,session.token]);
  return <>
   <Pressable accessibilityRole="button" accessibilityLabel="Abrir video"
-   onPress={()=>setOpened(true)} style={[s.cover,{width,height:compact?width:Math.round(width*.64)}]}>
+   onPress={()=>onOpen?onOpen(media.assetId):setOpened(true)} style={[s.cover,{width,height:compact?width:Math.round(width*.64)}]}>
    {signed&&nativePosterUrl(signed)?<Image source={{uri:nativePosterUrl(signed)!}} style={s.coverPhoto}/>:null}
    <View style={s.coverPlay}><Text style={s.coverPlayText}>▶</Text></View>
   </Pressable>
-  <Modal visible={opened} animationType="fade" statusBarTranslucent
+  <Modal visible={!onOpen&&opened} animationType="fade" statusBarTranslucent
    onRequestClose={()=>setOpened(false)}>
    {signed?<NativeChatInlineVideo key={signed} url={signed}
     onClose={()=>setOpened(false)}/>:<View style={s.fullscreen}>
