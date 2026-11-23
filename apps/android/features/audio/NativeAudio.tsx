@@ -1,7 +1,7 @@
-import React,{useCallback,useEffect,useState} from 'react';
+import React,{useCallback,useEffect,useRef,useState} from 'react';
 import {Modal,Pressable,StatusBar,StyleSheet,Text,View} from 'react-native';
 import {setAudioModeAsync,useAudioPlaylist,useAudioPlaylistStatus} from 'expo-audio';
-import {getAudioTracks,clearAudioTracksCache,privateAudioUrl,type AudioTrack} from '@havana/shared';
+import {getAudioTracks,clearAudioTracksCache,privateAudioUrl,logMemberActivity,type AudioTrack} from '@havana/shared';
 import NativeAudioEditorialView from './NativeAudioEditorialView';
 import {publishNativeAudio,registerNativeAudioHandlers,clearNativeAudio} from './nativeAudioStore';
 
@@ -18,6 +18,13 @@ export default function NativeAudio({token,visible,onClose}:{
  const status=useAudioPlaylistStatus(player);
  const index=Math.max(0,status.currentIndex||0);
  const current=tracks[index]||null;
+ const lastRecorded=useRef<{id:string;at:number}>({id:'',at:0});
+ useEffect(()=>{
+  if(!status.playing||!current)return;
+  if(current.id===lastRecorded.current.id&&Date.now()-lastRecorded.current.at<30000)return;
+  lastRecorded.current={id:current.id,at:Date.now()};
+  void logMemberActivity(token,'audio.play',current.id,'android');
+ },[status.playing,current?.id,token]);
 
  const refresh=useCallback(async(force=false)=>{
   setLoading(true);

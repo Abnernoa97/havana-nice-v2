@@ -1,5 +1,5 @@
 import {useCallback,useEffect,useRef,useState} from 'react';
-import {getAudioTracks,clearAudioTracksCache,privateAudioUrl,type AudioTrack} from '@havana/shared';
+import {getAudioTracks,clearAudioTracksCache,privateAudioUrl,logMemberActivity,type AudioTrack} from '@havana/shared';
 import {prepareAudioCover,type PreparedAudioCover} from './audio-cover-cache';
 import './audio-player.css';
 
@@ -20,6 +20,7 @@ export default function MemberAudio({token,active=true}:{token:string;active?:bo
  const pendingSeek=useRef<{id:string;time:number}|null>(null);
  const lastCatalogFetch=useRef(0);
  const ref=useRef<HTMLAudioElement>(null);
+ const lastRecorded=useRef<{id:string;at:number}>({id:'',at:0});
  const playOnChange=useRef(false);
  const requestedPlay=useRef(false);
  const current=tracks[selected]||null;
@@ -266,7 +267,14 @@ export default function MemberAudio({token,active=true}:{token:string;active?:bo
   </div>
   <audio ref={ref} preload="metadata"
    onPlay={()=>{requestedPlay.current=true;setBuffering(true);}}
-   onPlaying={()=>{requestedPlay.current=true;setPlaying(true);setBuffering(false);}}
+   onPlaying={()=>{
+    requestedPlay.current=true;setPlaying(true);setBuffering(false);
+    const track=tracks[selected];
+    if(track&&(track.id!==lastRecorded.current.id||Date.now()-lastRecorded.current.at>30000)){
+     lastRecorded.current={id:track.id,at:Date.now()};
+     void logMemberActivity(token,'audio.play',track.id,'iphone');
+    }
+   }}
    onWaiting={()=>{setPlaying(false);setBuffering(true);}}
    onStalled={()=>{setPlaying(false);setBuffering(true);}}
    onPause={()=>{requestedPlay.current=false;setPlaying(false);setBuffering(false);}}
