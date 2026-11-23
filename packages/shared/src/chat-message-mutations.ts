@@ -1,6 +1,6 @@
 // Single outgoing edit/delete policy. Controllers retain socket, draft and timers.
 import type {ChatMessage} from './index';
-import {isWithinChatEditWindow} from './chat-menu';
+import {isWithinChatEditWindow} from './chat-menu.ts';
 export const CHAT_EDIT_ACK_TIMEOUT_MS=10_000;
 export type ChatEditDecision='pending'|'empty'|'unchanged'|'expired'|'ready';
 export function checkChatEditDecision(
