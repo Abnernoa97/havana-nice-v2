@@ -5,15 +5,15 @@ import AdminChatAccess from '../features/admin/AdminChatAccess';
 // permissions and every destructive action stay in their original modules.
 type Tab='home'|'chat'|'repertoire'|'calendar'|'family'|'access'|'memory'|'audio'|'notices';
 type WorkTab=Exclude<Tab,'home'>;
-const tabs:{id:WorkTab;name:string;icon:string;description:string}[]=[
- {id:'chat',name:'Chat',icon:'◉',description:'Conversación del equipo y moderación'},
- {id:'repertoire',name:'Repertorio',icon:'♫',description:'Canciones y repertorio por evento'},
- {id:'calendar',name:'Calendario',icon:'▦',description:'Fechas, horarios y músicos asignados'},
- {id:'family',name:'Familia',icon:'▣',description:'Fotografías, videos y BOOK'},
- {id:'audio',name:'Audio',icon:'♪',description:'Biblioteca de audio'},
- {id:'notices',name:'Notificaciones',icon:'✉',description:'Enviar avisos al equipo'},
- {id:'access',name:'Acceso a músicos',icon:'♙',description:'Integrantes y dispositivos autorizados'},
- {id:'memory',name:'Resumen de memoria',icon:'◫',description:'Archivos, almacenamiento y espacio disponible'},
+const tabs:{id:WorkTab;name:string;icon:string}[]=[
+ {id:'chat',name:'Chat',icon:'◉'},
+ {id:'repertoire',name:'Repertorio',icon:'♫'},
+ {id:'calendar',name:'Calendario',icon:'▦'},
+ {id:'family',name:'Familia',icon:'▣'},
+ {id:'audio',name:'Audio',icon:'♪'},
+ {id:'notices',name:'Notificaciones',icon:'✉'},
+ {id:'access',name:'Acceso a músicos',icon:'♙'},
+ {id:'memory',name:'Resumen de memoria',icon:'◫'},
 ];
 export default function AdminApp(){
  const [tab,setTab]=useState<Tab>('home');

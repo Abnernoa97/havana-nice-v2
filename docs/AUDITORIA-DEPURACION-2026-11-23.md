@@ -82,3 +82,10 @@
 - Se mantienen intactos el menú y cabecera actuales (`hn-admin-minimal`, `hn-admin-brand-button`, `hn-admin-plain-menu`), permisos, historial, Chat, calendarios, BOOK 3D y paneles privados.
 - Se añade una prueba que recorre los 90 archivos fuente de la PWA y comprueba tanto la ausencia de referencias antiguas como la permanencia de los estilos de la interfaz actual.
 - No hay cambios de endpoints, autenticación, Worker, R2, D1 ni APK.
+
+## Décima fase · Administración: tablero viejo y metadata inerte (23/11)
+- `admin.css` y `admin-editorial.css`: retiradas 45 reglas antiguas de estado de servidor, tarjetas de estadísticas, atajos, alertas decorativas y pantallas de bienvenida que no tienen consumidores actuales.
+- Se conserva el selector compartido del formulario vigente al quitar `a-module-next`; el panel de acceso, los menús reales, la sesión y los permisos no cambian.
+- `AdminApp.tsx`: eliminadas ocho descripciones de pestañas nunca renderizadas. Identificadores, nombres, iconos, orden y navegación permanecen idénticos.
+- Dos pruebas nuevas recorren los fuentes activos para impedir referencias a selectores eliminados y preservar los ocho accesos vigentes.
+- Sin alteraciones de Worker, R2/D1, migraciones, FCM ni APK firmada; CSS solo se evalúa en el build y requiere prueba visual posterior.

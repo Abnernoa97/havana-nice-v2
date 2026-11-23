@@ -24,9 +24,6 @@
 .hn-admin-editorial .a-panel{background:var(--hn-paper);border:1px solid var(--hn-edge);border-radius:16px;padding:clamp(16px,3vw,25px);margin-top:12px;color:var(--hn-ink)}
 .hn-admin-editorial .a-panel h2,.hn-admin-editorial .a-panel h3{color:var(--hn-ink)}
 .hn-admin-editorial .a-detail{color:var(--hn-muted)}
-.hn-admin-editorial .a-health{background:#f4f7f0;border-color:#dce7d9;margin:15px 0}
-.hn-admin-editorial .a-health-main strong{color:#315942}
-.hn-admin-editorial .a-health-main p{color:#637569}
 .hn-admin-editorial .a-cal-actions button:not(.a-cal-danger),
 .hn-admin-editorial .a-rep-body>button,
 .hn-admin-editorial .a-rep-fields button,
