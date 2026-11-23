@@ -1,7 +1,7 @@
 import React,{memo,useMemo,useState,type RefObject} from 'react';
 import {FlatList,View,Text,Pressable,type NativeScrollEvent,type NativeSyntheticEvent} from 'react-native';
 import {
- buildChatDisplayIndex,groupChatMediaMessages,
+ buildChatDisplayIndex,groupChatMediaMessages,selectChatGalleryMedia,
  type ChatMessage,type ChatReaction,type ChatReadReceipt,type ChatSession,type ChatEmoji,
 } from '@havana/shared';
 import SwipeableBubble,{type BubbleAnchor} from './SwipeableBubble';
@@ -49,11 +49,7 @@ function NativeChatTimeline({
   for(const group of galleries)if(group.length>1)map.set(group[group.length-1]!.clientMessageId,group);
   return map;
  },[galleries]);
- // The mosaic is only a layout. Gallery navigation spans every loaded photo
- // and video in the conversation, including those separated by text/audio.
- const conversationMedia=useMemo(()=>messages.filter(message=>!message.deletedAt&&
-  (message.media?.kind==='photo'||message.media?.kind==='video')),[messages]);
- const galleryItems=useMemo(()=>conversationMedia.map(message=>message.media!),[conversationMedia]);
+
  const renderBubble=(message:ChatMessage,compact=false)=>{
   const mine=message.senderId===session.actorId;
   const badges=display.reactionBadges.get(message.seq)??[];
@@ -72,9 +68,10 @@ function NativeChatTimeline({
     {message.text}</Text>:null}
    {message.media?<NativeChatMediaView media={message.media} session={session} compact={compact}
     onOpen={id=>{
-     const initial=conversationMedia.findIndex(row=>row.clientMessageId===message.clientMessageId&&
-      row.senderId===message.senderId&&row.media?.assetId===id);
-     if(initial>=0)setGallery({items:galleryItems,initial});
+     const selection=selectChatGalleryMedia(messages,{
+      clientMessageId:message.clientMessageId,senderId:message.senderId,assetId:id,
+     });
+     if(selection)setGallery(selection);
     }}/>:null}
    {message.seq>0&&!message.deletedAt&&badges.length>0?<View
     style={[styles.reactionBadges,compact&&styles.galleryReactions]}>

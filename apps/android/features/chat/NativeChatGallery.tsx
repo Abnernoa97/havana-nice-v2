@@ -1,4 +1,4 @@
-// One fullscreen native mixed-media viewer for contiguous photo/video bursts.
+// One fullscreen native mixed-media viewer for all loaded Chat photos/videos.
 // Android back and horizontal swipe navigate without remounting Chat.
 import React,{useEffect,useRef,useState} from 'react';
 import {ActivityIndicator,Image,Modal,Pressable,StyleSheet,Text,View,useWindowDimensions} from 'react-native';
@@ -135,11 +135,6 @@ const s=StyleSheet.create({
   backgroundColor:'#17382dcb',alignItems:'center',justifyContent:'center',zIndex:5},
  x:{color:'#fff',fontSize:28},
  counter:{position:'absolute',top:60,left:78,color:'#fffc',fontSize:12},
- left:{position:'absolute',top:'48%',left:6,borderRadius:25,width:43,height:43,
-  justifyContent:'center',alignItems:'center',backgroundColor:'#17382dbb'},
- right:{position:'absolute',top:'48%',right:6,borderRadius:25,width:43,height:43,
-  justifyContent:'center',alignItems:'center',backgroundColor:'#17382dbb'},
- arrow:{fontSize:30,color:'#fff'},
  status:{color:'#fff',fontSize:14},
  loading:{position:'absolute',top:'41%',alignSelf:'center'},
  videoError:{position:'absolute',top:'47%',textAlign:'center',color:'#fff',fontSize:13},

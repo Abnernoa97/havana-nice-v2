@@ -252,6 +252,7 @@ export {pwaReaderUrl,parsePwaReaderHash} from './book-route';
 export type {PwaReaderTarget} from './book-route';
 
 export {groupChatMediaMessages,CHAT_MEDIA_CLUSTER_GAP_MS,CHAT_MEDIA_CLUSTER_LIMIT} from './chat-media-cluster';
+export {selectChatGalleryMedia} from './chat-gallery-selection';
 
 export {logMemberActivity} from './member-activity';
 export type {MemberActivityType} from './member-activity';

@@ -1,6 +1,6 @@
 import {memo,useEffect,useLayoutEffect,useMemo,useRef,useState,type RefObject,type UIEvent,type KeyboardEvent,type TouchEvent,type WheelEvent} from 'react';
 import {
- buildChatDisplayIndex,groupChatMediaMessages,
+ buildChatDisplayIndex,groupChatMediaMessages,selectChatGalleryMedia,
  type ChatMessage,type ChatReaction,type ChatReadReceipt
 } from '@havana/shared';
 import SwipeMessage,{type MessageAnchor} from './SwipeMessage';
@@ -37,11 +37,7 @@ function ChatTimeline({
   [messages,reactions,receipts,actorId]);
  const [endAnchorKey,setEndAnchorKey]=useState<string|null>(null);
  const [gallery,setGallery]=useState<{items:NonNullable<ChatMessage['media']>[];index:number}|null>(null);
- // The chat renders only a window, but its viewer must include all loaded
- // photos/videos, even when text, voice messages or other mosaics intervene.
- const conversationMedia=useMemo(()=>messages.filter(message=>!message.deletedAt&&
-  (message.media?.kind==='photo'||message.media?.kind==='video')),[messages]);
- const galleryItems=useMemo(()=>conversationMedia.map(message=>message.media!),[conversationMedia]);
+
  const windowed=useMemo(()=>selectChatMessageWindow(messages,endAnchorKey),
   [messages,endAnchorKey]);
  const pendingPosition=useRef<{key:string;offset:number}|null>(null);
@@ -231,9 +227,10 @@ function ChatTimeline({
                  {!message.media&&<div>{message.text}</div>}
                  {message.media&&<ChatMediaView media={message.media} token={token} compact={tiled}
                   onOpen={id=>{
-                   const index=conversationMedia.findIndex(row=>row.clientMessageId===message.clientMessageId&&
-                    row.senderId===message.senderId&&row.media?.assetId===id);
-                   if(index>=0)setGallery({items:galleryItems,index});
+                   const selection=selectChatGalleryMedia(messages,{
+                    clientMessageId:message.clientMessageId,senderId:message.senderId,assetId:id,
+                   });
+                   if(selection)setGallery({items:selection.items,index:selection.initial});
                   }}/>} 
                  {message.seq>0&&!message.deletedAt&&badges.length>0&&
                   <div className="reaction-counts">

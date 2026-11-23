@@ -301,7 +301,7 @@ h1 span { font-weight:400; }
  object-fit:contain;user-select:none;-webkit-user-select:none}
 .hn-gallery-count{position:absolute;top:max(18px,env(safe-area-inset-top));left:76px;
  z-index:3;color:#ffffffb0;font-size:12px}
-.hn-gallery-close,.hn-gallery-prev,.hn-gallery-next{position:absolute;z-index:3;
+.hn-gallery-close{position:absolute;z-index:3;
  width:42px;height:42px;border:1px solid #ffffff50;border-radius:50%;
  background:#142c23a8;color:#fff;font-size:28px;display:grid;place-items:center}
 .hn-gallery-close{top:max(13px,env(safe-area-inset-top));left:13px}
@@ -323,11 +323,12 @@ h1 span { font-weight:400; }
 .hn-chat-voice-recorder{position:relative;display:flex;align-items:center}
 .hn-chat-voice-recorder>.chat-action-circle{width:50px;height:50px;
  background:#163b2d;color:white;border:0;border-radius:50%;font-size:23px}
-.hn-chat-voice-actions{display:flex;align-items:center;gap:5px;padding:5px 6px;
- border-radius:21px;background:#173a2e;color:#fff;font-size:12px}
-.hn-chat-voice-actions button{background:#f0ede2;color:#163e2f;padding:8px;
- border:0;border-radius:13px;font-size:12px;font-weight:700}
-.hn-chat-voice-actions span{font-variant-numeric:tabular-nums}
+.hn-chat-voice-actions{display:flex;align-items:center;gap:5px;padding:5px 7px;
+ border-radius:27px;background:#173a2e;color:#fff;font-size:12px;white-space:nowrap}
+.hn-chat-voice-actions button{background:#f0ede2;color:#163e2f;
+ border:0;font-weight:700;width:35px;min-width:35px;height:35px;padding:0!important;
+ border-radius:50%!important;display:grid;place-items:center;font-size:18px!important}
+.hn-chat-voice-actions span{font-size:12px;min-width:47px;font-variant-numeric:tabular-nums}
 .hn-chat-voice-error{position:absolute;right:0;bottom:52px;width:max-content;
  max-width:240px;padding:8px;border-radius:9px;background:#fff3ea;
  color:#9c2f26;font-size:11px}
@@ -344,14 +345,7 @@ h1 span { font-weight:400; }
 .hn-chat-audio-progress small{font-size:11px;color:#1f4b37}
 .hn-chat-audio-body [role="alert"]{font-size:11px;color:#943a35}
 
-/* Hide any legacy navigation arrows; gallery navigation is gesture-only. */
-.hn-gallery-prev,.hn-gallery-next{display:none!important}
-
-/* Compact Chat voice controls, one horizontal bar. */
-.hn-chat-voice-actions{border-radius:27px;gap:5px;padding:5px 7px;white-space:nowrap}
-.hn-chat-voice-actions span{font-size:12px;min-width:47px;font-variant-numeric:tabular-nums}
-.hn-chat-voice-actions button{width:35px;min-width:35px;height:35px;padding:0!important;
- border-radius:50%!important;display:grid;place-items:center;font-size:18px!important}
+/* Clear delete action inside the compact voice recorder. */
 .hn-chat-voice-actions button:first-of-type{color:#a23936}
 
 /* The small cached photo stays visible until the high-quality original decodes. */
