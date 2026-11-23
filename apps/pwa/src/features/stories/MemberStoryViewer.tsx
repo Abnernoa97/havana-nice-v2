@@ -100,7 +100,7 @@ export default function MemberStoryViewer({items,myId,token,refreshVersion,
      onPointerDown={()=>setHeld(true)} onPointerUp={()=>setHeld(false)}
      onPointerCancel={()=>setHeld(false)} onPointerLeave={()=>setHeld(false)}/>
    </div>
-   <StoryConversationPanel key={item.id} story={item} token={token}
+   <StoryConversationPanel key={item.id} story={item} token={token} myId={myId}
     refreshVersion={refreshVersion} onPause={setCommentPaused} onBurst={setBurst}/>
   </div>
   <StoryReactionShower burst={burst}/>

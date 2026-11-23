@@ -4,15 +4,17 @@ import StoryVoiceRecorder from './StoryVoiceRecorder';
 import {useStoryConversation} from './useStoryConversation';
 import type {StoryReactionBurst} from './StoryReactionShower';
 
-type Props={story:MemberStory;token:string;refreshVersion:number;
+type Props={story:MemberStory;token:string;myId?:string;refreshVersion:number;
  onPause:(paused:boolean)=>void;onBurst:(burst:StoryReactionBurst)=>void};
 
 // A two-row overlay ON the photo, never a separate Chat-like panel.
 // Comments expand only on request and remain publicly readable by the team.
-export default function StoryConversationPanel({story,token,refreshVersion,onPause,onBurst}:Props){
+export default function StoryConversationPanel({story,token,myId,refreshVersion,onPause,onBurst}:Props){
  const data=useStoryConversation(token,story.id,refreshVersion);
  const [draft,setDraft]=useState('');
  const [expanded,setExpanded]=useState(false);
+ const [expandedReaction,setExpandedReaction]=useState<StoryEmoji|null>(null);
+ const isOwner=story.actorId===myId;
  const [recording,setRecording]=useState(false);
  const [typing,setTyping]=useState(false);
  const [listening,setListening]=useState(false);
@@ -20,17 +22,22 @@ export default function StoryConversationPanel({story,token,refreshVersion,onPau
  const comments=data.conversation?.comments||[];
  const reactionDetails=data.conversation?.reactionDetails||[];
  useEffect(()=>{
-  setDraft('');setExpanded(false);setTyping(false);setRecording(false);setListening(false);
+  setDraft('');setExpanded(false);setExpandedReaction(null);setTyping(false);setRecording(false);setListening(false);
  },[story.id]);
  useEffect(()=>{
-  onPause(expanded||typing||recording||listening||data.sending);
+  onPause(expanded||expandedReaction!==null||typing||recording||listening||data.sending);
   return()=>onPause(false);
- },[expanded,typing,recording,listening,data.sending,onPause]);
+ },[expanded,expandedReaction,typing,recording,listening,data.sending,onPause]);
  const send=async()=>{
   if(!draft.trim())return;
   if(await data.postText(draft)){setDraft('');setTyping(false);}
  };
  const react=(event:MouseEvent<HTMLButtonElement>,emoji:StoryEmoji)=>{
+  if(isOwner){
+   setExpanded(false);
+   setExpandedReaction(current=>current===emoji?null:emoji);
+   return;
+  }
   const bounds=event.currentTarget.getBoundingClientRect();
   onBurst({id:++serial.current,emoji,
    x:bounds.left+bounds.width/2,y:bounds.top+bounds.height/2});
@@ -60,21 +67,29 @@ export default function StoryConversationPanel({story,token,refreshVersion,onPau
   <div className="hn-story-mini-actions">
    <div className="hn-story-reactions" aria-label="Reacciones">
     {reactions.map(emoji=><button type="button" key={emoji} onClick={e=>react(e,emoji)}
-     aria-label={emoji==='❤️'?'Enviar corazones':emoji==='👏'?'Aplaudir':'Enviar risas'}>
+     aria-expanded={isOwner?expandedReaction===emoji:undefined}
+     aria-label={isOwner?'Ver quién reaccionó con '+emoji:emoji==='❤️'?'Enviar corazones':emoji==='👏'?'Aplaudir':'Enviar risas'}>
      {emoji}<span>{data.conversation?.reactions[emoji]||''}</span>
     </button>)}
    </div>
    <button type="button" className="hn-story-comments-open" aria-expanded={expanded}
-    onClick={()=>setExpanded(v=>!v)}>
+    onClick={()=>{setExpandedReaction(null);setExpanded(v=>!v);}}>
     Comentarios{comments.length?' · '+comments.length:''}
    </button>
   </div>
-  {!!reactionDetails.length&&!recording&&<div className="hn-story-who-reacted"
-   aria-label="Quién reaccionó a este estado">
-   {reactionDetails.map(item=><span key={item.actorId+':'+item.emoji}>
-    {item.emoji} {item.name}{item.count>1?' ×'+item.count:''}
-   </span>)}
-  </div>}
+  {isOwner&&expandedReaction!==null&&!recording&&<div className="hn-story-reaction-details"
+    role="region" aria-label={'Personas que reaccionaron con '+expandedReaction}>
+    <div className="hn-story-reaction-heading">
+     <strong>{expandedReaction} · {data.conversation?.reactions[expandedReaction]||0}</strong>
+     <button type="button" onClick={()=>setExpandedReaction(null)} aria-label="Cerrar detalle de reacciones">×</button>
+    </div>
+    {reactionDetails.filter(item=>item.emoji===expandedReaction).length?
+     reactionDetails.filter(item=>item.emoji===expandedReaction).map(item=>
+      <div key={item.actorId} className="hn-story-reaction-person">
+       <span>{item.name}</span><strong>{item.count>1?'×'+item.count:'×1'}</strong>
+      </div>):
+     <p className="hn-story-reaction-empty">Todavía no hay reacciones.</p>}
+   </div>}
   <form className={"hn-story-composer"+(recording?" is-recording":"")} onSubmit={e=>{e.preventDefault();void send();}}>
    <input value={draft} maxLength={500} onChange={e=>setDraft(e.target.value)}
     onFocus={()=>setTyping(true)} onBlur={()=>setTyping(false)}

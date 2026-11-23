@@ -115,7 +115,7 @@ export default function NativeStoryViewer({stories,actorId,token,version,
       <Text style={s.tapArrow}>›</Text>
      </Pressable>
     </View>
-    <NativeStoryConversation key={current.id} token={token} storyId={current.id}
+    <NativeStoryConversation key={current.id} token={token} storyId={current.id} actorId={actorId} ownerId={current.actorId}
      version={version} onPause={setPaused} onBurst={setBurst}/>
     <NativeStoryReactionShower burst={burst}/>
    </View>}

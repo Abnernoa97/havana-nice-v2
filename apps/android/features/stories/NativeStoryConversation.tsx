@@ -7,13 +7,15 @@ import NativeStoryVoiceRecorder from './NativeStoryVoiceRecorder';
 import type {NativeStoryBurst} from './NativeStoryReactionShower';
 
 // The same public-to-team conversation as PWA, but 100% React Native.
-export default function NativeStoryConversation({token,storyId,version,onPause,onBurst}:{
- token:string;storyId:string;version:number;onPause:(paused:boolean)=>void;
+export default function NativeStoryConversation({token,storyId,actorId,ownerId,version,onPause,onBurst}:{
+ token:string;storyId:string;actorId:string;ownerId:string;version:number;onPause:(paused:boolean)=>void;
  onBurst:(event:NativeStoryBurst)=>void;
 }){
  const api=useNativeStoryConversation(token,storyId,version);
  const [draft,setDraft]=useState('');
  const [expanded,setExpanded]=useState(false);
+ const [expandedReaction,setExpandedReaction]=useState<StoryEmoji|null>(null);
+ const isOwner=actorId===ownerId;
  const [recording,setRecording]=useState(false);
  const [focused,setFocused]=useState(false);
  const player=useAudioPlayer(null);
@@ -21,16 +23,21 @@ export default function NativeStoryConversation({token,storyId,version,onPause,o
  const burstId=useRef(0);
  const comments=api.conversation?.comments||[];
  const reactionDetails=api.conversation?.reactionDetails||[];
- useEffect(()=>{setDraft('');setExpanded(false);setRecording(false);setFocused(false);},[storyId]);
+ useEffect(()=>{setDraft('');setExpanded(false);setExpandedReaction(null);setRecording(false);setFocused(false);},[storyId]);
  useEffect(()=>{
-  onPause(expanded||recording||focused||api.busy||playback.playing);
+  onPause(expanded||expandedReaction!==null||recording||focused||api.busy||playback.playing);
   return()=>onPause(false);
- },[onPause,expanded,recording,focused,api.busy,playback.playing]);
+ },[onPause,expanded,expandedReaction,recording,focused,api.busy,playback.playing]);
  const submit=async()=>{
   if(!draft.trim())return;
   if(await api.text(draft)){setDraft('');setFocused(false);}
  };
  const react=(emoji:StoryEmoji,event:GestureResponderEvent)=>{
+  if(isOwner){
+   setExpanded(false);
+   setExpandedReaction(current=>current===emoji?null:emoji);
+   return;
+  }
   const id=++burstId.current;
   const {pageX,pageY}=event.nativeEvent;
   onBurst({id,emoji,x:pageX,y:pageY});
@@ -62,26 +69,34 @@ export default function NativeStoryConversation({token,storyId,version,onPause,o
   </View>}
   {!recording&&<View style={s.actions}>
    {emojis.map(emoji=><Pressable key={emoji} accessibilityRole="button"
-    accessibilityLabel={emoji==='❤️'?'Enviar corazones':emoji==='👏'?'Aplaudir':'Enviar risas'}
-    onPress={event=>react(emoji,event)} style={s.emoji}>
+    accessibilityLabel={isOwner?'Ver quién reaccionó con '+emoji:emoji==='❤️'?'Enviar corazones':emoji==='👏'?'Aplaudir':'Enviar risas'}
+    onPress={event=>react(emoji,event)} style={[s.emoji,expandedReaction===emoji&&s.emojiActive]}>
     <Text style={s.emojiText}>{emoji}</Text>
     {!!api.conversation?.reactions[emoji]&&
      <Text style={s.count}>{api.conversation.reactions[emoji]}</Text>}
    </Pressable>)}
    <Pressable accessibilityRole="button" accessibilityLabel="Comentarios públicos"
-    onPress={()=>setExpanded(!expanded)} style={s.commentsButton}>
+    onPress={()=>{setExpandedReaction(null);setExpanded(!expanded);}} style={s.commentsButton}>
     <Text style={s.commentsButtonText}>Comentarios{comments.length?' · '+comments.length:''}</Text>
    </Pressable>
   </View>}
-  {!!reactionDetails.length&&!recording&&<ScrollView horizontal
-   showsHorizontalScrollIndicator={false} keyboardShouldPersistTaps="handled"
-   style={s.reactionRoster} contentContainerStyle={s.reactionRosterContent}
-   accessibilityLabel="Quién reaccionó a este estado">
-    {reactionDetails.map(item=><View key={item.actorId+':'+item.emoji} style={s.reactionReceipt}>
-     <Text style={s.reactionReceiptText}>{item.emoji} {item.name}
-      {item.count>1?' ×'+item.count:''}</Text>
-    </View>)}
-   </ScrollView>}
+  {isOwner&&expandedReaction!==null&&!recording&&<View style={s.reactionDetails}
+   accessibilityLabel={'Quién reaccionó con '+expandedReaction}>
+    <View style={s.reactionDetailsHeading}>
+     <Text style={s.reactionDetailsTitle}>{expandedReaction} · {api.conversation?.reactions[expandedReaction]||0}</Text>
+     <Pressable accessibilityRole="button" accessibilityLabel="Cerrar detalle de reacciones"
+      onPress={()=>setExpandedReaction(null)}><Text style={s.close}>×</Text></Pressable>
+    </View>
+    <ScrollView style={{maxHeight:180}} nestedScrollEnabled>
+     {reactionDetails.filter(item=>item.emoji===expandedReaction).length?
+      reactionDetails.filter(item=>item.emoji===expandedReaction).map(item=>
+       <View key={item.actorId} style={s.reactionDetailRow}>
+        <Text style={s.reactionDetailName}>{item.name}</Text>
+        <Text style={s.reactionDetailName}>×{item.count}</Text>
+       </View>):
+      <Text style={s.reactionDetailName}>Todavía no hay reacciones.</Text>}
+    </ScrollView>
+   </View>}
   <View style={[s.composer,recording&&s.recordComposer]}>
    {!recording&&<>
     <TextInput accessibilityLabel="Escribir comentario público" placeholder="Comentar…"
@@ -105,13 +120,16 @@ const s=StyleSheet.create({
   backgroundColor:'rgba(1,15,9,.72)'},
  recordOnly:{alignItems:'center',justifyContent:'center',paddingVertical:17},
  actions:{flexDirection:'row',gap:7,alignItems:'center'},
- reactionRoster:{flexGrow:0,maxHeight:29},
- reactionRosterContent:{flexDirection:'row',gap:5,alignItems:'center'},
- reactionReceipt:{minHeight:23,justifyContent:'center',paddingHorizontal:8,
-  borderRadius:15,borderWidth:1,borderColor:'#ffffff31',backgroundColor:'#184633a8'},
- reactionReceiptText:{color:'#fcf9ec',fontSize:11,fontWeight:'600'},
+ reactionDetails:{position:'absolute',bottom:'100%',left:10,right:10,maxHeight:250,
+  backgroundColor:'rgba(8,30,20,.98)',borderRadius:16,
+  borderWidth:1,borderColor:'#ffffff38',padding:12},
+ reactionDetailsHeading:{flexDirection:'row',alignItems:'center',justifyContent:'space-between'},
+ reactionDetailsTitle:{color:'#fff',fontSize:14,fontWeight:'700'},
+ reactionDetailRow:{flexDirection:'row',justifyContent:'space-between',paddingVertical:6},
+ reactionDetailName:{fontSize:13,color:'#fff'},
  emoji:{flexDirection:'row',alignItems:'center',gap:3,backgroundColor:'#123a2dbb',
   borderRadius:20,borderWidth:1,borderColor:'#ffffff44',paddingHorizontal:8,minHeight:35},
+ emojiActive:{borderColor:'#dfc98e',backgroundColor:'#265e47'},
  emojiText:{fontSize:20},count:{color:'#fff',fontSize:10},
  commentsButton:{marginLeft:'auto',paddingHorizontal:5,paddingVertical:10},
  commentsButtonText:{color:'#fff',fontSize:11,fontWeight:'600'},
