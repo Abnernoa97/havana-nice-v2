@@ -118,3 +118,13 @@ La PWA en iPhone permanece sin pruebas de pantalla bloqueada por requisitos de i
 - Rollback certificado: `https://github.com/Abnernoa97/havana-nice-v2/releases/download/v2-android-current/HAVANA-NICE-V2-PREVIOUS.apk`.
 - Mantener la sesión y medios existentes: instalar encima, no desinstalar 0.0.29.
 - No se afirma recepción FCM antes de la prueba con dispositivo real.
+
+## Notificaciones específicas · 23 de noviembre de 2026
+
+- Android 0.0.30: el usuario confirmó entrega real con pantalla bloqueada y aplicación cerrada para mensaje, fotografía y reacción de Chat; Estado publicado, corazón, comentario y audio; cambio de Calendario y fotografía de Familia. No se modificó ni recompiló la APK.
+- La presentación *push* se construye en el Worker con nombres tomados de los músicos autorizados: “Rafa envió una foto al Chat”, “Orly reaccionó ❤️ a tu mensaje”, “Administración agregó una foto al álbum de Fer”, sin exponer texto privado, credenciales ni URL de R2.
+- Los cambios del **repertorio general** (agregar, editar o eliminar canciones) notifican a todos los músicos activos con título de canción; los cambios del repertorio por evento siguen llegando solo a sus músicos asignados y muestran el evento cuando hay nombre disponible.
+- El **BOOK 3D general** avisa al publicar una página nueva; evita enviar avisos por girar páginas, reordenar, cambiar encuadre, generar WebP o eliminar páginas. Las subidas consecutivas en la misma ventana de dos minutos se agrupan en un aviso por músico.
+- Migración aditiva `0040_book_member_notifications.sql` en D1, conservando la tabla de repertorio y el BOOK/3D PageFlip sin alteraciones. Bandeja cronológica compartida con Chat, Estados, Calendario y Familia.
+- La APK 0.0.30 ya puede mostrar la **notificación externa** con nombre, sección y acción gracias al texto enviado por FCM. En la bandeja interna Android, la nueva clase BOOK puede mantener el encabezado genérico hasta una siguiente compilación; su texto descriptivo sí identifica BOOK 3D. Pulsar la alerta BOOK abre Notificaciones, no el lector 3D directamente. La PWA actualizada sí etiqueta BOOK de forma explícita.
+- No se afirma haber probado físicamente el nuevo aviso del BOOK y el repertorio general: se deben probar sobre un cambio verdadero realizado desde Administración después de publicar el Worker.
