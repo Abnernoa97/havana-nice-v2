@@ -7,6 +7,8 @@ const encoder=new TextEncoder();
 const HOUR=60*60*1000;
 const ATTEMPT_WINDOW=15*60*1000;
 const SESSION_DURATION=8*HOUR;
+// Heartbeat-based open windows, independent of eight-hour maximum credential age.
+const LIVE_WINDOW=2*60*1000;
 // A human-chosen password can be shorter than an auto-generated secret.
 // Keep a minimum plus per-IP rate limiting; never relax token checks.
 const MIN_SECRET_LENGTH=8;
@@ -37,19 +39,25 @@ export async function verifyAdminSession(request,env){
  const token=tokenFromRequest(request);
  if(!TOKEN.test(token))return false;
  const row=await env.DB.prepare(
-   'SELECT expires_at,revoked_at FROM chat_admin_sessions WHERE token_hash=?'
+   'SELECT expires_at,revoked_at,last_seen_at FROM chat_admin_sessions WHERE token_hash=?'
  ).bind(await sha256Hex(token)).first();
- return !!row&&row.revoked_at==null&&Number(row.expires_at)>Date.now();
+ return !!row&&row.revoked_at==null&&Number(row.expires_at)>Date.now()&&
+  Number(row.last_seen_at)>Date.now()-LIVE_WINDOW;
 }
 async function clientHash(request,env){
  // Store no raw IP. Aggregate rate limits by Cloudflare edge IP, with secret salt.
  const ip=request.headers.get('cf-connecting-ip')||'unknown';
  return sha256Hex(env.V2_ADMIN_LOGIN_SECRET+':'+ip);
 }
+async function revokeDormantSessions(env,now=Date.now()){
+ await env.DB.prepare('UPDATE chat_admin_sessions SET revoked_at=? WHERE revoked_at IS NULL '+
+  'AND (expires_at<=? OR last_seen_at<=?)').bind(now,now,now-LIVE_WINDOW).run();
+}
 export async function issueAdminSession(env){
  const now=Date.now(),token=opaque(),expiresAt=now+SESSION_DURATION;
- await env.DB.prepare('INSERT INTO chat_admin_sessions(token_hash,created_at,expires_at) VALUES(?,?,?)')
-  .bind(await sha256Hex(token),now,expiresAt).run();
+ await revokeDormantSessions(env,now);
+ await env.DB.prepare('INSERT INTO chat_admin_sessions(token_hash,created_at,expires_at,last_seen_at) VALUES(?,?,?,?)')
+  .bind(await sha256Hex(token),now,expiresAt,now).run();
  return {token,expiresAt:new Date(expiresAt).toISOString(),role:'chat-admin'};
 }
 export async function handleAdminSessionApi(request,env,url,origin,respond){
@@ -58,13 +66,23 @@ export async function handleAdminSessionApi(request,env,url,origin,respond){
    return reply({enabled:adminLoginConfigured(env)});
  }
  if(!adminLoginConfigured(env))return reply({error:'Inicio de administrador aún no configurado'},503);
+ // The visible Admin window refreshes its lease; a killed tab goes inactive
+ // even when Android never delivers pagehide.
+ if(url.pathname==='/api/chat/admin/auth/heartbeat'&&request.method==='POST'){
+  if(!await verifyAdminSession(request,env))return reply({error:'No autorizado'},401);
+  const now=Date.now();
+  await env.DB.prepare('UPDATE chat_admin_sessions SET last_seen_at=? WHERE token_hash=? AND revoked_at IS NULL')
+   .bind(now,await sha256Hex(tokenFromRequest(request))).run();
+  await revokeDormantSessions(env,now);
+  return reply({ok:true});
+ }
  // Inventory and revoke only OTHER sessions; never reveal tokens or IP addresses.
  if(url.pathname==='/api/chat/admin/auth/sessions'&&request.method==='GET'){
    if(!await verifyAdminSession(request,env))return reply({error:'No autorizado'},401);
    const currentHash=await sha256Hex(tokenFromRequest(request));
    const row=await env.DB.prepare(
-     'SELECT COUNT(*) AS others FROM chat_admin_sessions WHERE revoked_at IS NULL AND expires_at>? AND token_hash<>?'
-   ).bind(Date.now(),currentHash).first();
+     'SELECT COUNT(*) AS others FROM chat_admin_sessions WHERE revoked_at IS NULL AND expires_at>? AND last_seen_at>? AND token_hash<>?'
+   ).bind(Date.now(),Date.now()-LIVE_WINDOW,currentHash).first();
    return reply({others:Number(row?.others||0)});
  }
  if(url.pathname==='/api/chat/admin/auth/revoke-others'&&request.method==='POST'){
@@ -83,9 +101,11 @@ export async function handleAdminSessionApi(request,env,url,origin,respond){
    return reply({ok:true});
  }
  if(url.pathname==='/api/chat/admin/auth/session'&&request.method==='DELETE'){
-   if(!await verifyAdminSession(request,env))return reply({error:'No autorizado'},401);
+   // A timed-out token can still revoke itself, never anyone else.
+   const token=tokenFromRequest(request);
+   if(!TOKEN.test(token))return reply({error:'No autorizado'},401);
    await env.DB.prepare('UPDATE chat_admin_sessions SET revoked_at=? WHERE token_hash=? AND revoked_at IS NULL')
-     .bind(Date.now(),await sha256Hex(tokenFromRequest(request))).run();
+     .bind(Date.now(),await sha256Hex(token)).run();
    await notifyAdminClients(env,'members');
    return reply({ok:true});
  }

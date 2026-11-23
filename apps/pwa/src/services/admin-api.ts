@@ -32,6 +32,14 @@ export function adminLogout(token:string){
 export function adminVerify(token:string){
  return api<{ok:boolean}>('/api/chat/admin/auth/session',authenticated(token));
 }
+export function adminHeartbeat(token:string){
+ return api<{ok:boolean}>('/api/chat/admin/auth/heartbeat',authenticated(token,{method:'POST'}));
+}
+// Best-effort browser close, with server-side timeout fallback for Android task kills.
+export function adminCloseOnExit(token:string){
+ void fetch(API+'/api/chat/admin/auth/session',{method:'DELETE',keepalive:true,
+  headers:{Authorization:'Bearer '+token}}).catch(()=>{});
+}
 export function adminOtherSessions(token:string){
  return api<{others:number}>('/api/chat/admin/auth/sessions',authenticated(token));
 }

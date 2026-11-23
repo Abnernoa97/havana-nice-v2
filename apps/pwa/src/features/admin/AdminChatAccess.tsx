@@ -11,7 +11,7 @@ const AdminAnnouncements=lazy(()=>import('../notices/AdminAnnouncements'));
 import AdminMemberDirectory from './AdminMemberDirectory';
 import {restoreAdminDevice,pairAdminDevice,unlinkAdminDevice,isAdminDevicePaired}
  from '../../services/admin-trusted-device';
-import {adminAvailability,adminLogin,adminLogout,adminVerify,adminOtherSessions,adminRevokeOtherSessions,adminMembers,adminCreateMember,adminMemberHistory,adminDeletionPreview,adminRemoveMember,adminRetryMemberMediaCleanup,adminDuplicateLogins,adminReviewDuplicateLogin,adminReleaseInstallation,openAdminRealtime,
+import {adminAvailability,adminLogin,adminLogout,adminVerify,adminHeartbeat,adminCloseOnExit,adminMembers,adminCreateMember,adminMemberHistory,adminDeletionPreview,adminRemoveMember,adminRetryMemberMediaCleanup,adminDuplicateLogins,adminReviewDuplicateLogin,adminReleaseInstallation,openAdminRealtime,
  type AdminSession,type AdminMember,type AdminMemberHistory,type AdminDeletionPreview,type AdminDuplicateLoginAlert,type AdminChatStreamEvent,isAdminUnauthorized} from '../../services/admin-api';
 
 type Section='access'|'chat'|'repertoire'|'calendar'|'family'|'memory'|'audio'|'notices';
@@ -44,8 +44,6 @@ export default function AdminChatAccess({section}:{section:Section}){
  const [removing,setRemoving]=useState('');
  const [cleanupRetry,setCleanupRetry]=useState<{actorId:string;name:string;pending:number}|null>(null);
  const [cleanupBusy,setCleanupBusy]=useState(false);
- const [otherSessions,setOtherSessions]=useState<number|null>(null);
- const [sessionsBusy,setSessionsBusy]=useState(false);
  const [duplicateAlerts,setDuplicateAlerts]=useState<AdminDuplicateLoginAlert[]>([]);
  const [duplicateBusy,setDuplicateBusy]=useState('');
  const [releaseBusy,setReleaseBusy]=useState('');
@@ -89,6 +87,37 @@ export default function AdminChatAccess({section}:{section:Section}){
    return()=>{document.documentElement.dataset.adminSessionActive='false';};
  },[session]);
 
+
+ // A section switch is NOT logout; only leaving the page closes the bearer.
+ // If Android force-kills the WebView, the server will expire it in two minutes.
+ useEffect(()=>{
+  if(!session)return;
+  const token=session.token;
+  let live=true,running=false;
+  const pulse=()=>{
+   if(!live||running||document.hidden||!navigator.onLine)return;
+   running=true;
+   void adminHeartbeat(token).catch(reason=>{
+    if(live&&isAdminUnauthorized(reason))
+     setSession(current=>current?.token===token?null:current);
+   }).finally(()=>{running=false;});
+  };
+  const leave=(event:PageTransitionEvent)=>{
+   if(!event.persisted)adminCloseOnExit(token);
+  };
+  pulse();
+  const timer=window.setInterval(pulse,25000);
+  document.addEventListener('visibilitychange',pulse);
+  window.addEventListener('online',pulse);
+  window.addEventListener('pagehide',leave);
+  return()=>{
+   live=false;window.clearInterval(timer);
+   document.removeEventListener('visibilitychange',pulse);
+   window.removeEventListener('online',pulse);
+   window.removeEventListener('pagehide',leave);
+  };
+ },[session?.token]);
+
  const refreshDuplicateAlerts=useCallback(async(token:string)=>{
    try{
      const data=await adminDuplicateLogins(token);
@@ -100,15 +129,6 @@ export default function AdminChatAccess({section}:{section:Section}){
        // not disturb the already-authorized Administrator session.
        setDuplicateAlerts([]);
      }else setError('No se pudieron actualizar las alertas de acceso.');
-   }
- },[]);
- const refreshOtherSessions=useCallback(async(token:string)=>{
-   try{
-     const data=await adminOtherSessions(token);
-     setOtherSessions(data.others);
-   }catch(reason){
-     if(isAdminUnauthorized(reason)){setSession(null);setError('Tu sesión de Administrador expiró.');}
-     else setOtherSessions(null);
    }
  },[]);
  const refreshMembers=useCallback(async(token:string)=>{
@@ -136,13 +156,13 @@ export default function AdminChatAccess({section}:{section:Section}){
    if(!Number.isFinite(expiry)||expiry<=Date.now()){setSession(null);return;}
    void adminVerify(session.token).then(()=>{
      void refreshMembers(session.token);
-     void refreshOtherSessions(session.token);
+     
      void refreshDuplicateAlerts(session.token);
    }).catch(reason=>{
      if(isAdminUnauthorized(reason)){setSession(null);setError('Tu sesión de Administrador expiró.');}
      else setError('No se pudo verificar la conexión. Tu sesión permanece abierta para reintentar.');
    });
- },[session,refreshMembers,refreshOtherSessions,refreshDuplicateAlerts]);
+ },[session,refreshMembers,refreshDuplicateAlerts]);
  useEffect(()=>{
    if(!session){setRealtime('waiting');return;}
    let active=true,socket:WebSocket|null=null,timer:ReturnType<typeof setTimeout>|null=null;
@@ -164,7 +184,7 @@ export default function AdminChatAccess({section}:{section:Section}){
      try{
        const opened=openAdminRealtime(session.token,event=>{
          if(!active||socket!==opened)return;
-         if(event.type==='admin.ready'){retry=1000;setRealtime('connected');void refreshMembers(session.token);void refreshOtherSessions(session.token);void refreshDuplicateAlerts(session.token);}
+         if(event.type==='admin.ready'){retry=1000;setRealtime('connected');void refreshMembers(session.token);void refreshDuplicateAlerts(session.token);}
          if(event.type==='admin.invalidate'&&event.topic==='members'){void refreshMembers(session.token);void refreshDuplicateAlerts(session.token);}
          if(event.type.startsWith('admin.chat.'))setChatEvent(event as AdminChatStreamEvent);
        });
@@ -212,7 +232,7 @@ export default function AdminChatAccess({section}:{section:Section}){
        setRealtime('reconnecting');
        return;
      }
-     void adminVerify(session.token).then(()=>{void refreshMembers(session.token);void refreshOtherSessions(session.token);void refreshDuplicateAlerts(session.token);}).catch(reason=>{
+     void adminVerify(session.token).then(()=>{void refreshMembers(session.token);void refreshDuplicateAlerts(session.token);}).catch(reason=>{
        if(!active)return;
        if(isAdminUnauthorized(reason)){setSession(null);setError('Tu sesión administrativa expiró.');}
        else setError('Sin conexión temporal. La sesión sigue abierta; se actualizará al reconectar.');
@@ -235,7 +255,7 @@ export default function AdminChatAccess({section}:{section:Section}){
      window.removeEventListener('offline',resume);
      socket?.close();
    };
- },[session,refreshMembers,refreshOtherSessions,refreshDuplicateAlerts]);
+ },[session,refreshMembers,refreshDuplicateAlerts]);
  async function login(event:FormEvent){
    event.preventDefault();if(busy||!password)return;
    setBusy(true);setError('');
@@ -254,7 +274,7 @@ export default function AdminChatAccess({section}:{section:Section}){
    const token=session.token;
    rosterRequest.current++; // a late GET must not restore a logged-out roster
    explicitLogout.current=true;hadVerifiedSession.current=false;
-   setSession(null);setDevicePhase('manual');setMembers([]);setLoaded(false);setError('');setNotice('');setName('');setOtherSessions(null);
+   setSession(null);setDevicePhase('manual');setMembers([]);setLoaded(false);setError('');setNotice('');setName('');
    setExpanded('');setHistory({});setHistoryErrors({});setImpact({});setImpactErrors({});setDuplicateAlerts([]);setCleanupRetry(null);
    try{await adminLogout(token);}catch{/* In-memory session is discarded even when offline. */}
  }
@@ -354,17 +374,6 @@ export default function AdminChatAccess({section}:{section:Section}){
      }
    }catch(e){setError(e instanceof Error?e.message:'No se pudo reintentar la limpieza R2');}
    finally{setCleanupBusy(false);}
- }
- async function closeOtherSessions(){
-   if(!session||sessionsBusy||!otherSessions)return;
-   if(!window.confirm('¿Cerrar las otras '+otherSessions+' sesiones administrativas? Tu sesión actual seguirá abierta.'))return;
-   setSessionsBusy(true);setError('');setNotice('');
-   try{
-     const result=await adminRevokeOtherSessions(session.token);
-     setOtherSessions(0);
-     setNotice('Otras sesiones administrativas cerradas: '+result.revoked+'. Esta sesión continúa activa.');
-   }catch(e){setError(e instanceof Error?e.message:'No se pudieron cerrar otras sesiones');}
-   finally{setSessionsBusy(false);}
  }
  async function reviewDuplicateAlert(id:string){
    if(!session||duplicateBusy)return;
@@ -472,11 +481,7 @@ export default function AdminChatAccess({section}:{section:Section}){
         finally{setDeviceBusy(false);}
        })();
       }}>{deviceBusy?'Verificando…':devicePhase==='paired'?'Desvincular dispositivo':'Activar en este dispositivo'}</button>
-       <span>Otras sesiones administrativas: <strong>{otherSessions===null?'Verificando…':otherSessions}</strong></span>
-       {otherSessions!==null&&otherSessions>0&&<button type="button"
-          disabled={sessionsBusy} onClick={()=>void closeOtherSessions()}>
-          {sessionsBusy?'Cerrando…':'Cerrar otras sesiones'}
-       </button>}
+}
      </div>
    </section>
    {duplicateAlerts.some(a=>a.reviewed_at===null)&&<section className="a-panel a-admin-duplicate-alerts" role="region" aria-label="Intentos de acceso duplicado">
