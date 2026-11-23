@@ -1,5 +1,5 @@
 import React,{useCallback,useEffect,useMemo,useRef,useState} from 'react';
-import {ActivityIndicator,AppState,FlatList,Image,Modal,Pressable,ScrollView,StyleSheet,Text,View,useWindowDimensions} from 'react-native';
+import {ActivityIndicator,AppState,BackHandler,FlatList,Image,Modal,PanResponder,Pressable,ScrollView,StyleSheet,Text,View,useWindowDimensions} from 'react-native';
 import {useVideoPlayer,VideoView} from 'expo-video';
 import NativeBook from '../book/NativeBook';
 import {getFamilyDirectory,getFamilyAlbumMedia,familyAlbumCount,HAVANA_V2_DEV_API_BASE_URL,openFamilyRealtime,FAMILY_WS_HANDSHAKE_TIMEOUT_MS,
@@ -16,12 +16,25 @@ function privateUrl(value:string|null|undefined):string|null{
  }catch{return null;}
 }
 type ReadyMedia={id:string;kind:'photo'|'video';image:string|null;file:string};
-function NativeVideo({url,width}:{url:string;width:number}){
+function NativeVideo({url,width,height}:{url:string;width:number;height:number}){
  const player=useVideoPlayer({uri:url},instance=>{instance.loop=false;});
- return <VideoView player={player} nativeControls contentFit="contain" surfaceType="surfaceView"
-  style={{width,height:Math.round(width*1.1),backgroundColor:'#111'}}/>;
+ const [playing,setPlaying]=useState(false);
+ useEffect(()=>{
+  const a=player.addListener('playingChange',e=>setPlaying(e.isPlaying));
+  const b=player.addListener('playToEnd',()=>setPlaying(false));
+  return()=>{a.remove();b.remove();};
+ },[player]);
+ const toggle=()=>{if(playing)player.pause();else player.play();};
+ return <View style={{width,height,backgroundColor:'#050805',justifyContent:'center',alignItems:'center'}}>
+  <VideoView player={player} nativeControls={false} contentFit="contain"
+   surfaceType="surfaceView" style={{width:'100%',height:'100%'}}/>
+  {!playing?<Pressable accessibilityRole="button" accessibilityLabel="Reproducir video"
+   onPress={toggle} style={styles.centerPlay}><Text style={styles.centerPlayLabel}>▶</Text></Pressable>:
+   <Pressable accessibilityRole="button" accessibilityLabel="Pausar video"
+    onPress={toggle} style={styles.pauseVideo}><Text style={styles.pauseVideoLabel}>Ⅱ</Text></Pressable>}
+ </View>;
 }
-export default function NativeFamily({token}:{token:string}){
+export default function NativeFamily({token,onBackHome}:{token:string;onBackHome?:()=>void}){
  const [directory,setDirectory]=useState<FamilyDirectory|null>(null);
  const [selected,setSelected]=useState<string|null>(null);
  const [bookTick,setBookTick]=useState(0);
@@ -167,7 +180,38 @@ export default function NativeFamily({token}:{token:string}){
  const chosen=focused!==null?ready[focused]:null;
  const change=(step:number)=>setFocused(current=>current===null||!ready.length?null:
   (current+step+ready.length)%ready.length);
- return <View style={styles.root}>
+ const actions=useRef({back:()=>{},home:()=>{},change:(step:number)=>{},close:()=>{},
+  selected:false,focused:false});
+ actions.current={back,home:()=>onBackHome?.(),change,close:()=>setFocused(null),
+  selected:!!selected,focused:focused!==null};
+ const albumBack=useRef(PanResponder.create({
+  onStartShouldSetPanResponder:()=>false,
+  onMoveShouldSetPanResponder:(_,g)=>g.x0<32&&g.dx>25&&Math.abs(g.dy)<42,
+  onPanResponderRelease:(_,g)=>{
+   if(g.dx<85||Math.abs(g.dy)>70)return;
+   if(actions.current.focused)actions.current.close();
+   else if(actions.current.selected)actions.current.back();
+   else actions.current.home();
+  }
+ })).current;
+ const mediaPan=useRef(PanResponder.create({
+  onStartShouldSetPanResponder:()=>false,
+  onMoveShouldSetPanResponder:(_,g)=>Math.abs(g.dx)>28&&Math.abs(g.dx)>Math.abs(g.dy)*1.4,
+  onPanResponderRelease:(_,g)=>{
+   if(Math.abs(g.dx)<65||Math.abs(g.dy)>70)return;
+   if(g.x0<32&&g.dx>95)actions.current.close();
+   else actions.current.change(g.dx<0?1:-1);
+  }
+ })).current;
+ useEffect(()=>{
+  const sub=BackHandler.addEventListener('hardwareBackPress',()=>{
+   if(focused!==null){setFocused(null);return true;}
+   if(selected){back();return true;}
+   return false;
+  });
+  return()=>sub.remove();
+ },[focused,selected]);
+ return <View style={styles.root} {...albumBack.panHandlers}>
   {!!error&&<Text accessibilityRole="alert" style={styles.error}>{error}</Text>}
   {loading?<ActivityIndicator color="#917252"/>:active?
    <FlatList
@@ -227,7 +271,7 @@ export default function NativeFamily({token}:{token:string}){
    </ScrollView>}
   <Modal visible={chosen!==null} animationType="fade" statusBarTranslucent
    onRequestClose={()=>setFocused(null)}>
-   <View style={styles.modal}>
+   <View style={styles.modal} {...mediaPan.panHandlers}>
     <View style={styles.modalHeader}>
      <Text style={styles.modalCounter}>{focused===null?'':(focused+1)+' / '+ready.length}</Text>
      <Pressable accessibilityRole="button" accessibilityLabel="Cerrar visor"
@@ -236,7 +280,7 @@ export default function NativeFamily({token}:{token:string}){
     <View style={styles.modalContent}>
      {chosen?.kind==='photo'?<Image source={{uri:chosen.file}} resizeMode="contain"
       style={{width:screenWidth,height:Math.max(200,screenHeight-185)}}/>:
-      chosen?.kind==='video'?<NativeVideo key={chosen.id} url={chosen.file} width={screenWidth-20}/>:null}
+      chosen?.kind==='video'?<NativeVideo key={chosen.id} url={chosen.file} width={screenWidth} height={Math.max(300,screenHeight-138)}/>:null}
     </View>
     <View style={styles.modalNav}>
      <Pressable accessibilityRole="button" onPress={()=>change(-1)}><Text style={styles.navIcon}>‹</Text></Pressable>
@@ -281,6 +325,12 @@ const styles=StyleSheet.create({
  modalHeader:{paddingTop:48,paddingHorizontal:24,flexDirection:'row',justifyContent:'space-between',alignItems:'center'},
  modalCounter:{color:'#fff',fontSize:14},close:{color:'#fff',fontSize:25},
  modalContent:{flex:1,justifyContent:'center',alignItems:'center'},
+ centerPlay:{position:'absolute',width:72,height:72,borderRadius:36,borderWidth:2,
+  borderColor:'#ffffffaa',backgroundColor:'#1a4739dd',alignItems:'center',justifyContent:'center'},
+ centerPlayLabel:{fontSize:32,color:'#fff',marginLeft:5},
+ pauseVideo:{position:'absolute',right:14,bottom:14,width:44,height:44,borderRadius:22,
+  backgroundColor:'#163d32cc',alignItems:'center',justifyContent:'center'},
+ pauseVideoLabel:{color:'#fff',fontSize:19},
  modalNav:{flexDirection:'row',justifyContent:'space-around',paddingBottom:35},
  navIcon:{color:'#fff',fontSize:38}
 });
