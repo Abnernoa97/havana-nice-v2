@@ -1,25 +1,19 @@
-// Group consecutive photos/videos into a visual album, without changing the
-// separate ChatRoom messages, delivery receipts, retry IDs or R2 assets.
+// Unlimited consecutive visual media from the same musician form one Chat album.
+// Upload time, gallery selection batches and the former five-file limit do not split it.
+// A voice note, text, reply, deletion or sender change is a real boundary.
 import type {ChatMessage} from './index';
-
-export const CHAT_MEDIA_CLUSTER_LIMIT=5;
-export const CHAT_MEDIA_CLUSTER_GAP_MS=8*60*1000;
-
-/** Chronological groups; each original message remains independently actionable. */
+/** Legacy exports maintained for old imports; not enforced by the grouper. */
+export const CHAT_MEDIA_CLUSTER_LIMIT=Number.POSITIVE_INFINITY;
+export const CHAT_MEDIA_CLUSTER_GAP_MS=Number.POSITIVE_INFINITY;
 export function groupChatMediaMessages(messages:readonly ChatMessage[]):ChatMessage[][]{
  const groups:ChatMessage[][]=[];
+ const visual=(media:ChatMessage['media'])=>media?.kind==='photo'||media?.kind==='video';
  for(const message of messages){
   const last=groups[groups.length-1];
   const previous=last?.[last.length-1];
-  const first=last?.[0];
-  const a=previous?Date.parse(previous.sentAt):NaN;
-  const b=Date.parse(message.sentAt);
-  const adjacent=!!previous&&!!first&&!!previous.media&&!!message.media&&
+  if(previous&&visual(previous.media)&&visual(message.media)&&
    !previous.deletedAt&&!message.deletedAt&&!previous.replyToSeq&&!message.replyToSeq&&
-   previous.senderId===message.senderId&&first.senderId===message.senderId&&
-   last.length<CHAT_MEDIA_CLUSTER_LIMIT&&
-   Number.isFinite(a)&&Number.isFinite(b)&&b>=a&&b-a<=CHAT_MEDIA_CLUSTER_GAP_MS;
-  if(adjacent)last!.push(message);
+   previous.senderId===message.senderId)last!.push(message);
   else groups.push([message]);
  }
  return groups;

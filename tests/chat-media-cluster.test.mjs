@@ -9,16 +9,17 @@ const value={};runInNewContext(compiled,{exports:value,Date,Number});
 const {groupChatMediaMessages}=value;
 const make=(seq,actor='fer',kind='photo',offset=seq*10000)=>({
  seq,clientMessageId:'m'+seq,senderId:actor,senderName:actor,text:'',sentAt:new Date(1700000000000+offset).toISOString(),
- media:kind?{assetId:'a'+seq,kind,mimeType:'image/jpeg',sizeBytes:1,name:'x'}:null
+ media:kind?{assetId:'a'+seq,kind,mimeType:kind==='video'?'video/mp4':'image/jpeg',sizeBytes:1,name:'x'}:null
 });
-test('Adjacent mixed originals form one up-to-five media album without modifying the messages',()=>{
- const messages=[make(1),make(2,'fer','video'),make(3),make(4),make(5),make(6)];
+test('A mixed batch and later consecutive photo remain one album',()=>{
+ const messages=[...Array.from({length:12},(_,i)=>make(i+1,'fer',i%2?'video':'photo')),make(13,'fer','video',6000000)];
  const groups=groupChatMediaMessages(messages);
- assert.equal(groups.length,2);
- assert.deepEqual(Array.from(groups,x=>x.length),[5,1]);
- assert.equal(groups[0][1],messages[1]);
+ assert.equal(groups.length,1);assert.equal(groups[0].length,13);
+ assert.equal(groups[0][12],messages[12]);
 });
-test('Another sender, text, reply, deleted item or long interval breaks gallery',()=>{
- const messages=[make(1),make(2,'noa'),make(3,'noa',null),make(4,'noa'),{...make(5,'noa'),replyToSeq:1},make(6,'noa','video',6000000)];
+test('Sender, text, audio, reply and deleted item break the gallery',()=>{
+ const messages=[make(1),make(2,'noa'),make(3,'noa',null),make(4,'noa'),
+  make(5,'noa','audio'),make(6,'noa'),{...make(7,'noa'),replyToSeq:1},
+  make(8,'noa'),{...make(9,'noa'),deletedAt:Date.now()},make(10,'noa')];
  assert.equal(groupChatMediaMessages(messages).length,messages.length);
 });
