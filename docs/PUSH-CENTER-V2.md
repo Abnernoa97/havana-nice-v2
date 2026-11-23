@@ -80,7 +80,8 @@ Son acciones técnicas, no actividad útil del equipo.
 - [x] Notificaciones actorless del Repertorio por evento mediante migración aditiva `0039_member_system_notifications.sql` y destinatarios asignados; falta verificar push en teléfono real.
 - [ ] Revisar cualquier otra acción futura de Admin que deba generar actividad útil, sin notificar acciones técnicas.
 - [ ] Prueba cruzada Android ↔ PWA con pantalla bloqueada, sin red y reconexión.
-- [ ] Un único lote nativo 0.0.30 compilado/firmado con prueba de firma y rollback; la comprobación en dispositivo real será después de instalarlo.
+- [x] APK 0.0.30 (code 30) compilada y firmada; flujo GitHub Actions #45090812813 terminó exitosamente. Se comprobó certificado compatible con 0.0.29, permiso Android POST_NOTIFICATIONS, JavaScript integrado, publicación y descarga del enlace estable. Se conserva 0.0.29 como rollback.
+- [ ] Probar físicamente en Android: activar permiso, inscribir FCM y confirmar el aviso de prueba con pantalla bloqueada y la app cerrada.
 
 Una app totalmente apagada por el usuario, un teléfono sin corriente,
 el modo No molestar o restricciones del sistema pueden alterar la entrega;
@@ -108,3 +109,12 @@ no prometer tiempo ni entrega absoluta de un proveedor externo.
 ## Cambio de fase: Android 0.0.30 para prueba real
 
 La PWA en iPhone permanece sin pruebas de pantalla bloqueada por requisitos de iOS 16.4+; su actualización puede ocurrir en paralelo. Android SDK 58 tiene integración FCM nativa y configuración aprobada. Se añadió protección contra registros tardíos al cerrar sesión, y un gate de permiso `POST_NOTIFICATIONS` en el APK. El lote 0.0.30 se limita a notificaciones y no debe modificar Audio, BOOK 3D, los Estados ni Chat existentes.
+
+### APK firmada publicada
+
+- Versión de la aplicación: 0.0.30, versionCode 30.
+- Build exitoso: `https://github.com/Abnernoa97/havana-nice-v2/actions/runs/45090812813`.
+- Instalación: `https://github.com/Abnernoa97/havana-nice-v2/releases/download/v2-android-current/HAVANA-NICE-V2-LATEST.apk`.
+- Rollback certificado: `https://github.com/Abnernoa97/havana-nice-v2/releases/download/v2-android-current/HAVANA-NICE-V2-PREVIOUS.apk`.
+- Mantener la sesión y medios existentes: instalar encima, no desinstalar 0.0.29.
+- No se afirma recepción FCM antes de la prueba con dispositivo real.
