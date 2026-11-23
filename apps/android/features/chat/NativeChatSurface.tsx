@@ -8,6 +8,7 @@ import NativeChatMessageMenu from './NativeChatMessageMenu';
 import NativeChatReactionShower from './NativeChatReactionShower';
 import NativeComposerIcon from './ChatComposerIcon';
 import NativeChatMediaQueuePreview from './NativeChatMediaQueuePreview';
+import NativeChatVoiceRecorder from './NativeChatVoiceRecorder';
 import NativeMemberHome from '../../app/NativeMemberHome';
 import {useNativePush} from '../notices/useNativePush';
 import NativeAudio from '../audio/NativeAudio';
@@ -18,7 +19,7 @@ import type {useNativeChatController} from './useNativeChatController';
 import type {ChatEmoji,ChatMessage} from '@havana/shared';
 
 export default function NativeChatSurface({ui}:{ui:ReturnType<typeof useNativeChatController>}){
-  const {iosBackPan,keyboardOpen,session,activeScreen,restoringAccess,name,setName,join,joining,error,messages,onlineActorIds,connection,reactions,receipts,hasMore,loadingOlder,scroll,onTimelineContentChange,onTimelineScrollBeginDrag,onTimelineScroll,onTimelineScrollEndDrag,onTimelineLoadOlder,onTimelineReply,onTimelineLongPress,onTimelineRetry,menuMessage,menuLeft,menuTop,menuWidth,setMenuMessage,setReactionBurst,reactionBurstId,react,retryAttempts,connect,editing,savingEdit,finishEditing,replyTo,setReplyTo,typing,selectedMedia,mediaUploading,mediaProgress,mediaReady,removeSelectedMedia,mediaError,draft,draftFieldHeight,setDraftFieldHeight,typeText,mediaPicking,chooseNativeMedia,sendSelectedMedia,send,composerPanel,setComposerPanel,navigateTo,reactionBurst}=ui;
+  const {iosBackPan,keyboardOpen,session,activeScreen,restoringAccess,name,setName,join,joining,error,messages,onlineActorIds,connection,reactions,receipts,hasMore,loadingOlder,scroll,onTimelineContentChange,onTimelineScrollBeginDrag,onTimelineScroll,onTimelineScrollEndDrag,onTimelineLoadOlder,onTimelineReply,onTimelineLongPress,onTimelineRetry,menuMessage,menuLeft,menuTop,menuWidth,setMenuMessage,setReactionBurst,reactionBurstId,react,retryAttempts,connect,editing,savingEdit,finishEditing,replyTo,setReplyTo,typing,selectedMedia,mediaUploading,mediaProgress,mediaReady,removeSelectedMedia,mediaError,sendVoice,draft,draftFieldHeight,setDraftFieldHeight,typeText,mediaPicking,chooseNativeMedia,sendSelectedMedia,send,composerPanel,setComposerPanel,navigateTo,reactionBurst}=ui;
   const calendarSignals=useNativeCalendarSignals(session?.token);
   const push=useNativePush(session?.token??null,navigateTo);
   const reactWithEffect=(message:ChatMessage,emoji:ChatEmoji,origin:{x:number;y:number})=>{
@@ -144,11 +145,8 @@ export default function NativeChatSurface({ui}:{ui:ReturnType<typeof useNativeCh
                     onPress={()=>selectedMedia.length&&!editing?void sendSelectedMedia():send()} disabled={savingEdit||mediaUploading||(!selectedMedia.length&&!draft.trim())} style={styles.sendCircle}>
                     <NativeComposerIcon name="send" color="#fff"/>
                   </Pressable>
-                 :<Pressable accessibilityRole="button" accessibilityLabel="Grabar audio (próximamente)"
-                    style={styles.sendCircle}
-                    onPress={()=>Alert.alert('Mensajes de voz','Los audios estarán disponibles después de las fotografías y los videos.')}>
-                    <NativeComposerIcon name="mic" color="#fff"/>
-                  </Pressable>}
+                 :<NativeChatVoiceRecorder disabled={!mediaReady||mediaUploading}
+                    onSend={sendVoice}/>} }
              </View>
           </>
         )}

@@ -2,6 +2,7 @@
 // View, navigation and scroll lifetime are separate modules; no new engine.
 import {useCallback,useEffect,useLayoutEffect,useRef,useState} from 'react';
 import {AppState,StatusBar,useWindowDimensions} from 'react-native';
+import {File} from 'expo-file-system';
 import {
   chatReactionPayload,chatTypingPayload,chatReadReceiptPayload,
   logMemberActivity,fetchBackendHealth,getChatMediaAvailability,getChatSnapshot,getOlderChatMessages,getChatMenuState,
@@ -565,6 +566,25 @@ export function useNativeChatController(){
     }
   }
 
+  async function sendVoice(uri:string,id:string):Promise<boolean>{
+    if(!session||mediaUploadBusy.current||!mediaReady)return false;
+    const file=new File(uri);
+    if(!file.exists||file.size<=0||file.size>3_000_000){
+     setMediaError('El audio está vacío o es mayor a 3 MB.');return false;
+    }
+    mediaUploadBusy.current=true;setMediaUploading(true);setMediaError('');
+    try{
+     await uploadNativeChatFile(session,{
+      id,kind:'audio',source:'camera',uri,mimeType:'audio/mp4',
+      sizeBytes:file.size,name:'Voz.m4a'
+     },()=>{});
+     syncMessages(session);
+     return true;
+    }catch(e){
+     setMediaError(e instanceof Error?e.message:'No se pudo enviar el audio.');
+     return false;
+    }finally{mediaUploadBusy.current=false;setMediaUploading(false);}
+  }
   async function sendSelectedMedia(){
     if(!session||!selectedMedia.length||mediaUploadBusy.current)return;
     if(!mediaReady){setMediaError('El almacenamiento R2 no está disponible.');return;}
@@ -678,5 +698,5 @@ export function useNativeChatController(){
       maxWidth:220,menuHeight:64,
     });
 
-  return {iosBackPan,keyboardOpen,session,activeScreen,restoringAccess,name,setName,join,joining,error,messages,onlineActorIds,connection,reactions,receipts,hasMore,loadingOlder,scroll,onTimelineContentChange,onTimelineScrollBeginDrag,onTimelineScroll,onTimelineScrollEndDrag,onTimelineLoadOlder,onTimelineReply,onTimelineLongPress,onTimelineRetry,menuMessage,menuLeft,menuTop,menuWidth,setMenuMessage,setReactionBurst,reactionBurstId,react,retryAttempts,connect,editing,savingEdit,finishEditing,replyTo,setReplyTo,typing,selectedMedia,mediaUploading,mediaProgress,mediaReady,removeSelectedMedia,mediaError,draft,draftFieldHeight,setDraftFieldHeight,typeText,mediaPicking,chooseNativeMedia,sendSelectedMedia,send,composerPanel,setComposerPanel,navigateTo,reactionBurst};
+  return {iosBackPan,keyboardOpen,session,activeScreen,restoringAccess,name,setName,join,joining,error,messages,onlineActorIds,connection,reactions,receipts,hasMore,loadingOlder,scroll,onTimelineContentChange,onTimelineScrollBeginDrag,onTimelineScroll,onTimelineScrollEndDrag,onTimelineLoadOlder,onTimelineReply,onTimelineLongPress,onTimelineRetry,menuMessage,menuLeft,menuTop,menuWidth,setMenuMessage,setReactionBurst,reactionBurstId,react,retryAttempts,connect,editing,savingEdit,finishEditing,replyTo,setReplyTo,typing,selectedMedia,mediaUploading,mediaProgress,mediaReady,removeSelectedMedia,mediaError,sendVoice,draft,draftFieldHeight,setDraftFieldHeight,typeText,mediaPicking,chooseNativeMedia,sendSelectedMedia,send,composerPanel,setComposerPanel,navigateTo,reactionBurst};
 }
