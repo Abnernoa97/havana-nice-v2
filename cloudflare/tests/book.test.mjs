@@ -11,7 +11,8 @@ const ADMIN='a'.repeat(48);
 const migrations=['0021_family_media.sql','0022_family_upload_sessions.sql',
  '0023_family_video_posters.sql','0024_family_storage_budget.sql',
  '0025_chat_media_r2.sql','0026_member_delete_media_cleanup.sql','0027_book_havana_nice.sql','0028_book_optimized_images.sql',
- '0018_calendar_events.sql','0019_calendar_free_text.sql','0029_calendar_event_memories.sql','0036_audio_library.sql'];
+ '0018_calendar_events.sql','0019_calendar_free_text.sql','0029_calendar_event_memories.sql','0036_audio_library.sql',
+ '0040_book_member_notifications.sql'];
 function setup(){
  const db=new DatabaseSync(':memory:');
  db.exec('PRAGMA foreign_keys=ON');
@@ -45,14 +46,15 @@ function setup(){
  const env={DB,MEDIA_BUCKET,V2_ADMIN_LOGIN_MODE:'enabled',
   V2_ADMIN_LOGIN_SECRET:'private-admin-password',
   CHAT_ROOMS:{idFromName:()=>1,get:()=>({fetch:async()=>new Response(null,{status:200})})}};
+ const pending=[];
  const api=async(path,options={})=>{
   const headers={Authorization:'Bearer '+(options.token||'member-token'),...(options.headers||{})};
   const request=new Request(BASE+path,{method:options.method||'GET',headers,
    ...(options.body!==undefined?{body:options.body}:{})});
   return handleBookApi(request,env,new URL(request.url),ORIGIN,async(_env,token)=>token==='member-token'?{actorId:'member:test'}:null,
-   {waitUntil(p){void p;}});
+   {waitUntil(p){pending.push(p);}});
  };
- return {db,env,api,objects,authorize:async()=>{
+ return {db,env,api,objects,drain:async()=>{while(pending.length)await Promise.all(pending.splice(0));},authorize:async()=>{
   db.prepare('INSERT INTO chat_admin_sessions(token_hash,expires_at,revoked_at) VALUES(?,?,NULL)')
    .run(await auth,Date.now()+60000);
  },setDeleteFailure(x){failDelete=x;}};
@@ -182,5 +184,36 @@ test('BOOK R2 deletion failure keeps a durable queue and counts toward quota',as
  assert.equal(x.db.prepare('SELECT COUNT(*) n FROM book_pages').get().n,0);
  assert.equal(x.db.prepare('SELECT COUNT(*) n FROM book_delete_queue').get().n,1);
  assert.equal(x.objects.size,1);
+ x.db.close();
+});
+
+test('Only a committed published BOOK 3D page creates a deduplicated team notice, never layout or delete',async()=>{
+ const x=setup();await x.authorize();
+ x.db.prepare('INSERT INTO chat_members(actor_id,display_name,active) VALUES(?,?,1)')
+  .run('member:fer','Fer');
+ const bytes=new Uint8Array([255,216,255,217]);
+ const headers={'content-type':'image/jpeg','content-length':String(bytes.length)};
+ const first=await x.api('/api/book/admin/pages',{token:ADMIN,method:'POST',body:bytes,headers});
+ assert.equal(first.status,201);
+ const {id}=await first.json();
+ await x.drain();
+ assert.equal(x.db.prepare('SELECT COUNT(*) n FROM book_member_notifications').get().n,1);
+ const row=x.db.prepare('SELECT kind,preview FROM book_member_notifications').get();
+ assert.equal(row.kind,'book.updated');
+ assert.match(row.preview,/BOOK 3D/);
+ assert.equal((await x.api('/api/book/admin/pages/'+id,{method:'PUT',token:ADMIN,
+  headers:{'content-type':'application/json'},body:JSON.stringify({position:123,fit:'contain'})})).status,200);
+ await x.drain();
+ assert.equal(x.db.prepare('SELECT COUNT(*) n FROM book_member_notifications').get().n,1,
+  'Reordering and fitting pages must never notify the team');
+ const next=await x.api('/api/book/admin/pages',{token:ADMIN,method:'POST',body:bytes,headers});
+ assert.equal(next.status,201);
+ await x.drain();
+ assert.equal(x.db.prepare('SELECT COUNT(*) n FROM book_member_notifications').get().n,1,
+  'Batch publication coalesces notifications within the burst window');
+ assert.equal((await x.api('/api/book/admin/pages/'+id,{token:ADMIN,method:'DELETE'})).status,200);
+ await x.drain();
+ assert.equal(x.db.prepare('SELECT COUNT(*) n FROM book_member_notifications').get().n,1,
+  'Deleting a page must not trigger another notification');
  x.db.close();
 });
