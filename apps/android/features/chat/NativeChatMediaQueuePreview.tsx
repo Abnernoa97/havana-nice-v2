@@ -1,9 +1,8 @@
-// Presentational only; NativeApp owns the authenticated upload and outbox.
+// Compact native attachment strip; uploads and pending originals remain untouched.
 import React from 'react';
-import {View,Text,Pressable,ScrollView,Image} from 'react-native';
+import {View,Text,Pressable,ScrollView,Image,StyleSheet} from 'react-native';
 import {CHAT_MEDIA_MAX_PER_SEND} from '@havana/shared';
 import type {NativeQueuedMedia} from './useNativeMediaSelection';
-import {styles} from '../../styles/chat-styles';
 
 type Props={
  selectedMedia:NativeQueuedMedia[];
@@ -15,32 +14,45 @@ type Props={
 export default function NativeChatMediaQueuePreview({
  selectedMedia,mediaUploading,mediaProgress,mediaReady,onRemove
 }:Props){
- return (
-<View accessibilityLabel="Archivos para enviar">
-               <Text style={styles.mediaHint}>{selectedMedia.length} de {CHAT_MEDIA_MAX_PER_SEND} archivos · Fotos y Video</Text>
-               <ScrollView style={{maxHeight:190}} nestedScrollEnabled keyboardShouldPersistTaps="handled">
-                 {selectedMedia.map(item=><View key={item.id} style={styles.mediaPreview}>
-                   {item.kind==='photo'
-                     ?<Image source={{uri:item.uri}} style={styles.mediaThumb}/>
-                     :<View style={[styles.mediaThumb,styles.videoThumb]}><Text style={styles.videoThumbText}>▶</Text></View>}
-                   <View style={styles.mediaInfo}>
-                     <Text style={styles.mediaName} numberOfLines={1}>{item.name}</Text>
-                     <Text style={styles.mediaHint}>{item.kind==='photo'?'Fotografía':'Video'} · {(item.sizeBytes/1048576).toFixed(1)} MB</Text>
-                   </View>
-                   <Pressable accessibilityRole="button" disabled={mediaUploading}
-                     accessibilityLabel={'Quitar '+item.name}
-                     onPress={()=>onRemove(item)}>
-                     <Text style={styles.mediaClose}>✕</Text>
-                   </Pressable>
-                 </View>)}
-               </ScrollView>
-               <Text style={styles.mediaHint}>{mediaUploading?
-                 'Subiendo originales a R2 · '+mediaProgress+' %':
-                 mediaReady?'Originales listos para enviar':'Almacenamiento no disponible.'}</Text>
-               {mediaUploading&&<View accessibilityLabel="Progreso de subida"
-                 style={{height:6,borderRadius:3,backgroundColor:'#d8d1c9',overflow:'hidden',marginTop:7}}>
-                 <View style={{height:'100%',width:(mediaProgress+'%') as `${number}%`,backgroundColor:'#6a846e'}}/>
-               </View>}
-             </View>
- );
+ return <View style={s.root} accessibilityLabel="Archivos para enviar">
+  <View style={s.heading}>
+   <Text style={s.caption}>{selectedMedia.length}/{CHAT_MEDIA_MAX_PER_SEND} archivos</Text>
+   <Text style={s.caption} accessibilityLiveRegion="polite">
+    {mediaUploading?'Enviando '+mediaProgress+' %':mediaReady?'Listos para enviar':'Almacenamiento no disponible'}
+   </Text>
+  </View>
+  <ScrollView horizontal style={s.strip} contentContainerStyle={s.items}
+   nestedScrollEnabled showsHorizontalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+   {selectedMedia.map(item=><View key={item.id} style={s.tile}
+    accessibilityLabel={item.kind==='photo'?'Fotografía seleccionada':'Video seleccionado'}>
+    {item.kind==='photo'?
+     <Image source={{uri:item.uri}} style={s.thumb} resizeMode="cover"/>:
+     <View style={[s.thumb,s.video]}><Text style={s.videoPlay}>▶</Text></View>}
+    <Pressable accessibilityRole="button" disabled={mediaUploading}
+     accessibilityLabel={'Quitar '+item.name} onPress={()=>onRemove(item)} style={s.close}>
+     <Text style={s.closeText}>×</Text>
+    </Pressable>
+   </View>)}
+  </ScrollView>
+  {mediaUploading&&<View style={s.progress} accessibilityLabel={'Progreso de subida '+mediaProgress+' por ciento'}>
+   <View style={[s.fill,{width:(mediaProgress+'%') as `${number}%`}]}/>
+  </View>}
+ </View>;
 }
+const s=StyleSheet.create({
+ root:{backgroundColor:'#f8f6f0',paddingHorizontal:12,paddingVertical:7,gap:6},
+ heading:{flexDirection:'row',justifyContent:'space-between',alignItems:'center'},
+ caption:{fontSize:10,color:'#736b61'},
+ strip:{flexGrow:0,maxHeight:86},
+ items:{flexDirection:'row',gap:7,alignItems:'center',paddingRight:8},
+ tile:{width:77,height:77,position:'relative'},
+ thumb:{width:77,height:77,borderRadius:11,backgroundColor:'#e5dfd7'},
+ video:{alignItems:'center',justifyContent:'center',backgroundColor:'#264636'},
+ videoPlay:{fontSize:24,color:'#fff'},
+ close:{position:'absolute',top:2,right:2,width:23,height:23,borderRadius:13,
+  alignItems:'center',justifyContent:'center',backgroundColor:'#16241ce8',borderWidth:1,
+  borderColor:'#ffffffaa'},
+ closeText:{color:'#fff',fontSize:17,lineHeight:21},
+ progress:{height:4,borderRadius:3,overflow:'hidden',backgroundColor:'#d8d1c9'},
+ fill:{height:'100%',backgroundColor:'#6a846e'}
+});
