@@ -8,7 +8,8 @@ test('Circular HOME thumbnails crop story images while Profile remains an indepe
  const strip=read('apps/pwa/src/features/home/TeamStoriesStrip.tsx');
  assert.match(css,/\.hn-moment-photo img\{[^}]*object-fit:cover/);
  assert.match(css,/\.hn-moment-photo\{width:62px;height:62px/);
- assert.match(strip,/story\?\.photoUrl\|\|person.photoUrl/);
+ assert.match(strip,/<StoryCover story=\{story\}/);
+ assert.doesNotMatch(strip,/story\?\.photoUrl\|\|person.photoUrl/);
  assert.doesNotMatch(strip,/onOpenProfile|uploadMyProfilePhoto/);
 });
 test('One full-screen photo and independently timed, visible 6s progress segments on iPhone',()=>{
