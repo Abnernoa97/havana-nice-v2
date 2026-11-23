@@ -1,5 +1,5 @@
 // One fullscreen native mixed-media viewer for contiguous photo/video bursts.
-// Android back, left/right swipe and accessible arrows navigate without remounting Chat.
+// Android back and horizontal swipe navigate without remounting Chat.
 import React,{useEffect,useRef,useState} from 'react';
 import {ActivityIndicator,Image,Modal,Pressable,StyleSheet,Text,View,useWindowDimensions} from 'react-native';
 import {VideoView,useVideoPlayer} from 'expo-video';
@@ -86,12 +86,7 @@ export default function NativeChatGallery({items,initial,session,onClose}:{
    <Pressable style={s.close} accessibilityRole="button" accessibilityLabel="Cerrar galería"
     onPress={onClose}><Text style={s.x}>×</Text></Pressable>
    <Text style={s.counter}>{index+1}/{items.length}</Text>
-   {index>0&&<Pressable onPress={()=>move(-1)} style={s.left} accessibilityLabel="Anterior">
-    <Text style={s.arrow}>‹</Text>
-   </Pressable>}
-   {index<items.length-1&&<Pressable onPress={()=>move(1)} style={s.right} accessibilityLabel="Siguiente">
-    <Text style={s.arrow}>›</Text>
-   </Pressable>}
+
   </View>
  </Modal>;
 }

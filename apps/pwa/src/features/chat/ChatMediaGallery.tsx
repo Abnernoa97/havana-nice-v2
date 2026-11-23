@@ -78,9 +78,6 @@ export default function ChatMediaGallery({items,initial,token,onClose}:{
   <button type="button" className="hn-gallery-close" aria-label="Cerrar galería" onClick={onClose}>×</button>
   <span className="hn-gallery-count">{index+1}/{items.length}</span>
   {item&&<Frame key={item.assetId} media={item} token={token}/>}
-  {index>0&&<button type="button" className="hn-gallery-prev"
-   aria-label="Anterior" onClick={()=>turn(-1)}>‹</button>}
-  {index<items.length-1&&<button type="button" className="hn-gallery-next"
-   aria-label="Siguiente" onClick={()=>turn(1)}>›</button>}
+
  </div>,document.body);
 }
