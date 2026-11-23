@@ -9,13 +9,13 @@ type Media=NonNullable<ChatMessage['media']>;
 const photoRatios=new Map<string,number>();
 
 export default function NativeChatPhoto({
- media,session,width,screenWidth,screenHeight
-}:{media:Media;session:ChatSession;width:number;screenWidth:number;screenHeight:number}){
+ media,session,width,screenWidth,screenHeight,compact=false
+}:{media:Media;session:ChatSession;width:number;screenWidth:number;screenHeight:number;compact?:boolean}){
  const [photo,setPhoto]=useState('');
  const [ratio,setRatio]=useState(1);
  const [enlarged,setEnlarged]=useState(false);
  const [error,setError]=useState('');
- const height=Math.max(60,Math.round(width/ratio));
+ const height=compact?width:Math.max(60,Math.round(width/ratio));
 
  useEffect(()=>{
    let active=true;
@@ -56,8 +56,8 @@ export default function NativeChatPhoto({
    {photo?
      <Pressable accessibilityLabel="Ampliar fotografía" accessibilityRole="button"
        onPress={()=>setEnlarged(true)}>
-       <Image source={{uri:photo}} resizeMode="contain"
-         style={{width,height,borderRadius:12}}/>
+       <Image source={{uri:photo}} resizeMode={compact?'cover':'contain'}
+         style={{width,height,borderRadius:compact?7:12}}/>
      </Pressable>:
      error?<Text style={{color:'#7c4141'}}>{error}</Text>:
      <View style={{width,height:92,alignItems:'center',justifyContent:'center'}}>
