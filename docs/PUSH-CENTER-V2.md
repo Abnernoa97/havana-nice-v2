@@ -2,10 +2,13 @@
 
 ## Regla de publicación
 
-**No compilar, firmar ni publicar Android hasta completar todas las rutas, configurar FCM
-y verificar la entrega en teléfonos reales.** La versión nativa instalada 0.0.29
-permanece intacta. No modificar `releases/android-batch.json` durante esta fase.
+**Autorización posterior (22-Nov-2026):** el usuario pidió preparar ya Android
+nativo mientras termina la actualización iOS. Se autoriza un único lote
+incremental **0.0.30 (code 30)** para poder hacer la primera prueba física FCM.
+No considerar Android final hasta verificar que el token se registra y que la
+notificación de prueba se entrega con pantalla bloqueada.
 Mantener una sola rama `main`, el mismo Worker, D1, R2 y las sesiones existentes.
+Conservar APK anterior y validar certificado antes de reemplazar el enlace.
 
 ## Arquitectura
 
@@ -77,7 +80,7 @@ Son acciones técnicas, no actividad útil del equipo.
 - [x] Notificaciones actorless del Repertorio por evento mediante migración aditiva `0039_member_system_notifications.sql` y destinatarios asignados; falta verificar push en teléfono real.
 - [ ] Revisar cualquier otra acción futura de Admin que deba generar actividad útil, sin notificar acciones técnicas.
 - [ ] Prueba cruzada Android ↔ PWA con pantalla bloqueada, sin red y reconexión.
-- [ ] **Solo entonces** lote nativo nuevo firmado, incremental y probado.
+- [ ] Un único lote nativo 0.0.30 compilado/firmado con prueba de firma y rollback; la comprobación en dispositivo real será después de instalarlo.
 
 Una app totalmente apagada por el usuario, un teléfono sin corriente,
 el modo No molestar o restricciones del sistema pueden alterar la entrega;
@@ -101,3 +104,7 @@ no prometer tiempo ni entrega absoluta de un proveedor externo.
 - El cierre del proyecto depende de registrar teléfonos reales, probar Android bloqueado + PWA iPhone instalada y verificar FCM y VAPID, además de la firma de la futura APK única cuando el usuario lo autorice.
 
 - Verificación asistida: `/api/push/test` crea **solo para la sesión autorizada** una notificación de prueba con entrega diferida, límite de una solicitud por minuto y control «Probar aviso» en Android/PWA. La aceptación de la solicitud no demuestra entrega hasta observarla físicamente.
+
+## Cambio de fase: Android 0.0.30 para prueba real
+
+La PWA en iPhone permanece sin pruebas de pantalla bloqueada por requisitos de iOS 16.4+; su actualización puede ocurrir en paralelo. Android SDK 58 tiene integración FCM nativa y configuración aprobada. Se añadió protección contra registros tardíos al cerrar sesión, y un gate de permiso `POST_NOTIFICATIONS` en el APK. El lote 0.0.30 se limita a notificaciones y no debe modificar Audio, BOOK 3D, los Estados ni Chat existentes.
