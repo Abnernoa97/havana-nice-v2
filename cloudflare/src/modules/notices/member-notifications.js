@@ -16,7 +16,8 @@ const asJson=(value,status,origin)=>new Response(JSON.stringify(value),{
 });
 const UUID=/^[a-f0-9-]{36}$/i;
 
-// Fexport async function handleMemberNotices(request,env,url,origin,verifySession){
+// REST endpoint for the one authenticated private inbox.
+export async function handleMemberNotices(request,env,url,origin,verifySession){
  const token=(request.headers.get('authorization')||'').replace(/^Bearer\s+/i,'');
  const actor=await verifySession(env,token);
  if(!actor)return asJson({error:'No autorizado.'},401,origin);
