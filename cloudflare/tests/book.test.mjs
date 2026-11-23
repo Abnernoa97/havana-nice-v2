@@ -18,7 +18,7 @@ function setup(){
  db.exec('PRAGMA foreign_keys=ON');
  db.exec('CREATE TABLE chat_members(actor_id TEXT PRIMARY KEY,display_name TEXT,active INTEGER)');
  db.exec('CREATE TABLE chat_messages(seq INTEGER PRIMARY KEY)');
- db.exec('CREATE TABLE chat_admin_sessions(token_hash TEXT PRIMARY KEY,expires_at INTEGER,revoked_at INTEGER)');
+ db.exec('CREATE TABLE chat_admin_sessions(token_hash TEXT PRIMARY KEY,expires_at INTEGER,revoked_at INTEGER,last_seen_at INTEGER)');
  for(const name of migrations)db.exec(readFileSync(new URL('../migrations/'+name,import.meta.url),'utf8'));
  const auth=sha256Hex(ADMIN);
  const DB={
@@ -55,8 +55,8 @@ function setup(){
    {waitUntil(p){pending.push(p);}});
  };
  return {db,env,api,objects,drain:async()=>{while(pending.length)await Promise.all(pending.splice(0));},authorize:async()=>{
-  db.prepare('INSERT INTO chat_admin_sessions(token_hash,expires_at,revoked_at) VALUES(?,?,NULL)')
-   .run(await auth,Date.now()+60000);
+  db.prepare('INSERT INTO chat_admin_sessions(token_hash,expires_at,revoked_at,last_seen_at) VALUES(?,?,NULL,?)')
+   .run(await auth,Date.now()+60000,Date.now());
  },setDeleteFailure(x){failDelete=x;}};
 }
 test('BOOK D1 migration remains isolated from Familia and all foreign keys valid',()=>{

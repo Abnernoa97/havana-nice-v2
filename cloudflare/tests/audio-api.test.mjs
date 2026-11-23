@@ -12,7 +12,7 @@ function setup(){
  const db=new DatabaseSync(':memory:');
  db.exec("PRAGMA foreign_keys=ON; CREATE TABLE chat_members(actor_id TEXT PRIMARY KEY,display_name TEXT,active INTEGER);");
  db.exec('CREATE TABLE chat_messages(seq INTEGER PRIMARY KEY);');
- db.exec('CREATE TABLE chat_admin_sessions(token_hash TEXT PRIMARY KEY,created_at INTEGER,expires_at INTEGER,revoked_at INTEGER)');
+ db.exec('CREATE TABLE chat_admin_sessions(token_hash TEXT PRIMARY KEY,created_at INTEGER,expires_at INTEGER,revoked_at INTEGER,last_seen_at INTEGER)');
  const migr=name=>readFileSync(new URL('../migrations/'+name,import.meta.url),'utf8');
  for(const n of ['0021_family_media.sql','0022_family_upload_sessions.sql',
  '0023_family_video_posters.sql','0024_family_storage_budget.sql',

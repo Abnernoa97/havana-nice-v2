@@ -7,7 +7,7 @@ import {handleAdminStorageSummary} from '../src/modules/admin/admin-storage-summ
 function fixture(){
  const db=new DatabaseSync(':memory:');
  db.exec(`
- CREATE TABLE chat_admin_sessions(token_hash TEXT PRIMARY KEY,created_at INTEGER,expires_at INTEGER,revoked_at INTEGER);
+ CREATE TABLE chat_admin_sessions(token_hash TEXT PRIMARY KEY,created_at INTEGER,expires_at INTEGER,revoked_at INTEGER,last_seen_at INTEGER);
  CREATE TABLE family_media(size_bytes INTEGER,poster_key TEXT,poster_size_bytes INTEGER);
  CREATE TABLE chat_media_objects(size_bytes INTEGER,status TEXT);
  CREATE TABLE book_pages(size_bytes INTEGER,optimized_size_bytes INTEGER);

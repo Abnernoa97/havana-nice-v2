@@ -13,7 +13,7 @@ const b64=bytes=>btoa(String.fromCharCode(...new Uint8Array(bytes)))
 function makeDb(){
  const db=new DatabaseSync(':memory:');
  db.exec('PRAGMA foreign_keys=ON');
- db.exec('CREATE TABLE chat_admin_sessions(token_hash TEXT PRIMARY KEY,created_at INTEGER NOT NULL,expires_at INTEGER NOT NULL,revoked_at INTEGER)');
+ db.exec('CREATE TABLE chat_admin_sessions(token_hash TEXT PRIMARY KEY,created_at INTEGER NOT NULL,expires_at INTEGER NOT NULL,revoked_at INTEGER,last_seen_at INTEGER)');
  db.exec(readFileSync(new URL('../migrations/0035_admin_trusted_devices.sql',import.meta.url),'utf8'));
  const statement=(sql,params)=>({
   first:async()=>db.prepare(sql).get(...params)||null,
