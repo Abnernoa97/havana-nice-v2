@@ -135,7 +135,7 @@ export async function notifyGeneralRepertoireMembers(env,action,songTitle,change
  try{
   const members=(await env.DB.prepare(
    'SELECT actor_id FROM chat_members WHERE active=1'
-  ).all()).results||[];
+  ).bind().all()).results||[];
   if(!members.length)return 0;
   const now=Date.now(),ids=members.map(()=>crypto.randomUUID());
   const inserted=await env.DB.batch(members.map((member,i)=>env.DB.prepare(
@@ -163,7 +163,7 @@ export async function notifyBookPublished(env,pageId){
  try{
   const members=(await env.DB.prepare(
    'SELECT actor_id FROM chat_members WHERE active=1'
-  ).all()).results||[];
+  ).bind().all()).results||[];
   if(!members.length)return 0;
   const now=Date.now(),bucket=Math.floor(now/120000);
   const ids=members.map(()=>crypto.randomUUID());
