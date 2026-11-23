@@ -213,3 +213,27 @@
  border-radius:14px;padding:15px;margin:12px 0 17px;scroll-margin-top:105px}
 .hn-admin-minimal .hn-cal-inline-editor h3{color:#1d4832}
 .hn-admin-minimal .hn-cal-inline-editor input,.hn-admin-minimal .hn-cal-inline-editor textarea{background:#fffefa}
+
+/* Admin message composer: compact, readable, precise recipients. */
+.hn-admin-notices{display:grid;gap:16px}
+.hn-admin-notices form{display:grid;gap:10px}
+.hn-admin-notices label{font-size:13px;color:#284b3c;font-weight:650}
+.hn-admin-notices textarea,.hn-admin-notices input[type="url"]{
+ background:#fffefb;border:1px solid #d8d1c5;border-radius:12px;color:#142b22;
+ font:inherit;padding:12px;max-width:100%;min-width:0;box-sizing:border-box}
+.hn-admin-notice-head{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.hn-admin-notice-head>div{display:flex;gap:6px}
+.hn-admin-notice-head button{border:1px solid #ded7c9;background:#fffdf7;
+ color:#2e5742;border-radius:10px;padding:8px 10px}
+.hn-admin-notice-recipients{display:flex;gap:7px;flex-wrap:wrap}
+.hn-admin-notice-recipients label{border:1px solid #d5ddcf;border-radius:22px;
+ display:flex;align-items:center;gap:6px;padding:8px 12px;background:#f2f6ee}
+.hn-admin-notice-send{justify-self:start;background:#173d31;color:white;border:0;
+ border-radius:12px;padding:13px 18px;font-weight:750}
+.hn-admin-notice-send:disabled{opacity:.45}
+.hn-admin-notice-history{display:grid;gap:9px}
+.hn-admin-notice-history article{border:1px solid #e0dcd2;border-radius:12px;
+ padding:12px;background:#fffefa}
+.hn-admin-notice-history p{margin:0 0 7px;overflow-wrap:anywhere}
+.hn-admin-notice-history small{display:block;margin-top:7px;color:#7b7d72}
+.hn-admin-notice-history a{color:#235e42}

@@ -192,3 +192,12 @@ export type AdminStorageSummary={
 export function adminStorageSummary(token:string){
  return api<AdminStorageSummary>('/api/chat/admin/storage/summary',authenticated(token));
 }
+
+export type AdminAnnouncement={broadcast_id:string;message:string;url:string;createdAt:number;recipients:number};
+export function adminAnnouncements(token:string){
+ return api<{items:AdminAnnouncement[]}>('/api/chat/admin/announcements',authenticated(token));
+}
+export function adminSendAnnouncement(token:string,data:{message:string;url:string;recipientIds:string[]}){
+ return api<{ok:boolean;recipients:number;broadcastId:string}>('/api/chat/admin/announcements',
+  authenticated(token,{method:'POST',body:JSON.stringify(data)}));
+}

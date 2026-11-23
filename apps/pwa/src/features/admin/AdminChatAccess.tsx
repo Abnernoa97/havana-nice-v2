@@ -7,13 +7,14 @@ const AdminRepertoire=lazy(()=>import('../repertoire/AdminRepertoire'));
 const AdminFamily=lazy(()=>import('../family/AdminFamily'));
 const AdminStorageSummary=lazy(()=>import('./AdminStorageSummary'));
 const AdminAudio=lazy(()=>import('../audio/AdminAudio'));
+const AdminAnnouncements=lazy(()=>import('../notices/AdminAnnouncements'));
 import AdminMemberDirectory from './AdminMemberDirectory';
 import {restoreAdminDevice,pairAdminDevice,unlinkAdminDevice,isAdminDevicePaired}
  from '../../services/admin-trusted-device';
 import {adminAvailability,adminLogin,adminLogout,adminVerify,adminOtherSessions,adminRevokeOtherSessions,adminMembers,adminCreateMember,adminMemberHistory,adminDeletionPreview,adminRemoveMember,adminRetryMemberMediaCleanup,adminDuplicateLogins,adminReviewDuplicateLogin,adminReleaseInstallation,openAdminRealtime,
  type AdminSession,type AdminMember,type AdminMemberHistory,type AdminDeletionPreview,type AdminDuplicateLoginAlert,type AdminChatStreamEvent,isAdminUnauthorized} from '../../services/admin-api';
 
-type Section='access'|'chat'|'repertoire'|'calendar'|'family'|'memory'|'audio';
+type Section='access'|'chat'|'repertoire'|'calendar'|'family'|'memory'|'audio'|'notices';
 type Readiness='loading'|'disabled'|'enabled'|'error';
 
 export default function AdminChatAccess({section}:{section:Section}){
@@ -408,7 +409,7 @@ export default function AdminChatAccess({section}:{section:Section}){
    finally{setBusy(false);}
  }
  // Keep the Administrator's verified session when changing navigation sections.
- if(section!=='access'&&section!=='chat'&&section!=='calendar'&&section!=='repertoire'&&section!=='family'&&section!=='memory'&&section!=='audio')return null;
+ if(section!=='access'&&section!=='chat'&&section!=='calendar'&&section!=='repertoire'&&section!=='family'&&section!=='memory'&&section!=='audio'&&section!=='notices')return null;
  if(readiness==='loading')return <section className="a-panel">Comprobando el acceso administrativo…</section>;
  if(readiness!=='enabled')return <section className="a-panel">
    <h2>Acceso de Administrador</h2>
@@ -435,6 +436,9 @@ export default function AdminChatAccess({section}:{section:Section}){
     }}>{deviceBusy?'Verificando…':'Entrar con este dispositivo'}</button>}
    {error&&<p role="alert" className="a-admin-error">{error}</p>}
  </section>;
+ if(section==='notices')return <Suspense fallback={<section className="a-panel" role="status">Abriendo Notificaciones…</section>}>
+  <AdminAnnouncements token={session.token} members={members} onExpired={onChatExpired}/>
+ </Suspense>;
  if(section==='audio')return <Suspense fallback={<section className="a-panel" role="status">Abriendo Audio…</section>}><AdminAudio token={session.token} onExpired={onChatExpired}/></Suspense>;
  if(section==='memory')return <Suspense fallback={<section className="a-panel" role="status">Abriendo memoria…</section>}><AdminStorageSummary token={session.token} onExpired={onChatExpired}/></Suspense>;
  if(section==='calendar')return <Suspense fallback={<section className="a-panel" role="status">Abriendo Calendario…</section>}><AdminCalendar token={session.token} members={members} onExpired={onChatExpired}/></Suspense>;
