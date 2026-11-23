@@ -14,6 +14,7 @@ export default function NativeStoryViewer({stories,actorId,token,version,onClose
  const [foreground,setForeground]=useState(true);
  const [paused,setPaused]=useState(false);
  const [deleting,setDeleting]=useState(false);
+ const [readyStoryId,setReadyStoryId]=useState('');
  const [burst,setBurst]=useState<NativeStoryBurst|null>(null);
  const progress=useRef(new Animated.Value(0)).current;
  const elapsed=useRef(0),lastId=useRef('');
@@ -35,7 +36,7 @@ export default function NativeStoryViewer({stories,actorId,token,version,onClose
   if(lastId.current!==id){
    lastId.current=id;elapsed.current=0;progress.setValue(0);
   }
-  if(paused||!foreground||deleting)return;
+  if(paused||!foreground||deleting||readyStoryId!==id)return;
   const started=Date.now();
   const remain=Math.max(0,STORY_PLAYBACK_MS-elapsed.current);
   const animation=Animated.timing(progress,{toValue:1,duration:remain,useNativeDriver:true});
@@ -43,7 +44,7 @@ export default function NativeStoryViewer({stories,actorId,token,version,onClose
    if(finished){elapsed.current=STORY_PLAYBACK_MS;latestNext.current();}
   });
   return()=>{elapsed.current=Math.min(STORY_PLAYBACK_MS,elapsed.current+Date.now()-started);animation.stop();};
- },[current?.id,paused,foreground,deleting,progress]);
+ },[current?.id,paused,foreground,deleting,progress,readyStoryId]);
  useEffect(()=>{
   if(!current||current.expiresAt<=Date.now()){onClose();return;}
   const future=stories.slice(position+1,position+3);
@@ -64,7 +65,8 @@ export default function NativeStoryViewer({stories,actorId,token,version,onClose
   transparent statusBarTranslucent>
   <View style={s.screen}>
    {!!current&&<View style={s.frame}>
-    <NativeStoryPhoto key={current.id} uri={current.photoUrl} onError={photoFailed}/>
+    <NativeStoryPhoto key={current.id} uri={current.photoUrl} onError={photoFailed}
+     onReady={()=>setReadyStoryId(current.id)}/>
     <View pointerEvents="none" style={s.topShade}/>
     <View style={s.progressRow} accessibilityLabel={'Estado '+(position+1)+' de '+stories.length}>
      {stories.map((story,i)=><Pressable key={story.id} accessibilityRole="button"

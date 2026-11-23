@@ -5,16 +5,26 @@ import {useNativeStories} from './useNativeStories';
 import NativeStoryViewer from './NativeStoryViewer';
 import {storyStyles as s} from './native-story-styles';
 
-// A failed R2 grant must not leave an invisible circle or repeat requests on
-// every render. Show the member's initial until a new photo URL arrives.
-const StoryAvatar=React.memo(function StoryAvatar({uri,name,onFailure}:{
- uri:string|null|undefined;name:string;onFailure:()=>void;
+// The permanent avatar NEVER appears as a temporary status cover.
+const StoryAvatar=React.memo(function StoryAvatar({uri,name,hasStory,rosterReady,onFailure}:{
+ uri:string|null|undefined;name:string;hasStory:boolean;rosterReady:boolean;onFailure:()=>void;
 }){
- const [failed,setFailed]=useState(false);
- useEffect(()=>setFailed(false),[uri]);
- return uri&&!failed
-  ?<Image source={{uri,cache:'default'}} style={s.photo} resizeMode="cover"
-    onError={()=>{setFailed(true);onFailure();}}/>
+ const [failedUri,setFailedUri]=useState('');
+ const [readyUri,setReadyUri]=useState('');
+ if(!rosterReady)return <View style={s.coverFrame}><Text style={s.coverPending}>···</Text></View>;
+ if(hasStory){
+  const ready=!!uri&&readyUri===uri;
+  return <View style={s.coverFrame}>
+   {!ready&&<Text style={s.coverPending}>ESTADO</Text>}
+   {!!uri&&failedUri!==uri&&<Image source={{uri,cache:'force-cache'}}
+    style={[s.photo,s.coverImage,!ready&&s.coverInvisible]}
+    resizeMode="cover" fadeDuration={0} onLoad={()=>setReadyUri(uri)}
+    onError={()=>{setFailedUri(uri);onFailure();}}/>}
+  </View>;
+ }
+ return uri&&failedUri!==uri
+  ?<Image source={{uri,cache:'force-cache'}} style={s.photo} resizeMode="cover"
+    fadeDuration={0} onError={()=>{setFailedUri(uri);onFailure();}}/>
   :<Text style={s.initial}>{name.charAt(0).toUpperCase()}</Text>;
 });
 
@@ -49,18 +59,23 @@ export default function NativeStories({token,actorId,displayName,profiles,canPub
    (s.createdAt===best.createdAt&&s.id>best.id)?s:best,null);
   const member=(person:{actorId:string;name:string;photoUrl:string|null},self=false)=>{
   const last=newest(person.actorId);
+  const count=states.stories.filter(st=>st.actorId===person.actorId).length;
   return <View style={s.member} key={person.actorId}>
    <View style={s.slot}>
     <Pressable accessibilityRole="button"
-     accessibilityLabel={last?'Ver estados de '+person.name:'Consultar estados de '+person.name}
+     accessibilityLabel={last?'Ver '+count+' estados de '+person.name:'Consultar estados de '+person.name}
      onPress={()=>{
       if(last){setEmptyMessage('');setViewerActor(person.actorId);}
       else setEmptyMessage(self?'Aún no tienes estados.':person.name+' aún no tiene estados.');
      }}
      style={[s.ring,self&&s.ownRing,!!last&&s.activeRing]}>
      <StoryAvatar uri={last?.photoUrl||person.photoUrl} name={person.name}
+      hasStory={!!last} rosterReady={states.initialReady}
       onFailure={()=>{if(last)states.retryPhoto(last.id);}}/>
     </Pressable>
+    {count>0&&<View pointerEvents="none" style={s.countBadge}>
+     <Text style={s.countText}>{count}</Text>
+    </View>}
     {self&&<Pressable accessibilityRole="button" accessibilityLabel="Publicar hasta cinco fotos"
      disabled={!canPublish||states.saving} style={s.plus}
      onPress={()=>void states.publish()}>
@@ -68,6 +83,7 @@ export default function NativeStories({token,actorId,displayName,profiles,canPub
     </Pressable>}
    </View>
    <Text style={s.name} numberOfLines={1}>{person.name}</Text>
+   {count>0&&<Text style={s.storyLabel}>ESTADO · {count}</Text>
   </View>;
  };
  return <>

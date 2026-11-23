@@ -26,10 +26,12 @@ test('Only one photo layer is rendered, independently of the number of uploaded 
  assert.doesNotMatch(component,/<img\b|rotateY|page-next|page-previous|hn-story-image-stage/);
  const cache=read('apps/pwa/src/features/stories/useStoryPhotoCache.ts');
  assert.match(component,/useStoryPhotoCache\(items,position,onPhotoError\)/);
- assert.match(cache,/new Image\(\)/); // a single decoded private JPEG cache, not a visible DOM layer
- assert.match(cache,/fetch\(item\.photoUrl/);
- assert.match(cache,/URL\.createObjectURL\(blob\)/);
- assert.match(cache,/URL\.revokeObjectURL/);
+ const pool=read('apps/pwa/src/features/stories/story-photo-pool.ts');
+ assert.match(pool,/new Image\(\)/); // shared private JPEG decoded before display
+ assert.match(pool,/fetch\(story\.photoUrl/);
+ assert.match(pool,/URL\.createObjectURL\(blob\)/);
+ assert.match(pool,/URL\.revokeObjectURL/);
+ assert.match(cache,/warmStoryPhoto\(item\)/);
  assert.match(cache,/items\.slice\(position,position\+2\)/);
  assert.match(surface,/hn-story-loading/);
  assert.match(surface,/className="hn-story-canvas"/);
@@ -97,4 +99,20 @@ test('Reactions reuse the same photo grant and a memoized canvas, never a new im
  assert.doesNotMatch(surface,/useStoryConversation|useStoryPlayback|useState|refreshVersion/);
  assert.match(viewport,/window\.visualViewport/);
  assert.match(viewport,/viewport\.addEventListener\('resize',update\)/);
+});
+
+test('Cold story strip prefetches signed covers and counts active states, not avatars',()=>{
+ const strip=read('apps/pwa/src/features/home/TeamStoriesStrip.tsx');
+ const controller=read('apps/pwa/src/features/stories/useMemberStories.ts');
+ const pool=read('apps/pwa/src/features/stories/story-photo-pool.ts');
+ const styles=read('apps/pwa/src/features/home/home-stage.css');
+ assert.match(strip,/hn-moment-count/);
+ assert.match(strip,/hn-moment-state-label/);
+ assert.match(strip,/<StoryCover story=\{story\}/);
+ assert.doesNotMatch(strip,/story\?\.photoUrl\|\|person.photoUrl/);
+ assert.match(controller,/warmStoryCovers\(stable\)/);
+ assert.match(pool,/LIMIT=18/);
+ assert.match(pool,/setStoryPhotoOwner/);
+ assert.match(pool,/entries.clear\(\)/);
+ assert.match(styles,/\.hn-moment-story-pending/);
 });

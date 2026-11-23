@@ -74,8 +74,8 @@ test('Five-photo selection, stable image and timer stay independent of the 3D BO
  assert.match(composer,/type="file" accept="image\/\*" multiple/);
  assert.match(composer,/files.length>STORY_BATCH_MAX/);
  assert.match(hook,/uploadMyStoriesBatch\(token,images\)/);
- assert.match(strip,/story\?\.photoUrl\|\|person.photoUrl/);
- assert.match(strip,/onStoryPhotoError\(story.id\)/);
+ assert.match(strip,/<StoryCover story=\{story\}/);
+ assert.match(strip,/hn-moment-count/);
  assert.match(player,/className="hn-story-progress-fill"/);
  assert.match(player,/useStoryPlayback\(item\?\.id,paused,next\)/);
  assert.match(player,/StoryPhotoSurface id=\{item\.id\}/);

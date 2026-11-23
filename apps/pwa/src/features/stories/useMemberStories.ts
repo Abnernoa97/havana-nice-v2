@@ -1,10 +1,12 @@
 import {useCallback,useEffect,useRef,useState} from 'react';
 import {deleteMyStory,getMemberStories,uploadMyStoriesBatch,STORY_BATCH_MAX,type MemberStory} from '@havana/shared';
 import {prepareStoryPhoto} from './prepareStoryPhoto';
+import {setStoryPhotoOwner,warmStoryCovers} from './story-photo-pool';
 
 // HOME-only story controller: no Chat connection, no profile mutation, no storage owner.
 export function useMemberStories(token:string|undefined,refreshVersion:number){
  const [stories,setStories]=useState<MemberStory[]>([]);
+ const [initialReady,setInitialReady]=useState(false);
  const [error,setError]=useState('');
  const [saving,setSaving]=useState(false);
  const [preparing,setPreparing]=useState(0);
@@ -21,9 +23,13 @@ export function useMemberStories(token:string|undefined,refreshVersion:number){
   failedPhotos.current.clear();
  }
  // A different musician session must not show the previous user's photo data.
- useEffect(()=>{setStories([]);setError('');},[token]);
+ useEffect(()=>{
+  setStoryPhotoOwner(token);
+  setStories([]);setError('');setInitialReady(false);
+  return()=>setStoryPhotoOwner(undefined);
+ },[token]);
  const refresh=useCallback(async()=>{
-  if(!token){setStories([]);return;}
+  if(!token){setStories([]);setInitialReady(true);return;}
   const id=++requestId.current;
   try{
    const items=await getMemberStories(token);
@@ -44,9 +50,11 @@ export function useMemberStories(token:string|undefined,refreshVersion:number){
     });
     return story;
    });
-   setStories(stable);setError('');
+   warmStoryCovers(stable);
+   setStories(stable);setError('');setInitialReady(true);
   }catch(e){
    if(id!==requestId.current)return;
+   setInitialReady(true);
    setError(e instanceof Error?e.message:'No se pudieron cargar los estados.');
    setStories(prev=>prev.filter(item=>item.expiresAt>Date.now()));
   }
@@ -118,6 +126,6 @@ export function useMemberStories(token:string|undefined,refreshVersion:number){
   failedPhotos.current.clear();photoGrants.current.clear();
   void refresh();
  },[refresh]);
- return {stories,error,saving,preparing,publish,remove,retryPhoto,retryAll,
+ return {stories,initialReady,error,saving,preparing,publish,remove,retryPhoto,retryAll,
   refresh,clearError:()=>setError('')};
 }

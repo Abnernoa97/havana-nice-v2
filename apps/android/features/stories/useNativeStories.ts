@@ -1,5 +1,5 @@
 import {useCallback,useEffect,useRef,useState} from 'react';
-import {AppState} from 'react-native';
+import {AppState,Image} from 'react-native';
 import {fetch as expoFetch} from 'expo/fetch';
 import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
@@ -10,6 +10,7 @@ import {deleteMyStory,getMemberStories,STORY_BATCH_MAX,type MemberStory,
 // Native state controller is separate from Chat, Profile, and Family.
 export function useNativeStories(token:string,refreshVersion:number){
  const [stories,setStories]=useState<MemberStory[]>([]);
+ const [initialReady,setInitialReady]=useState(false);
  const [error,setError]=useState('');
  const [saving,setSaving]=useState(false);
  const publishing=useRef(false);
@@ -42,13 +43,25 @@ export function useNativeStories(token:string,refreshVersion:number){
     });
     return st;
    });
-   setStories(stable);setError('');
+   setStories(stable);setError('');setInitialReady(true);
+   // Warm the latest cover of each member before anyone opens a story.
+   const covers=new Map<string,MemberStory>();
+   for(const story of stable){
+    const prior=covers.get(story.actorId);
+    if(!prior||story.createdAt>prior.createdAt||
+     (story.createdAt===prior.createdAt&&story.id>prior.id))
+     covers.set(story.actorId,story);
+   }
+   for(const story of [...covers.values()].slice(0,10))
+    void Image.prefetch(story.photoUrl).catch(()=>{});
   }catch(e){
    if(!mounted.current||latest.current!==seq)return;
+   setInitialReady(true);
    setError(e instanceof Error?e.message:'No se pudieron cargar los estados.');
    setStories(current=>current.filter(st=>st.expiresAt>Date.now()));
   }
  },[token]);
+ useEffect(()=>{setStories([]);setInitialReady(false);},[token]);
  useEffect(()=>{
   mounted.current=true;void refresh();
   const sub=AppState.addEventListener('change',s=>{if(s==='active')void refresh();});
@@ -148,5 +161,5 @@ export function useNativeStories(token:string,refreshVersion:number){
   failedPhotos.current.clear();grants.current.clear();
   void refresh();
  },[refresh]);
- return {stories:stories.filter(st=>st.expiresAt>Date.now()),error,saving,publish,remove,refresh,retryPhoto,retryAll};
+ return {stories:stories.filter(st=>st.expiresAt>Date.now()),initialReady,error,saving,publish,remove,refresh,retryPhoto,retryAll};
 }

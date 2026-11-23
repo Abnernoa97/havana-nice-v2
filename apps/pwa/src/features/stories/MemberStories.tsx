@@ -48,7 +48,7 @@ export default function MemberStories({token,displayName,actorId,profiles,previe
    aria-label="Elegir hasta cinco fotos para estados" onChange={pick}/>
   <TeamStoriesStrip displayName={displayName} actorId={actorId} profiles={profiles}
    preview={preview} canEditProfile={canEditProfile} onPhotoError={onPhotoError}
-   stories={visible} onStoryPhotoError={data.retryPhoto}
+   stories={visible} ready={data.initialReady} onStoryPhotoError={data.retryPhoto}
    onOpenStory={setViewActor} onAddStory={()=>{setSelectionError('');input.current?.click();}}/>
   {(data.error||selectionError)&&!selected.length&&
    <p className="hn-story-error" role="status">{selectionError||data.error}
