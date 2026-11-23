@@ -60,7 +60,7 @@ export function pwaPushUnavailableMessage():string{
    'Este iPhone no ofrece el permiso Web Push a esta PWA. Requiere iOS 16.4 o posterior y abrirla como app instalada.':
    'Este navegador no ofrece permiso para notificaciones Web Push.';
  if(/Android/i.test(navigator.userAgent))
-  return 'Esta vista Android no ofrece la suscripción Web Push. Prueba en Chrome; la APK nativa antigua todavía no incorpora FCM.';
+  return 'Esta vista Android no ofrece la suscripción Web Push. Prueba en Chrome o utiliza HAVANA NICE Android nativa para recibir los avisos.';
  return 'El navegador no expone las funciones de Web Push necesarias.';
 }
 const keyBytes=(publicKey:string):ArrayBuffer=>{
