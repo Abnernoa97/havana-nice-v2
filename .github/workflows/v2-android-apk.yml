@@ -72,6 +72,7 @@ jobs:
       - name: Verify today's Calendar chronology, realtime notices and private backend
         run: |
           node --test cloudflare/tests/calendar.test.mjs cloudflare/tests/calendar-realtime.test.mjs cloudflare/tests/member-notifications.test.mjs cloudflare/tests/audio-api.test.mjs
+          node --test cloudflare/tests/push-center.test.mjs tests/native-push-integrity.test.mjs tests/firebase-android-config.test.mjs
           node --test tests/calendar-free-text-ui.test.mjs tests/member-notifications-parity.test.mjs tests/android-pwa-parity.test.mjs
 
       - name: Guard native Chat, HOME, Audio, Stories and the untouched BOOK 3D
@@ -147,7 +148,9 @@ jobs:
           EXPECTED_CODE="$(node -p "require('./apps/android/app.json').expo.android.versionCode")"
           test -n "$EXPECTED_CODE"
           "$SDK_BUILD_TOOLS/aapt" dump badging "$APK" | grep -F "versionCode='$EXPECTED_CODE'"
-          echo "H01 Android APK package/versionCode check PASS (code $EXPECTED_CODE)"
+          # Android 13+ must request permission at runtime for screen-off alerts.
+          "$SDK_BUILD_TOOLS/aapt" dump permissions "$APK" | grep -Fq "android.permission.POST_NOTIFICATIONS"
+          echo "H01 Android APK package/versionCode/notification-permission check PASS (code $EXPECTED_CODE)"
           sha256sum "$APK"
 
       - name: Rename APK
