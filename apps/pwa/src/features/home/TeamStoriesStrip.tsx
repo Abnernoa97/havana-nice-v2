@@ -64,7 +64,7 @@ export default function TeamStoriesStrip({displayName,actorId,profiles,preview,c
      disabled={preview||!canEditProfile} aria-label="Publicar hasta 5 fotos en estados de 24 horas">+</button>}
    </div>
    <span className="hn-moment-name">{own&&preview?'Mi estado':person.name}</span>
-   {count>0&&<span className="hn-moment-state-label">ESTADO · {count}</span>
+   {count>0&&<span className="hn-moment-state-label">ESTADO · {count}</span>}
   </div>;
  };
  return <div className="hn-moments-wrap">
