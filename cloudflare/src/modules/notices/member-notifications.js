@@ -116,9 +116,8 @@ export async function notifyRepertoireMembers(env,eventId,action,changeId){
     kind:'repertoire.updated',targetId:eventId,title:'HAVANA NICE · Repertorio',body:preview});
   }
   return count;
- }catch(error){
+ }catch{
   // Failed push must never roll back an Admin's committed repertoire change.
-  if(env.NOTIFICATION_DEBUG)throw error;
   return 0;
  }
 }
