@@ -110,7 +110,7 @@ export default function NativeChatVideo({media,session,width,compact=false}:{
 const s=StyleSheet.create({
  cover:{backgroundColor:'#162821',borderRadius:11,overflow:'hidden',
   alignItems:'center',justifyContent:'center'},
- coverPhoto:{...StyleSheet.absoluteFillObject,width:'100%',height:'100%'},
+ coverPhoto:{position:'absolute',left:0,right:0,top:0,bottom:0,width:'100%',height:'100%'},
  coverPlay:{width:48,height:48,borderRadius:25,backgroundColor:'#0a1d17bb',
   alignItems:'center',justifyContent:'center'},
  coverPlayText:{color:'#fff',fontSize:25,marginLeft:3},
