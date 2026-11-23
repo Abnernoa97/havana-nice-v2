@@ -68,11 +68,7 @@
 /* Familia HAVANA NICE — isolated One UI-inspired album presentation.
    Real private media only; the gradient is an honest empty-cover state. */
 .hn-family{display:grid;gap:17px;padding-bottom:35px;min-width:0}
-.hn-family-toolbar{display:flex;justify-content:space-between;align-items:center;gap:10px}
-.hn-family-toolbar strong{font-size:11px;letter-spacing:.12em;color:#536354}
-.hn-family-toolbar button{background:#fffaf2;border:1px solid #d9ccbc;padding:10px 12px;border-radius:11px;color:#4f624f;font-size:12px;font-weight:650}
-.hn-family-toolbar button:focus-visible,.hn-family-album:focus-visible,.hn-family-book:focus-visible{outline:3px solid #6c987e;outline-offset:3px}
-.hn-family-intro{font-size:13px;color:#706e65;line-height:1.6;margin:0}
+.hn-family-album:focus-visible{outline:3px solid #6c987e;outline-offset:3px}
 .hn-family-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px}
 .hn-family-album{display:block;width:100%;border:0;background:#233b31;border-radius:17px;overflow:hidden;text-align:left;padding:0;min-width:0;box-shadow:0 1px 5px #182a1f19}
 .hn-family-album-art{aspect-ratio:4/5;display:flex;align-items:flex-end;position:relative;overflow:hidden;background:linear-gradient(150deg,#84978a 0%,#476b5b 42%,#173d33 100%);color:white}
@@ -91,17 +87,6 @@
 .hn-family-cover-text h2{font-size:clamp(36px,7vw,64px);line-height:1.05;letter-spacing:-.04em;margin:0;font-weight:700;overflow-wrap:anywhere}
 .hn-family-cover-text p{margin:11px 0 0;font-size:13px;font-weight:550;color:#eaf0e9}
 .hn-family-empty{font-size:13px;color:#626c63;line-height:1.7;background:#fffaf2;border:1px solid #e0d9ce;border-radius:14px;padding:20px;margin:0}
-.hn-family-book{position:relative;isolation:isolate;width:100%;display:grid;gap:10px;text-align:left;margin-top:6px;padding:clamp(26px,5vw,38px);border:0;border-radius:18px;background:linear-gradient(130deg,#173a31,#0b241f);color:#f9f7ef;overflow:hidden}
-.hn-family-book:before{content:"";position:absolute;inset:13px 13px 13px auto;width:27%;border-left:1px solid #e5d8b63b;border-right:1px solid #e5d8b61f;transform:skewY(-7deg);pointer-events:none}
-.hn-family-book-eyebrow{position:relative;z-index:1;font-size:10px;letter-spacing:.2em;font-weight:700;color:#d1c3a9}
-.hn-family-book strong{position:relative;z-index:1;font:normal clamp(29px,5vw,42px) Georgia,serif;letter-spacing:-.045em}
-.hn-family-book-info{position:relative;z-index:1;font-size:13px;line-height:1.55;color:#e2e5dc}
-.hn-family-book small{position:relative;z-index:1;font-size:11px;color:#d7d5c5;font-weight:650}
-.hn-family-book:hover{background:linear-gradient(130deg,#1c4539,#11322a)}
-.hn-family-book-reader{min-height:clamp(350px,58vw,540px);display:flex;flex-direction:column;justify-content:flex-end;padding:clamp(27px,6vw,57px);border-radius:18px;color:#fff;background:radial-gradient(ellipse at 82% 16%,#68846b99,transparent 55%),linear-gradient(150deg,#426756,#102920 75%)}
-.hn-family-book-reader h2{font:normal clamp(40px,10vw,78px)/.95 Georgia,serif;letter-spacing:-.065em;margin:22px 0}
-.hn-family-book-rule{width:90px;height:1px;background:#d6c69c;margin-bottom:18px}
-.hn-family-book-reader p{font-size:13px;color:#e2e8de;margin:0}
 @media(max-width:520px){
  .hn-family-grid{gap:9px}
  .hn-family-album{border-radius:12px}

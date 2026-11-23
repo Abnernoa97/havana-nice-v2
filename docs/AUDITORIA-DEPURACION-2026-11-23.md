@@ -69,3 +69,10 @@
 - Eliminadas las clases `.hn-chat-video` y `.hn-video-placeholder` de `chat.css`: correspondían al reproductor individual retirado; ningún componente actual las usa.
 - Se conservan los selectores reales `.hn-chat-video-cover`, `.hn-chat-video-poster`, y sus variaciones para el mosaico y Administración.
 - Las pruebas de interfaz se actualizaron a las clases existentes, y se añade un escaneo de fuentes para impedir reintroducciones sin estilos correspondientes.
+
+## Octava fase · HOME y Familia: estilos antiguos aislados (23/11)
+- `home.css`: se eliminaron reglas de barra de Familia, texto introductorio y tarjeta/portada estática de revista (`hn-family-book*`) que ya no aparecen en los componentes.
+- `home-stage.css`: se retiró la clase obsoleta `hn-moment-story-pending`; las portadas y miniaturas actuales conservan sus clases.
+- Se preservan las clases actuales de álbumes, álbum privado, Estados, lector BOOK 3D y controles de revista (`hn-family-inline-book`).
+- La prueba de regresión inspecciona todos los archivos TS/TSX/JS/HTML de la PWA y verifica que no se consumen las clases antiguas.
+- No se modifica la estructura de pantalla, lógica de HOME/Familia/Admin, APK, Worker ni datos D1/R2.
