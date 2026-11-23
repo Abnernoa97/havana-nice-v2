@@ -203,6 +203,8 @@ export type {FamilyRealtimeEvent} from './family-realtime';
 
 // One chat context-menu permissions and geometry policy for PWA and Android.
 export {getChatMenuState,getChatMessagePermissions,isWithinChatEditWindow,isWithinChatDeleteWindow,CHAT_EDIT_WINDOW_MS,CHAT_DELETE_WINDOW_MS} from './chat-menu';
+export {checkChatEditDecision,chatEditPayload,chatDeletePayload,CHAT_EDIT_ACK_TIMEOUT_MS} from './chat-message-mutations';
+export type {ChatEditDecision} from './chat-message-mutations';
 export type {ChatMenuAnchor,ChatMenuMessage,ChatMenuViewport} from './chat-menu';
 
 // Shared progress and partial-failure semantics for original-quality PWA/native Chat uploads.

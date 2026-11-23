@@ -104,11 +104,14 @@ test('both frontends call the same helper, never duplicate message edit policy',
   const source=path==='apps/android/app/NativeApp.tsx'?readNativeSource(import.meta.url):path==='apps/pwa/src/app/App.tsx'?readPwaSource(import.meta.url):readFileSync(new URL('../'+path,import.meta.url),'utf8');
   assert.match(source,/getChatMenuState\(/,path);
   assert.match(source,/getChatMessagePermissions\(message,session\?\.actorId,connection\)/,path);
-  assert.match(source,/isWithinChatEditWindow\(editing\.sentAt\)/,path);
+  assert.match(source,/checkChatEditDecision\(editing,text,!!editPending\.current\)/,path);
   assert.doesNotMatch(source,/const menuAge=|const menuOwn=|15\*60\*1000|48\*60\*60\*1000/,path+' must not keep private policy');
   assert.match(source,/canDelete|allowDelete/,path);
   assert.match(source,/canEdit|allowEdit/,path);
  }
  const shared=readFileSync(new URL('../packages/shared/src/index.ts',import.meta.url),'utf8');
+ const mutation=readFileSync(new URL('../packages/shared/src/chat-message-mutations.ts',import.meta.url),'utf8');
  assert.match(shared,/export \{getChatMenuState,getChatMessagePermissions,isWithinChatEditWindow,isWithinChatDeleteWindow,CHAT_EDIT_WINDOW_MS,CHAT_DELETE_WINDOW_MS\} from '\.\/chat-menu'/);
+ assert.match(shared,/export \{checkChatEditDecision,chatEditPayload,chatDeletePayload,CHAT_EDIT_ACK_TIMEOUT_MS\} from '\.\/chat-message-mutations'/);
+ assert.match(mutation,/isWithinChatEditWindow\(editing\.sentAt,now\)/);
 });

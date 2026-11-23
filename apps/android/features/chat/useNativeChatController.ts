@@ -5,7 +5,7 @@ import {AppState,StatusBar,useWindowDimensions} from 'react-native';
 import {
   chatReactionPayload,chatTypingPayload,chatReadReceiptPayload,
   logMemberActivity,fetchBackendHealth,getChatSnapshot,getOlderChatMessages,getChatMenuState,
-  getChatMessagePermissions,isWithinChatEditWindow,setOutgoingChatStatus,projectOutgoingChatStatus,
+  getChatMessagePermissions,checkChatEditDecision,chatEditPayload,chatDeletePayload,CHAT_EDIT_ACK_TIMEOUT_MS,setOutgoingChatStatus,projectOutgoingChatStatus,
   clearChatAckTimer,pauseChatOutbox,confirmChatOutgoingMessage,flushChatOutbox,newClientMessageId,createQueuedChatMessage,
   reconcileChatMessages,reconcileChatSnapshot,applyChatIncomingEvent,startNamedChatSession,
   restoreNamedChatSession,recoverChatAccess,chatSessionExpired,ChatConnectionTimers,ChatResumeGate,
@@ -222,7 +222,7 @@ export function useNativeChatController(){
       setError('No se pudo borrar: sin conexión. Reintenta cuando vuelva Internet.');
       return;
     }
-    try{ws.send(JSON.stringify({type:'chat.delete',seq:message.seq}));}
+    try{ws.send(chatDeletePayload(message.seq));}
     catch{setError('No se pudo borrar. Reintenta cuando vuelva Internet.');}
   }
   function clearAck(id: string) {
@@ -551,10 +551,11 @@ export function useNativeChatController(){
   function send() {
     const text = draft.trim();
     if(editing){
-      if(editPending.current)return;
-      if(!text){setError('El mensaje editado no puede quedar vacío.');return;}
-      if(text===editing.text){finishEditing();return;}
-      if(!isWithinChatEditWindow(editing.sentAt)){
+      const decision=checkChatEditDecision(editing,text,!!editPending.current);
+      if(decision==='pending')return;
+      if(decision==='empty'){setError('El mensaje editado no puede quedar vacío.');return;}
+      if(decision==='unchanged'){finishEditing();return;}
+      if(decision==='expired'){
         setError('El plazo de edición de 15 minutos terminó. El texto sigue aquí para copiarlo.');
         return;
       }
@@ -566,11 +567,11 @@ export function useNativeChatController(){
       editPending.current={seq:editing.seq,text};
       setSavingEdit(true);
       try{
-        ws.send(JSON.stringify({type:'chat.edit',seq:editing.seq,text}));
+        ws.send(chatEditPayload(editing.seq,text));
         resetEditTimeout();
         editTimeout.current=setTimeout(()=>{
           abandonPendingEdit('No se confirmó la edición. Comprueba el mensaje y reintenta.');
-        },10000);
+        },CHAT_EDIT_ACK_TIMEOUT_MS);
         setError('');
       }catch{
         abandonPendingEdit('Error de conexión. El texto editado sigue disponible.');

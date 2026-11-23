@@ -58,3 +58,9 @@
 - Las pruebas nuevas verifican solicitudes duplicadas, cambio de sesión, fallo de red, snapshots fuera de orden y ausencia de segundo socket.
 - PWA maneja ahora el error síncrono al abrir WebSocket, con mensaje y estado recuperables, tal como Android ya hacía.
 - Worker, Durable Objects, datos D1/R2, motor BOOK 3D, secreto FCM y APK firmada no se han alterado.
+
+## Sexta fase · Edición y borrado sin duplicación (23/11)
+- La validación del editor, los mensajes de protocolo `chat.edit`/`chat.delete` y el timeout de confirmación (10 segundos) se centralizan en `packages/shared/src/chat-message-mutations.ts`.
+- Android y PWA conservan el límite de 15 minutos para editar y 48 horas para borrar, además de sus borradores, sesiones, WebSocket y outbox.
+- Se agregan cuatro pruebas nuevas sobre prioridad de decisiones, borde temporal, formatos exactos de protocolo y paridad entre plataformas.
+- No se modifican Worker, D1, R2, BOOK 3D ni la APK firmada.
