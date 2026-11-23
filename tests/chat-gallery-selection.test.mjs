@@ -48,3 +48,19 @@ test('Android and PWA share the one gallery policy, not two independent implemen
  assert.doesNotMatch(nativeViewer,/\n (left|right|arrow):\{/);
  assert.doesNotMatch(index,/CHAT_MEDIA_CLUSTER_GAP_MS|CHAT_MEDIA_CLUSTER_LIMIT/);
 });
+
+test('Admin uses the same private multimedia gallery without a second media viewer',()=>{
+ const admin=read('apps/pwa/src/features/chat/AdminChatGeneral.tsx');
+ const gallery=read('apps/pwa/src/features/chat/ChatMediaGallery.tsx');
+ const scopedCss=read('apps/pwa/src/features/chat/chat-media-gallery.css');
+ const chatCss=read('apps/pwa/src/styles/chat/chat.css');
+ assert.match(admin,/selectChatGalleryMedia\(messages,/);
+ assert.match(admin,/<ChatMediaView media=\{m\.media\} token=\{token\}/);
+ assert.match(admin,/onOpen=\{id=>/);
+ assert.match(admin,/<ChatMediaGallery items=\{gallery\.items\} initial=\{gallery\.initial\}/);
+ assert.match(admin,/adminDeleteChatMessage/);
+ assert.match(gallery,/import '\.\/chat-media-gallery\.css'/);
+ assert.match(scopedCss,/\.hn-gallery-overlay\{/);
+ assert.match(scopedCss,/\.hn-gallery-photo-surface\{/);
+ assert.doesNotMatch(chatCss,/\.hn-gallery-overlay\{|\.hn-gallery-photo-surface\{/);
+});

@@ -5,6 +5,7 @@ import {createPortal} from 'react-dom';
 import {requestChatMediaUrl,chatVideoPosterUrl} from './chat-media-grant';
 import {peekChatPhotoPreview,loadChatPhotoPreview} from './chat-photo-thumbnail-cache';
 import type {ChatMedia} from './chat-media-types';
+import './chat-media-gallery.css';
 
 const stamp=(n:number)=>{
  if(!Number.isFinite(n)||n<0)return '0:00';

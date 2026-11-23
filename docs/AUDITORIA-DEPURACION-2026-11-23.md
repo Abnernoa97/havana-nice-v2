@@ -32,3 +32,9 @@
 - Política de protección de `main` y un linter de referencias/estilo acordes con los costos de CI.
 
 **Regla:** no borrar datos R2/D1, migraciones, Durable Objects, credenciales, historial, APK instalada ni BOOK 3D. No crear ramas ni una APK por refactor de estructura.
+
+## Segunda fase · Administración y estilos del visor (23/11)
+- Administración reutiliza ahora `ChatMediaGallery` para recorrer fotos/videos de todo el historial ya cargado, con la misma selección de `packages/shared`; sigue usando su token privado existente, sin nuevo socket ni sesión.
+- CSS del visor trasladado a `features/chat/chat-media-gallery.css`, importado por el propio visor. El resto de `chat.css` permanece en el chat músico, sin llevar estilos generales al panel Admin.
+- Los visores individuales anteriores aún existen como ruta de compatibilidad de `ChatMediaView` mientras se confirma que no quedan consumidores y pasan las pruebas de regresión. No eliminarlos sin demostrarlo.
+- Esta fase no modifica Cloudflare Worker, datos, migraciones, BOOK 3D, Android nativo ni APK instalada.

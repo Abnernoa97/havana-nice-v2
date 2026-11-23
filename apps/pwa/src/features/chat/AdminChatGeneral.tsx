@@ -1,5 +1,7 @@
 import {useCallback,useEffect,useLayoutEffect,useRef,useState} from 'react';
 import ChatMediaView from './ChatMediaView';
+import ChatMediaGallery from './ChatMediaGallery';
+import {selectChatGalleryMedia} from '@havana/shared';
 import {adminChatMessages,adminDeleteChatMessage,isAdminUnauthorized,
  type AdminChatMessage,type AdminChatReaction,type AdminChatStreamEvent} from '../../services/admin-api';
 
@@ -20,6 +22,8 @@ export default function AdminChatGeneral({token,connected,liveEvent,onExpired}:P
  const [online,setOnline]=useState<string[]>([]);
  const [typing,setTyping]=useState<{name:string;expiresAt:number}|null>(null);
  const [error,setError]=useState('');
+ // Admin uses the same private photo/video viewer as the musicians.
+ const [gallery,setGallery]=useState<ReturnType<typeof selectChatGalleryMedia>>(null);
  const scroll=useRef<HTMLDivElement|null>(null);
  const nearBottom=useRef(true);
  const wasInitial=useRef(true);
@@ -156,7 +160,13 @@ export default function AdminChatGeneral({token,connected,liveEvent,onExpired}:P
        {!adjacent&&<strong className="a-chat-author">{m.senderName}</strong>}
        {m.replyToSeq!==null&&<small className="a-chat-reply">Responde al mensaje #{m.replyToSeq}</small>}
        {!m.media&&<p>{m.text}</p>}
-       {m.media&&<ChatMediaView media={m.media} token={token}/>}
+       {m.media&&<ChatMediaView media={m.media} token={token}
+        onOpen={id=>{
+         const selection=selectChatGalleryMedia(messages,{
+          clientMessageId:m.clientMessageId,senderId:m.senderId,assetId:id,
+         });
+         if(selection)setGallery(selection);
+        }}/>}
        <div className="a-chat-message-footer">
         <time dateTime={m.sentAt}>{dateTime(m.sentAt)}</time>
         {m.editedAt&&<span> · editado</span>}
@@ -175,5 +185,7 @@ export default function AdminChatGeneral({token,connected,liveEvent,onExpired}:P
     })}
   </div>
   {typing&&<p className="a-chat-typing">{typing.name} está escribiendo…</p>}
+  {gallery&&<ChatMediaGallery items={gallery.items} initial={gallery.initial}
+   token={token} onClose={()=>setGallery(null)}/>}
  </section>;
 }
