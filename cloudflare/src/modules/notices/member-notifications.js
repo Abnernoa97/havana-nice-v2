@@ -90,10 +90,13 @@ export async function notifyRepertoireMembers(env,eventId,action,changeId){
    'JOIN chat_members m ON m.actor_id=r.actor_id AND m.active=1 '+
    'WHERE r.event_id=?'
   ).bind(eventId).all()).results||[];
-  const event=await env.DB.prepare(
-   'SELECT title FROM calendar_events WHERE id=?'
-  ).bind(eventId).first();
-  const title=String(event?.title||'tu evento').replace(/[\r\n]/g,' ').slice(0,64);
+  let title='tu evento';
+  try{
+   const event=await env.DB.prepare(
+    'SELECT title FROM calendar_events WHERE id=?'
+   ).bind(eventId).first();
+   if(event?.title)title=String(event.title).replace(/[\r\n]/g,' ').slice(0,64);
+  }catch{/* Event naming is optional; never block a committed event notice. */}
   const preview=(intro+' del repertorio de '+title).slice(0,160);
   const now=Date.now();
   const noticeIds=members.map(()=>crypto.randomUUID());
