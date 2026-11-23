@@ -293,3 +293,28 @@ h1 span { font-weight:400; }
 .hn-chat-group-ticks{align-self:flex-end;margin-right:8px;color:#bbdcca;
  font-size:14px;font-weight:750;letter-spacing:-2px;line-height:1.2}
 .hn-chat-media-cluster .hn-chat-gallery-tile .message-meta{display:none}
+
+/* Continuous mixed-media album viewer on iPhone. */
+.hn-gallery-overlay{position:fixed;inset:0;z-index:3300;background:#080b09;
+ display:flex;align-items:center;justify-content:center;touch-action:pan-y;color:#fff}
+.hn-gallery-image{display:block;max-width:100%;max-height:100dvh;
+ object-fit:contain;user-select:none;-webkit-user-select:none}
+.hn-gallery-count{position:absolute;top:max(18px,env(safe-area-inset-top));left:76px;
+ z-index:3;color:#ffffffb0;font-size:12px}
+.hn-gallery-close,.hn-gallery-prev,.hn-gallery-next{position:absolute;z-index:3;
+ width:42px;height:42px;border:1px solid #ffffff50;border-radius:50%;
+ background:#142c23a8;color:#fff;font-size:28px;display:grid;place-items:center}
+.hn-gallery-close{top:max(13px,env(safe-area-inset-top));left:13px}
+.hn-gallery-prev{top:49%;left:9px}.hn-gallery-next{top:49%;right:9px}
+.hn-gallery-video{position:relative;width:100%;height:100%;
+ display:flex;align-items:center;justify-content:center}
+.hn-gallery-video video{width:100%;height:100%;max-height:100dvh;object-fit:contain}
+.hn-gallery-play{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+ border:1px solid #ffffff80;border-radius:50%;height:68px;width:68px;
+ background:#132d25bd;color:white;font-size:28px}
+.hn-gallery-progress{position:absolute;left:12px;right:12px;
+ bottom:max(15px,env(safe-area-inset-bottom));display:flex;align-items:center;
+ gap:10px;padding:10px;border-radius:24px;background:#132d25d9}
+.hn-gallery-progress input{flex:1;min-width:0;accent-color:#eee5cd}
+.hn-gallery-progress span{font-size:11px}
+.hn-gallery-loading{color:#fff;font-size:14px}

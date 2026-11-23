@@ -5,6 +5,7 @@ import {
 } from '@havana/shared';
 import SwipeMessage,{type MessageAnchor} from './SwipeMessage';
 import ChatMediaView from './ChatMediaView';
+import ChatMediaGallery from './ChatMediaGallery';
 import {CHAT_MESSAGE_WINDOW_SIZE,CHAT_MESSAGE_WINDOW_STEP,chatWindowKey,selectChatMessageWindow,previousChatWindowEnd,nextChatWindowEnd,chatWindowEdgeAction} from './chat-message-window';
 
 // Presentation only. Authentication, WebSocket, history and offline outbox stay in App.tsx.
@@ -35,6 +36,7 @@ function ChatTimeline({
  const display=useMemo(()=>buildChatDisplayIndex(messages,reactions,receipts,actorId),
   [messages,reactions,receipts,actorId]);
  const [endAnchorKey,setEndAnchorKey]=useState<string|null>(null);
+ const [gallery,setGallery]=useState<{items:NonNullable<ChatMessage['media']>[];index:number}|null>(null);
  const windowed=useMemo(()=>selectChatMessageWindow(messages,endAnchorKey),
   [messages,endAnchorKey]);
  const pendingPosition=useRef<{key:string;offset:number}|null>(null);
@@ -195,6 +197,7 @@ function ChatTimeline({
    onReturnLatest();
  },[latestMessageRequest,onReturnLatest]);
  return (
+         <>
           <section className="chat-messages" aria-label="Mensajes"
             onScroll={handleWindowScroll} onTouchStart={markTouchStart}
             onTouchMove={markTouchMove} onTouchEnd={markTouchEnd}
@@ -221,7 +224,12 @@ function ChatTimeline({
                   ↪ {display.replySnippets.get(message.replyToSeq)||'Mensaje anterior'}
                  </div>}
                  {!message.media&&<div>{message.text}</div>}
-                 {message.media&&<ChatMediaView media={message.media} token={token} compact={tiled}/>}
+                 {message.media&&<ChatMediaView media={message.media} token={token} compact={tiled}
+                  onOpen={id=>{
+                   const items=group.flatMap(row=>row.media&&(row.media.kind==='photo'||row.media.kind==='video')?[row.media]:[]);
+                   const index=items.findIndex(media=>media.assetId===id);
+                   if(index>=0)setGallery({items,index});
+                  }}/>} 
                  {message.seq>0&&!message.deletedAt&&badges.length>0&&
                   <div className="reaction-counts">
                    {badges.map(({emoji,count})=><span key={emoji}>{emoji}{count}</span>)}
@@ -253,6 +261,9 @@ function ChatTimeline({
             <div ref={bottomRef} />
             </div>
           </section>
+          {gallery&&<ChatMediaGallery items={gallery.items} initial={gallery.index}
+           token={token} onClose={()=>setGallery(null)}/>}
+         </>
  );
 }
 
