@@ -186,3 +186,34 @@ test('private video JPEG sidecar shares the existing grant and is removed with t
  assert.equal(objects.size,0);
  raw.close();
 });
+
+test('voice notes use the existing D1/R2 pipeline with audio kind exposed to Chat',async()=>{
+ const {env,raw,signals}=fixture();
+ const id=crypto.randomUUID(),bytes=new Uint8Array([0,0,0,24,102,116,121,112]);
+ const started=await start(env,id,bytes.length,'audio/mp4','audio');
+ assert.equal(started.status,201);
+ // The old storage CHECK only allows video/photo; audio MIME disambiguates the API.
+ const stored=raw.prepare('SELECT kind,mime_type FROM chat_media_objects WHERE id=?').get(id);
+ assert.equal(stored.kind,'video');
+ assert.equal(stored.mime_type,'audio/mp4');
+ assert.equal((await uploadChatDirect(request(base+id+'/content','PUT',
+  {'Content-Type':'audio/mp4','Content-Length':String(bytes.length)},bytes),env,session,id,'')).status,201);
+ const response=await sendChatMedia(env,session,id,'');
+ assert.equal(response.status,201);
+ const payload=await response.json();
+ assert.equal(payload.media.kind,'audio');
+ assert.equal(signals.length,1);
+ const message=await decorateChatMessages(env,[{seq:payload.seq,senderId:actor,text:'Audio'}]);
+ assert.equal(message[0].text,'');
+ assert.equal(message[0].media.kind,'audio');
+ assert.equal(message[0].media.mimeType,'audio/mp4');
+ const grant=await grantChatMedia(env,id,'');
+ assert.equal(grant.status,200);
+ const url=(await grant.json()).url;
+ const audio=await readChatMedia(request(url,'GET'),env,id,new URL(url),'');
+ assert.equal(audio.headers.get('content-type'),'audio/mp4');
+ assert.deepEqual([...new Uint8Array(await audio.arrayBuffer())],[...bytes]);
+ assert.equal((await readChatMedia(request(url,'GET'),env,id,new URL(url),'',true)).status,404);
+ assert.equal((await start(env,crypto.randomUUID(),3_000_001,'audio/mp4','audio')).status,400);
+ raw.close();
+});
