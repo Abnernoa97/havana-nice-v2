@@ -8,3 +8,9 @@ dist/
 coverage/
 .DS_Store
 *.log
+.wrangler/
+.gradle/
+*.apk
+*.aab
+*.jks
+*.keystore

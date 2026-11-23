@@ -14,7 +14,9 @@
 3. Se consolidaron declaraciones CSS del grabador de voz y se conservó el aspecto final definido por la cascada.
 4. Se incorporaron tres pruebas de selección: intercalación de texto/voz, cambio de autor, mensajes eliminados, selección consistente y paridad de ambos clientes.
 5. Se retiraron dos constantes de agrupación ilimitada declaradas como compatibilidad antigua, no utilizadas en la lógica; siguen los mosaicos consecutivos.
-6. Se actualizan README, continuidad y plan vigente, manteniendo los hechos históricos explícitamente como registro antiguo.
+6. Se actualizan README, continuidad y plan vigente, eliminando cronologías obsoletas del plan canónico; los hechos antiguos se conservan en Git.
+7. En Cloudflare Pages se eliminó la instalación duplicada: la plataforma ya instala dependencias y el comando queda `npm run build:pwa`.
+8. `.gitignore` evita incluir por accidente archivos binarios APK/AAB, keystores y carpetas locales de Wrangler/Gradle.
 
 ## Residuo real vs dependencia legítima
 - `ChatPhotoViewer.tsx` y `ChatVideoPlayer.tsx` no están muertos: `ChatMediaView.tsx` los utiliza como visores individuales y **AdminChatGeneral** llama a ese componente sin el manejador `onOpen`. No eliminarlos hasta migrar Administración y validar.
