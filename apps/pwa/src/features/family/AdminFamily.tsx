@@ -38,10 +38,8 @@ export default function AdminFamily({token,onExpired}:{token:string;onExpired:()
  useEffect(()=>{
   setData(null);setSelected(null);setBookOpen(false);
   void refresh();
-  const resume=()=>{if(!document.hidden)void refresh();};
-  document.addEventListener('visibilitychange',resume);window.addEventListener('online',resume);
-  return()=>{++requestId.current;document.removeEventListener('visibilitychange',resume);
-   window.removeEventListener('online',resume);};
+  // useFamilyLive owns foreground/online resync; avoid a duplicate D1 read.
+  return()=>{++requestId.current;};
  },[refresh]);
  useEffect(()=>{
   if(!selected||!data?.mediaReady){setItems([]);setMediaLoading(false);return;}

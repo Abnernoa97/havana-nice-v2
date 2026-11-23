@@ -78,10 +78,8 @@ export default function MemberFamily({token}:{token:string}){
   albumCache.current.clear();albumInflight.current.clear();predecoded.current.clear();
   setDirectory(null);setSelected(null);setLoading(true);
   void refresh();
-  const resume=()=>{if(!document.hidden)void refresh();};
-  window.addEventListener('online',resume);document.addEventListener('visibilitychange',resume);
-  return()=>{++seq.current;window.removeEventListener('online',resume);
-   document.removeEventListener('visibilitychange',resume);};
+  // useFamilyLive owns foreground/online resync; avoid a duplicate D1 read.
+  return()=>{++seq.current;};
  },[refresh]);
  useEffect(()=>{
   if(!directory?.mediaReady)return;

@@ -103,3 +103,10 @@
 - Cada API sigue devolviendo exactamente sus campos (`songs`/`items`) y sus errores de límite diferenciados, sin añadir consultas ni caches. El lector individual de eventos no cambia.
 - Pruebas dinámicas con HTTP simulado verifican ambos roles, orden, número de llamadas, cabeceras, límites, errores y codificación de nombres de evento. Android y PWA consumen los mismos exports sin nuevas conexiones.
 - No se modifica Worker, D1, R2, notificaciones ni la APK firmada.
+
+## Decimotercera fase · Familia: un solo dueño de reconexión (23/11)
+- `MemberFamily.tsx` y `AdminFamily.tsx` mantenían listeners de `online` y `visibilitychange` que llamaban a `refresh()` junto a `useFamilyLive`. Cada reanudación podía duplicar la lectura D1 del directorio.
+- Se eliminan solo esos listeners duplicados. La carga inicial inmediata y los contadores que invalidan respuestas HTTP al desmontar se conservan.
+- `useFamilyLive` permanece como dueño único de resync foreground/online y de Familia WebSocket: no se crea otro canal ni se alteran permisos o almacenamiento.
+- Dos pruebas de regresión comprueban las referencias de ambos componentes y simulan eventos del ciclo de vida con un WebSocket ficticio para validar una sincronización por señal, cierre offline y limpieza de timers.
+- Este cambio no modifica el Worker, R2/D1, BOOK 3D, notificaciones ni la APK Android.
