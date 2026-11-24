@@ -31,7 +31,7 @@ test('Only one photo layer is rendered, independently of the number of uploaded 
  assert.match(pool,/fetch\(story\.photoUrl/);
  assert.match(pool,/URL\.createObjectURL\(blob\)/);
  assert.match(pool,/URL\.revokeObjectURL/);
- assert.match(cache,/warmStoryPhoto\(item\)/);
+ assert.match(cache,/warmStoryPhoto\(next\)/);
  assert.match(cache,/const next=items\[position\+1\]/);
  assert.match(surface,/hn-story-loading/);
  assert.match(surface,/className="hn-story-canvas"/);

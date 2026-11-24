@@ -28,8 +28,9 @@ test('the currently opened private album outranks speculative prefetch',()=>{
  const member=read('apps/pwa/src/features/family/MemberFamily.tsx');
  assert.match(member,/if\(!directory\?\.mediaReady\|\|selected\|\|document\.hidden\)return/);
  assert.match(member,/directory\.albums\.slice\(0,familyBackgroundWarmBudget\(connection\)\)/);
- assert.match(member,/warmThumbnails\(data\.items,selectedRef\.current===actorId\)/);
- assert.match(member,/media\.slice\(0,focused\?6:FAMILY_BACKGROUND_THUMBNAIL_LIMIT\)/);
+ assert.doesNotMatch(member,/warmThumbnails|predecoded|new Image\(/);
+ assert.match(member,/className="hn-family-cover-photo" src=\{cover\}/);
+ // Only metadata preloads in the background; visible JPEGs load directly.
  assert.match(member,/loading=\{familyCoverLoadPriority\(index\)\}/);
  assert.match(member,/itemsActor===selected/);
  assert.match(member,/cacheEpoch\.current===epoch/);

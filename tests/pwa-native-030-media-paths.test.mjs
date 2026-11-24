@@ -19,7 +19,8 @@ test('the iPhone state paints the signed JPEG in the first frame just like Andro
  const ready=[];
  const tree=exports.default({id:'one',name:'Fer',url:'https://api.example/photo/grant',
   failed:false,loaded:false,onReady:(...a)=>ready.push(a),onError:()=>{}});
- const children=tree.props.children;
+ const branch=tree.props.children;
+ const children=branch?.type==='fragment'?branch.props.children:branch;
  const img=Array.isArray(children)?children.find(x=>x?.type==='img'):null;
  assert.equal(img?.props.src,'https://api.example/photo/grant');
  assert.equal(img?.props.loading,'eager');

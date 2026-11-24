@@ -101,13 +101,15 @@ test('Only unseen story photos show counts; visible photos are marked on load pe
  assert.match(strip,/NUEVOS · \{count\}/);
  assert.match(strip,/count>0&&<span className="hn-moment-count"/);
  assert.match(pwa,/onViewed=\{markViewed\}/);
- assert.match(viewer,/if\(item&&photo\.url\)onViewed\(item\.id\)/);
+ assert.match(viewer,/if\(item&&isReady\)onViewed\(item\.id\)/);
+ assert.match(viewer,/const isReady=loadedKey===sourceKey/);
  assert.match(seen,/localStorage\.setItem/);
  assert.match(seen,/PREFIX\+actorId/);
 });
 test('No temporary ESTADO image; predecoded covers still replace the real profile only when ready',()=>{
  const strip=read('apps/pwa/src/features/home/TeamStoriesStrip.tsx');
- assert.match(strip,/return cover\?<img/);
+ assert.match(strip,/src:getWarmStoryPhoto\(story\)\|\|story\.photoUrl/);
+ assert.match(strip,/<img src=\{src\} alt=\{'Portada del estado de '/);
  assert.match(strip,/photoUrl=\{profilePhoto\}/);
  assert.doesNotMatch(strip,/>ESTADO<\/span>/);
 });
