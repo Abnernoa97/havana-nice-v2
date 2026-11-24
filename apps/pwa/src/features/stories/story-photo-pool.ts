@@ -33,11 +33,14 @@ async function readCachedStoryQuickly(token:string,id:string):Promise<Blob|null>
  ]);}finally{if(timer!==null)clearTimeout(timer);}
 }
 let owner:string|undefined;
+let preloadGeneration=0;
+let preloadKey='';
+let preloadJob:Promise<void>|null=null;
 const notify=()=>{for(const listener of subscribers)listener();};
 const release=(entry:Entry)=>{entry.controller.abort();if(entry.url)URL.revokeObjectURL(entry.url);};
 export function setStoryPhotoOwner(token:string|undefined){
  if(owner===token)return;
- owner=token;
+ owner=token;preloadGeneration++;preloadKey='';preloadJob=null;
  for(const entry of entries.values())release(entry);
  entries.clear();retained.clear();
  notify();
@@ -148,16 +151,35 @@ export function warmStoryPhoto(story:MemberStory,localOnly=false):Promise<string
  trimPool();
  return entry.pending;
 }
-export function warmStoryCovers(stories:readonly MemberStory[]){
- const newest=new Map<string,MemberStory>();
- for(const story of stories){
-  if(story.expiresAt<=Date.now())continue;
-  const previous=newest.get(story.actorId);
-  if(!previous||story.createdAt>previous.createdAt||
-   (story.createdAt===previous.createdAt&&story.id>previous.id))
-   newest.set(story.actorId,story);
+// On a fresh authorized list, prepare the first story and cover of each
+// musician before the rest. A single sequential lane, at most LIMIT images,
+// with no repeated work for unchanged immutable photos. This is background
+// preparation: neither the strip nor the viewer waits for the batch.
+export function warmStoryCovers(stories:readonly MemberStory[]):Promise<void>{
+ const requestOwner=owner;
+ if(!requestOwner)return Promise.resolve();
+ const active=stories.filter(story=>story.expiresAt>Date.now());
+ const first=new Map<string,MemberStory>(),newest=new Map<string,MemberStory>();
+ const byTime=(a:MemberStory,b:MemberStory)=>a.createdAt-b.createdAt||a.id.localeCompare(b.id);
+ const sorted=[...active].sort(byTime);
+ for(const story of sorted){
+  if(!first.has(story.actorId))first.set(story.actorId,story);
+  newest.set(story.actorId,story);
  }
- // Warm the visible circles, not every photo ever posted by the team.
- // Visible covers already have a direct <img>. Restore local bytes only.
- for(const story of [...newest.values()].slice(0,10))void warmStoryPhoto(story,true);
+ const ordered=[...new Map([...first.values(),...newest.values(),...sorted].map(story=>[story.id,story])).values()].slice(0,LIMIT);
+ const key=JSON.stringify(ordered.map(story=>[story.id,story.createdAt,story.expiresAt]));
+ if(preloadKey===key&&preloadJob)return preloadJob;
+ const generation=++preloadGeneration;preloadKey=key;
+ const job=(async()=>{
+  for(const story of ordered){
+   if(generation!==preloadGeneration||owner!==requestOwner)return;
+   if(typeof document!=='undefined'&&document.hidden)return;
+   if(typeof navigator!=='undefined'&&navigator.onLine===false)return;
+   if(getWarmStoryPhoto(story))continue;
+   await warmStoryPhoto(story);
+  }
+ })();
+ preloadJob=job;
+ void job.finally(()=>{if(preloadJob===job)preloadJob=null;});
+ return job;
 }

@@ -185,3 +185,31 @@ test('a displayed warm JPEG remains valid under cache pressure and can be invali
  assert.equal(p.api.getWarmStoryPhoto(item),'');assert.ok(p.revoked.includes(url));
  release();
 });
+
+test('authorized initial list prepares every active story within the bounded pool, not just latest covers',async()=>{
+ const p=photoPool();p.api.setStoryPhotoOwner('session-fer');
+ const items=[1,2,3,4,5].map(n=>({...story('https://worker.example/photo/'+n,1000+n),id:String(n)}));
+ await p.api.warmStoryCovers(items);
+ assert.equal(p.requests(),5);
+ for(const item of items)assert.match(p.api.getWarmStoryPhoto(item),/^blob:/);
+ await p.api.warmStoryCovers(items.map(item=>({...item,photoUrl:item.photoUrl+'/renewed'})));
+ assert.equal(p.requests(),5);
+});
+test('warm-up of an authorized list stops on owner change',async()=>{
+ const p=photoPool(new Map(),null,{fetch:async(url,{signal})=>new Promise((_,reject)=>signal.addEventListener('abort',()=>reject(Error('aborted')),{once:true}))});
+ p.api.setStoryPhotoOwner('session-fer');
+ const items=[1,2,3].map(n=>({...story('https://worker.example/photo/'+n),id:String(n)}));
+ const warm=p.api.warmStoryCovers(items);
+ await new Promise(resolve=>setTimeout(resolve,15));
+ p.api.setStoryPhotoOwner('session-noa');
+ await warm;assert.equal(p.requests(),1);
+});
+test('pending images may adopt a ready cache entry without replacing a displayed image',()=>{
+ const viewer=read('apps/pwa/src/features/stories/useStoryPhotoCache.ts');
+ const cover=read('apps/pwa/src/features/home/TeamStoriesStrip.tsx');
+ for(const source of [viewer,cover]){
+  assert.match(source,/subscribeStoryPhotos\(adopt\)/);
+  assert.match(source,/selected\.displayed\|\|selected\./);
+ }
+ assert.match(viewer,/markDisplayed/);
+});

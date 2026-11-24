@@ -16,16 +16,18 @@ function latestResource(src:string){
  }catch{return null;}
 }
 const sendIsolation=(active:boolean)=>window.dispatchEvent(new CustomEvent<boolean>('hn-local-diagnostic-audio',{detail:active}));
-export default function StoryDiagnostics({open,source,ready,failed,onClose}:{
- open:boolean;source:string;ready:boolean;failed:boolean;onClose:()=>void;
+export default function StoryDiagnostics({open,storyId,source,ready,failed,onClose}:{
+ open:boolean;storyId:string;source:string;ready:boolean;failed:boolean;onClose:()=>void;
 }){
- const timing=useRef({source:'',start:0,loaded:null as number|null});
+ const timing=useRef({storyId:'',source:'',start:0,loaded:null as number|null,switches:0});
  const peakLag=useRef(0);
  const [isolated,setIsolated]=useState(false);
  const [sample,setSample]=useState<Snapshot|null>(null);
  // Measure from the first viewer render, even if diagnostics is opened later.
- if(timing.current.source!==source){
-  timing.current={source,start:performance.now(),loaded:null};
+ if(timing.current.storyId!==storyId){
+  timing.current={storyId,source,start:performance.now(),loaded:null,switches:0};
+ }else if(timing.current.source!==source){
+  timing.current.source=source;timing.current.switches++;
  }
  if(ready&&timing.current.loaded===null)timing.current.loaded=Math.round(performance.now()-timing.current.start);
  useEffect(()=>()=>{
@@ -72,13 +74,13 @@ export default function StoryDiagnostics({open,source,ready,failed,onClose}:{
   left:12,right:12,padding:12,borderRadius:10,background:'rgba(12,23,19,.96)',
   color:'white',font:'12px/1.5 monospace',boxShadow:'0 2px 12px #0008'}}>
   <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
-   <strong>DIAGNÓSTICO HN · D1</strong><button type="button" onClick={onClose}>Cerrar ×</button>
+   <strong>DIAGNÓSTICO HN · D2</strong><button type="button" onClick={onClose}>Cerrar ×</button>
   </div>
   <div>Fuente: {source.startsWith('blob:')?'local':source?'red':'ninguna'} · {failed?'error':ready?'lista':'esperando'}</div>
   {sample&&<>
-   <div>Tiempo hasta carga: {ms(sample.loaded)}</div>
+   <div>Tiempo total hasta carga: {ms(sample.loaded)} · cambios {timing.current.switches}</div>
    <div>Recurso navegador: {ms(sample.network)}</div>
-   <div>Espera actual: {sample.elapsed} ms</div>
+   <div>Tiempo en estado: {sample.elapsed} ms</div>
    <div>Imagen: {sample.pixels} · complete {sample.complete?'sí':'no'}</div>
    <div>Elemento visible: {sample.visible?'sí':'no'} · aviso {sample.overlay?'sí':'no'}</div>
    <div>Retraso máx. interfaz: {sample.peakLag} ms</div>

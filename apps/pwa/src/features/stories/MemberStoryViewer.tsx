@@ -35,7 +35,9 @@ export default function MemberStoryViewer({items,myId,token,refreshVersion,
  const isReady=loadedKey===sourceKey;
  const failedPhoto=failedKey===sourceKey;
  const currentId=item?.id;
- const photoLoaded=useCallback((id:string,url:string)=>setLoadedKey(id+':'+url),[]);
+ const photoLoaded=useCallback((id:string,url:string)=>{
+  photo.markDisplayed(id,url);setLoadedKey(id+':'+url);
+ },[photo.markDisplayed]);
  const photoFailed=useCallback((id:string,url:string)=>{
   // A damaged or reclaimed local Blob never hides a valid remote JPEG.
   if(photo.fallbackToRemote(id,url))return;
@@ -130,7 +132,7 @@ export default function MemberStoryViewer({items,myId,token,refreshVersion,
      onPointerDown={()=>setHeld(true)} onPointerUp={()=>setHeld(false)}
      onPointerCancel={()=>setHeld(false)} onPointerLeave={()=>setHeld(false)}/>
    </div>
-   <StoryDiagnostics open={diagnostics} source={photo.url} ready={isReady} failed={failedPhoto} onClose={()=>setDiagnostics(false)}/>
+   <StoryDiagnostics open={diagnostics} storyId={item.id} source={photo.url} ready={isReady} failed={failedPhoto} onClose={()=>setDiagnostics(false)}/>
    <StoryConversationPanel key={item.id} story={item} token={token} myId={myId}
     refreshVersion={refreshVersion} onPause={setCommentPaused} onBurst={setBurst}/>
   </div>
