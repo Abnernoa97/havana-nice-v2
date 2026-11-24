@@ -155,3 +155,9 @@
 - Fotos ya decodificadas se reutilizan aunque el grant temporal cambie, siempre que coincidan id de historia, `createdAt`, `expiresAt`, sesión y fecha de expiración. Solicitudes pendientes con un grant distinto todavía pueden renovarse.
 - Cuatro pruebas cubren regreso a Inicio, rotación de URL, cambio de músico, cambios de metadatos y carga diferida de Calendario/Repertorio/Familia.
 - Este caché es exclusivamente volátil: no persiste fotos privadas ni grants en Service Worker, CacheStorage o IndexedDB; un cierre completo de Safari implica nueva descarga autorizada. No se toca APK, Worker, D1, R2 ni BOOK 3D.
+
+## Vigesimoprimera fase · PWA iPhone: miniaturas privadas persistentes (24/11)
+- El backend entrega originales de Familia como miniaturas (`thumbnailUrl=fileUrl` para fotos), y `no-store` fuerza la descarga al reabrir. La PWA ahora optimiza una copia JPEG de 480px DESPUÉS de la primera visualización y la cifra AES-GCM en IndexedDB usando una clave derivada del token de la sesión autorizada (nunca persistida).
+- Los archivos privados, grants y originales no se guardan sin cifrar; un músico diferente no puede descifrar los de otro. Límite lógico de 120 entradas/32 MB, máximo por imagen 1.5MB, caducidad por item y limpieza al revocar o cambiar de usuario.
+- Portadas y mosaicos de Familia, avatar superior/perfiles, respaldo de Estado y portadas de Audio reutilizan thumbnails previamente vistos después de reabrir. Primera visualización sigue dependiendo de red; los videos originales solo se descargan al reproducir.
+- Los módulos siguen siendo lazy/independientes. No se tocan Android, Worker, D1, R2, BOOK ni MediaSession. Safari puede borrar almacenamiento local por presión; el flujo actual queda como respaldo.

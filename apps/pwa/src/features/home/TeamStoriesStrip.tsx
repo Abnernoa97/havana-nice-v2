@@ -4,9 +4,9 @@ import PrivateProfileAvatar from '../profile/PrivateProfileAvatar';
 import {getWarmStoryPhoto,subscribeStoryPhotos,warmStoryPhoto} from '../stories/story-photo-pool';
 
 // A status is never visually mistaken for a new permanent profile picture.
-function StoryCover({story,name,profilePhoto,onError,onProfileError}:{
+function StoryCover({story,name,profilePhoto,onError,onProfileError,token}:{
  story:MemberStory;name:string;profilePhoto:string|null;onError:(id:string)=>void;
- onProfileError:()=>void;
+ onProfileError:()=>void;token?:string;
 }){
  const cover=useSyncExternalStore(subscribeStoryPhotos,
   ()=>getWarmStoryPhoto(story),()=>'');
@@ -16,15 +16,15 @@ function StoryCover({story,name,profilePhoto,onError,onProfileError}:{
   return()=>{active=false;};
  },[story.id,story.photoUrl]);
  return cover?<img src={cover} alt={'Portada del estado de '+name} decoding="sync"/>:
-  <PrivateProfileAvatar photoUrl={profilePhoto} name={name}
+  <PrivateProfileAvatar photoUrl={profilePhoto} name={name} token={token} actorId={story.actorId}
    fallbackClassName="hn-moment-initial" onImageFailure={onProfileError}/>;
 }
 
 // The circle belongs to the newest 24h story. The header photo belongs to Profile.
-export default function TeamStoriesStrip({displayName,actorId,profiles,preview,canEditProfile,
+export default function TeamStoriesStrip({displayName,actorId,profiles,preview,canEditProfile,token,
  onPhotoError,onStoryPhotoError,stories,ready,seenIds,onOpenStory,onAddStory}:{
  displayName:string|undefined;actorId:string|undefined;profiles:readonly MemberProfile[];
- preview:boolean;canEditProfile:boolean;onPhotoError:(memberId:string)=>void;
+ preview:boolean;canEditProfile:boolean;token?:string;onPhotoError:(memberId:string)=>void;
  onStoryPhotoError:(storyId:string)=>void;stories:readonly MemberStory[];ready:boolean;
  seenIds:ReadonlySet<string>;
  onOpenStory:(actorId:string)=>void;onAddStory:()=>void;
@@ -58,8 +58,8 @@ export default function TeamStoriesStrip({displayName,actorId,profiles,preview,c
      aria-label={story?'Ver '+count+' estados de '+person.name:'Sin estados de '+person.name}>
      <span className="hn-moment-photo">
       {ready&&story?<StoryCover story={story} name={person.name} profilePhoto={person.photoUrl}
-       onError={onStoryPhotoError} onProfileError={()=>onPhotoError(person.actorId)}/>:
-       <PrivateProfileAvatar photoUrl={person.photoUrl} name={person.name}
+       onError={onStoryPhotoError} token={token} onProfileError={()=>onPhotoError(person.actorId)}/>:
+       <PrivateProfileAvatar photoUrl={person.photoUrl} name={person.name} token={token} actorId={person.actorId}
         fallbackClassName="hn-moment-initial"
         onImageFailure={()=>onPhotoError(person.actorId)}/>}
 

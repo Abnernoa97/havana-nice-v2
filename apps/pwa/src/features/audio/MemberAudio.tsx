@@ -66,7 +66,7 @@ export default function MemberAudio({token,active=true}:{token:string;active?:bo
     const url=art(track?.coverUrl||null);
     if(!track||!url)continue;
     try{
-     const ready=await prepareAudioCover(url,controller.signal);
+     const ready=await prepareAudioCover(url,controller.signal,token,track.id);
      if(!live){
       URL.revokeObjectURL(ready.display);
       continue;

@@ -2,6 +2,7 @@ import {useCallback,useEffect,useRef,useState} from 'react';
 import {getMusicianDirectory,getTeamProfiles,uploadMyProfilePhoto,
  MemberProfileApiError,type MemberProfile} from '@havana/shared';
 import {useFamilyLive} from '../../services/use-family-live';
+import {deletePrivateImage} from '../../services/private-image-cache';
 
 export type ProfilePhase='checking'|'ready'|'missing'|'legacy'|'offline';
 export function usePwaMemberProfiles(token:string|undefined,actorId:string|undefined){
@@ -52,11 +53,12 @@ export function usePwaMemberProfiles(token:string|undefined,actorId:string|undef
   try{
    const result=await normalizeProfilePhoto(file);
    await uploadMyProfilePhoto(token,result);
+   if(actorId)await deletePrivateImage(token,'profile:'+actorId);
    await refresh();
   }catch(e){
    setError(e instanceof Error?e.message:'No se pudo guardar la fotografía.');
   }finally{setSaving(false);}
- },[token,saving,refresh]);
+ },[token,saving,refresh,actorId]);
  // Recover one failed grant per musician per mount; avoid retry loops.
  const retryPhoto=useCallback((memberId:string)=>{
   if(!memberId||photoRetryActors.current.has(memberId))return;

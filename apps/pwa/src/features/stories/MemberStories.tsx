@@ -54,7 +54,7 @@ export default function MemberStories({token,displayName,actorId,profiles,previe
  return <>
   <input ref={input} type="file" accept="image/*" multiple className="hn-story-file"
    aria-label="Elegir hasta cinco fotos para estados" onChange={pick}/>
-  <TeamStoriesStrip displayName={displayName} actorId={actorId} profiles={profiles}
+  <TeamStoriesStrip displayName={displayName} actorId={actorId} profiles={profiles} token={token}
    preview={preview} canEditProfile={canEditProfile} onPhotoError={onPhotoError}
    stories={visible} ready={data.initialReady} seenIds={seenIds}
    onStoryPhotoError={data.retryPhoto}

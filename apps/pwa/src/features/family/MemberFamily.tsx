@@ -1,17 +1,19 @@
 import {lazy,Suspense,useCallback,useEffect,useRef,useState} from 'react';
 import {familyAlbumCount,getFamilyDirectory,getFamilyAlbumMedia,type FamilyDirectory,type FamilyAlbum,type FamilyMediaItem} from '@havana/shared';
 import FamilyMediaGallery,{familyPrivateMediaUrl} from './FamilyMediaGallery';
+import PrivateThumbnail from '../shared/PrivateThumbnail';
 import {useFamilyLive} from '../../services/use-family-live';
 import {finishFamilyAlbumRequest} from './family-request-coordination';
 import {familyBackgroundWarmBudget,familyCoverLoadPriority,FAMILY_BACKGROUND_THUMBNAIL_LIMIT,type FamilyNetworkHint} from './family-warm-policy';
 const MemberBook=lazy(()=>import('../book/MemberBook'));
 
-function FamilyAlbumCard({album,onOpen,loading}:{album:FamilyAlbum;onOpen:()=>void;loading:'eager'|'lazy'}){
+function FamilyAlbumCard({album,onOpen,loading,token}:{album:FamilyAlbum;onOpen:()=>void;loading:'eager'|'lazy';token:string}){
  const cover=album.mediaReady?familyPrivateMediaUrl(album.coverUrl):null;
  return <button type="button" className="hn-family-album" onClick={onOpen}
   aria-label={'Abrir álbum de '+album.name}>
    <span className="hn-family-album-art" aria-hidden="true">
-    {cover?<img className="hn-family-album-photo" src={cover} alt="" loading={loading} decoding="async"/>:
+    {cover?<PrivateThumbnail token={token} cacheKey={"family-cover:"+album.actorId} src={cover}
+     className="hn-family-album-photo" alt="" loading={loading}/>:
      <span className="hn-family-monogram">{album.name.slice(0,1).toUpperCase()}</span>}
     <span className="hn-family-album-caption"><strong>{album.name}</strong>
      <small>{familyAlbumCount(album)}</small></span>
@@ -141,18 +143,19 @@ export default function MemberFamily({token}:{token:string}){
   {error&&<p role="alert" className="hn-cal-error">{error}</p>}
   {loading?<p>Cargando integrantes autorizados…</p>:album?<>
    <div className="hn-family-cover">
-    {cover?<img className="hn-family-cover-photo" src={cover} alt="" loading="eager" decoding="async"/>:
+    {cover?<PrivateThumbnail token={token} cacheKey={"family-cover:"+album.actorId} src={cover}
+      className="hn-family-cover-photo" alt="" loading="eager"/>:
      <div className="hn-family-cover-placeholder" aria-hidden="true">{album.name.slice(0,1).toUpperCase()}</div>}
     <div className="hn-family-cover-text"><h2>{album.name}</h2>
      <p>{familyAlbumCount(album)}</p></div>
    </div>
    {mediaLoading&&!readyItems?.length?<p className="hn-family-empty">Cargando archivos privados…</p>:
-    readyItems?.length?<FamilyMediaGallery items={readyItems}/>:
+    readyItems?.length?<FamilyMediaGallery items={readyItems} token={token}/>:
     <p className="hn-family-empty">{album.mediaReady?'Todavía no hay fotos ni videos en este álbum.':'El almacenamiento privado de Familia HAVANA NICE aún no está disponible.'}</p>}
   </>:<>
    {directory?.albums.length?<div className="hn-family-grid">
     {directory.albums.map((person,index)=><FamilyAlbumCard key={person.actorId} album={person}
-     loading={familyCoverLoadPriority(index)} onOpen={()=>setSelected(person.actorId)}/>)}
+     loading={familyCoverLoadPriority(index)} token={token} onOpen={()=>setSelected(person.actorId)}/>)}
    </div>:<p className="hn-family-empty">No hay integrantes autorizados para mostrar.</p>}
    <div className="hn-family-inline-book" aria-label="Revista de Familia HAVANA NICE">
     <Suspense fallback={<p className="hn-family-empty" role="status">Abriendo revista…</p>}>

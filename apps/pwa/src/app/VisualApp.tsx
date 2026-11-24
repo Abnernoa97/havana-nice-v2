@@ -81,7 +81,7 @@ function VisualApp({displayName,active,onNavigate,preview=false,token,actorId,ca
       <div><div className="visual-brand">HAVANA NICE</div><div className="visual-subtitle">ESPACIO DEL EQUIPO</div></div>
       <button type="button" className="visual-account" disabled={preview||profile.phase==='legacy'||profile.phase==='offline'||profile.phase==='checking'} onClick={()=>setProfileOpen(true)}
         aria-label={'Abrir perfil de '+(displayName||'integrante')}>
-        <span className="visual-account-avatar"><PrivateProfileAvatar photoUrl={own?.photoUrl} name={preview?'H':displayName||'H'} onImageFailure={()=>profile.retryPhoto(own?.actorId||'')}/></span>
+        <span className="visual-account-avatar"><PrivateProfileAvatar photoUrl={own?.photoUrl} name={preview?'H':displayName||'H'} token={token} actorId={actorId} onImageFailure={()=>profile.retryPhoto(own?.actorId||'')}/></span>
         <span className="visual-account-label">{preview?'Vista previa':displayName||'Mi perfil'}</span>
       </button>
     </header>
@@ -156,7 +156,7 @@ function VisualApp({displayName,active,onNavigate,preview=false,token,actorId,ca
       <div className="hn-profile-card">Comprobando tu perfil…</div>
     </div>}
     {!preview&&token&&(profile.phase==='missing'||profileOpen)&&profile.phase!=='checking'&&
-     <MemberProfilePanel name={displayName||'integrante'} photo={own}
+     <MemberProfilePanel name={displayName||'integrante'} photo={own} token={token}
        required={profile.phase==='missing'} saving={profile.saving} error={profile.error}
        onUpload={profile.upload} onImageFailure={()=>profile.retryPhoto(own?.actorId||'')} onClose={()=>setProfileOpen(false)}/>}
   </div>;

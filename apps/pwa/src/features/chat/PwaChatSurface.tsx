@@ -1,4 +1,4 @@
-import {lazy,Suspense,useLayoutEffect,useEffect} from 'react';
+import {lazy,Suspense,useLayoutEffect,useEffect,useRef} from 'react';
 import {getChatMenuState,logMemberActivity} from '@havana/shared';
 import type {PwaChatUI} from './usePwaChatController';
 import ChatTimeline from './ChatTimeline';
@@ -9,6 +9,7 @@ import PwaMemberAccessPanel from './PwaMemberAccessPanel';
 import ComposerIcon from './ChatComposerIcon';
 import {useMemberCalendarSignals} from '../calendar/useMemberCalendarSignals';
 import {setStoryPhotoOwner} from '../stories/story-photo-pool';
+import {clearPrivateImagesForToken} from '../../services/private-image-cache';
 
 // Presentation only. Neither authentication nor WebSocket/storage live here.
 const VisualApp=lazy(()=>import('../../app/VisualApp'));
@@ -27,6 +28,12 @@ export default function PwaChatSurface({ui}:{ui:PwaChatUI}){
   send,draft,draftInput,typeText,openCamera
   }=ui;
   const calendarSignals=useMemberCalendarSignals(session?.token);
+  const priorPrivateSession=useRef(session?.token);
+  useEffect(()=>{
+   const prior=priorPrivateSession.current;
+   if(prior&&prior!==session?.token)void clearPrivateImagesForToken(prior);
+   priorPrivateSession.current=session?.token;
+  },[session?.token]);
   // A single authorized photo owner outlives HOME route changes, not logout.
   // No media is persisted in Safari storage or shared with another musician.
   useEffect(()=>{
