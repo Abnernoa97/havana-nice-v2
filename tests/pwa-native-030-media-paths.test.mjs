@@ -28,7 +28,9 @@ test('the iPhone state paints the signed JPEG in the first frame just like Andro
  assert.equal(ready.length,1);
  assert.equal(ready[0][0],'one');
  assert.match(source,/onError=\{\(\)=>onError\(id,url\)\}/);
- assert.doesNotMatch(source,/fetch\(|\.decode\(|URL\.createObjectURL/);
+ // Exclude explanatory comments; prove none of these calls exists in executable code.
+ const executable=source.replace(/\/\/[^\n]*/g,'');
+ assert.doesNotMatch(executable,/fetch\(|\.decode\(|URL\.createObjectURL/);
 });
 test('iPhone story photo source is pinned during reactions and moves only on state/grant change',()=>{
  const controller=read('apps/pwa/src/features/stories/useStoryPhotoCache.ts');
