@@ -1,6 +1,6 @@
 import {useCallback,useEffect,useLayoutEffect,useRef,useState} from 'react';
 import {
-  chatReactionPayload,chatTypingPayload,chatReadReceiptPayload,
+  chatReactionPayload,chatTypingPayload,chatReadReceiptPayload,isActionableChatMessage,
   fetchBackendHealth,getChatSnapshot,getOlderChatMessages,getChatMessagePermissions,checkChatEditDecision,chatEditPayload,chatDeletePayload,CHAT_EDIT_ACK_TIMEOUT_MS,
   setOutgoingChatStatus,projectOutgoingChatStatus,clearChatAckTimer,pauseChatOutbox,
   confirmChatOutgoingMessage,flushChatOutbox,newClientMessageId,createQueuedChatMessage,
@@ -176,12 +176,12 @@ export function usePwaChatController(){
     // Editing text stays in the composer for an explicit retry or cancel.
   }
   function replyToMessage(message:ChatMessage){
-    if(message.seq<1||message.deletedAt)return;
+    if(!isActionableChatMessage(message))return;
     setMenuMessage(null);setEditing(null);setReplyTo(message);
   }
   function showMessageMenu(message:ChatMessage,anchor:MessageAnchor){
     // No reactions or privileged actions before the server has accepted a message.
-    if(message.seq<=0 || message.deletedAt)return;
+    if(!isActionableChatMessage(message))return;
     setMenuAnchor(anchor);
     setMenuMessage(message);
   }

@@ -3,7 +3,7 @@
 import {useCallback,useEffect,useLayoutEffect,useRef,useState} from 'react';
 import {AppState,StatusBar,useWindowDimensions} from 'react-native';
 import {
-  chatReactionPayload,chatTypingPayload,chatReadReceiptPayload,
+  chatReactionPayload,chatTypingPayload,chatReadReceiptPayload,isActionableChatMessage,
   logMemberActivity,fetchBackendHealth,getChatSnapshot,getOlderChatMessages,getChatMenuState,
   getChatMessagePermissions,checkChatEditDecision,chatEditPayload,chatDeletePayload,CHAT_EDIT_ACK_TIMEOUT_MS,setOutgoingChatStatus,projectOutgoingChatStatus,
   clearChatAckTimer,pauseChatOutbox,confirmChatOutgoingMessage,flushChatOutbox,newClientMessageId,createQueuedChatMessage,
@@ -191,13 +191,13 @@ export function useNativeChatController(){
     // Editing text stays in the composer for an explicit retry or cancel.
   }
   function replyToMessage(message:ChatMessage) {
-    if(message.seq<1 || message.deletedAt)return;
+    if(!isActionableChatMessage(message))return;
     setMenuMessage(null);
     setEditing(null);
     setReplyTo(message);
   }
   function showMessageMenu(message:ChatMessage,anchor:BubbleAnchor) {
-    if(message.seq<=0 || message.deletedAt)return;
+    if(!isActionableChatMessage(message))return;
     setMenuAnchor(anchor);
     setMenuMessage(message);
   }

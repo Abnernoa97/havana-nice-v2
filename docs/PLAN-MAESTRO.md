@@ -6,7 +6,7 @@
 
 - **Repositorio:** `Abnernoa97/havana-nice-v2`, solo rama `main`, cero PR abiertos. Android nativo, PWA iPhone/Admin, paquete compartido y backend separados por dominio.
 - **Android publicado:** APK firmada **0.0.30** (`versionCode 30`), [run #45090812813](https://github.com/Abnernoa97/havana-nice-v2/actions/runs/45090812813). No incorpora los cambios de código nativo hechos después de la firma.
-- **PWA:** `https://havana-nice-v2.pages.dev`, Pages publica automáticamente desde `main`. Primer bloque de galería `1297588` validado: controles estructurales, TypeScript Android/PWA y **129/129 pruebas** correctas.
+- **PWA:** `https://havana-nice-v2.pages.dev`, Pages publica automáticamente desde `main`. Primer bloque de galería `1297588` validado: controles estructurales, TypeScript Android/PWA y **194/194 pruebas** correctas al último despliegue verificado antes de la siguiente fase (la cobertura puede ampliarse).
 - **Worker en vivo:** `havana-nice-v2-dev`, versión `ea9e96b2-b36c-4e45-988f-11f9d8d99ead` al 100 %, **10 bindings** (D1, R2, ChatRoom, CalendarRoom, configuración y secretos Admin/FCM/VAPID); no se actualiza por publicar Pages.
 - **Notificaciones:** FCM Android 0.0.30 probado en segundo plano según [PUSH-CENTER-V2.md](./PUSH-CENTER-V2.md). Web Push en iPhone requiere verificación física con PWA instalada y permisos.
 - **BOOK 3D:** lector híbrido aprobado conservado, mismo motor y sesión compartida. No introducir otro motor ni modificar BOOK como efecto secundario de la limpieza.
@@ -38,7 +38,7 @@
 - [ ] **P1 · QA físico del Chat:** fotos, videos, mosaicos, gesto horizontal, notas de voz, carga fría y caliente en Android/iPhone; medir tiempos reales y memoria, no aproximaciones.
 - [ ] **P2 · APK:** solo después de validar todos los cambios nativos y aprobar un lote explícito; firmar sobre la instalación 0.0.30, preservar rollback y datos. No recompilar por cambios de documentación o CSS web.
 - [ ] **P3 · Historial remoto de galería:** añadir navegación y solicitud segura de páginas anteriores cuando el visor alcance un extremo. Hoy solo abarca los archivos ya cargados en el cliente.
-- [ ] **P4 · Controladores grandes:** Android mantiene subida multimedia aislada; PWA y Android comparten esquema offline, historial/snapshot, reglas de edición/borrado y timeout de confirmación. Pendiente: QA físico de reconexión, scroll, notificaciones y más separación de estados; nunca un segundo dueño de sesión.
+- [ ] **P4 · Controladores grandes:** Android mantiene subida multimedia aislada; PWA y Android comparten esquema offline, historial/snapshot, reglas de edición/borrado, elegibilidad de acciones y timeout de confirmación. Se mantienen los controladores principales como únicos dueños de sesión/ACK/socket. Pendiente: QA físico de reconexión, scroll y notificaciones; separar estados por bloques pequeños y probados, nunca crear un segundo dueño de sesión.
 - [ ] **P5 · CSS y lógica histórica:** contrastar selectores con consumidores vivos y breakpoints reales. No confundir media queries o compatibilidades de Admin con código muerto. Refactorizar únicamente con regresiones y QA visual.
 - [ ] **P6 · Integración:** verificar Calendario Admin→Android/iPhone, repertorio por evento, Estados cruzados, reacciones, Familia y BOOK/Recuerdos sin borrar datos reales.
 - [ ] **P7 · PWA instalada:** probar cambios de versión, rotación, teclado, modo avión, resync y permisos Web Push iOS; evitar caché privado en Service Worker.

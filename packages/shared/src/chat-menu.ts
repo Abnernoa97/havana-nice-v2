@@ -3,6 +3,11 @@
 export const CHAT_EDIT_WINDOW_MS=15*60*1000;
 export const CHAT_DELETE_WINDOW_MS=48*60*60*1000;
 
+// One policy for opening reply/context actions on confirmed, undeleted messages.
+// Neither platform changes its socket, state, or permission-check ownership.
+export function isActionableChatMessage(message:{seq:number;deletedAt?:unknown}):boolean{
+ return message.seq>0&&!message.deletedAt;
+}
 export type ChatMenuAnchor={x:number;y:number;width:number;height:number};
 export type ChatMenuMessage={senderId:string;sentAt:string;pending?:boolean};
 export type ChatMenuViewport={

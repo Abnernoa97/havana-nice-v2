@@ -142,3 +142,9 @@
 - Cuando existe un álbum seleccionado o la página está oculta, no se inicia precarga especulativa. Las cuatro primeras portadas cargan con prioridad normal y las restantes utilizan `loading=lazy`.
 - No se altera la carga del álbum seleccionado, el caché temporal de autorizaciones, el backend ni BOOK 3D. Tres pruebas nuevas protegen presupuestos, visibilidad, guarda de sesión y prioridad visual.
 - Aún se requiere una medición real en iPhone y Android para cuantificar la mejora; los límites no equivalen a una garantía de tiempo de carga.
+
+## Decimonovena fase · Regla de interacción de mensajes compartida (23/11)
+- Se extrajo una sola regla pura `isActionableChatMessage` a `packages/shared/src/chat-menu.ts`, consumida por las acciones de responder y abrir menú en ambos controladores de Chat.
+- Se preserva la semántica existente para secuencias enteras confirmadas (`seq>0`) y mensajes no eliminados; no se cambian los mensajes editables, permisos, formatos, pantallas, WebSocket, ACK, timers ni sesión.
+- Dos regresiones verifican estados pendientes/eliminados, ambos consumidores y que siguen existiendo los únicos propietarios de sesión y conexión.
+- Es una etapa de bajo riesgo y no pretende declarar completada la separación de controladores. No se publica APK ni Worker.
