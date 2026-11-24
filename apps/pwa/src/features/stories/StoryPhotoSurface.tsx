@@ -9,7 +9,7 @@ export default memo(function StoryPhotoSurface({id,name,url,failed,loaded,onRead
  return <div className="hn-story-canvas" aria-label="Fotografía del estado">
   {failed?<div className="hn-story-unavailable">No se pudo cargar esta fotografía.</div>:<>
    {url&&<img className="hn-story-photo" src={url} alt={'Estado de '+name}
-    loading="eager" decoding="async"
+    loading="eager" decoding="async" fetchPriority="high"
     onLoad={()=>onReady(id,url)} onError={()=>onError(id,url)}/>}
    {!loaded&&<div className="hn-story-loading" role="status">Cargando fotografía…</div>}
   </>}

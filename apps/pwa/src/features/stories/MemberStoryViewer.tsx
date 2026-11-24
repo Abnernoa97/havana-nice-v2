@@ -6,6 +6,7 @@ import {useStoryPlayback} from './useStoryPlayback';
 import {useStoryKeyboardViewport} from './useStoryKeyboardViewport';
 import StoryPhotoSurface from './StoryPhotoSurface';
 import {useStoryPhotoCache} from './useStoryPhotoCache';
+import {warmStoryPhoto} from './story-photo-pool';
 
 type Props={items:MemberStory[];myId:string|undefined;token:string;refreshVersion:number;
  onClose:()=>void;onDelete:(id:string)=>Promise<boolean>;onPhotoError:(id:string)=>void;
@@ -15,7 +16,9 @@ type Props={items:MemberStory[];myId:string|undefined;token:string;refreshVersio
 // All controls overlay the canvas instead of pushing its dimensions down.
 export default function MemberStoryViewer({items,myId,token,refreshVersion,
  onClose,onDelete,onPhotoError,onViewed}:Props){
- const [position,setPosition]=useState(0);
+ const [requestedPosition,setPosition]=useState(0);
+ const position=Math.min(requestedPosition,Math.max(0,items.length-1));
+ useEffect(()=>{if(position!==requestedPosition)setPosition(position);},[position,requestedPosition]);
  const [deleting,setDeleting]=useState(false);
  const [held,setHeld]=useState(false);
  const [commentPaused,setCommentPaused]=useState(false);
@@ -29,14 +32,29 @@ export default function MemberStoryViewer({items,myId,token,refreshVersion,
  const sourceKey=item?item.id+':'+photo.url:'';
  const isReady=loadedKey===sourceKey;
  const failedPhoto=failedKey===sourceKey;
+ const currentId=item?.id;
  const photoLoaded=useCallback((id:string,url:string)=>setLoadedKey(id+':'+url),[]);
  const photoFailed=useCallback((id:string,url:string)=>{
+  // A damaged or reclaimed local Blob never hides a valid remote JPEG.
+  if(photo.fallbackToRemote(id,url))return;
   setFailedKey(id+':'+url);onPhotoError(id);
- },[onPhotoError]);
+ },[photo.fallbackToRemote,onPhotoError]);
+ // A stalled request must become recoverable, not leave an infinite spinner.
+ useEffect(()=>{
+  if(!currentId||!photo.url||isReady||failedPhoto||hidden)return;
+  const timer=setTimeout(()=>photoFailed(currentId,photo.url),8000);
+  return()=>clearTimeout(timer);
+ },[currentId,photo.url,isReady,failedPhoto,hidden,photoFailed]);
  // Count each photo as viewed only once its private bitmap is ready to show.
  useEffect(()=>{
   if(item&&isReady)onViewed(item.id);
  },[item?.id,isReady,onViewed]);
+ // Optional persistence begins only after the current photo is visible.
+ useEffect(()=>{
+  if(!item||!isReady||photo.url.startsWith('blob:'))return;
+  const timer=setTimeout(()=>{void warmStoryPhoto(item);},350);
+  return()=>clearTimeout(timer);
+ },[item?.id,item?.photoUrl,isReady,photo.url]);
  const paused=deleting||held||hidden||commentPaused||(!isReady&&!failedPhoto);
  useEffect(()=>{
   const change=()=>setHidden(document.hidden);
@@ -49,8 +67,7 @@ export default function MemberStoryViewer({items,myId,token,refreshVersion,
   document.body.style.overflow='hidden';
   return()=>{document.body.style.overflow=previous;};
  },[]);
- // The isolated photo cache fetches and decodes once, then supplies a local
- // Blob URL for the ONE CSS photo layer. No duplicate private image request.
+ // Current image uses a direct authorized URL or a valid warm Blob.
  const previous=()=>{
   if(position>0)setPosition(p=>p-1);
  };

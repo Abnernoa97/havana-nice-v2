@@ -11,6 +11,9 @@ export function useMemberStories(token:string|undefined,refreshVersion:number){
  const [saving,setSaving]=useState(false);
  const [preparing,setPreparing]=useState(0);
  const requestId=useRef(0);
+ const inFlight=useRef<{token:string;promise:Promise<void>;controller:AbortController}|null>(null);
+ const mounted=useRef(false);
+ const lastRevision=useRef(refreshVersion);
  const failedPhotos=useRef(new Map<string,{attempts:number;since:number}>());
  // Server mints a fresh 10-minute R2 photo grant on EACH team refresh.
  // Reactions trigger Family invalidation, but the actual photo never changed.
@@ -25,11 +28,22 @@ export function useMemberStories(token:string|undefined,refreshVersion:number){
  // The authorized app shell owns the JPEG pool until logout; moving to Chat,
  // Calendario or Repertorio must not flush already displayed status covers.
  useEffect(()=>{setStories([]);setError('');setInitialReady(false);},[token]);
- const refresh=useCallback(async()=>{
+ const refresh=useCallback(async(force=false)=>{
   if(!token){setStories([]);setInitialReady(true);return;}
+  if(!mounted.current)return;
+  const prior=inFlight.current;
+  if(prior?.token===token){
+   if(!force)return prior.promise;
+   await prior.promise;
+   if(!mounted.current||previousToken.current!==token)return;
+   if(inFlight.current?.token===token)return inFlight.current.promise;
+  }
   const id=++requestId.current;
+  const controller=new AbortController();
+  const timeout=setTimeout(()=>controller.abort(),8000);
+  const task=(async()=>{
   try{
-   const items=await getMemberStories(token);
+   const items=await getMemberStories(token,undefined,controller.signal);
    if(id!==requestId.current)return;
    const now=Date.now(),validIds=new Set(items.map(s=>s.id));
    for(const oldId of photoGrants.current.keys()){
@@ -47,17 +61,20 @@ export function useMemberStories(token:string|undefined,refreshVersion:number){
     });
     return story;
    });
-   warmStoryCovers(stable);
    setStories(stable);setError('');setInitialReady(true);
+   warmStoryCovers(stable);
   }catch(e){
    if(id!==requestId.current)return;
    setInitialReady(true);
    setError(e instanceof Error?e.message:'No se pudieron cargar los estados.');
    setStories(prev=>prev.filter(item=>item.expiresAt>Date.now()));
-  }
+  }finally{clearTimeout(timeout);}
+  })();
+  inFlight.current={token,promise:task,controller};
+  try{await task;}finally{if(inFlight.current?.promise===task)inFlight.current=null;}
  },[token]);
  useEffect(()=>{
-  void refresh();
+  mounted.current=true;void refresh();
   const resume=()=>{if(!document.hidden&&navigator.onLine)void refresh();};
   window.addEventListener('online',resume);
   document.addEventListener('visibilitychange',resume);
@@ -66,9 +83,15 @@ export function useMemberStories(token:string|undefined,refreshVersion:number){
   const fallback=window.setInterval(()=>{
    if(!document.hidden&&navigator.onLine)void refresh();
   },45_000);
-  return()=>{++requestId.current;window.clearInterval(fallback);
+  return()=>{mounted.current=false;++requestId.current;
+   if(inFlight.current?.token===token){inFlight.current?.controller.abort();inFlight.current=null;}
+   window.clearInterval(fallback);
    window.removeEventListener('online',resume);
    document.removeEventListener('visibilitychange',resume);};
+ },[refresh,token]);
+ useEffect(()=>{
+  if(lastRevision.current===refreshVersion)return;
+  lastRevision.current=refreshVersion;void refresh(true);
  },[refresh,refreshVersion]);
  useEffect(()=>{
   if(!stories.length)return;
@@ -91,7 +114,7 @@ export function useMemberStories(token:string|undefined,refreshVersion:number){
     setPreparing(images.length);
    }
    await uploadMyStoriesBatch(token,images);
-   await refresh();return true;
+   await refresh(true);return true;
   }catch(e){
    setError(e instanceof Error?e.message:'No se pudieron publicar los estados.');return false;
   }finally{setSaving(false);setPreparing(0);}
@@ -101,7 +124,7 @@ export function useMemberStories(token:string|undefined,refreshVersion:number){
   setSaving(true);
   try{
    await deleteMyStory(token,id);
-   setStories(prev=>prev.filter(s=>s.id!==id));await refresh();
+   setStories(prev=>prev.filter(s=>s.id!==id));await refresh(true);
    return true;
   }catch(e){setError(e instanceof Error?e.message:'No se pudo eliminar el estado.');return false;}
   finally{setSaving(false);}
@@ -117,11 +140,11 @@ export function useMemberStories(token:string|undefined,refreshVersion:number){
    since:recent?prior.since:now});
   // Do not retain a failed, privately signed URL during the 8-minute pin.
   photoGrants.current.delete(id);
-  void refresh();
+  void refresh(true);
  },[refresh]);
  const retryAll=useCallback(()=>{
   failedPhotos.current.clear();photoGrants.current.clear();
-  void refresh();
+  void refresh(true);
  },[refresh]);
  return {stories,initialReady,error,saving,preparing,publish,remove,retryPhoto,retryAll,
   refresh,clearError:()=>setError('')};

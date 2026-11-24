@@ -1,7 +1,7 @@
 import type {MemberProfile,MemberStory} from '@havana/shared';
-import {useRef,useState} from 'react';
+import {useEffect,useRef,useState} from 'react';
 import PrivateProfileAvatar from '../profile/PrivateProfileAvatar';
-import {getWarmStoryPhoto} from '../stories/story-photo-pool';
+import {getWarmStoryPhoto,retainWarmStoryPhoto,invalidateWarmStoryPhoto} from '../stories/story-photo-pool';
 
 // A status is never visually mistaken for a new permanent profile picture.
 function StoryCover({story,name,profilePhoto,onError,onProfileError,token}:{
@@ -16,11 +16,19 @@ function StoryCover({story,name,profilePhoto,onError,onProfileError,token}:{
  if(!chosen.current||chosen.current.id!==story.id||chosen.current.grant!==story.photoUrl)
   chosen.current={id:story.id,grant:story.photoUrl,src:getWarmStoryPhoto(story)||story.photoUrl};
  const src=chosen.current.src;
+ useEffect(()=>retainWarmStoryPhoto(src),[src]);
  return failedUrl===src?
   <PrivateProfileAvatar photoUrl={profilePhoto} name={name} token={token} actorId={story.actorId}
    fallbackClassName="hn-moment-initial" onImageFailure={onProfileError}/>:
   <img src={src} alt={'Portada del estado de '+name} loading="eager" decoding="async"
-   onError={()=>{setFailedUrl(src);onError(story.id);}}/>;
+   onError={()=>{
+    if(src.startsWith('blob:')){
+     invalidateWarmStoryPhoto(story.id,src);
+     if(chosen.current?.src===src)chosen.current.src=story.photoUrl;
+     setFailedUrl(src);return;
+    }
+    setFailedUrl(src);onError(story.id);
+   }}/>;
 }
 
 // The circle belongs to the newest 24h story. The header photo belongs to Profile.

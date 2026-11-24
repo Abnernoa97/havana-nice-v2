@@ -18,9 +18,9 @@ const privateUrl=(raw:string,base:string)=>{
   return url.toString();
  }catch{return null;}
 };
-export async function getMemberStories(token:string,base=API):Promise<MemberStory[]>{
+export async function getMemberStories(token:string,base=API,signal?:AbortSignal):Promise<MemberStory[]>{
  const res=await fetch(base+'/api/stories/team',{
-  cache:'no-store',headers:{Authorization:'Bearer '+token}
+  cache:'no-store',headers:{Authorization:'Bearer '+token},...(signal?{signal}:{})
  });
  const data=await res.json().catch(()=>({error:'Estados no disponibles.'})) as {
   error?:string;stories?:MemberStory[];serverNow?:number

@@ -8,7 +8,7 @@ const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
 const compiled=ts.transpileModule(read('apps/pwa/src/features/stories/story-photo-pool.ts'),{
  fileName:'story-photo-pool.ts',compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.CommonJS},
 }).outputText;
-function photoPool(persisted=new Map(),readOverride=null){
+function photoPool(persisted=new Map(),readOverride=null,options={}){
  const exports={},revoked=[];let requests=0,objects=0;
  let currentOwner='';
  const URL={
@@ -18,10 +18,10 @@ function photoPool(persisted=new Map(),readOverride=null){
  class Image{
   decoding='async';
   set src(value){this.value=value;}
-  async decode(){}
+  async decode(){if(options.decode)await options.decode();}
  }
- const fetch=async()=>{requests++;return {ok:true,blob:async()=>({type:'image/jpeg',size:70000})};};
- runInNewContext(compiled,{exports,URL,Image,fetch,Date,Map,Set,Promise,Error,setTimeout,clearTimeout,
+ const fetch=async(url,init)=>{requests++;return options.fetch?options.fetch(url,init):{ok:true,blob:async()=>({type:'image/jpeg',size:70000})};};
+ runInNewContext(compiled,{exports,URL,Image,fetch,Date,Map,Set,Promise,Error,AbortController,setTimeout:options.shortTimeout?(fn,ms)=>setTimeout(fn,ms===8000?160:ms):setTimeout,clearTimeout,
   require(id){
    assert.equal(id,'../../services/private-image-cache');
    return {
@@ -124,4 +124,64 @@ test('a stalled iPhone IndexedDB cannot block loading a valid Story forever',asy
  assert.match(url,/^blob:/);
  assert.equal(pool.requests(),1,'remote signed grant becomes the fallback');
  assert.ok(Date.now()-start<1100,'cached-image lookup may never block the viewer');
+});
+
+test('cold cover cache lookup does not start another network download',async()=>{
+ const p=photoPool();
+ p.api.setStoryPhotoOwner('session-fer');
+ const item=story('https://worker.example/api/stories/photo/cold');
+ assert.equal(await p.api.warmStoryPhoto(item,true),'');
+ assert.equal(p.requests(),0);
+ await p.api.warmStoryPhoto(item);
+ assert.equal(p.requests(),1);
+});
+test('a full warm request waits for the optional lookup then fetches once',async()=>{
+ const p=photoPool();
+ p.api.setStoryPhotoOwner('session-fer');
+ const item=story('https://worker.example/api/stories/photo/next');
+ const cold=p.api.warmStoryPhoto(item,true);
+ const full=p.api.warmStoryPhoto(item);
+ await cold;assert.match(await full,/^blob:/);
+ assert.equal(p.requests(),1);
+});
+
+test('optional network warm work has one concurrent slot',async()=>{
+ let active=0,peak=0;
+ const p=photoPool(new Map(),null,{fetch:async()=>{
+  peak=Math.max(peak,++active);
+  await new Promise(resolve=>setTimeout(resolve,15));active--;
+  return {ok:true,blob:async()=>({type:'image/jpeg',size:1000})};
+ }});
+ p.api.setStoryPhotoOwner('session-fer');
+ await Promise.all([1,2,3,4,5].map(id=>p.api.warmStoryPhoto({...story('https://worker.example/photo/'+id),id:String(id)})));
+ assert.equal(peak,1);assert.equal(p.requests(),5);
+});
+test('logout cancels the active request and queued private work',async()=>{
+ const p=photoPool(new Map(),null,{fetch:async(url,{signal})=>new Promise((_,reject)=>signal.addEventListener('abort',()=>reject(Error('aborted')),{once:true}))});
+ p.api.setStoryPhotoOwner('session-fer');
+ const a=p.api.warmStoryPhoto({...story('https://worker.example/photo/a'),id:'a'});
+ const b=p.api.warmStoryPhoto({...story('https://worker.example/photo/b'),id:'b'});
+ await new Promise(resolve=>setTimeout(resolve,15));
+ p.api.setStoryPhotoOwner('session-noa');
+ assert.deepEqual(await Promise.all([a,b]),['','']);assert.equal(p.requests(),1);
+});
+test('a stalled WebKit decode releases the background slot',async()=>{
+ let decodes=0;
+ const p=photoPool(new Map(),null,{shortTimeout:true,decode:()=>++decodes===1?new Promise(()=>{}):Promise.resolve()});
+ p.api.setStoryPhotoOwner('session-fer');
+ const a=p.api.warmStoryPhoto({...story('https://worker.example/photo/a'),id:'a'});
+ const b=p.api.warmStoryPhoto({...story('https://worker.example/photo/b'),id:'b'});
+ assert.equal(await a,'');assert.match(await b,/^blob:/);assert.equal(p.requests(),2);
+});
+test('a displayed warm JPEG remains valid under cache pressure and can be invalidated',async()=>{
+ const p=photoPool();p.api.setStoryPhotoOwner('session-fer');
+ const item=story('https://worker.example/photo/a');
+ const url=await p.api.warmStoryPhoto(item);
+ const release=p.api.retainWarmStoryPhoto(url);
+ for(let i=0;i<20;i++)await p.api.warmStoryPhoto({...story('https://worker.example/photo/'+i),id:'other-'+i});
+ assert.equal(p.api.getWarmStoryPhoto(item),url);
+ assert.ok(!p.revoked.includes(url));
+ p.api.invalidateWarmStoryPhoto(item.id,url);
+ assert.equal(p.api.getWarmStoryPhoto(item),'');assert.ok(p.revoked.includes(url));
+ release();
 });

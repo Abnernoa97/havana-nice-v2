@@ -1,6 +1,6 @@
-import {useEffect,useRef} from 'react';
+import {useCallback,useEffect,useRef,useState} from 'react';
 import type {MemberStory} from '@havana/shared';
-import {getWarmStoryPhoto,warmStoryPhoto} from './story-photo-pool';
+import {getWarmStoryPhoto,warmStoryPhoto,retainWarmStoryPhoto,invalidateWarmStoryPhoto} from './story-photo-pool';
 
 // The current iPhone state opens like Android 0.0.30: directly from the
 // authorized JPEG URL, or an already decoded private JPEG if available.
@@ -8,6 +8,7 @@ import {getWarmStoryPhoto,warmStoryPhoto} from './story-photo-pool';
 export function useStoryPhotoCache(items:readonly MemberStory[],position:number){
  const pinned=useRef<{id:string;grant:string;url:string}|null>(null);
  const current=items[position];
+ const [,rerender]=useState(0);
  if(current&&(!pinned.current||pinned.current.id!==current.id||
    pinned.current.grant!==current.photoUrl))
   pinned.current={id:current.id,grant:current.photoUrl,
@@ -17,5 +18,15 @@ export function useStoryPhotoCache(items:readonly MemberStory[],position:number)
   const next=items[position+1];
   if(next)void warmStoryPhoto(next).catch(()=>{});
  },[items,position]);
- return {url:current?pinned.current?.url||current.photoUrl:''};
+ const url=current?pinned.current?.url||current.photoUrl:'';
+ useEffect(()=>retainWarmStoryPhoto(url),[url]);
+ const fallbackToRemote=useCallback((id:string,failedUrl:string)=>{
+  const chosen=pinned.current;
+  if(!chosen||chosen.id!==id||chosen.url!==failedUrl||!failedUrl.startsWith('blob:'))return false;
+  invalidateWarmStoryPhoto(id,failedUrl);
+  chosen.url=chosen.grant;
+  rerender(n=>n+1);
+  return true;
+ },[]);
+ return {url,fallbackToRemote};
 }
