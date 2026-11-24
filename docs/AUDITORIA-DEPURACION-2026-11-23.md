@@ -167,3 +167,7 @@
 - Solo se almacena la foto tras validarla y decodificarla; TTL nunca supera el vencimiento real de 24h. Un cambio de sesión, identidad de historia o expiración impide recuperar contenido ajeno.
 - Dos nuevas pruebas ejecutan el flujo de abrir/cerrar/reabrir con URL de grant rotada, comprueban que la segunda apertura hace cero consultas R2 y que otro músico no puede reutilizar ese contenido.
 - Ni la sesión/Chat WebSocket, ni BOOK 3D, Android 0.0.30, Worker, D1 o R2 cambian. La primera apertura de una imagen inédita sigue dependiendo de la red.
+
+## Vigesimotercera fase · Validación criptográfica ejecutable del caché (24/11)
+- Test dinámico adicional con un IndexedDB simulado y AES-GCM real de Node: tras reiniciar el módulo, la misma sesión descifra la miniatura y otra no puede hacerlo; ni la clave ni bytes JPEG en claro se guardan en la base local.
+- Se valida borrado al revocar y rechazo de entradas expiradas. No se cambian componentes, Cloudflare Worker, Android ni almacenamiento remoto.
