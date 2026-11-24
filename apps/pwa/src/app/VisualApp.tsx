@@ -38,6 +38,14 @@ function VisualApp({displayName,active,onNavigate,preview=false,token,actorId,ca
   const [profileOpen,setProfileOpen]=useState(false);
   const [audioOpened,setAudioOpened]=useState(active==='audio'||active==='home');
   const [storyEpoch,setStoryEpoch]=useState(0);
+  // Temporary local A/B diagnostic. Normal behavior is unchanged until the
+  // musician explicitly asks to isolate the audio player in the story viewer.
+  const [audioIsolated,setAudioIsolated]=useState(false);
+  useEffect(()=>{
+   const change=(event:Event)=>setAudioIsolated((event as CustomEvent<boolean>).detail===true);
+   window.addEventListener('hn-local-diagnostic-audio',change);
+   return()=>window.removeEventListener('hn-local-diagnostic-audio',change);
+  },[]);
  const unreadNotices=usePwaUnreadNotices(preview?undefined:token,storyEpoch+calendarRevision);
   const profile=usePwaMemberProfiles(token,actorId);
   const own=profile.own;
@@ -133,7 +141,7 @@ function VisualApp({displayName,active,onNavigate,preview=false,token,actorId,ca
             </div>}
           </Suspense>
         </>}
-        {audioOpened&&token&&<div className={screen==='home'?'hn-home-audio-scroll':'hn-audio-route-slot'}>
+        {audioOpened&&token&&!audioIsolated&&<div className={screen==='home'?'hn-home-audio-scroll':'hn-audio-route-slot'}>
          <Suspense fallback={<div className="visual-empty" role="status">Abriendo Audio…</div>}>
           <MemberAudio token={token} active={screen==='audio'||screen==='home'} key={token}/>
          </Suspense>

@@ -5,6 +5,7 @@ import StoryReactionShower,{type StoryReactionBurst} from './StoryReactionShower
 import {useStoryPlayback} from './useStoryPlayback';
 import {useStoryKeyboardViewport} from './useStoryKeyboardViewport';
 import StoryPhotoSurface from './StoryPhotoSurface';
+import StoryDiagnostics from './StoryDiagnostics';
 import {useStoryPhotoCache} from './useStoryPhotoCache';
 import {warmStoryPhoto} from './story-photo-pool';
 
@@ -20,6 +21,7 @@ export default function MemberStoryViewer({items,myId,token,refreshVersion,
  const position=Math.min(requestedPosition,Math.max(0,items.length-1));
  useEffect(()=>{if(position!==requestedPosition)setPosition(position);},[position,requestedPosition]);
  const [deleting,setDeleting]=useState(false);
+ const [diagnostics,setDiagnostics]=useState(false);
  const [held,setHeld]=useState(false);
  const [commentPaused,setCommentPaused]=useState(false);
  const [hidden,setHidden]=useState(typeof document!=='undefined'&&document.hidden);
@@ -55,7 +57,7 @@ export default function MemberStoryViewer({items,myId,token,refreshVersion,
   const timer=setTimeout(()=>{void warmStoryPhoto(item);},350);
   return()=>clearTimeout(timer);
  },[item?.id,item?.photoUrl,isReady,photo.url]);
- const paused=deleting||held||hidden||commentPaused||(!isReady&&!failedPhoto);
+ const paused=diagnostics||deleting||held||hidden||commentPaused||(!isReady&&!failedPhoto);
  useEffect(()=>{
   const change=()=>setHidden(document.hidden);
   document.addEventListener('visibilitychange',change);
@@ -109,7 +111,9 @@ export default function MemberStoryViewer({items,myId,token,refreshVersion,
     </span>)}
    </div>
    <div className="hn-story-toolbar">
-    <div><strong>{item.name}</strong><small>Estado · {position+1} de {items.length}</small></div>
+    <div><strong>{item.name}</strong><small><button type="button" onClick={()=>setDiagnostics(v=>!v)}
+     aria-label="Abrir diagnóstico local de rendimiento" style={{border:0,padding:0,background:'transparent',color:'inherit',font:'inherit',textAlign:'left'}}>
+     Estado · {position+1} de {items.length}</button></small></div>
     <div className="hn-story-toolbar-actions">
      {item.actorId===myId&&<button type="button" className="hn-story-delete"
       disabled={deleting} onClick={()=>void deleteCurrent()} aria-label="Eliminar mi estado">Eliminar</button>}
@@ -126,6 +130,7 @@ export default function MemberStoryViewer({items,myId,token,refreshVersion,
      onPointerDown={()=>setHeld(true)} onPointerUp={()=>setHeld(false)}
      onPointerCancel={()=>setHeld(false)} onPointerLeave={()=>setHeld(false)}/>
    </div>
+   <StoryDiagnostics open={diagnostics} source={photo.url} ready={isReady} failed={failedPhoto} onClose={()=>setDiagnostics(false)}/>
    <StoryConversationPanel key={item.id} story={item} token={token} myId={myId}
     refreshVersion={refreshVersion} onPause={setCommentPaused} onBurst={setBurst}/>
   </div>
