@@ -24,7 +24,7 @@ test('Album pictures mount network src before IndexedDB or reduction, then persi
  assert.match(thumbnail,/canvas\.toBlob\(/);
  assert.doesNotMatch(thumbnail,/onLoad=\{persist\}/);
  assert.match(thumbnail,/readPrivateImage\(token,cacheKey\)/);
- assert.match(thumbnail,/storePrivateImage\(token,cacheKey,blob/);
+ assert.match(thumbnail,/storePrivateImage\(job\.token,job\.key,blob,job\.expiresAt\)/);
  assert.match(family,/cacheKey=\{"family-cover:"\+album\.actorId\}/);
  assert.match(gallery,/cacheKey=\{"family-thumb:"\+item\.id\}/);
  assert.match(gallery,/loading=\{index<4\?'eager':'lazy'\}/);
