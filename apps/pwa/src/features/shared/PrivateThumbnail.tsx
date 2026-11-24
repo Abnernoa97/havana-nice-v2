@@ -42,9 +42,9 @@ function drain(){
   finally{finish();}
  };
  // At most one 480px reduction, and only during the browser's idle time.
- if('requestIdleCallback' in window)
+ if(typeof window.requestIdleCallback==='function')
   window.requestIdleCallback(()=>{void run();},{timeout:2800});
- else window.setTimeout(()=>{void run();},650);
+ else setTimeout(()=>{void run();},650);
 }
 function enqueue(job:Job):()=>void{
  jobs.push(job);
