@@ -200,7 +200,9 @@ test('M09: four-column Familia viewer accepts only authorized Worker file grants
  assert.match(ui,/<video ref=\{ref\} src=\{file\} poster=\{poster\|\|undefined\} playsInline preload="metadata"/);
  assert.match(ui,/className="hn-family-center-play"/);
  assert.match(ui,/className="hn-family-playing-pause"/);
- assert.match(ui,/loading=\{index<6\?'eager':'lazy'\} decoding="async"/);
+ assert.match(ui,/<PrivateThumbnail src=\{item\.thumbnail\} token=\{token\}/);
+ assert.match(ui,/cacheKey=\{"family-thumb:"\+item\.id\}/);
+ assert.match(ui,/loading=\{index<4\?'eager':'lazy'\}/);
  assert.match(ui,/onKeyDown=\{handleKeys\}/);
  assert.doesNotMatch(ui,/durationLabel|durationSeconds/);
  assert.doesNotMatch(read('packages/shared/src/family.ts'),/durationSeconds/);
