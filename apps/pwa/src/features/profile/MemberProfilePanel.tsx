@@ -2,7 +2,7 @@ import {useRef,type ChangeEvent} from 'react';
 import type {MemberProfile} from '@havana/shared';
 import PrivateProfileAvatar from './PrivateProfileAvatar';
 
-type Props={name:string;photo:MemberProfile|undefined;required:boolean;token?:string;
+type Props={name:string;photo:MemberProfile|undefined;required:boolean;token?:string|undefined;
  saving:boolean;error:string;onUpload:(photo:File)=>Promise<void>;onImageFailure:()=>void;onClose:()=>void;};
 export default function MemberProfilePanel({name,photo,required,saving,error,onUpload,onImageFailure,onClose,token}:Props){
  const picker=useRef<HTMLInputElement|null>(null);

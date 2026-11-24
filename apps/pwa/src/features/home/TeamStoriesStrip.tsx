@@ -6,7 +6,7 @@ import {getWarmStoryPhoto,subscribeStoryPhotos,warmStoryPhoto} from '../stories/
 // A status is never visually mistaken for a new permanent profile picture.
 function StoryCover({story,name,profilePhoto,onError,onProfileError,token}:{
  story:MemberStory;name:string;profilePhoto:string|null;onError:(id:string)=>void;
- onProfileError:()=>void;token?:string;
+ onProfileError:()=>void;token?:string|undefined;
 }){
  const cover=useSyncExternalStore(subscribeStoryPhotos,
   ()=>getWarmStoryPhoto(story),()=>'');
@@ -24,7 +24,7 @@ function StoryCover({story,name,profilePhoto,onError,onProfileError,token}:{
 export default function TeamStoriesStrip({displayName,actorId,profiles,preview,canEditProfile,token,
  onPhotoError,onStoryPhotoError,stories,ready,seenIds,onOpenStory,onAddStory}:{
  displayName:string|undefined;actorId:string|undefined;profiles:readonly MemberProfile[];
- preview:boolean;canEditProfile:boolean;token?:string;onPhotoError:(memberId:string)=>void;
+ preview:boolean;canEditProfile:boolean;token?:string|undefined;onPhotoError:(memberId:string)=>void;
  onStoryPhotoError:(storyId:string)=>void;stories:readonly MemberStory[];ready:boolean;
  seenIds:ReadonlySet<string>;
  onOpenStory:(actorId:string)=>void;onAddStory:()=>void;
