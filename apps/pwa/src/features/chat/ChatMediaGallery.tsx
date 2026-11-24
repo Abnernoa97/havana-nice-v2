@@ -8,15 +8,9 @@ import {peekChatPhotoPreview,loadChatPhotoPreview} from './chat-photo-thumbnail-
 import type {ChatMedia} from './chat-media-types';
 import './chat-media-gallery.css';
 
-const stamp=(n:number)=>{
- if(!Number.isFinite(n)||n<0)return '0:00';
- const sec=Math.floor(n);return Math.floor(sec/60)+':'+String(sec%60).padStart(2,'0');
-};
 function Frame({media,token,warmUrl}:{media:ChatMedia;token:string;warmUrl?:string|undefined}){
  const [url,setUrl]=useState(''),[cover,setCover]=useState('');
  const [loaded,setLoaded]=useState(false),[error,setError]=useState('');
- const [playing,setPlaying]=useState(false),[at,setAt]=useState(0),[duration,setDuration]=useState(0);
- const video=useRef<HTMLVideoElement|null>(null);
  useEffect(()=>{
   const abort=new AbortController();let live=true,objectUrl='';
   setUrl('');setCover('');setLoaded(false);setError('');
@@ -44,11 +38,6 @@ function Frame({media,token,warmUrl}:{media:ChatMedia;token:string;warmUrl?:stri
    if(objectUrl)URL.revokeObjectURL(objectUrl);
   };
  },[media.assetId,media.kind,media.sizeBytes,token,warmUrl]);
- const toggle=()=>{
-  if(!video.current)return;
-  if(video.current.paused)void video.current.play().catch(()=>setError('No se pudo reproducir este video.'));
-  else video.current.pause();
- };
  if(media.kind==='photo'){
   const showing=loaded?url:cover;
   return <div className="hn-gallery-photo-surface">
@@ -59,26 +48,12 @@ function Frame({media,token,warmUrl}:{media:ChatMedia;token:string;warmUrl?:stri
  }
  const poster=cover||(url?chatVideoPosterUrl(url):'');
  return <div className="hn-gallery-video">
-  {url?<video ref={video} src={url} preload="metadata" playsInline controls={false}
-    poster={poster||undefined} disablePictureInPicture disableRemotePlayback
-    onPlay={()=>setPlaying(true)} onPause={()=>setPlaying(false)}
-    onEnded={()=>setPlaying(false)}
-    onLoadedMetadata={e=>setDuration(e.currentTarget.duration)}
-    onTimeUpdate={e=>setAt(e.currentTarget.currentTime)}
-    onError={()=>setError('Video no compatible o no disponible.')}
-    onClick={toggle}/>:
+  {url?<video key={url} src={url} preload="metadata" playsInline controls
+    poster={poster||undefined} className="hn-gallery-video-native"
+    onError={()=>setError('Este video no puede reproducirse en Safari con su formato actual.')}/>:
     poster?<img className="hn-gallery-video-poster" src={poster} alt="Vista previa del video"/>:
     <span className="hn-gallery-loading" role="status">Preparando video…</span>}
-  {error?<span className="hn-gallery-video-error" role="alert">{error}</span>:
-   <button type="button" className="hn-gallery-play" onClick={toggle}
-    aria-label={playing?'Pausar video':'Reproducir video'}>{playing?'Ⅱ':'▶'}</button>}
-  <div className="hn-gallery-progress">
-   <span>{stamp(at)}</span>
-   <input type="range" min={0} max={Math.max(1,duration)} step=".1"
-    value={Math.min(at,Math.max(1,duration))} aria-label="Posición del video"
-    onChange={e=>{if(video.current)video.current.currentTime=Number(e.target.value);setAt(Number(e.target.value));}}/>
-   <span>{stamp(duration)}</span>
-  </div>
+  {error&&<span className="hn-gallery-video-error" role="alert">{error}</span>}
  </div>;
 }
 export default function ChatMediaGallery({items,initial,token,onClose}:{
@@ -116,7 +91,7 @@ export default function ChatMediaGallery({items,initial,token,onClose}:{
   return()=>{document.body.style.overflow=previous;document.removeEventListener('keydown',key);};
  },[onClose,items.length]);
  const touchStart=(event:TouchEvent<HTMLDivElement>)=>{
-  if((event.target as Element).closest?.('input')){start.current=null;return;}
+  if((event.target as Element).closest?.('input,video')){start.current=null;return;}
   const t=event.touches[0];if(t)start.current={x:t.clientX,y:t.clientY};
  };
  const touchEnd=(event:TouchEvent<HTMLDivElement>)=>{

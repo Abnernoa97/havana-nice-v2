@@ -1,19 +1,17 @@
 import {lazy,Suspense,useCallback,useEffect,useRef,useState} from 'react';
 import {familyAlbumCount,getFamilyDirectory,getFamilyAlbumMedia,type FamilyDirectory,type FamilyAlbum,type FamilyMediaItem} from '@havana/shared';
 import FamilyMediaGallery,{familyPrivateMediaUrl} from './FamilyMediaGallery';
-import PrivateThumbnail from '../shared/PrivateThumbnail';
 import {useFamilyLive} from '../../services/use-family-live';
 import {finishFamilyAlbumRequest} from './family-request-coordination';
-import {familyBackgroundWarmBudget,familyCoverLoadPriority,FAMILY_BACKGROUND_THUMBNAIL_LIMIT,type FamilyNetworkHint} from './family-warm-policy';
+import {familyBackgroundWarmBudget,familyCoverLoadPriority,type FamilyNetworkHint} from './family-warm-policy';
 const MemberBook=lazy(()=>import('../book/MemberBook'));
 
-function FamilyAlbumCard({album,onOpen,loading,token}:{album:FamilyAlbum;onOpen:()=>void;loading:'eager'|'lazy';token:string}){
+function FamilyAlbumCard({album,onOpen,loading}:{album:FamilyAlbum;onOpen:()=>void;loading:'eager'|'lazy'}){
  const cover=album.mediaReady?familyPrivateMediaUrl(album.coverUrl):null;
  return <button type="button" className="hn-family-album" onClick={onOpen}
   aria-label={'Abrir álbum de '+album.name}>
    <span className="hn-family-album-art" aria-hidden="true">
-    {cover?<PrivateThumbnail token={token} cacheKey={"family-cover:"+album.actorId} src={cover}
-     className="hn-family-album-photo" alt="" loading={loading}/>:
+    {cover?<img className="hn-family-album-photo" src={cover} alt="" loading={loading} decoding="async"/>:
      <span className="hn-family-monogram">{album.name.slice(0,1).toUpperCase()}</span>}
     <span className="hn-family-album-caption"><strong>{album.name}</strong>
      <small>{familyAlbumCount(album)}</small></span>
@@ -31,30 +29,12 @@ export default function MemberFamily({token}:{token:string}){
  const [mediaTick,setMediaTick]=useState(0);
  const seq=useRef(0);
  const albumEdge=useRef<{x:number;y:number}|null>(null);
- const selectedRef=useRef(selected);
- selectedRef.current=selected;
  // Private 10-minute grants: reuse only for a bounded interval in this
  // signed-in component. No indexedDB, CacheStorage, or persistent R2 URLs.
  const albumCache=useRef(new Map<string,{items:FamilyMediaItem[];at:number}>());
  const albumCacheOwner=useRef(token);
  const cacheEpoch=useRef(0);
  const albumInflight=useRef(new Map<string,Promise<FamilyMediaItem[]>>());
- const predecoded=useRef(new Map<string,HTMLImageElement>());
- const warmThumbnails=(media:readonly FamilyMediaItem[],focused:boolean)=>{
-  for(const item of media.slice(0,focused?6:FAMILY_BACKGROUND_THUMBNAIL_LIMIT)){
-   const src=familyPrivateMediaUrl(item.thumbnailUrl);
-   if(!src||predecoded.current.has(src))continue;
-   const image=new Image();
-   image.decoding='async';image.src=src;
-   predecoded.current.set(src,image);
-  }
-  // Keep only a small bounded set of private transient image elements.
-  while(predecoded.current.size>24){
-   const oldest=predecoded.current.keys().next().value;
-   if(!oldest)break;
-   predecoded.current.delete(oldest);
-  }
- };
  const loadCached=useCallback((actorId:string)=>{
   const cached=albumCache.current.get(actorId);
   if(cached&&Date.now()-cached.at<4*60_000)return Promise.resolve(cached.items);
@@ -64,7 +44,6 @@ export default function MemberFamily({token}:{token:string}){
   const job=getFamilyAlbumMedia(token,actorId).then(data=>{
    if(albumCacheOwner.current===token&&cacheEpoch.current===epoch){
     albumCache.current.set(actorId,{items:data.items,at:Date.now()});
-    warmThumbnails(data.items,selectedRef.current===actorId);
    }
    return data.items;
   }).finally(()=>finishFamilyAlbumRequest(albumInflight.current,actorId,job));
@@ -81,7 +60,7 @@ export default function MemberFamily({token}:{token:string}){
  },[token]);
  useEffect(()=>{
   albumCacheOwner.current=token;cacheEpoch.current++;
-  albumCache.current.clear();albumInflight.current.clear();predecoded.current.clear();
+  albumCache.current.clear();albumInflight.current.clear();
   setDirectory(null);setSelected(null);setLoading(true);
   void refresh();
   // useFamilyLive owns foreground/online resync; avoid a duplicate D1 read.
@@ -118,7 +97,7 @@ export default function MemberFamily({token}:{token:string}){
   // Signed metadata becomes stale only on a server-side family update;
   // retain the currently rendered thumbnails until fresh data arrives.
   cacheEpoch.current++;
-  albumCache.current.clear();albumInflight.current.clear();predecoded.current.clear();
+  albumCache.current.clear();albumInflight.current.clear();
   void refresh();
   setMediaTick(t=>t+1);
  });
@@ -143,19 +122,18 @@ export default function MemberFamily({token}:{token:string}){
   {error&&<p role="alert" className="hn-cal-error">{error}</p>}
   {loading?<p>Cargando integrantes autorizados…</p>:album?<>
    <div className="hn-family-cover">
-    {cover?<PrivateThumbnail token={token} cacheKey={"family-cover:"+album.actorId} src={cover}
-      className="hn-family-cover-photo" alt="" loading="eager"/>:
+    {cover?<img className="hn-family-cover-photo" src={cover} alt="" loading="eager" decoding="async"/>:
      <div className="hn-family-cover-placeholder" aria-hidden="true">{album.name.slice(0,1).toUpperCase()}</div>}
     <div className="hn-family-cover-text"><h2>{album.name}</h2>
      <p>{familyAlbumCount(album)}</p></div>
    </div>
    {mediaLoading&&!readyItems?.length?<p className="hn-family-empty">Cargando archivos privados…</p>:
-    readyItems?.length?<FamilyMediaGallery items={readyItems} token={token}/>:
+    readyItems?.length?<FamilyMediaGallery items={readyItems}/>:
     <p className="hn-family-empty">{album.mediaReady?'Todavía no hay fotos ni videos en este álbum.':'El almacenamiento privado de Familia HAVANA NICE aún no está disponible.'}</p>}
   </>:<>
    {directory?.albums.length?<div className="hn-family-grid">
     {directory.albums.map((person,index)=><FamilyAlbumCard key={person.actorId} album={person}
-     loading={familyCoverLoadPriority(index)} token={token} onOpen={()=>setSelected(person.actorId)}/>)}
+     loading={familyCoverLoadPriority(index)} onOpen={()=>setSelected(person.actorId)}/>)}
    </div>:<p className="hn-family-empty">No hay integrantes autorizados para mostrar.</p>}
    <div className="hn-family-inline-book" aria-label="Revista de Familia HAVANA NICE">
     <Suspense fallback={<p className="hn-family-empty" role="status">Abriendo revista…</p>}>

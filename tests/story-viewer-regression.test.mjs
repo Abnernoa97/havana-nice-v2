@@ -25,19 +25,22 @@ test('Only one photo layer is rendered, independently of the number of uploaded 
  assert.match(component,/StoryPhotoSurface id=\{item.id\}/);
  assert.doesNotMatch(component,/<img\b|rotateY|page-next|page-previous|hn-story-image-stage/);
  const cache=read('apps/pwa/src/features/stories/useStoryPhotoCache.ts');
- assert.match(component,/useStoryPhotoCache\(items,position,onPhotoError\)/);
+ assert.match(component,/useStoryPhotoCache\(items,position\)/);
  const pool=read('apps/pwa/src/features/stories/story-photo-pool.ts');
  assert.match(pool,/new Image\(\)/); // shared private JPEG decoded before display
  assert.match(pool,/fetch\(story\.photoUrl/);
  assert.match(pool,/URL\.createObjectURL\(blob\)/);
  assert.match(pool,/URL\.revokeObjectURL/);
  assert.match(cache,/warmStoryPhoto\(item\)/);
- assert.match(cache,/items\.slice\(position,position\+2\)/);
+ assert.match(cache,/const next=items\[position\+1\]/);
  assert.match(surface,/hn-story-loading/);
  assert.match(surface,/className="hn-story-canvas"/);
+ assert.match(surface,/<img className="hn-story-photo" src=\{url\}/);
+ assert.match(surface,/onLoad=\{\(\)=>onReady\(id,url\)\}/);
+ assert.match(component,/const paused=.*!isReady/);
  assert.match(style,/\.hn-story-canvas\{position:absolute;inset:0/);
  assert.match(style,/\.hn-story-photo\{position:absolute;inset:0/);
- assert.match(style,/background-size:contain/);
+ assert.match(style,/object-fit:contain/);
  assert.match(style,/transform:none;animation:none/);
  assert.doesNotMatch(style,/rotateY|perspective|@keyframes hn-story-turn/);
 });

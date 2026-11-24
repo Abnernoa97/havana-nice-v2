@@ -185,3 +185,12 @@
 - La lectura del caché tiene un presupuesto máximo de 120ms: si no responde, el mismo controlador sigue con su URL temporal privada de R2, sin crear otras sesiones ni rutas.
 - Se conserva la decodificación JPEG antes de avanzar el temporizador de Estados, evitando consumir segundos mientras la foto aún no está lista.
 - Prueba dinámica nueva simula IndexedDB bloqueado para siempre y verifica que el Estado aparece a través del Worker sin bloquearse.
+
+## PWA iPhone · Restauración de las rutas de visualización de Android aprobado 0.0.30 (24/11)
+- Baseline verificado: `101ffc3b7bd29a0e08f2543881b99481a6a9cb2b` (aprobación Android 0.0.30). El Android actual en `main` tiene fuentes posteriores distintas; se usó exclusivamente ese snapshot.
+- Datos reales de Cloudflare D1: 6 JPEG de Familia (~200 KiB promedio), 13 Estados JPEG (~132 KB) y último video de Chat 24.92 MiB `video/quicktime`, `ready` y vinculado a mensaje. La subida no prueba compatibilidad de codecs Safari.
+- Estados muestra `<img>` directamente con la autorización vigente, sin `fetch`→Blob→`decode` en el trayecto visible. El temporizador de seis segundos empieza con `onLoad` y se mantiene una sola imagen visible. El pool privado no se elimina; prepara solo la próxima foto y conserva los bitmaps ya decodificados en la sesión.
+- Las portadas de Estados empiezan con URL directa o JPEG ya caliente, sin mostrar el perfil como sustituto durante la descarga.
+- Familia recupera el render `<img>` probado, sin la capa de `PrivateThumbnail` ni el precargador duplicado `new Image`; conserva sus rutas, álbumes, controles, permisos y publicación.
+- Chat devuelve a Safari sus controles nativos para videos MOV/MP4, sin controlador paralelo de play() ni afectar el chat, subida, imágenes, mensajes o BOOK. Si un archivo usa codec incompatible con Safari, requerirá conversión real; ninguna prueba estática puede garantizar ese caso.
+- Android 0.0.30, Worker, D1, R2 y originales no se modifican.

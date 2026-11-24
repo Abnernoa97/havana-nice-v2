@@ -13,21 +13,17 @@ test('iPhone PWA stores only session-encrypted bounded local thumbnails',()=>{
  assert.match(cache,/expiresAt<=Date\.now\(\)/);
  assert.doesNotMatch(cache,/localStorage|sessionStorage|new WebSocket|authorization.*Bearer|CACHE_NAME/);
 });
-test('Album pictures mount network src before IndexedDB or reduction, then persist at idle',()=>{
+test('Family uses the direct proven JPEG path; private thumbnail reducer cannot hold the gallery',()=>{
  const thumbnail=read('apps/pwa/src/features/shared/PrivateThumbnail.tsx');
  const family=read('apps/pwa/src/features/family/MemberFamily.tsx');
  const gallery=read('apps/pwa/src/features/family/FamilyMediaGallery.tsx');
  assert.match(thumbnail,/const shown=local&&cached\?cached\.url:remote/);
- assert.match(thumbnail,/return <img ref=\{imageRef\}/);
  assert.match(thumbnail,/window\.requestIdleCallback/);
- assert.match(thumbnail,/const scale=Math\.min\(1,480\//);
- assert.match(thumbnail,/canvas\.toBlob\(/);
- assert.doesNotMatch(thumbnail,/onLoad=\{persist\}/);
- assert.match(thumbnail,/readPrivateImage\(token,cacheKey\)/);
- assert.match(thumbnail,/storePrivateImage\(job\.token,job\.key,blob,job\.expiresAt\)/);
- assert.match(family,/cacheKey=\{"family-cover:"\+album\.actorId\}/);
- assert.match(gallery,/cacheKey=\{"family-thumb:"\+item\.id\}/);
- assert.match(gallery,/loading=\{index<4\?'eager':'lazy'\}/);
+ assert.match(family,/className="hn-family-cover-photo" src=\{cover\}/);
+ assert.match(gallery,/<img src=\{item\.thumbnail\}/);
+ assert.match(gallery,/loading=\{index<6\?'eager':'lazy'\}/);
+ assert.doesNotMatch(family,/predecoded|warmThumbnails/);
+ assert.doesNotMatch(gallery,/PrivateThumbnail|canvas|IndexedDB/);
 });
 test('Header avatar, story fallbacks and Audio use the same cache without merging data owners',()=>{
  const avatar=read('apps/pwa/src/features/profile/PrivateProfileAvatar.tsx');

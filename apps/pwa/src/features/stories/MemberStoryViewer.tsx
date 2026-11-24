@@ -23,13 +23,21 @@ export default function MemberStoryViewer({items,myId,token,refreshVersion,
  const [burst,setBurst]=useState<StoryReactionBurst|null>(null);
  const viewport=useStoryKeyboardViewport();
  const item=items[Math.min(position,items.length-1)];
- const photo=useStoryPhotoCache(items,position,onPhotoError);
- const failedPhoto=photo.failed;
+ const photo=useStoryPhotoCache(items,position);
+ const [loadedKey,setLoadedKey]=useState('');
+ const [failedKey,setFailedKey]=useState('');
+ const sourceKey=item?item.id+':'+photo.url:'';
+ const isReady=loadedKey===sourceKey;
+ const failedPhoto=failedKey===sourceKey;
+ const photoLoaded=useCallback((id:string,url:string)=>setLoadedKey(id+':'+url),[]);
+ const photoFailed=useCallback((id:string,url:string)=>{
+  setFailedKey(id+':'+url);onPhotoError(id);
+ },[onPhotoError]);
  // Count each photo as viewed only once its private bitmap is ready to show.
  useEffect(()=>{
-  if(item&&photo.url)onViewed(item.id);
- },[item?.id,photo.url,onViewed]);
- const paused=deleting||held||hidden||commentPaused||(!photo.url&&!failedPhoto);
+  if(item&&isReady)onViewed(item.id);
+ },[item?.id,isReady,onViewed]);
+ const paused=deleting||held||hidden||commentPaused||(!isReady&&!failedPhoto);
  useEffect(()=>{
   const change=()=>setHidden(document.hidden);
   document.addEventListener('visibilitychange',change);
@@ -74,7 +82,8 @@ export default function MemberStoryViewer({items,myId,token,refreshVersion,
    '--hn-story-keyboard-inset':viewport.keyboardInset+'px'
   } as CSSProperties}>
    <StoryPhotoSurface id={item.id} name={item.name}
-    url={photo.url} failed={failedPhoto}/>
+    url={photo.url} failed={failedPhoto} loaded={isReady}
+    onReady={photoLoaded} onError={photoFailed}/>
    <div className="hn-story-progress" role="progressbar" aria-label="Avance del estado"
     aria-valuemin={0} aria-valuemax={items.length*100} aria-valuenow={position*100+Math.round(progress)}>
     {items.map((story,index)=><span key={story.id} className="hn-story-progress-track">

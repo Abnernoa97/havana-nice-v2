@@ -1,23 +1,26 @@
 import type {MemberProfile,MemberStory} from '@havana/shared';
-import {useEffect,useSyncExternalStore} from 'react';
+import {useRef,useState} from 'react';
 import PrivateProfileAvatar from '../profile/PrivateProfileAvatar';
-import {getWarmStoryPhoto,subscribeStoryPhotos,warmStoryPhoto} from '../stories/story-photo-pool';
+import {getWarmStoryPhoto} from '../stories/story-photo-pool';
 
 // A status is never visually mistaken for a new permanent profile picture.
 function StoryCover({story,name,profilePhoto,onError,onProfileError,token}:{
  story:MemberStory;name:string;profilePhoto:string|null;onError:(id:string)=>void;
  onProfileError:()=>void;token?:string|undefined;
 }){
- const cover=useSyncExternalStore(subscribeStoryPhotos,
-  ()=>getWarmStoryPhoto(story),()=>'');
- useEffect(()=>{
-  let active=true;
-  void warmStoryPhoto(story).then(url=>{if(active&&!url)onError(story.id);});
-  return()=>{active=false;};
- },[story.id,story.photoUrl]);
- return cover?<img src={cover} alt={'Portada del estado de '+name} decoding="sync"/>:
+ const chosen=useRef<{id:string;grant:string;src:string}|null>(null);
+ const [failedUrl,setFailedUrl]=useState('');
+ // Match Android 0.0.30: the signed photo is a directly rendered image.
+ // Cached JPEGs win if already decoded. A later background prefetch never
+ // replaces a visible image or causes a flicker.
+ if(!chosen.current||chosen.current.id!==story.id||chosen.current.grant!==story.photoUrl)
+  chosen.current={id:story.id,grant:story.photoUrl,src:getWarmStoryPhoto(story)||story.photoUrl};
+ const src=chosen.current.src;
+ return failedUrl===src?
   <PrivateProfileAvatar photoUrl={profilePhoto} name={name} token={token} actorId={story.actorId}
-   fallbackClassName="hn-moment-initial" onImageFailure={onProfileError}/>;
+   fallbackClassName="hn-moment-initial" onImageFailure={onProfileError}/>:
+  <img src={src} alt={'Portada del estado de '+name} loading="eager" decoding="async"
+   onError={()=>{setFailedUrl(src);onError(story.id);}}/>;
 }
 
 // The circle belongs to the newest 24h story. The header photo belongs to Profile.

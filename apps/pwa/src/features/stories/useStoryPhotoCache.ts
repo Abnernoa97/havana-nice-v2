@@ -1,29 +1,21 @@
-import {useEffect,useRef,useState} from 'react';
+import {useEffect,useRef} from 'react';
 import type {MemberStory} from '@havana/shared';
 import {getWarmStoryPhoto,warmStoryPhoto} from './story-photo-pool';
 
-// Share HOME's decoded private JPEG. Current + next photo preload, one stable
-// canvas, no duplicate private download when opening a warmed story.
-export function useStoryPhotoCache(
- items:readonly MemberStory[],position:number,onPhotoError:(id:string)=>void
-){
- const [,refresh]=useState(0);
- const failures=useRef(new Set<string>());
- const onError=useRef(onPhotoError);onError.current=onPhotoError;
- useEffect(()=>{
-  let active=true;
-  for(const item of items.slice(position,position+2)){
-   void warmStoryPhoto(item).then(url=>{
-    if(!active)return;
-    if(!url&&!failures.current.has(item.photoUrl)){
-     failures.current.add(item.photoUrl);onError.current(item.id);
-    }
-    refresh(n=>n+1);
-   });
-  }
-  return()=>{active=false;};
- },[items,position]);
+// The current iPhone state opens like Android 0.0.30: directly from the
+// authorized JPEG URL, or an already decoded private JPEG if available.
+// Do not fetch/blob/decode the current image BEFORE rendering it.
+export function useStoryPhotoCache(items:readonly MemberStory[],position:number){
+ const pinned=useRef<{id:string;grant:string;url:string}|null>(null);
  const current=items[position];
- return {url:getWarmStoryPhoto(current),
-  failed:!!current&&failures.current.has(current.photoUrl)};
+ if(current&&(!pinned.current||pinned.current.id!==current.id||
+   pinned.current.grant!==current.photoUrl))
+  pinned.current={id:current.id,grant:current.photoUrl,
+   url:getWarmStoryPhoto(current)||current.photoUrl};
+ useEffect(()=>{
+  // Only the next frame is prepared behind the active one.
+  const next=items[position+1];
+  if(next)void warmStoryPhoto(next).catch(()=>{});
+ },[items,position]);
+ return {url:current?pinned.current?.url||current.photoUrl:''};
 }

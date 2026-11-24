@@ -1,7 +1,6 @@
 import {useEffect,useRef,useState,type KeyboardEvent,type TouchEvent} from 'react';
 import {HAVANA_V2_DEV_API_BASE_URL,type FamilyMediaItem} from '@havana/shared';
 import '../../styles/family/gallery.css';
-import PrivateThumbnail from '../shared/PrivateThumbnail';
 
 // Private files must be granted by the existing Worker, never loaded from external hosts.
 export function familyPrivateMediaUrl(value:string|null|undefined):string|null{
@@ -35,7 +34,7 @@ function FamilyVideo({file,poster,alt}:{file:string;poster:string|null;alt:strin
  </div>;
 }
 
-export default function FamilyMediaGallery({items,token,onDelete,onSetCover,onMakePoster}:{items:readonly FamilyMediaItem[];token?:string;onDelete?:(id:string)=>Promise<void>;onSetCover?:(id:string)=>Promise<void>;onMakePoster?:(id:string,sourceUrl:string)=>Promise<void>}){
+export default function FamilyMediaGallery({items,onDelete,onSetCover,onMakePoster}:{items:readonly FamilyMediaItem[];onDelete?:(id:string)=>Promise<void>;onSetCover?:(id:string)=>Promise<void>;onMakePoster?:(id:string,sourceUrl:string)=>Promise<void>}){
  const validItems:ReadyItem[]=items.flatMap(item=>{
   const file=familyPrivateMediaUrl(item.fileUrl);
   if(!file||!item.id||!['photo','video'].includes(item.kind))return [];
@@ -81,8 +80,7 @@ export default function FamilyMediaGallery({items,token,onDelete,onSetCover,onMa
    {validItems.map((item,index)=><div key={item.id} className="hn-family-media-thumb">
     <button type="button" className="hn-family-media-open" onClick={()=>setActive(index)}
      aria-label={'Abrir '+item.alt+', '+(index+1)+' de '+validItems.length}>
-     {item.thumbnail?<PrivateThumbnail src={item.thumbnail} token={token}
-      cacheKey={"family-thumb:"+item.id} alt="" loading={index<4?'eager':'lazy'}/>:
+     {item.thumbnail?<img src={item.thumbnail} alt="" loading={index<6?'eager':'lazy'} decoding="async"/>:
       <span className="hn-family-media-video-fallback" aria-hidden="true">{item.kind==='video'?'▶':'◻'}</span>}
      {item.kind==='video'&&<span className="hn-family-media-play-marker" aria-hidden="true">▶</span>}
     </button>
