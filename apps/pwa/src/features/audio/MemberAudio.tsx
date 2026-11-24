@@ -1,6 +1,6 @@
 import {useCallback,useEffect,useRef,useState} from 'react';
 import {getAudioTracks,clearAudioTracksCache,privateAudioUrl,logMemberActivity,type AudioTrack} from '@havana/shared';
-import {prepareAudioCover,type PreparedAudioCover} from './audio-cover-cache';
+import PrivateThumbnail from '../shared/PrivateThumbnail';
 import './audio-player.css';
 
 const clock=(time:number)=>!Number.isFinite(time)?'0:00':
@@ -15,7 +15,6 @@ export default function MemberAudio({token,active=true}:{token:string;active?:bo
  const [duration,setDuration]=useState(0);
  const [loading,setLoading]=useState(true);
  const [error,setError]=useState('');
- const [preparedCovers,setPreparedCovers]=useState<Record<string,PreparedAudioCover>>({});
  const recoveryTried=useRef(new Set<string>());
  const pendingSeek=useRef<{id:string;time:number}|null>(null);
  const lastCatalogFetch=useRef(0);
@@ -52,37 +51,8 @@ export default function MemberAudio({token,active=true}:{token:string;active?:bo
   document.addEventListener('visibilitychange',check);
   return()=>document.removeEventListener('visibilitychange',check);
  },[refresh,current?.id]);
- // Decode private covers once for the vinyl and track list. Lock-screen
- // artwork uses a same-origin HTTPS capability and never this Blob.
- useEffect(()=>{
-  const controller=new AbortController(),created:string[]=[];
-  let live=true;
-  setPreparedCovers({});
-  const wanted=tracks.filter(t=>!!art(t.coverUrl)).slice(0,4);
-  let cursor=0;
-  const prepare=async()=>{
-   while(live&&cursor<wanted.length){
-    const track=wanted[cursor++];
-    const url=art(track?.coverUrl||null);
-    if(!track||!url)continue;
-    try{
-     const ready=await prepareAudioCover(url,controller.signal,token,track.id);
-     if(!live){
-      URL.revokeObjectURL(ready.display);
-      continue;
-     }
-     created.push(ready.display);
-     setPreparedCovers(old=>({...old,[track.id]:ready}));
-    }catch{/* Keep the live R2 URL as a visual fallback. */}
-   }
-  };
-  // One small artwork task: avoid competing with the audio range request.
-  void prepare();
-  return()=>{
-   live=false;controller.abort();created.forEach(url=>URL.revokeObjectURL(url));
-  };
- },[tracks]);
-
+ // PrivateThumbnail displays artwork immediately; idle reduction and encrypted
+ // reuse are handled without tearing down audio playback or its MediaSession.
  useEffect(()=>{
   const audio=ref.current;if(!audio||!current)return;
   const url=art(current.audioUrl)||'';
@@ -206,7 +176,7 @@ export default function MemberAudio({token,active=true}:{token:string;active?:bo
   if(!('mediaSession' in navigator))return;
   navigator.mediaSession.playbackState=playing?'playing':'paused';
  },[playing]);
- const cover=current?(preparedCovers[current.id]?.display||art(current.coverUrl)):null;
+ const cover=current?art(current.coverUrl):null;
  const progress=duration>0?Math.max(0,Math.min(100,elapsed/duration*100)):0;
  const isBuffering=buffering&&!playing;
  return <section className="hn-audio hn-audio-editorial" aria-label="Audio HAVANA NICE" hidden={!active}>
@@ -230,7 +200,8 @@ export default function MemberAudio({token,active=true}:{token:string;active?:bo
      <div className="hn-audio-record-wrap">
       <div className={playing?'hn-audio-vinyl is-playing':'hn-audio-vinyl'}
        role="img" aria-label={`Vinilo con la portada de ${current.title}`}>
-       {cover?<img src={cover} alt="" decoding="async" loading="eager"/>:
+       {cover&&current?<PrivateThumbnail token={token} cacheKey={"audio-cover:"+current.id}
+        src={cover} alt="" loading="eager"/>:
         <span className="hn-audio-monogram">HN</span>}
        <span className="hn-audio-vinyl-spindle" aria-hidden="true"/>
       </div>
@@ -262,7 +233,8 @@ export default function MemberAudio({token,active=true}:{token:string;active?:bo
      {tracks.map((track,i)=><button key={track.id} type="button"
       className={i===selected?'hn-audio-track selected':'hn-audio-track'}
       onClick={()=>{if(i!==selected)playTrack(i);else toggle();}}>
-      {art(track.coverUrl)?<img alt="" src={preparedCovers[track.id]?.display||art(track.coverUrl)!} loading="lazy" decoding="async"/>:
+      {art(track.coverUrl)?<PrivateThumbnail token={token} cacheKey={"audio-cover:"+track.id}
+        src={art(track.coverUrl)} alt="" loading="lazy"/>:
        <span className="hn-audio-track-fallback">♫</span>}
       <span><strong>{track.title}</strong><small>{track.artist}</small></span>
       <span aria-hidden="true">{i===selected&&isBuffering?'◌':i===selected&&playing?'Ⅱ':'▶'}</span>

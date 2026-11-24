@@ -171,3 +171,11 @@
 ## Vigesimotercera fase · Validación criptográfica ejecutable del caché (24/11)
 - Test dinámico adicional con un IndexedDB simulado y AES-GCM real de Node: tras reiniciar el módulo, la misma sesión descifra la miniatura y otra no puede hacerlo; ni la clave ni bytes JPEG en claro se guardan en la base local.
 - Se valida borrado al revocar y rechazo de entradas expiradas. No se cambian componentes, Cloudflare Worker, Android ni almacenamiento remoto.
+
+## Diagnóstico PWA iPhone · Render inmediato y serialización de imágenes (24/11)
+- Auditoría en lectura de D1: Familia 6 fotos (media 190 KB, máximo 380 KB), Estados 13 (132 KB), Perfil 3 (46 KB), portadas Audio 2 (129 KB). No se justificaba bloquear la pantalla por imágenes enormes.
+- Causa reproducible en fuente: `PrivateThumbnail` devolvía `null`/marcador hasta finalizar IndexedDB y descifrar. Además, su efecto dependía del grant temporal renovado, revocando el Blob visible con cada actualización.
+- El componente ahora renderiza la URL válida en el PRIMER paint, sin esperar IndexedDB. Si hay copia cifrada y aún no terminó la carga remota, la usa; si el Blob local falla, vuelve al original autorizado. Las concesiones renovadas no revocan un Blob ya visible.
+- Reducción de miniaturas (480px) se traslada al tiempo ocioso y una sola tarea a la vez, jamás dentro de `onLoad`; el fallo de canvas/IndexedDB no bloquea el `<img>`.
+- Audio abandona su segundo circuito de `setPreparedCovers` y renderiza con el mismo componente visible, manteniendo HTML Audio y MediaSession sin cambios. Android 0.0.30, Worker y R2 no se modifican.
+- Validación dinámica Node confirma el `img` del primer render y nuevas pruebas de ownership/idle. La medición física en Safari sigue siendo necesaria para cuantificar tiempos exactos.

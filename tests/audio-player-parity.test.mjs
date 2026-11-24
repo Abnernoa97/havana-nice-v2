@@ -37,7 +37,7 @@ test('PWA uses artwork from R2 and HTML media session without mock songs',()=>{
  assert.match(pwa,/hn-audio-vinyl is-playing/);
  const cachedArtwork=read('apps/pwa/src/features/audio/audio-cover-cache.ts');
  const proxy=read('functions/api/audio/artwork/[token].js');
- assert.match(pwa,/prepareAudioCover/);
+ assert.match(pwa,/PrivateThumbnail/);
  assert.match(pwa,/const remoteCover=art\(current\.coverUrl\)/);
  assert.match(pwa,/new URL\('\/api\/audio\/artwork\/'\+token,window\.location\.origin\)/);
  assert.match(pwa,/artwork:artworkUrl\?\[\{src:artworkUrl\}\]:\[\]/);
@@ -266,8 +266,9 @@ test('iPhone Audio starts on the real user gesture and never shows a false red a
  assert.match(pwa,/aria-busy=\{isBuffering\}/);
  assert.match(pwa,/onClick=\{\(\)=>\{if\(i!==selected\)playTrack\(i\);else toggle\(\);\}\}/);
  assert.match(pwa,/preload="metadata"/);
- assert.match(pwa,/const wanted=tracks\.filter\(t=>!!art\(t\.coverUrl\)\)\.slice\(0,4\)/);
- assert.match(pwa,/void prepare\(\)/);
+ assert.match(pwa,/cacheKey=\{"audio-cover:"\+current\.id\}/);
+ assert.match(pwa,/cacheKey=\{"audio-cover:"\+track\.id\}/);
+ assert.doesNotMatch(pwa,/setPreparedCovers\(\{\}\)/);
  assert.doesNotMatch(cover,/localStorage|sessionStorage/);
 });
 
