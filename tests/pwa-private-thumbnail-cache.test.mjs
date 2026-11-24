@@ -17,7 +17,7 @@ test('Album pictures mount network src before IndexedDB or reduction, then persi
  const thumbnail=read('apps/pwa/src/features/shared/PrivateThumbnail.tsx');
  const family=read('apps/pwa/src/features/family/MemberFamily.tsx');
  const gallery=read('apps/pwa/src/features/family/FamilyMediaGallery.tsx');
- assert.match(thumbnail,/const shown=local\?cached\.url:remote/);
+ assert.match(thumbnail,/const shown=local&&cached\?cached\.url:remote/);
  assert.match(thumbnail,/return <img ref=\{imageRef\}/);
  assert.match(thumbnail,/window\.requestIdleCallback/);
  assert.match(thumbnail,/const scale=Math\.min\(1,480\//);
