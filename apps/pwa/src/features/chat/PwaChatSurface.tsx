@@ -8,6 +8,7 @@ import PwaChatVoiceRecorder from './PwaChatVoiceRecorder';
 import PwaMemberAccessPanel from './PwaMemberAccessPanel';
 import ComposerIcon from './ChatComposerIcon';
 import {useMemberCalendarSignals} from '../calendar/useMemberCalendarSignals';
+import {setStoryPhotoOwner} from '../stories/story-photo-pool';
 
 // Presentation only. Neither authentication nor WebSocket/storage live here.
 const VisualApp=lazy(()=>import('../../app/VisualApp'));
@@ -26,6 +27,12 @@ export default function PwaChatSurface({ui}:{ui:PwaChatUI}){
   send,draft,draftInput,typeText,openCamera
   }=ui;
   const calendarSignals=useMemberCalendarSignals(session?.token);
+  // A single authorized photo owner outlives HOME route changes, not logout.
+  // No media is persisted in Safari storage or shared with another musician.
+  useEffect(()=>{
+   setStoryPhotoOwner(session?.token);
+   return()=>setStoryPhotoOwner(undefined);
+  },[session?.token]);
   useEffect(()=>{
    if(session?.token)void logMemberActivity(session.token,'module.open',activeScreen,'iphone');
   },[session?.token,activeScreen]);

@@ -1,7 +1,7 @@
 import {useCallback,useEffect,useRef,useState} from 'react';
 import {deleteMyStory,getMemberStories,uploadMyStoriesBatch,STORY_BATCH_MAX,type MemberStory} from '@havana/shared';
 import {prepareStoryPhoto} from './prepareStoryPhoto';
-import {setStoryPhotoOwner,warmStoryCovers} from './story-photo-pool';
+import {warmStoryCovers} from './story-photo-pool';
 
 // HOME-only story controller: no Chat connection, no profile mutation, no storage owner.
 export function useMemberStories(token:string|undefined,refreshVersion:number){
@@ -22,12 +22,9 @@ export function useMemberStories(token:string|undefined,refreshVersion:number){
   photoGrants.current.clear();
   failedPhotos.current.clear();
  }
- // A different musician session must not show the previous user's photo data.
- useEffect(()=>{
-  setStoryPhotoOwner(token);
-  setStories([]);setError('');setInitialReady(false);
-  return()=>setStoryPhotoOwner(undefined);
- },[token]);
+ // The authorized app shell owns the JPEG pool until logout; moving to Chat,
+ // Calendario or Repertorio must not flush already displayed status covers.
+ useEffect(()=>{setStories([]);setError('');setInitialReady(false);},[token]);
  const refresh=useCallback(async()=>{
   if(!token){setStories([]);setInitialReady(true);return;}
   const id=++requestId.current;

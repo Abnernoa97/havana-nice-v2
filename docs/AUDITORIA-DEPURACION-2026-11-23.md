@@ -148,3 +148,10 @@
 - Se preserva la semántica existente para secuencias enteras confirmadas (`seq>0`) y mensajes no eliminados; no se cambian los mensajes editables, permisos, formatos, pantallas, WebSocket, ACK, timers ni sesión.
 - Dos regresiones verifican estados pendientes/eliminados, ambos consumidores y que siguen existiendo los únicos propietarios de sesión y conexión.
 - Es una etapa de bajo riesgo y no pretende declarar completada la separación de controladores. No se publica APK ni Worker.
+
+## Vigésima fase · PWA iPhone: conservar fotos de Estados al cambiar de módulo (23/11)
+- Hallazgo reproducible: `useMemberStories` destruía el `story-photo-pool` al salir de Inicio; al volver desde Chat/Calendario/Repertorio recibía un grant R2 nuevo y descargaba otra vez la misma imagen. La APK Android 0.0.30 no presenta ese flujo.
+- La propiedad del pool de JPEG pasa al shell de la sesión PWA (`PwaChatSurface`), que sigue montado entre módulos y limpia las imágenes al cambiar o cerrar sesión.
+- Fotos ya decodificadas se reutilizan aunque el grant temporal cambie, siempre que coincidan id de historia, `createdAt`, `expiresAt`, sesión y fecha de expiración. Solicitudes pendientes con un grant distinto todavía pueden renovarse.
+- Cuatro pruebas cubren regreso a Inicio, rotación de URL, cambio de músico, cambios de metadatos y carga diferida de Calendario/Repertorio/Familia.
+- Este caché es exclusivamente volátil: no persiste fotos privadas ni grants en Service Worker, CacheStorage o IndexedDB; un cierre completo de Safari implica nueva descarga autorizada. No se toca APK, Worker, D1, R2 ni BOOK 3D.

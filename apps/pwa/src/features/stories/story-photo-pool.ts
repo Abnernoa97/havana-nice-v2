@@ -2,7 +2,11 @@ import type {MemberStory} from '@havana/shared';
 
 // Ephemeral, per-session decoded JPEG pool. Never persist private R2 photos,
 // short-lived signed grants or musician credentials in browser storage.
-type Entry={grant:string;url:string;pending:Promise<string>|null;lastUsed:number};
+type Entry={grant:string;createdAt:number;expiresAt:number;url:string;pending:Promise<string>|null;lastUsed:number};
+// A story ID identifies one immutable R2 photo: renewing its short-lived grant
+// does not invalidate an already decoded image belonging to this same session.
+const samePhoto=(entry:Entry,story:MemberStory)=>entry.createdAt===story.createdAt&&
+ entry.expiresAt===story.expiresAt&&story.expiresAt>Date.now();
 const entries=new Map<string,Entry>();
 const subscribers=new Set<()=>void>();
 const LIMIT=18;
@@ -23,7 +27,7 @@ export const subscribeStoryPhotos=(listener:()=>void)=>{
 export function getWarmStoryPhoto(story:MemberStory|undefined|null):string{
  if(!story)return '';
  const entry=entries.get(story.id);
- if(!entry||entry.grant!==story.photoUrl||story.expiresAt<=Date.now())return '';
+ if(!entry||!samePhoto(entry,story))return '';
  entry.lastUsed=Date.now();
  return entry.url;
 }
@@ -39,13 +43,15 @@ function trimPool(){
 export function warmStoryPhoto(story:MemberStory):Promise<string>{
  if(story.expiresAt<=Date.now())return Promise.resolve('');
  const existing=entries.get(story.id);
- if(existing?.grant===story.photoUrl){
+ if(existing&&samePhoto(existing,story)){
   existing.lastUsed=Date.now();
   if(existing.url)return Promise.resolve(existing.url);
-  if(existing.pending)return existing.pending;
+  // A failed/expired grant must never trap a newer grant behind an old fetch.
+  if(existing.pending&&existing.grant===story.photoUrl)return existing.pending;
  }
  if(existing){entries.delete(story.id);release(existing);}
- const entry:Entry={grant:story.photoUrl,url:'',pending:null,lastUsed:Date.now()};
+ const entry:Entry={grant:story.photoUrl,createdAt:story.createdAt,
+  expiresAt:story.expiresAt,url:'',pending:null,lastUsed:Date.now()};
  entries.set(story.id,entry);
  entry.pending=(async()=>{
   let localUrl='';
