@@ -8,7 +8,7 @@ const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
 const compiled=ts.transpileModule(read('apps/pwa/src/features/stories/story-photo-pool.ts'),{
  fileName:'story-photo-pool.ts',compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.CommonJS},
 }).outputText;
-function photoPool(persisted=new Map()){
+function photoPool(persisted=new Map(),readOverride=null){
  const exports={},revoked=[];let requests=0,objects=0;
  let currentOwner='';
  const URL={
@@ -21,11 +21,11 @@ function photoPool(persisted=new Map()){
   async decode(){}
  }
  const fetch=async()=>{requests++;return {ok:true,blob:async()=>({type:'image/jpeg',size:70000})};};
- runInNewContext(compiled,{exports,URL,Image,fetch,Date,Map,Set,Promise,Error,
+ runInNewContext(compiled,{exports,URL,Image,fetch,Date,Map,Set,Promise,Error,setTimeout,clearTimeout,
   require(id){
    assert.equal(id,'../../services/private-image-cache');
    return {
-    readPrivateImage:async(token,key)=>persisted.get(token+'|'+key)||null,
+    readPrivateImage:readOverride|| (async(token,key)=>persisted.get(token+'|'+key)||null),
     storePrivateImage:async(token,key,blob)=>{persisted.set(token+'|'+key,blob);},
    };
   }
@@ -109,4 +109,18 @@ test('saved stories expire with the story and do not become permanent profile ph
  assert.match(pool,/requestOwner!==owner/);
  assert.match(pool,/story\.expiresAt<=Date\.now\(\)/);
  assert.doesNotMatch(pool,/localStorage|sessionStorage|CacheStorage|new WebSocket/);
+});
+
+test('a stalled iPhone IndexedDB cannot block loading a valid Story forever',async()=>{
+ const neverResolves=async()=>new Promise(()=>{});
+ const pool=photoPool(new Map(),neverResolves);
+ pool.api.setStoryPhotoOwner('session-fer');
+ const start=Date.now();
+ const timeout=new Promise((_,reject)=>setTimeout(()=>reject(Error('Story was blocked on IndexedDB')),1100));
+ const url=await Promise.race([
+  pool.api.warmStoryPhoto(story('https://worker.example/api/stories/photo/still-valid')),timeout
+ ]);
+ assert.match(url,/^blob:/);
+ assert.equal(pool.requests(),1,'remote signed grant becomes the fallback');
+ assert.ok(Date.now()-start<1100,'cached-image lookup may never block the viewer');
 });

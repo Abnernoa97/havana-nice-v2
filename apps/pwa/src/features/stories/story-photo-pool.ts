@@ -11,6 +11,16 @@ const samePhoto=(entry:Entry,story:MemberStory)=>entry.createdAt===story.created
 const entries=new Map<string,Entry>();
 const subscribers=new Set<()=>void>();
 const LIMIT=18;
+const CACHE_LOOKUP_BUDGET_MS=120;
+// Safari may hold an IndexedDB open while the PWA starts. A private-cache
+// lookup is optional; never let it block the first R2 image indefinitely.
+async function readCachedStoryQuickly(token:string,id:string):Promise<Blob|null>{
+ let timer:ReturnType<typeof setTimeout>|null=null;
+ try{return await Promise.race([
+  readPrivateImage(token,id),
+  new Promise<null>(resolve=>{timer=setTimeout(()=>resolve(null),CACHE_LOOKUP_BUDGET_MS);})
+ ]);}finally{if(timer!==null)clearTimeout(timer);}
+}
 let owner:string|undefined;
 const notify=()=>{for(const listener of subscribers)listener();};
 const release=(entry:Entry)=>{if(entry.url)URL.revokeObjectURL(entry.url);};
@@ -61,7 +71,7 @@ export function warmStoryPhoto(story:MemberStory):Promise<string>{
    // Check the expiring encrypted local copy BEFORE requesting a new R2 grant.
    const requestOwner=owner;
    const cacheId='story:'+story.id+':'+story.createdAt+':'+story.expiresAt;
-   let blob=requestOwner?await readPrivateImage(requestOwner,cacheId):null;
+   let blob=requestOwner?await readCachedStoryQuickly(requestOwner,cacheId):null;
    if(requestOwner!==owner||entries.get(story.id)!==entry)return '';
    const cached=!!blob;
    if(!blob){

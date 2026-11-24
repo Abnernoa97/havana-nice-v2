@@ -179,3 +179,9 @@
 - Reducción de miniaturas (480px) se traslada al tiempo ocioso y una sola tarea a la vez, jamás dentro de `onLoad`; el fallo de canvas/IndexedDB no bloquea el `<img>`.
 - Audio abandona su segundo circuito de `setPreparedCovers` y renderiza con el mismo componente visible, manteniendo HTML Audio y MediaSession sin cambios. Android 0.0.30, Worker y R2 no se modifican.
 - Validación dinámica Node confirma el `img` del primer render y nuevas pruebas de ownership/idle. La medición física en Safari sigue siendo necesaria para cuantificar tiempos exactos.
+
+## iPhone PWA · Estados no quedan esperando IndexedDB (24/11)
+- El pool privado de Estados ya conservaba una copia cifrada, pero el acceso `await readPrivateImage` podía detener todo el visor si IndexedDB se retrasaba o quedaba bloqueado al abrir Safari.
+- La lectura del caché tiene un presupuesto máximo de 120ms: si no responde, el mismo controlador sigue con su URL temporal privada de R2, sin crear otras sesiones ni rutas.
+- Se conserva la decodificación JPEG antes de avanzar el temporizador de Estados, evitando consumir segundos mientras la foto aún no está lista.
+- Prueba dinámica nueva simula IndexedDB bloqueado para siempre y verifica que el Estado aparece a través del Worker sin bloquearse.
