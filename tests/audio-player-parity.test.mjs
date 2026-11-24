@@ -35,7 +35,7 @@ test('PWA uses artwork from R2 and HTML media session without mock songs',()=>{
  assert.match(shared,/privateAudioUrl/);
  assert.match(shell,/MemberAudio token=\{token\} active=\{screen==='audio'\|\|screen==='home'\}/);
  assert.match(pwa,/hn-audio-vinyl is-playing/);
- const cachedArtwork=read('apps/pwa/src/features/audio/audio-cover-cache.ts');
+ const thumbnail=read('apps/pwa/src/features/shared/PrivateThumbnail.tsx');
  const proxy=read('functions/api/audio/artwork/[token].js');
  assert.match(pwa,/PrivateThumbnail/);
  assert.match(pwa,/const remoteCover=art\(current\.coverUrl\)/);
@@ -46,10 +46,10 @@ test('PWA uses artwork from R2 and HTML media session without mock songs',()=>{
  assert.match(pwa,/recoverMedia/);
  assert.match(pwa,/recoveryTried/);
  assert.match(pwa,/onLoadedMetadata=/);
- assert.doesNotMatch(cachedArtwork,/canvas\.toBlob|canvas\.toDataURL|createElement\('canvas'\)/);
- assert.match(cachedArtwork,/image\.decode\(\)/);
- assert.match(cachedArtwork,/URL\.revokeObjectURL\(display\)/);
- assert.match(cachedArtwork,/URL\.createObjectURL/);
+ assert.match(thumbnail,/const shown=local&&cached\?cached\.url:remote/);
+ assert.match(thumbnail,/window\.requestIdleCallback/);
+ assert.match(thumbnail,/URL\.revokeObjectURL\(blobUrl\)/);
+ assert.match(thumbnail,/return <img ref=\{imageRef\}/);
  assert.match(proxy,/CAPABILITY=\/\^\[a-f0-9\]\{32\}\$\//);
  assert.match(proxy,/BACKEND\+'\/api\/audio\/media\/'\+token/);
  assert.match(proxy,/private,no-store/);
@@ -253,7 +253,7 @@ test('HOME keeps the story strip stationary while only Audio moves, in PWA and A
 
 test('iPhone Audio starts on the real user gesture and never shows a false red autoplay warning',()=>{
  const pwa=read('apps/pwa/src/features/audio/MemberAudio.tsx');
- const cover=read('apps/pwa/src/features/audio/audio-cover-cache.ts');
+ const cover=read('apps/pwa/src/features/shared/PrivateThumbnail.tsx');
  assert.match(pwa,/const playTrack=\(position:number\)=>\{/);
  assert.match(pwa,/audio\.preload='auto';audio\.src=url;/);
  assert.match(pwa,/setSelected\(position\);\s*void audio\.play\(\)/);
