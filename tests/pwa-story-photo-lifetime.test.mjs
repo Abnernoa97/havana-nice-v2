@@ -105,7 +105,8 @@ test('closing and reopening the iPhone PWA restores expiring encrypted Stories w
 test('saved stories expire with the story and do not become permanent profile photos',()=>{
  const pool=read('apps/pwa/src/features/stories/story-photo-pool.ts');
  assert.match(pool,/storePrivateImage\(requestOwner,cacheId,blob,story\.expiresAt\)/);
- assert.match(pool,/readPrivateImage\(requestOwner,cacheId\)/);
+ assert.match(pool,/readCachedStoryQuickly\(requestOwner,cacheId\)/);
+ assert.match(pool,/CACHE_LOOKUP_BUDGET_MS=120/);
  assert.match(pool,/requestOwner!==owner/);
  assert.match(pool,/story\.expiresAt<=Date\.now\(\)/);
  assert.doesNotMatch(pool,/localStorage|sessionStorage|CacheStorage|new WebSocket/);
