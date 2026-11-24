@@ -161,3 +161,9 @@
 - Los archivos privados, grants y originales no se guardan sin cifrar; un músico diferente no puede descifrar los de otro. Límite lógico de 120 entradas/32 MB, máximo por imagen 1.5MB, caducidad por item y limpieza al revocar o cambiar de usuario.
 - Portadas y mosaicos de Familia, avatar superior/perfiles, respaldo de Estado y portadas de Audio reutilizan thumbnails previamente vistos después de reabrir. Primera visualización sigue dependiendo de red; los videos originales solo se descargan al reproducir.
 - Los módulos siguen siendo lazy/independientes. No se tocan Android, Worker, D1, R2, BOOK ni MediaSession. Safari puede borrar almacenamiento local por presión; el flujo actual queda como respaldo.
+
+## Vigesimosegunda fase · Estados iPhone: JPEG cifrado disponible tras reabrir PWA (24/11)
+- `story-photo-pool.ts` conserva su único mapa de JPEG decodificados en sesión, pero ahora consulta primero un bitmap cifrado local AES-GCM por token+storyId+createdAt+expiresAt. Si la historia ya fue vista y sigue vigente, puede abrir sin una nueva descarga R2.
+- Solo se almacena la foto tras validarla y decodificarla; TTL nunca supera el vencimiento real de 24h. Un cambio de sesión, identidad de historia o expiración impide recuperar contenido ajeno.
+- Dos nuevas pruebas ejecutan el flujo de abrir/cerrar/reabrir con URL de grant rotada, comprueban que la segunda apertura hace cero consultas R2 y que otro músico no puede reutilizar ese contenido.
+- Ni la sesión/Chat WebSocket, ni BOOK 3D, Android 0.0.30, Worker, D1 o R2 cambian. La primera apertura de una imagen inédita sigue dependiendo de la red.

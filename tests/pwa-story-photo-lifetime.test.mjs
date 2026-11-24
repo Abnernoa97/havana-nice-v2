@@ -8,8 +8,9 @@ const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
 const compiled=ts.transpileModule(read('apps/pwa/src/features/stories/story-photo-pool.ts'),{
  fileName:'story-photo-pool.ts',compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.CommonJS},
 }).outputText;
-function photoPool(){
+function photoPool(persisted=new Map()){
  const exports={},revoked=[];let requests=0,objects=0;
+ let currentOwner='';
  const URL={
   createObjectURL:()=>('blob:temporary-'+(++objects)),
   revokeObjectURL:value=>revoked.push(value),
@@ -20,7 +21,15 @@ function photoPool(){
   async decode(){}
  }
  const fetch=async()=>{requests++;return {ok:true,blob:async()=>({type:'image/jpeg',size:70000})};};
- runInNewContext(compiled,{exports,URL,Image,fetch,Date,Map,Set,Promise,Error});
+ runInNewContext(compiled,{exports,URL,Image,fetch,Date,Map,Set,Promise,Error,
+  require(id){
+   assert.equal(id,'../../services/private-image-cache');
+   return {
+    readPrivateImage:async(token,key)=>persisted.get(token+'|'+key)||null,
+    storePrivateImage:async(token,key,blob)=>{persisted.set(token+'|'+key,blob);},
+   };
+  }
+ });
  return {api:exports,requests:()=>requests,revoked};
 }
 const story=(url,createdAt=1000)=>({
@@ -74,4 +83,30 @@ test('only the session shell owns picture memory; HOME keeps strict independent 
   assert.match(visual,new RegExp('const '+module+'=lazy\\('));
  const pool=read('apps/pwa/src/features/stories/story-photo-pool.ts');
  assert.doesNotMatch(pool,/indexedDB|localStorage|sessionStorage|caches\.open|CacheStorage|new WebSocket/);
+});
+
+test('closing and reopening the iPhone PWA restores expiring encrypted Stories without a second R2 request',async()=>{
+ const persisted=new Map();
+ const original=story('https://worker.example/api/stories/photo/first');
+ const first=photoPool(persisted);
+ first.api.setStoryPhotoOwner('session-fer');
+ await first.api.warmStoryPhoto(original);
+ assert.equal(first.requests(),1);
+ const reopened=photoPool(persisted);
+ reopened.api.setStoryPhotoOwner('session-fer');
+ const url=await reopened.api.warmStoryPhoto({...original,photoUrl:'https://worker.example/api/stories/photo/new-grant'});
+ assert.match(url,/^blob:/);
+ assert.equal(reopened.requests(),0,'a previously viewed story must open without refetching R2');
+ const otherMusician=photoPool(persisted);
+ otherMusician.api.setStoryPhotoOwner('session-noa');
+ await otherMusician.api.warmStoryPhoto(original);
+ assert.equal(otherMusician.requests(),1,'other musicians never read a different session cache');
+});
+test('saved stories expire with the story and do not become permanent profile photos',()=>{
+ const pool=read('apps/pwa/src/features/stories/story-photo-pool.ts');
+ assert.match(pool,/storePrivateImage\(requestOwner,cacheId,blob,story\.expiresAt\)/);
+ assert.match(pool,/readPrivateImage\(requestOwner,cacheId\)/);
+ assert.match(pool,/requestOwner!==owner/);
+ assert.match(pool,/story\.expiresAt<=Date\.now\(\)/);
+ assert.doesNotMatch(pool,/localStorage|sessionStorage|CacheStorage|new WebSocket/);
 });

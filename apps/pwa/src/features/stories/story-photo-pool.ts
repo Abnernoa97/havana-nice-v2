@@ -1,7 +1,8 @@
 import type {MemberStory} from '@havana/shared';
+import {readPrivateImage,storePrivateImage} from '../../services/private-image-cache';
 
-// Ephemeral, per-session decoded JPEG pool. Never persist private R2 photos,
-// short-lived signed grants or musician credentials in browser storage.
+// Ephemeral, session-owned decoded JPEG pool. Only expiring AES-GCM encrypted
+// bitmaps are persisted for iPhone reopen; no signed grants/credentials are stored.
 type Entry={grant:string;createdAt:number;expiresAt:number;url:string;pending:Promise<string>|null;lastUsed:number};
 // A story ID identifies one immutable R2 photo: renewing its short-lived grant
 // does not invalidate an already decoded image belonging to this same session.
@@ -56,9 +57,18 @@ export function warmStoryPhoto(story:MemberStory):Promise<string>{
  entry.pending=(async()=>{
   let localUrl='';
   try{
-   const response=await fetch(story.photoUrl,{credentials:'omit',cache:'no-store'});
-   if(!response.ok)throw Error('Estado no disponible');
-   const blob=await response.blob();
+   // The same immutable story was previously decoded by this musician.
+   // Check the expiring encrypted local copy BEFORE requesting a new R2 grant.
+   const requestOwner=owner;
+   const cacheId='story:'+story.id+':'+story.createdAt+':'+story.expiresAt;
+   let blob=requestOwner?await readPrivateImage(requestOwner,cacheId):null;
+   if(requestOwner!==owner||entries.get(story.id)!==entry)return '';
+   const cached=!!blob;
+   if(!blob){
+    const response=await fetch(story.photoUrl,{credentials:'omit',cache:'no-store'});
+    if(!response.ok)throw Error('Estado no disponible');
+    blob=await response.blob();
+   }
    if(blob.type!=='image/jpeg'||!blob.size||blob.size>1_500_000)throw Error('Imagen inválida');
    localUrl=URL.createObjectURL(blob);
    const img=new Image();img.decoding='async';img.src=localUrl;
@@ -68,6 +78,8 @@ export function warmStoryPhoto(story:MemberStory):Promise<string>{
    });
    if(entries.get(story.id)!==entry||story.expiresAt<=Date.now())return '';
    entry.url=localUrl;localUrl='';entry.lastUsed=Date.now();
+   if(!cached&&requestOwner&&owner===requestOwner)
+    void storePrivateImage(requestOwner,cacheId,blob,story.expiresAt);
    notify();trimPool();
    return entry.url;
   }catch{return '';}
