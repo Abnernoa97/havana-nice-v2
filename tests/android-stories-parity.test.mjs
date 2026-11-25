@@ -155,6 +155,8 @@ test('Native fullscreen gallery hides playback chrome immediately and reveals it
  assert.match(film,/ready&&!error&&controlsVisible&&<View style=\{s.transport\}>/);
  assert.match(film,/if\(!tapMoved.current\)setControlsVisible\(v=>!v\)/);
  assert.match(film,/player.addListener\('playToEnd'/);
+ assert.match(film,/videoTap:\{position:'absolute',top:0,right:0,bottom:0,left:0,zIndex:1\}/);
+ assert.doesNotMatch(film,/StyleSheet\.absoluteFillObject/);
  assert.match(film,/Math.abs\(dx\)>55&&Math.abs\(dx\)>Math.abs\(dy\)\*1.2/);
 });
 

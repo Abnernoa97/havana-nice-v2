@@ -153,7 +153,7 @@ const s=StyleSheet.create({
  loading:{position:'absolute',top:'41%',alignSelf:'center'},
  videoError:{position:'absolute',top:'47%',textAlign:'center',color:'#fff',fontSize:13},
  film:{flex:1,width:'100%',alignItems:'center',justifyContent:'center'},
- videoTap:{...StyleSheet.absoluteFillObject,zIndex:1},
+ videoTap:{position:'absolute',top:0,right:0,bottom:0,left:0,zIndex:1},
  play:{position:'absolute',zIndex:2,top:'44%',width:68,height:68,borderRadius:34,
   backgroundColor:'#193c30c9',alignItems:'center',justifyContent:'center',
   borderWidth:1,borderColor:'#ffffff80'},
