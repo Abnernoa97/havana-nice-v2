@@ -23,3 +23,26 @@ test('Sender, text, audio, reply and deleted item break the gallery',()=>{
   make(8,'noa'),{...make(9,'noa'),deletedAt:Date.now()},make(10,'noa')];
  assert.equal(groupChatMediaMessages(messages).length,messages.length);
 });
+
+test('Member galleries have no outer frame or per-tile padding and preserve original selection',()=>{
+ const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
+ const native=read('apps/android/styles/chat-styles.ts');
+ const web=read('apps/pwa/src/styles/chat/chat.css');
+ const timeline=read('apps/android/features/chat/NativeChatTimeline.tsx');
+ const media=read('apps/android/features/chat/NativeChatMediaView.tsx');
+ const photo=read('apps/android/features/chat/NativeChatPhoto.tsx');
+ const video=read('apps/android/features/chat/NativeChatVideo.tsx');
+ assert.doesNotMatch(native,/galleryCluster:\{[^}]*backgroundColor|galleryMine:\{[^}]*backgroundColor/);
+ assert.match(native,/galleryBubble:\{[^}]*padding:0/);
+ assert.match(native,/galleryGrid:\{[^}]*rowGap:3/);
+ assert.match(timeline,/style=\{compact\?styles\.galleryBubble:/);
+ assert.match(media,/compact\?\{width:'100%',aspectRatio:1\}/);
+ assert.match(photo,/compact\?\{width:'100%',height:'100%',borderRadius:5\}/);
+ assert.match(video,/compact\?\{width:'100%',height:'100%',borderRadius:5\}/);
+ assert.doesNotMatch(web,/\.hn-chat-media-cluster(?:\.mine)?\{[^}]*background:/);
+ assert.match(web,/\.hn-chat-media-cluster \.hn-chat-gallery-tile\{[^}]*padding:0/);
+ for(const code of [timeline,read('apps/pwa/src/features/chat/ChatTimeline.tsx')]){
+  assert.match(code,/selectChatGalleryMedia\(messages,/);
+  assert.match(code,/delivery\(.*true\)/);
+ }
+});

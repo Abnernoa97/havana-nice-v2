@@ -15,7 +15,7 @@ export default function NativeChatPhoto({
  const [ratio,setRatio]=useState(1);
  const [enlarged,setEnlarged]=useState(false);
  const [error,setError]=useState('');
- const height=compact?width:Math.max(60,Math.round(width/ratio));
+ const height=Math.max(60,Math.round(width/ratio));
 
  useEffect(()=>{
    let active=true;
@@ -55,12 +55,17 @@ export default function NativeChatPhoto({
  return <>
    {photo?
      <Pressable accessibilityLabel="Ampliar fotografía" accessibilityRole="button"
-       onPress={()=>onOpen?onOpen(media.assetId):setEnlarged(true)}>
+       onPress={()=>onOpen?onOpen(media.assetId):setEnlarged(true)}
+       style={compact?{width:'100%',height:'100%'}:undefined}>
        <Image source={{uri:photo}} resizeMode={compact?'cover':'contain'}
-         style={{width,height,borderRadius:compact?7:12}}/>
+         style={compact?{width:'100%',height:'100%',borderRadius:5}:{width,height,borderRadius:12}}/>
      </Pressable>:
-     error?<Text style={{color:'#7c4141'}}>{error}</Text>:
-     <View style={{width,height:92,alignItems:'center',justifyContent:'center'}}>
+     error?(compact?<Pressable accessibilityRole="button" accessibilityLabel="Abrir fotografía original"
+       onPress={()=>onOpen?.(media.assetId)}
+       style={{width:'100%',height:'100%',backgroundColor:'#e7e2da',borderRadius:5,alignItems:'center',justifyContent:'center',padding:6}}>
+       <Text style={{color:'#7c4141',fontSize:11,textAlign:'center'}}>Abrir original</Text>
+     </Pressable>:<Text style={{color:'#7c4141'}}>{error}</Text>):
+     <View style={[{alignItems:'center',justifyContent:'center'},compact?{width:'100%',height:'100%',borderRadius:5,backgroundColor:'#e7e2da'}:{width,height:92}]}>
        <ActivityIndicator color="#77736d"/>
      </View>}
    <Modal visible={!onOpen&&enlarged&&!!photo} animationType="fade" transparent

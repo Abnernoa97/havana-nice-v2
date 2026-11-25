@@ -36,7 +36,7 @@ export default function NativeChatVideo({media,session,width,compact=false,onOpe
  },[opened,attempt,media.assetId,session.token]);
  return <>
   <Pressable accessibilityRole="button" accessibilityLabel="Abrir video"
-   onPress={()=>onOpen?onOpen(media.assetId):setOpened(true)} style={[s.cover,{width,height:compact?width:Math.round(width*.64)}]}>
+   onPress={()=>onOpen?onOpen(media.assetId):setOpened(true)} style={[s.cover,compact?{width:'100%',height:'100%',borderRadius:5}:{width,height:Math.round(width*.64)}]}>
    {signed&&nativePosterUrl(signed)?<Image source={{uri:nativePosterUrl(signed)!}} style={s.coverPhoto}/>:null}
    <View style={s.coverPlay}><Text style={s.coverPlayText}>▶</Text></View>
   </Pressable>

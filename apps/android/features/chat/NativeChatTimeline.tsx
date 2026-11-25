@@ -87,8 +87,7 @@ function NativeChatTimeline({
   const badges=display.reactionBadges.get(message.seq)??[];
   const online=connected&&onlineActorIds.has(message.senderId);
   return <SwipeableBubble
-   style={[styles.bubble,mine?styles.mine:styles.theirs,online&&styles.onlineBubble,
-    compact&&styles.galleryBubble]}
+   style={compact?styles.galleryBubble:[styles.bubble,mine?styles.mine:styles.theirs,online&&styles.onlineBubble]}
    onReply={() => onReply(message)}
    onLongPress={(anchor) => onMessageLongPress(message,anchor)}
    onPress={() => {if(mine && message.pending && message.deliveryStatus==='error')onRetry(message.clientMessageId);}}>
