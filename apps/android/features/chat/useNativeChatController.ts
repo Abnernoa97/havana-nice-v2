@@ -145,12 +145,21 @@ export function useNativeChatController(){
     storageQueue.current = storageQueue.current.catch(() => {}).then(() => saveNativeLocalChat(value)).catch(() => {});
   }
 
-  function sendReadReceipt(seq:number) {
+  // Only the mounted timeline may acknowledge a visible server sequence.
+  // One watermark per live socket; reconnect may resend idempotently.
+  const lastReadSent=useRef<{socket:WebSocket;seq:number}|null>(null);
+  const readScreen=useRef(activeScreen);
+  readScreen.current=activeScreen;
+  const onReadVisible=useCallback((seq:number)=>{
+    const ws=socket.current;
+    if(activeScreen!=='chat'||readScreen.current!=='chat'||!session||activeSession.current?.token!==session.token||
+      appLifecycle.current!=='active'||!ws||ws.readyState!==WebSocket.OPEN)return;
+    if(lastReadSent.current?.socket===ws&&lastReadSent.current.seq>=seq)return;
     const payload=chatReadReceiptPayload(seq);
-    if(payload && appLifecycle.current==='active' && socket.current?.readyState===WebSocket.OPEN) {
-      socket.current.send(payload);
-    }
-  }
+    if(!payload)return;
+    try{ws.send(payload);lastReadSent.current={socket:ws,seq};}catch{/* Retry on next visible event or reconnect. */}
+  },[activeScreen,session?.token]);
+
   async function loadOlder() {
     if(!session || loadingOlder || !hasMore)return;
     await requestOlderChatPage({
@@ -266,7 +275,6 @@ export function useNativeChatController(){
         setHasMore(more);
         setMessages(before=>reconcileChatSnapshot(before,withoutRemovedChatMessages(history,removedSeq.current)));
         if(initialHistoryPending.current&&scroll.current)requestAnimationFrame(scheduleInitialBottom);
-        sendReadReceipt(Math.max(0,...history.map(m=>m.seq)));
         flushOutbox();
       },
       onError:reason=>{
@@ -375,7 +383,7 @@ export function useNativeChatController(){
             setEditing(current=>current?.seq===seq?null:current);
           },
           onConfirmed:confirmMessage,
-          onMessageReceived:seq=>{sendReadReceipt(seq);flushOutbox();},
+          onMessageReceived:()=>{flushOutbox();},
           onRevoked:revokeCurrentAccess,
           onError:reason=>{abandonPendingEdit(reason);setError(reason);},
         });
@@ -670,5 +678,5 @@ export function useNativeChatController(){
       maxWidth:220,menuHeight:64,
     });
 
-  return {iosBackPan,keyboardOpen,session,activeScreen,restoringAccess,name,setName,join,joining,error,messages,onlineActorIds,connection,reactions,receipts,hasMore,loadingOlder,scroll,onTimelineContentChange,onTimelineScrollBeginDrag,onTimelineScroll,onTimelineScrollEndDrag,onTimelineLoadOlder,onTimelineReply,onTimelineLongPress,onTimelineRetry,menuMessage,menuLeft,menuTop,menuWidth,setMenuMessage,setReactionBurst,reactionBurstId,react,retryAttempts,connect,editing,savingEdit,finishEditing,replyTo,setReplyTo,typing,selectedMedia,mediaUploading,mediaProgress,mediaReady,removeSelectedMedia,mediaError,sendVoice,voiceDraft,voiceSending,voiceError,discardVoice,draft,draftFieldHeight,setDraftFieldHeight,typeText,mediaPicking,chooseNativeMedia,sendSelectedMedia,send,composerPanel,setComposerPanel,navigateTo,reactionBurst};
+  return {iosBackPan,keyboardOpen,session,activeScreen,restoringAccess,name,setName,join,joining,error,messages,onlineActorIds,connection,reactions,receipts,hasMore,loadingOlder,scroll,onTimelineContentChange,onTimelineScrollBeginDrag,onTimelineScroll,onTimelineScrollEndDrag,onTimelineLoadOlder,onTimelineReply,onTimelineLongPress,onTimelineRetry,onReadVisible,menuMessage,menuLeft,menuTop,menuWidth,setMenuMessage,setReactionBurst,reactionBurstId,react,retryAttempts,connect,editing,savingEdit,finishEditing,replyTo,setReplyTo,typing,selectedMedia,mediaUploading,mediaProgress,mediaReady,removeSelectedMedia,mediaError,sendVoice,voiceDraft,voiceSending,voiceError,discardVoice,draft,draftFieldHeight,setDraftFieldHeight,typeText,mediaPicking,chooseNativeMedia,sendSelectedMedia,send,composerPanel,setComposerPanel,navigateTo,reactionBurst};
 }

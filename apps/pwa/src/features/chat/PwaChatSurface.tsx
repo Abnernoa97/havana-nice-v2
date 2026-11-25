@@ -20,7 +20,7 @@ export default function PwaChatSurface({ui}:{ui:PwaChatUI}){
     session,activeScreen,readerRoute,closeReader,navigateTo,closeChat,edgeSwipeStart,
   restoringAccess,name,joining,error,setName,join,messages,latestMessageRequest,
   onlineActorIds,connection,reactions,receipts,hasMore,loadingOlder,
-  pauseFollow,resumeLatest,onTimelineLoadOlder,onTimelineReply,onTimelineLongPress,onTimelineRetry,bottom,
+  pauseFollow,resumeLatest,onTimelineLoadOlder,onTimelineReply,onTimelineLongPress,onTimelineRetry,onReadVisible,bottom,
   menuMessage,menuAnchor,setMenuMessage,react,reconnect,editing,savingEdit,finishEditing,
   replyTo,setReplyTo,typing,composerPanel,setComposerPanel,openGalleryMedia,insertEmoji,
   photosPicker,videoPicker,cameraPicker,chooseMedia,selectedMedia,mediaUploading,
@@ -94,7 +94,7 @@ export default function PwaChatSurface({ui}:{ui:PwaChatUI}){
           <ChatTimeline messages={messages} latestMessageRequest={latestMessageRequest}
             actorId={session.actorId} token={session.token}
              onlineActorIds={onlineActorIds} connected={connection==='en vivo'}
-            reactions={reactions} receipts={receipts}
+            reactions={reactions} receipts={receipts} onReadVisible={onReadVisible}
             hasMore={hasMore} loadingOlder={loadingOlder}
             onBrowseOlder={pauseFollow} onReturnLatest={resumeLatest}
             onLoadOlder={onTimelineLoadOlder} onReply={onTimelineReply}

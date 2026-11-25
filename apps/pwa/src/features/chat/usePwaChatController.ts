@@ -129,12 +129,21 @@ export function usePwaChatController(){
     );
     storageQueue.current = storageQueue.current.catch(() => {}).then(() => saveLocalChat(value)).catch(() => {});
   }
-  function sendReadReceipt(seq: number) {
+  // Only the mounted timeline may acknowledge a visible server sequence.
+  // One watermark per live socket; reconnect may resend idempotently.
+  const lastReadSent=useRef<{socket:WebSocket;seq:number}|null>(null);
+  const readScreen=useRef(activeScreen);
+  readScreen.current=activeScreen;
+  const onReadVisible=useCallback((seq:number)=>{
+    const ws=socket.current;
+    if(activeScreen!=='chat'||readScreen.current!=='chat'||!session||activeSession.current?.token!==session.token||
+      document.visibilityState!=='visible'||!ws||ws.readyState!==WebSocket.OPEN)return;
+    if(lastReadSent.current?.socket===ws&&lastReadSent.current.seq>=seq)return;
     const payload=chatReadReceiptPayload(seq);
-    if(payload && document.visibilityState === 'visible' && socket.current?.readyState === WebSocket.OPEN) {
-      socket.current.send(payload);
-    }
-  }
+    if(!payload)return;
+    try{ws.send(payload);lastReadSent.current={socket:ws,seq};}catch{/* Retry on next visible event or reconnect. */}
+  },[activeScreen,session?.token]);
+
   async function loadOlder() {
     if(!session || !hasMore || loadingOlder || !messages.length)return;
     await requestOlderChatPage({
@@ -237,7 +246,6 @@ export function usePwaChatController(){
         setReceipts(readHistory);
         setHasMore(more);
         setMessages(before=>reconcileChatSnapshot(before,withoutRemovedChatMessages(history,removedSeq.current)));
-        sendReadReceipt(Math.max(0,...history.map(m=>m.seq)));
         flushOutbox();
       },
       onError:e=>{setError(e instanceof Error?e.message:'Error al sincronizar');flushOutbox();},
@@ -333,7 +341,7 @@ export function usePwaChatController(){
             setEditing(current=>current?.seq===seq?null:current);
           },
           onConfirmed:confirm,
-          onMessageReceived:seq=>{sendReadReceipt(seq);flushOutbox();},
+          onMessageReceived:()=>{flushOutbox();},
           onRevoked:revokeCurrentAccess,
           onError:reason=>{abandonPendingEdit(reason);setError(reason);},
         });
@@ -588,7 +596,7 @@ export function usePwaChatController(){
     session,activeScreen,readerRoute,closeReader,navigateTo,closeChat,edgeSwipeStart,
   restoringAccess,name,joining,error,setName,join,messages,latestMessageRequest,
   onlineActorIds,connection,reactions,receipts,hasMore,loadingOlder,
-  pauseFollow,resumeLatest,onTimelineLoadOlder,onTimelineReply,onTimelineLongPress,onTimelineRetry,bottom,
+  pauseFollow,resumeLatest,onTimelineLoadOlder,onTimelineReply,onTimelineLongPress,onTimelineRetry,onReadVisible,bottom,
   menuMessage,menuAnchor,setMenuMessage,react,reconnect,editing,savingEdit,finishEditing,
   replyTo,setReplyTo,typing,composerPanel,setComposerPanel,openGalleryMedia,insertEmoji,
   photosPicker,videoPicker,cameraPicker,chooseMedia,selectedMedia,mediaUploading,

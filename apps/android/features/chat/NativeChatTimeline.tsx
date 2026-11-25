@@ -1,5 +1,5 @@
-import React,{memo,useMemo,useState,type RefObject} from 'react';
-import {FlatList,View,Text,Pressable,type NativeScrollEvent,type NativeSyntheticEvent} from 'react-native';
+import React,{memo,useEffect,useMemo,useRef,useState,type RefObject} from 'react';
+import {AppState,FlatList,Modal,View,Text,Pressable,type ViewToken,type NativeScrollEvent,type NativeSyntheticEvent} from 'react-native';
 import {
  buildChatDisplayIndex,groupChatMediaMessages,selectChatGalleryMedia,
  type ChatMessage,type ChatReaction,type ChatReadReceipt,type ChatSession,type ChatEmoji,
@@ -31,13 +31,15 @@ type Props={
  onMessageLongPress:(message:ChatMessage,anchor:BubbleAnchor)=>void;
  onQuickReact:(message:ChatMessage,emoji:ChatEmoji,origin:{x:number;y:number})=>void;
  onRetry:(clientMessageId:string)=>void;
+ onReadVisible:(seq:number)=>void;
 };
 function NativeChatTimeline({
  messages,session,onlineActorIds,connected,reactions,receipts,hasMore,loadingOlder,
  scrollRef,onContentSizeChange,onLayout,onScrollBeginDrag,onScroll,onScrollEndDrag,
- onLoadOlder,onReply,onMessageLongPress,onQuickReact,onRetry,
+ onLoadOlder,onReply,onMessageLongPress,onQuickReact,onRetry,onReadVisible,
 }:Props){
  const [gallery,setGallery]=useState<{items:NonNullable<ChatMessage['media']>[];initial:number}|null>(null);
+ const [readerSeq,setReaderSeq]=useState<number|null>(null);
  const display=useMemo(()=>buildChatDisplayIndex(messages,reactions,receipts,session.actorId),
    [messages,reactions,receipts,session.actorId]);
  const liveRenderData=useMemo(()=>({display,onlineActorIds,connected}),
@@ -50,6 +52,36 @@ function NativeChatTimeline({
   return map;
  },[galleries]);
 
+ const selected=readerSeq===null?null:messages.find(message=>message.seq===readerSeq);
+ const readerList=selected?display.deliveryFor(selected).readers:[];
+ // Viewability belongs to the FlatList, not the history fetch/socket.
+ const viewed=useRef(0);
+ const readEnabled=connected&&!gallery&&readerSeq===null;
+ const readRef=useRef({onReadVisible,readEnabled});
+ readRef.current={onReadVisible,readEnabled};
+ const viewabilityConfig=useRef({itemVisiblePercentThreshold:50,minimumViewTime:250}).current;
+ const onViewableItemsChanged=useRef(({viewableItems}:{viewableItems:ViewToken[]})=>{
+  viewed.current=viewableItems.reduce((max,entry)=>{
+   const item=entry.item as ChatMessage;
+   return entry.isViewable&&item&&!item.pending&&!item.deletedAt&&item.seq>0?Math.max(max,item.seq):max;
+  },0);
+  if(readRef.current.readEnabled&&viewed.current>0)readRef.current.onReadVisible(viewed.current);
+ }).current;
+ useEffect(()=>{
+  const report=()=>{if(readRef.current.readEnabled&&viewed.current>0)readRef.current.onReadVisible(viewed.current);};
+  if(readEnabled)report();
+  const sub=AppState.addEventListener('change',state=>{if(state==='active')report();});
+  return()=>sub.remove();
+ },[readEnabled,onReadVisible]);
+ const delivery=(message:ChatMessage,grouped=false)=>{
+  const info=display.deliveryFor(message);
+  const style=grouped?styles.galleryDelivery:[styles.messageTime,styles.deliveryLabel,styles.mineMeta];
+  return info.readers.length>0
+   ?<Pressable accessibilityRole="button" accessibilityLabel={info.label+'. Ver nombres'} hitSlop={6}
+      onPress={event=>{event.stopPropagation();setReaderSeq(message.seq);}}>
+     <Text style={style}>{info.label}</Text></Pressable>
+   :<Text style={style}>{info.label}</Text>;
+ };
  const renderBubble=(message:ChatMessage,compact=false)=>{
   const mine=message.senderId===session.actorId;
   const badges=display.reactionBadges.get(message.seq)??[];
@@ -86,10 +118,7 @@ function NativeChatTimeline({
     style={styles.reactionTrigger} onPress={event=>onMessageLongPress(message,{
      x:event.nativeEvent.pageX-20,y:event.nativeEvent.pageY-20,width:40,height:40
     })}><Text style={styles.reactionTriggerText}>♡ +</Text></Pressable>}
-   {mine&&!compact&&<Text accessibilityLabel={!message.pending&&message.seq>0&&display.lastReadByOther>=message.seq?'Leído':'Enviado'}
-     style={[styles.messageTime,styles.deliveryTicks,styles.mineMeta,online&&styles.onlineMeta]}>
-     {!message.pending&&message.seq>0&&display.lastReadByOther>=message.seq?'✓✓':'✓'}
-   </Text>}
+   {mine&&!compact&&delivery(message)}
   </SwipeableBubble>;
  };
 
@@ -102,6 +131,7 @@ function NativeChatTimeline({
    inverted
    ref={scrollRef} data={visibleMessages}
    extraData={liveRenderData}
+   viewabilityConfig={viewabilityConfig} onViewableItemsChanged={onViewableItemsChanged}
    keyExtractor={message=>message.senderId+':'+message.clientMessageId}
    style={styles.messageList} contentContainerStyle={styles.messages}
    keyboardShouldPersistTaps="handled"
@@ -135,13 +165,21 @@ function NativeChatTimeline({
       {grouped.map(item=><View key={item.senderId+':'+item.clientMessageId}
        style={styles.galleryCell}>{renderBubble(item,true)}</View>)}
      </View>
-     {mine&&<Text style={styles.galleryDelivery}
-      accessibilityLabel={message.seq>0&&display.lastReadByOther>=message.seq?'Leído':'Enviado'}>
-      {message.seq>0&&display.lastReadByOther>=message.seq?'✓✓':'✓'}
-     </Text>}
+     {mine&&delivery(message,true)}
     </View>;
    }}
   />
+  <Modal visible={readerSeq!==null} transparent animationType="fade" onRequestClose={()=>setReaderSeq(null)}>
+   <View style={styles.receiptBackdrop}>
+    <Pressable style={styles.receiptDismiss} accessibilityLabel="Cerrar confirmaciones" onPress={()=>setReaderSeq(null)}/>
+    <View style={styles.receiptPanel} accessibilityViewIsModal>
+     <View style={styles.receiptHeading}><Text style={styles.receiptTitle}>Leído por</Text>
+      <Pressable accessibilityRole="button" onPress={()=>setReaderSeq(null)}><Text style={styles.receiptClose}>Cerrar</Text></Pressable></View>
+     {readerList.length?readerList.map(reader=><Text key={reader.actorId} style={styles.receiptName}>{reader.displayName||'Nombre no disponible'}</Text>):
+      <Text style={styles.receiptName}>Sin confirmaciones de lectura.</Text>}
+    </View>
+   </View>
+  </Modal>
   {gallery&&<NativeChatGallery items={gallery.items} initial={gallery.initial}
    session={session} onClose={()=>setGallery(null)}/>}
   </>

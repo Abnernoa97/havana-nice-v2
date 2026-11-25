@@ -26,20 +26,52 @@ type ChatTimelineProps={
  onReply:(message:ChatMessage)=>void;
  onMessageLongPress:(message:ChatMessage,anchor:MessageAnchor)=>void;
  onRetry:(clientMessageId:string)=>void;
+ onReadVisible:(seq:number)=>void;
  bottomRef:RefObject<HTMLDivElement|null>;
 };
 
 function ChatTimeline({
  messages,latestMessageRequest,actorId,onlineActorIds,connected,token,reactions,receipts,hasMore,loadingOlder,
- onLoadOlder,onBrowseOlder,onReturnLatest,onReply,onMessageLongPress,onRetry,bottomRef,
+ onLoadOlder,onBrowseOlder,onReturnLatest,onReply,onMessageLongPress,onRetry,onReadVisible,bottomRef,
 }:ChatTimelineProps){
  const display=useMemo(()=>buildChatDisplayIndex(messages,reactions,receipts,actorId),
   [messages,reactions,receipts,actorId]);
+ const [readerSeq,setReaderSeq]=useState<number|null>(null);
  const [endAnchorKey,setEndAnchorKey]=useState<string|null>(null);
  const [gallery,setGallery]=useState<{items:NonNullable<ChatMessage['media']>[];index:number}|null>(null);
 
  const windowed=useMemo(()=>selectChatMessageWindow(messages,endAnchorKey),
   [messages,endAnchorKey]);
+ const selected=readerSeq===null?null:messages.find(message=>message.seq===readerSeq);
+ const readerList=selected?display.deliveryFor(selected).readers:[];
+ const delivery=(message:ChatMessage,grouped=false)=>{
+  const info=display.deliveryFor(message),className=grouped?'hn-chat-group-delivery':'message-meta hn-chat-delivery';
+  return info.readers.length?<button type="button" className={className} aria-label={info.label+'. Ver nombres'}
+   onClick={event=>{event.stopPropagation();setReaderSeq(message.seq);}}>{info.label}</button>:<span className={className}>{info.label}</span>;
+ };
+ // Observe only mounted server-confirmed rows in the bounded message window.
+ // No receipt on download, while browsing another module, or with the page hidden.
+ useEffect(()=>{
+  const list=bottomRef.current?.closest('.chat-messages');
+  if(!list||!connected||gallery||readerSeq!==null||typeof IntersectionObserver==='undefined')return;
+  let observer:IntersectionObserver|null=null,disposed=false;
+  const observe=()=>{
+   observer?.disconnect();observer=null;
+   if(document.visibilityState!=='visible')return;
+   observer=new IntersectionObserver(entries=>{
+    if(disposed||document.visibilityState!=='visible')return;
+    let seq=0;
+    for(const entry of entries)if(entry.isIntersecting&&entry.intersectionRatio>=.5){
+     const value=Number((entry.target as HTMLElement).dataset.chatReadSeq);
+     if(Number.isSafeInteger(value)&&value>seq)seq=value;
+    }
+    if(seq>0)onReadVisible(seq);
+   },{root:list,threshold:.5});
+   list.querySelectorAll('[data-chat-read-seq]').forEach(row=>observer?.observe(row));
+  };
+  observe();document.addEventListener('visibilitychange',observe);
+  return()=>{disposed=true;observer?.disconnect();document.removeEventListener('visibilitychange',observe);};
+ },[windowed.rows,connected,gallery,readerSeq,onReadVisible,bottomRef]);
  const pendingPosition=useRef<{key:string;offset:number}|null>(null);
  const lastScrollTop=useRef(0);
  const recentGesture=useRef(0);
@@ -217,7 +249,7 @@ function ChatTimeline({
                const owned=message.senderId===actorId;
                return <SwipeMessage className={`bubble ${owned?'mine':'theirs'}${connected&&onlineActorIds.has(message.senderId)?' online':''}${tiled?' hn-chat-gallery-tile':''}`}
                  key={message.senderId+':'+message.clientMessageId}
-                 messageKey={chatWindowKey(message)}
+                 messageKey={chatWindowKey(message)} readSeq={!message.pending&&!message.deletedAt&&message.seq>0?message.seq:undefined}
                  onSwipeRight={()=>onReply(message)}
                  onLongPress={anchor=>onMessageLongPress(message,anchor)}>
                  {!owned&&!tiled&&<span className="sender">{message.senderName}</span>}
@@ -236,10 +268,7 @@ function ChatTimeline({
                   <div className="reaction-counts">
                    {badges.map(({emoji,count})=><span key={emoji}>{emoji}{count}</span>)}
                   </div>}
-                 {!tiled&&owned&&<span className="message-meta hn-chat-ticks"
-                   aria-label={!message.pending&&message.seq>0&&display.lastReadByOther>=message.seq?'Leído':'Enviado'}>
-                   {!message.pending&&message.seq>0&&display.lastReadByOther>=message.seq?'✓✓':'✓'}
-                 </span>}
+                 {!tiled&&owned&&delivery(message)}
                  {owned&&message.pending&&message.deliveryStatus==='error'&&
                   <button type="button" className="retry-message"
                    onClick={()=>onRetry(message.clientMessageId)}>Reintentar envío</button>}
@@ -251,9 +280,7 @@ function ChatTimeline({
                aria-label={group.length+' archivos recibidos juntos'}>
                {!mine&&<span className="hn-chat-cluster-sender">{group[0]!.senderName}</span>}
                <div className="hn-chat-media-mosaic">{group.map(renderMessage)}</div>
-               {mine&&<span className="hn-chat-group-ticks" aria-label={group[group.length-1]!.seq>0&&display.lastReadByOther>=group[group.length-1]!.seq?'Leído':'Enviado'}>
-                {group[group.length-1]!.seq>0&&display.lastReadByOther>=group[group.length-1]!.seq?'✓✓':'✓'}
-               </span>}
+               {mine&&delivery(group[group.length-1]!,true)}
               </div>;
             })}
             {windowed.hasNewer&&<div className="chat-window-actions">
@@ -263,6 +290,14 @@ function ChatTimeline({
             <div ref={bottomRef} />
             </div>
           </section>
+          {readerSeq!==null&&<div className="hn-chat-receipt-backdrop" onClick={()=>setReaderSeq(null)}>
+           <div className="hn-chat-receipt-panel" role="dialog" aria-modal="true" aria-label="Leído por"
+            onClick={event=>event.stopPropagation()} onKeyDown={event=>{if(event.key==='Escape')setReaderSeq(null);}}>
+            <div className="hn-chat-receipt-heading"><strong>Leído por</strong>
+             <button type="button" autoFocus onClick={()=>setReaderSeq(null)}>Cerrar</button></div>
+            {readerList.length?readerList.map(reader=><p key={reader.actorId}>{reader.displayName||'Nombre no disponible'}</p>):<p>Sin confirmaciones de lectura.</p>}
+           </div>
+          </div>}
           {gallery&&<ChatMediaGallery items={gallery.items} initial={gallery.index}
            token={token} onClose={()=>setGallery(null)}/>}
          </>

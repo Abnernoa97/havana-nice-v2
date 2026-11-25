@@ -201,7 +201,7 @@ test('PWA Chat Timeline stays presentation-only: one session, one history engine
  assert.match(controller,/onMessageLongPress=\{onTimelineLongPress\}/);
  assert.match(timeline,/onSwipeRight=\{\(\)=>onReply\(message\)\}/);
  assert.match(timeline,/onLongPress=\{anchor=>onMessageLongPress\(message,anchor\)\}/);
- assert.match(timeline,/display\.lastReadByOther/);
+ assert.match(timeline,/display\.deliveryFor\(message\)/);
  assert.match(timeline,/buildChatDisplayIndex\(messages,reactions,receipts,actorId\)/);
  assert.doesNotMatch(timeline,/new WebSocket|startNamedChatSession|restoreNamedChatSession|saveLocalChat|uploadChatFile/);
 });

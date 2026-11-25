@@ -260,9 +260,14 @@ h1 span { font-weight:400; }
 @media(max-width:380px){.hn-chat-media-cluster{width:min(94%,390px)}}
 
 /* One discreet tick indicator for the whole grouped media burst. */
-.hn-chat-ticks{font-size:14px;font-weight:750;letter-spacing:-2px;opacity:.86}
-.hn-chat-group-ticks{align-self:flex-end;margin-right:8px;color:#bbdcca;
- font-size:14px;font-weight:750;letter-spacing:-2px;line-height:1.2}
+.hn-chat-delivery,.hn-chat-group-delivery{font-family:inherit;line-height:1.4;font-size:10px;font-weight:400;letter-spacing:0;color:#d6e6db;background:none;border:0;text-align:right;opacity:.86;padding:3px 0 0;margin-left:auto;display:block}
+.hn-chat-group-delivery{align-self:flex-end;margin-right:8px}
+button.hn-chat-delivery,button.hn-chat-group-delivery{cursor:pointer;font-family:inherit}
+.hn-chat-receipt-backdrop{position:fixed;inset:0;z-index:10000;background:#0005;display:grid;place-items:center;padding:24px}
+.hn-chat-receipt-panel{width:min(100%,340px);max-height:75vh;overflow:auto;box-sizing:border-box;background:#f7f3ea;color:#26392e;padding:20px;border-radius:18;box-shadow:0 12px 38px #0002}
+.hn-chat-receipt-heading{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;color:#173d2e;font-size:18px}
+.hn-chat-receipt-heading button{border:0;background:none;color:#376c51;font:inherit;font-size:13px;padding:6px;cursor:pointer}
+.hn-chat-receipt-panel p{margin:0;padding:8px 0;font-size:15px}
 .hn-chat-media-cluster .hn-chat-gallery-tile .message-meta{display:none}
 
 /* Voice composer appears in place of the old nonfunctional microphone. */

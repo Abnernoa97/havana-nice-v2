@@ -8,6 +8,7 @@ export type ChatDisplayIndex={
  replySnippets:ReadonlyMap<number,string>;
  reactionBadges:ReadonlyMap<number,readonly ChatReactionBadge[]>;
  lastReadByOther:number;
+ deliveryFor:(message:ChatMessage)=>{label:string;readers:readonly ChatReadReceipt[]};
 };
 const REACTION_ORDER:readonly ChatEmoji[]=['❤️','😂','👍'];
 
@@ -35,9 +36,22 @@ export function buildChatDisplayIndex(
    .map(emoji=>({emoji,count:row.get(emoji)||0}));
   if(ordered.length)reactionBadges.set(seq,ordered);
  }
- let lastRead=0;
+ // One confirmed, monotonic watermark per other member. No presence inference.
+ const byActor=new Map<string,ChatReadReceipt>();
  for(const receipt of receipts){
-  if(receipt.actorId!==actorId&&receipt.seq>lastRead)lastRead=receipt.seq;
+  if(!receipt.actorId||receipt.actorId===actorId||!Number.isSafeInteger(receipt.seq)||receipt.seq<1)continue;
+  const prior=byActor.get(receipt.actorId);
+  if(!prior||receipt.seq>=prior.seq)byActor.set(receipt.actorId,receipt);
  }
- return {replySnippets,reactionBadges,lastReadByOther:lastRead};
+ const readers=[...byActor.values()].sort((a,b)=>b.seq-a.seq||a.displayName.localeCompare(b.displayName));
+ const lastRead=readers[0]?.seq??0;
+ const deliveryFor=(message:ChatMessage)=>{
+  if(message.pending||message.seq<=0){
+   return {label:message.deliveryStatus==='error'?'No enviado':message.deliveryStatus==='sending'?'Enviando…':'En cola',readers:[]};
+  }
+  if(message.deletedAt||message.senderId!==actorId)return {label:'',readers:[]};
+  const confirmed=readers.filter(receipt=>receipt.seq>=message.seq);
+  return {label:confirmed.length?'Leído por '+confirmed.length:'Enviado',readers:confirmed};
+ };
+ return {replySnippets,reactionBadges,lastReadByOther:lastRead,deliveryFor};
 }

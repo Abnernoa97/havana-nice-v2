@@ -35,7 +35,7 @@ test('Virtual list preserves native video surfaces, old-page loading, deletes, r
   /onLongPress=\{\(anchor\) => onMessageLongPress\(message,anchor\)\}/,
   /<NativeChatMediaView media=\{message.media\} session=\{session\} compact=\{compact\}/,
   /display\.reactionBadges\.get\(message.seq\)/,
-  /display\.lastReadByOther>=message.seq/,
+  /display\.deliveryFor\(message\)/,
   /onScrollBeginDrag=\{onScrollBeginDrag\}/,
   /onMomentumScrollEnd=\{onScrollEndDrag\}/,
  ])assert.match(timeline,part);
