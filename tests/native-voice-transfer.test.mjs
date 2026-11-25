@@ -47,8 +47,9 @@ test('Voice draft belongs to the session controller; the text composer does not 
  assert.doesNotMatch(recorder,/setPending/);
  assert.match(transport,/if\(picked\.kind==='audio'\)\{/);
  assert.match(transport,/put:signal=>nativePut\(file,base\+'\/content'/);
- assert.match(transport,/createUploadTask\(url/);
- assert.match(transport,/signal\}:\{\}/);
+ const binary=read('apps/android/services/native-chat-binary-upload.ts');
+ assert.match(binary,/createUploadTask\(url/);
+ assert.match(binary,/signal\}:\{\}/);
  assert.match(transport,/\},25_000,ownerSignal\)/);
 });
 
@@ -92,7 +93,7 @@ test('Only real acknowledged sequences replace immediate local pending mosaics',
  const controller=read('apps/android/features/chat/useNativeChatController.ts');
  const upload=read('apps/android/features/chat/useNativeChatMediaUpload.ts');
  assert.match(view,/selectedMedia.filter\(item=>!committed.has\(item.id\)\)/);
- assert.match(timeline,/ListHeaderComponent=\{pendingMedia.length\?/);
+ assert.match(timeline,/ListHeaderComponent=\{pendingUploading\?/);
  assert.match(controller,/confirmMediaMessage\(media:NonNullable/);
  assert.match(upload,/confirmMediaMessage\(media,result.seq\)/);
  assert.match(upload,/confirmUploadedMedia\(item.id\)/);

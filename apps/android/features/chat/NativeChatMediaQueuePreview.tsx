@@ -30,7 +30,7 @@ export default function NativeChatMediaQueuePreview({
    })}
   </View>
   <View style={s.pendingStatus}>
-   <Text style={s.caption}>{mediaProgress===0?'Preparando…':'Enviando '+mediaProgress+' %'}</Text>
+   <Text style={s.caption}>{!selectedMedia.length?'Confirmando…':mediaProgress===0?'Preparando…':'Enviando '+mediaProgress+' %'}</Text>
    <Pressable accessibilityRole="button" onPress={onCancel}><Text style={s.pendingCancel}>Cancelar</Text></Pressable>
   </View>
  </View>;

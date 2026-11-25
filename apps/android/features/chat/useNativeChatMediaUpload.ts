@@ -89,7 +89,7 @@ export function useNativeChatMediaUpload({
   voiceRef.current=null;setVoiceDraft(null);setVoiceError('');
  }
  async function sendSelectedMedia(){
-  if(!session||!selectedMedia.length||mediaUploadBusy.current)return;
+  if(!session||activeSession.current?.token!==session.token||!selectedMedia.length||mediaUploadBusy.current)return;
   const ctl=new AbortController();batchRequest.current=ctl;
   const current=()=>batchRequest.current===ctl&&activeSession.current?.token===session.token;
   mediaUploadBusy.current=true;setMediaUploading(true);setMediaProgress(0);setMediaError('');

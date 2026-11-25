@@ -36,13 +36,14 @@ type Props={
  onReadVisible:(seq:number)=>void;
  pendingMedia:NativeQueuedMedia[];
  pendingProgress:number;
+ pendingUploading:boolean;
  onCancelPending:()=>void;
 };
 function NativeChatTimeline({
  messages,session,onlineActorIds,connected,reactions,receipts,hasMore,loadingOlder,
  scrollRef,onContentSizeChange,onLayout,onScrollBeginDrag,onScroll,onScrollEndDrag,
  onLoadOlder,onReply,onMessageLongPress,onQuickReact,onRetry,onReadVisible,
- pendingMedia,pendingProgress,onCancelPending,
+ pendingMedia,pendingProgress,pendingUploading,onCancelPending,
 }:Props){
  const [gallery,setGallery]=useState<{items:NonNullable<ChatMessage['media']>[];initial:number}|null>(null);
  const [readerSeq,setReaderSeq]=useState<number|null>(null);
@@ -166,7 +167,7 @@ function NativeChatTimeline({
    onScrollEndDrag={onScrollEndDrag}
    onMomentumScrollEnd={onScrollEndDrag}
    scrollEventThrottle={16}
-   ListHeaderComponent={pendingMedia.length?<NativeChatMediaQueuePreview
+   ListHeaderComponent={pendingUploading?<NativeChatMediaQueuePreview
     selectedMedia={pendingMedia} mediaUploading={true} mediaProgress={pendingProgress} mediaReady={true}
     onRemove={()=>{}} inTimeline onCancel={onCancelPending}/>:null}
    ListFooterComponent={<>

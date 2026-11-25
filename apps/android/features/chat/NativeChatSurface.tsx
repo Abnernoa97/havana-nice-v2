@@ -80,7 +80,7 @@ export default function NativeChatSurface({ui}:{ui:ReturnType<typeof useNativeCh
               onLoadOlder={onTimelineLoadOlder} onReply={onTimelineReply}
               onMessageLongPress={onTimelineLongPress}
               onQuickReact={reactWithEffect} onRetry={onTimelineRetry}
-              pendingMedia={pendingMedia} pendingProgress={mediaProgress} onCancelPending={cancelMediaUpload}
+              pendingMedia={pendingMedia} pendingUploading={mediaUploading} pendingProgress={mediaProgress} onCancelPending={cancelMediaUpload}
             />
             <NativeChatMessageMenu message={menuMessage} actorId={session.actorId}
               connection={connection} reactions={reactions}

@@ -16,7 +16,8 @@ test('Android loads a private JPEG independently of the player and produces boun
  assert.match(maker,/if\(extracting\|\|signal.aborted\)return null/);
  assert.match(maker,/release\(player\);extracting=false/);
  assert.match(maker,/Promise.race\(\[work\(\),interrupted\]\)/);
- assert.match(maker,/method:'PUT',signal:ctl.signal/);
+ assert.match(maker,/await nativePut\(file,[^\n]+ctl.signal\)/);
+ assert.match(read('apps/android/services/native-chat-binary-upload.ts'),/httpMethod:'PUT'/);
 });
 test('Browser awaits the derivative; historical repair uses owner, explicit action and real 404',()=>{
  const upload=read('apps/pwa/src/services/chat-media-upload.ts');

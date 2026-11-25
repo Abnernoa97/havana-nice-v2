@@ -1,7 +1,7 @@
 // Optional private JPEG derivative. Only sender upload or explicit owner repair
 // may instantiate a native thumbnail extractor; timeline reads never do.
 import {File} from 'expo-file-system';
-import {fetch as expoFetch} from 'expo/fetch';
+import {nativePut} from './native-chat-binary-upload';
 import {createVideoPlayer} from 'expo-video';
 import {ImageManipulator,SaveFormat} from 'expo-image-manipulator';
 import {HAVANA_V2_DEV_API_BASE_URL as API} from '@havana/shared';
@@ -51,9 +51,8 @@ export async function publishNativeVideoPoster(token:string,id:string,uri:string
   try{
    file=await extractJpeg(uri,ctl.signal);
    if(!file||ctl.signal.aborted)return false;
-   const response=await expoFetch(API+'/api/chat/media/'+encodeURIComponent(id)+'/poster',{
-    method:'PUT',signal:ctl.signal,headers:{Authorization:'Bearer '+token,'Content-Type':'image/jpeg','Content-Length':String(file.size)},body:file});
-   return !ctl.signal.aborted&&response.ok;
+   await nativePut(file,API+'/api/chat/media/'+encodeURIComponent(id)+'/poster',token,'image/jpeg',undefined,ctl.signal);
+   return !ctl.signal.aborted;
   }catch{return false;}finally{remove(file);}
  };
  try{return await Promise.race([work(),interrupted]);}
