@@ -28,12 +28,12 @@ function pruneExpiredNativeChatStaging(){
  }catch{/* Storage may be unavailable; never touch other directories. */}
 }
 
-function stagedFile(item:PendingNativeChatMedia):boolean{
+export function isNativePendingStaged(item:PendingNativeChatMedia):boolean{
  const root=Paths.document.uri.replace(/\/$/,'')+'/';
  return item.uri.startsWith(root+PREFIX);
 }
 function removeStagedFile(item:PendingNativeChatMedia){
- if(!stagedFile(item))return;
+ if(!isNativePendingStaged(item))return;
  try{const file=new File(item.uri);if(file.exists)file.delete();}catch{}
 }
 export function discardNativePendingMedia(item:PendingNativeChatMedia):void{
@@ -68,13 +68,13 @@ export async function loadNativePendingMedia(actorId:string):Promise<PendingNati
  }catch{await Storage.removeItem(KEY);return [];}
 }
 export async function preserveNativePendingMedia(
- items:readonly PendingNativeChatMedia[]
+ items:readonly PendingNativeChatMedia[],existingBytes=0
 ):Promise<{items:PendingNativeChatMedia[];uncopied:boolean}>{
  const result:PendingNativeChatMedia[]=[];
- let copiedBytes=items.filter(stagedFile).reduce((sum,item)=>sum+item.sizeBytes,0);
+ let copiedBytes=existingBytes+items.filter(isNativePendingStaged).reduce((sum,item)=>sum+item.sizeBytes,0);
  let uncopied=false;
  for(const item of items){
-   if(stagedFile(item)){result.push(item);continue;}
+   if(isNativePendingStaged(item)){result.push(item);continue;}
    if(copiedBytes+item.sizeBytes>COPY_BUDGET){
      result.push(item);uncopied=true;continue;
    }

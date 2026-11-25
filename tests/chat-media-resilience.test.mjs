@@ -72,11 +72,16 @@ test('Native recovers Android picker after Activity destruction and isolates ori
  assert.match(hook,/ImagePicker\.getPendingResultAsync\(\)/);
  assert.match(hook,/onRecovered\(\)/);
  assert.match(native,/onRecovered:\(\)=>setActiveScreen\('chat'\)/);
- assert.match(hook,/preserveNativePendingMedia\(additions\)/);
+ assert.match(hook,/preserveNativePendingMedia\(live,existingBytes\)/);
+ assert.ok(hook.indexOf('setSelectedMedia([...selectedRef.current]);setMediaError')<hook.indexOf('await preserveNativePendingMedia(live,existingBytes)'));
+ assert.match(hook,/stagingChain.current=stagingChain.current.catch/);
+ assert.match(hook,/pickGeneration.current===generation/);
+ assert.match(hook,/AppState.addEventListener\('change'/);
+ assert.match(hook,/if\(!current\(\)\|\|accepted\)return/);
  assert.match(hook,/loadNativePendingMedia\(actorId\)/);
  assert.match(store,/new File\(Paths\.document,PREFIX\+id\+extension\)/);
  assert.match(store,/await new File\(item\.uri\)\.copy\(destination\)/);
- assert.match(store,/if\(!stagedFile\(item\)\)return/);
+ assert.match(store,/if\(!isNativePendingStaged\(item\)\)return/);
  assert.match(store,/const TTL=24\*60\*60\*1000/);
  assert.match(store,/data\.actorId!==actorId/);
  assert.match(native,/confirmUploadedMedia\(item\.id\)/);

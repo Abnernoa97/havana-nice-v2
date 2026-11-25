@@ -1,14 +1,14 @@
 // Native camera/gallery selection only. Media originals and pending metadata
 // are private to this app; upload, ChatRoom and authentication stay in NativeApp.
 import {useEffect,useLayoutEffect,useRef,useState} from 'react';
-import {Alert,Keyboard,Platform} from 'react-native';
+import {Alert,AppState,Keyboard,Platform} from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import {File} from 'expo-file-system';
 import {validateChatMediaSelection,CHAT_MEDIA_MAX_PER_SEND,
  type ChatMediaKind,type ChatMediaSource,type ChatMediaSelection} from '@havana/shared';
 import {
  loadNativePendingMedia,storeNativePendingMedia,preserveNativePendingMedia,
- discardNativePendingMedia,clearNativePendingMedia,
+ discardNativePendingMedia,clearNativePendingMedia,isNativePendingStaged,
 } from '../../storage/chatPendingMedia';
 
 export type NativeQueuedMedia=ChatMediaSelection&{id:string};
@@ -42,6 +42,14 @@ export function useNativeMediaSelection({
   setMediaError('');
  },[actorId]);
  const pickingRef=useRef(false);
+ const pickGeneration=useRef(0);
+ const mounted=useRef(true);
+ const foregroundCleanup=useRef<(()=>void)|null>(null);
+ useEffect(()=>{mounted.current=true;return()=>{mounted.current=false;foregroundCleanup.current?.();++pickGeneration.current;};},[]);
+ const stopPicking=()=>{foregroundCleanup.current?.();foregroundCleanup.current=null;pickingRef.current=false;setMediaPicking(false);};
+ const cancelNativePicking=()=>{++pickGeneration.current;stopPicking();};
+ useEffect(()=>{cancelNativePicking();},[actorId]);
+ const stagingChain=useRef<Promise<void>>(Promise.resolve());
  const writeChain=useRef<Promise<void>>(Promise.resolve());
  const persist=(items:NativeQueuedMedia[])=>{
    if(!actorId)return;
@@ -95,18 +103,42 @@ export function useNativeMediaSelection({
      additions.push({id:newMediaSelectionId(),kind,source,uri:asset.uri,
        name,mimeType,sizeBytes:sizeBytes!});
    }
-   const preserved=await preserveNativePendingMedia(additions);
-   if(actorRef.current!==actorId)return false;
-   selectedRef.current=[...selectedRef.current,...preserved.items];
-   setSelectedMedia([...selectedRef.current]);
-   setMediaError(preserved.uncopied?
-     'Puedes enviar estos archivos ahora. Si el sistema reinicia la app, los grandes podrían necesitar seleccionarse otra vez.':'');
+   // Paint the picker-owned files first, before any secondary disk copy or
+   // SQLite operation. The exact same UUID survives preparation and sending.
+   selectedRef.current=[...selectedRef.current,...additions];
+   setSelectedMedia([...selectedRef.current]);setMediaError('');
    persist(selectedRef.current);
+   const owner=actorId;
+   // One serial staging lane, never blocks selection/send. Source remains
+   // untouched so a transfer already reading it is safe if its URI is promoted.
+   stagingChain.current=stagingChain.current.catch(()=>{}).then(async()=>{
+     if(!mounted.current||actorRef.current!==owner)return;
+     const live=additions.filter(item=>selectedRef.current.some(current=>current.id===item.id));
+     if(!live.length)return;
+     const existingBytes=selectedRef.current.filter(item=>!live.some(add=>add.id===item.id)&&isNativePendingStaged(item))
+       .reduce((sum,item)=>sum+item.sizeBytes,0);
+     const preserved=await preserveNativePendingMedia(live,existingBytes);
+     const replacements=new Map(preserved.items.map(item=>[item.id,item]));
+     if(!mounted.current||actorRef.current!==owner){
+       for(const item of preserved.items)discardNativePendingMedia(item);
+       return;
+     }
+     for(const item of preserved.items){
+       if(!selectedRef.current.some(current=>current.id===item.id))discardNativePendingMedia(item);
+     }
+     selectedRef.current=selectedRef.current.map(item=>replacements.get(item.id)??item);
+     setSelectedMedia([...selectedRef.current]);persist(selectedRef.current);
+     // Picker cache may survive a restart, but only verified copies guarantee
+     // a durable pending draft. Do not overwrite a newer upload error.
+     if(preserved.uncopied&&!uploadBusy.current&&selectedRef.current.some(item=>live.some(add=>add.id===item.id)))
+       setMediaError(previous=>previous||'Archivos disponibles. Los grandes podrían necesitar seleccionarse otra vez tras reiniciar.');
+   }).catch(()=>{});
    return true;
  };
  useEffect(()=>{
    if(!actorId)return;
    let active=true;
+   const generation=pickGeneration.current;
    void (async()=>{
      try{
        const saved=await loadNativePendingMedia(actorId);
@@ -121,7 +153,7 @@ export function useNativeMediaSelection({
        // Expo officially requires this when Android destroys MainActivity
        // while the system camera/gallery is in the foreground.
        const result=await ImagePicker.getPendingResultAsync();
-       if(!active||actorRef.current!==actorId)return;
+       if(!active||actorRef.current!==actorId||pickGeneration.current!==generation||pickingRef.current)return;
        if(result&&'assets' in result&&!result.canceled&&result.assets?.length){
          const recovered=await appendAssets(result.assets,'camera');
          if(recovered&&active)onRecovered();
@@ -138,6 +170,8 @@ export function useNativeMediaSelection({
    if(pickingRef.current||uploadBusy.current)return;
    const free=CHAT_MEDIA_MAX_PER_SEND-selectedRef.current.length;
    if(free<1){setMediaError('Máximo 5 archivos entre Fotos y Video por envío.');return;}
+   const generation=++pickGeneration.current;
+   const current=()=>mounted.current&&actorRef.current===actorId&&pickGeneration.current===generation;
    pickingRef.current=true;setMediaPicking(true);
    try{
      if(source==='camera'){
@@ -146,6 +180,42 @@ export function useNativeMediaSelection({
          Alert.alert('Permiso de cámara','Permite el acceso a la cámara para tomar fotografías.');
          return;
        }
+     }
+     if(!current())return;
+     // Android can return from the system picker without settling the JS
+     // promise after activity recreation. Recover once on foreground, not
+     // while the user is still selecting. Both paths share this generation.
+     let accepted=false;
+     const accept=async(result:ImagePicker.ImagePickerResult)=>{
+       if(!current()||accepted)return;
+       accepted=true;
+       if(result.canceled||!result.assets?.length)return;
+       await appendAssets(result.assets,source);
+     };
+     if(Platform.OS==='android'){
+       let returnedTimer:ReturnType<typeof setTimeout>|undefined;
+       let recoveryTimer:ReturnType<typeof setTimeout>|undefined;
+       let sawBackground=false;
+       const sub=AppState.addEventListener('change',state=>{
+         if(state!=='active'){sawBackground=true;return;}
+         if(!sawBackground||!current()||accepted)return;
+         if(recoveryTimer!==undefined)clearTimeout(recoveryTimer);
+         if(returnedTimer!==undefined)clearTimeout(returnedTimer);
+         recoveryTimer=setTimeout(()=>{
+           if(!current()||accepted)return;
+           void ImagePicker.getPendingResultAsync().then(result=>{
+             if(!current()||accepted||!result||!('assets' in result))return;
+             void accept(result).finally(()=>{if(current())stopPicking();});
+           }).catch(()=>{});
+         },1200);
+         returnedTimer=setTimeout(()=>{
+           if(!current()||accepted)return;
+           // Release the UI only. A late original result is still accepted
+           // unless the member starts another selection or cancels it.
+           stopPicking();setMediaError('Android sigue preparando la selección. Puedes continuar o elegir los archivos otra vez.');
+         },12000);
+       });
+       foregroundCleanup.current=()=>{sub.remove();if(recoveryTimer!==undefined)clearTimeout(recoveryTimer);if(returnedTimer!==undefined)clearTimeout(returnedTimer);};
      }
      const options:ImagePicker.ImagePickerOptions={
        mediaTypes:source==='camera'?['images','videos']:kind==='photo'?['images']:['videos'],
@@ -156,12 +226,11 @@ export function useNativeMediaSelection({
      const result=source==='camera'
        ?await ImagePicker.launchCameraAsync(options)
        :await ImagePicker.launchImageLibraryAsync(options);
-     if(result.canceled||!result.assets?.length)return;
-     await appendAssets(result.assets,source);
+     await accept(result);
    }catch{
-     setMediaError('No se pudo abrir la cámara o la galería. Inténtalo de nuevo.');
-   }finally{pickingRef.current=false;setMediaPicking(false);}
+     if(current())setMediaError('No se pudo abrir la cámara o la galería. Inténtalo de nuevo.');
+   }finally{if(current())stopPicking();}
  };
  return {selectedMedia,mediaError,setMediaError,mediaPicking,
-   confirmUploadedMedia,removeSelectedMedia,clearSelectedMedia,chooseNativeMedia};
+   confirmUploadedMedia,removeSelectedMedia,clearSelectedMedia,chooseNativeMedia,cancelNativePicking};
 }
