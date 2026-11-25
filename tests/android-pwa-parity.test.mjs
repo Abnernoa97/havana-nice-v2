@@ -135,24 +135,38 @@ test('Android Familia reads the same albums, authorized grant URLs and real BOOK
  assert.doesNotMatch(native,/MEDIA_BUCKET|CHAT_ROOMS|startNamedChatSession|localStorage|Supabase|HAVANA_CLOUD/);
 });
 
-test('Native Chat uploads the unchanged original quality to the same R2 endpoints with 3 concurrent 5MiB parts',()=>{
- const android=read('apps/android/app/NativeApp.tsx');
+test('Native Chat preserves original bytes and private R2 endpoints with bounded binary uploads',()=>{
+ const android=read('apps/android/features/chat/useNativeChatMediaUpload.ts');
  const helper=read('apps/android/services/native-chat-r2-upload.ts');
+ const binary=read('apps/android/services/native-chat-binary-upload.ts');
+ const batch=read('apps/android/features/chat/native-media-transfer.ts');
  const pwa=read('apps/pwa/src/services/chat-media-upload.ts');
- assert.match(android,/uploadNativeChatFile\(session,item/);
+ assert.match(android,/prepareNativeChatFile\(session,item,onSent,ctl.signal\)/);
+ assert.match(android,/uploadNativeChatFile\(session,\{/);
  assert.doesNotMatch(android,/Almacenamiento multimedia no configurado/);
  assert.match(android,/mediaUploading/);
  assert.match(helper,/new File\(picked\.uri\)/);
- assert.match(helper,/import \{fetch as expoFetch\} from 'expo\/fetch'/);
- assert.match(helper,/createUploadTask\(/);
- assert.match(helper,/UploadType\.BINARY_CONTENT/);
- assert.match(helper,/file\.slice\(start,end,mimeType\)/);
+ assert.match(helper,/file.size!==picked.sizeBytes/);
+ assert.match(helper,/import \{nativePut\} from '\.\/native-chat-binary-upload'/);
+ assert.match(binary,/createUploadTask\(/);
+ assert.match(binary,/UploadType\.BINARY_CONTENT/);
+ assert.match(binary,/httpMethod:'PUT'/);
+ assert.match(binary,/Authorization:'Bearer '\+token/);
+ assert.match(binary,/'Content-Length':String\(file.size\)/);
+ assert.match(binary,/finally\{task.release\(\);\}/);
+ assert.match(helper,/handle.offset=start;bytes=await handle.readBytes\(end-start\)/);
+ assert.match(helper,/finally\{handle.close\(\);\}/);
+ assert.match(helper,/temporary.size!==end-start/);
+ assert.match(helper,/await nativePut\(temporary,url,token,mimeType,undefined,signal\)/);
+ assert.match(helper,/finally\{try\{if\(temporary.exists\)temporary.delete\(\);\}catch\{\}\}/);
  assert.match(helper,/5\*1024\*1024/);
- assert.match(helper,/Math\.min\(3,total\)/);
+ assert.match(helper,/Math\.min\(2,total\)/);
+ assert.match(batch,/items\[i\]\?\.kind==='photo'&&items\[i\+1\]\?\.kind==='photo'\?2:1/);
  assert.match(pwa,/Math\.min\(3,begin\.partCount\)/);
+ assert.match(helper,/\/api\/chat\/media\/start/);
  assert.match(helper,/\/complete/);
  assert.match(helper,/\/send/);
- assert.doesNotMatch(helper,/base64|writeAsStringAsync|HAVANA_CLOUD|Drive|Supabase/);
+ assert.doesNotMatch(helper+binary,/base64|writeAsStringAsync|HAVANA_CLOUD|Drive|Supabase|expoFetch/);
 });
 
 test('Android remains an explicit signed batch and the existing install is never reset',()=>{
