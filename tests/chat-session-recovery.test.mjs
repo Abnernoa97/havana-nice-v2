@@ -41,8 +41,14 @@ test('PWA and native use one restoration decision while retaining their own sock
   assert.match(src,/captureChatOfflineSnapshot\(/);
  }
  assert.match(shared,/export \{recoverChatAccess\} from '\.\/chat-session-recovery'/);
- assert.match(web,/const ws = openChatSocket\(next\)/);
- assert.match(native,/ws = openNativeChatSocket\(next\)/);
+ // The constructor is guarded against synchronous transport errors.
+ assert.match(web,/try\s*\{\s*ws\s*=\s*openChatSocket\(next\);\s*\}\s*catch\s*\{/);
+ assert.match(native,/try\s*\{\s*ws\s*=\s*openNativeChatSocket\(next\);\s*\}\s*catch\s*\{/);
+ for(const src of [web,native]){
+  assert.match(src,/socket\.current\s*=\s*ws;/);
+  assert.match(src,/connectionTimers\.current\.watchHandshake\(/);
+  assert.match(src,/setConnection\('sin conexión'\)/);
+ }
  assert.match(platformSocket,/Authorization:`Bearer \$\{session\.token\}`/);
  assert.match(platformSocket,/\['havana-v2'\]/);
  assert.doesNotMatch(platformSocket,/setTimeout|retry|\.onmessage|localStorage|sessionStorage|AsyncStorage/);
