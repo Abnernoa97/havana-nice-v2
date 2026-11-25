@@ -14,7 +14,7 @@ class D1{
  constructor(){
   this.raw=new DatabaseSync(':memory:');
   this.raw.exec('PRAGMA foreign_keys=ON; CREATE TABLE chat_members(actor_id TEXT PRIMARY KEY,display_name TEXT,active INTEGER);'+
-   'CREATE TABLE chat_admin_sessions(token_hash TEXT PRIMARY KEY,expires_at INTEGER,revoked_at INTEGER);');
+   'CREATE TABLE chat_admin_sessions(token_hash TEXT PRIMARY KEY,expires_at INTEGER,revoked_at INTEGER,last_seen_at INTEGER);');
   for(const file of ['0018_calendar_events.sql','0020_repertoire.sql'])
    this.raw.exec(readFileSync(new URL('../migrations/'+file,import.meta.url),'utf8'));
   for(const [id,name] of [[NOA,'Noa'],[FER,'Fer']])this.raw.prepare('INSERT INTO chat_members VALUES (?,?,1)').run(id,name);
@@ -35,7 +35,7 @@ class D1{
 }
 async function setup(){
  const DB=new D1();
- DB.raw.prepare('INSERT INTO chat_admin_sessions VALUES (?,?,NULL)').run(await hash(TOKEN),Date.now()+60000);
+ DB.raw.prepare('INSERT INTO chat_admin_sessions(token_hash,expires_at,revoked_at,last_seen_at) VALUES(?,?,NULL,?)').run(await hash(TOKEN),Date.now()+60000,Date.now());
  return {DB,V2_ADMIN_LOGIN_MODE:'enabled',V2_ADMIN_LOGIN_SECRET:'S'.repeat(48)};
 }
 async function api(env,path,{method='GET',token=TOKEN,payload,actorId=NOA}={}){

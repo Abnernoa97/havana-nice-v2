@@ -20,13 +20,13 @@ async function setup(){
  db.exec('PRAGMA foreign_keys=ON;');
  db.exec('CREATE TABLE chat_members(actor_id TEXT PRIMARY KEY,display_name TEXT,active INTEGER);');
  db.exec('CREATE TABLE chat_messages(seq INTEGER PRIMARY KEY);');
- db.exec('CREATE TABLE chat_admin_sessions(token_hash TEXT PRIMARY KEY,expires_at INTEGER,revoked_at INTEGER);');
+ db.exec('CREATE TABLE chat_admin_sessions(token_hash TEXT PRIMARY KEY,expires_at INTEGER,revoked_at INTEGER,last_seen_at INTEGER);');
  for(const migration of migrations)db.exec(readFileSync(new URL('../migrations/'+migration,import.meta.url),'utf8'));
  for(const [id,name] of [[M1,'Noa'],[M2,'Fer']]){
   db.prepare('INSERT INTO chat_members VALUES(?,?,1)').run(id,name);
  }
- db.prepare('INSERT INTO chat_admin_sessions VALUES(?,?,NULL)')
-  .run(await sha256Hex(ADMIN),Date.now()+60000);
+ db.prepare('INSERT INTO chat_admin_sessions(token_hash,expires_at,revoked_at,last_seen_at) VALUES(?,?,NULL,?)')
+  .run(await sha256Hex(ADMIN),Date.now()+60000,Date.now());
  const DB={
   prepare(sql){
    const bound=(args=[])=>({

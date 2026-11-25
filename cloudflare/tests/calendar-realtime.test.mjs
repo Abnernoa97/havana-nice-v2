@@ -14,13 +14,13 @@ async function environment(){
  db.exec('CREATE TABLE chat_members(actor_id TEXT PRIMARY KEY,active INTEGER);'+
   'CREATE TABLE chat_sessions(actor_id TEXT,token_hash TEXT,expires_at INTEGER);'+
   'CREATE TABLE chat_single_device_owners(actor_id TEXT,token_hash TEXT);'+
-  'CREATE TABLE chat_admin_sessions(token_hash TEXT PRIMARY KEY,expires_at INTEGER,revoked_at INTEGER);');
+  'CREATE TABLE chat_admin_sessions(token_hash TEXT PRIMARY KEY,expires_at INTEGER,revoked_at INTEGER,last_seen_at INTEGER);');
  for(const actorId of [M1,M2])
   db.prepare('INSERT INTO chat_members VALUES(?,1)').run(actorId);
  const memberHash=await sha256Hex(MEMBER_TOKEN);
  db.prepare('INSERT INTO chat_sessions VALUES(?,?,?)').run(M1,memberHash,EXPIRES);
  db.prepare('INSERT INTO chat_single_device_owners VALUES(?,?)').run(M1,memberHash);
- db.prepare('INSERT INTO chat_admin_sessions VALUES(?,?,NULL)').run(await sha256Hex(ADMIN_TOKEN),EXPIRES);
+ db.prepare('INSERT INTO chat_admin_sessions(token_hash,expires_at,revoked_at,last_seen_at) VALUES(?,?,NULL,?)').run(await sha256Hex(ADMIN_TOKEN),EXPIRES,Date.now());
  const DB={prepare(sql){return {bind(...args){return {
   async first(){return db.prepare(sql).get(...args)||null;},
   async all(){return {results:db.prepare(sql).all(...args)};}

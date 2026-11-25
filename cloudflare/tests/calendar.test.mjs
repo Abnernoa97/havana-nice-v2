@@ -13,7 +13,7 @@ class DB{
  constructor(){
   this.raw=new DatabaseSync(':memory:');
   this.raw.exec('PRAGMA foreign_keys=ON;CREATE TABLE chat_members(actor_id TEXT PRIMARY KEY,display_name TEXT,active INTEGER);'+
-   'CREATE TABLE chat_admin_sessions(token_hash TEXT PRIMARY KEY,expires_at INTEGER,revoked_at INTEGER);');
+   'CREATE TABLE chat_admin_sessions(token_hash TEXT PRIMARY KEY,expires_at INTEGER,revoked_at INTEGER,last_seen_at INTEGER);');
   const migration=readFileSync(new URL('../migrations/0018_calendar_events.sql',import.meta.url),'utf8');
   assert.doesNotMatch(migration,/DROP TABLE|ALTER TABLE chat_|DELETE FROM chat_/i);
   this.raw.exec(migration);
@@ -45,7 +45,7 @@ class DB{
 }
 async function env(){
  const database=new DB();
- database.raw.prepare('INSERT INTO chat_admin_sessions VALUES (?,?,NULL)').run(await hash(TOKEN),Date.now()+60_000);
+ database.raw.prepare('INSERT INTO chat_admin_sessions(token_hash,expires_at,revoked_at,last_seen_at) VALUES(?,?,NULL,?)').run(await hash(TOKEN),Date.now()+60_000,Date.now());
  return {DB:database,V2_ADMIN_LOGIN_MODE:'enabled',V2_ADMIN_LOGIN_SECRET:'S'.repeat(48)};
 }
 const sample={date:'2026-11-28',timeZone:'America/Mexico_City',title:'Boda de prueba',venue:'Lugar',

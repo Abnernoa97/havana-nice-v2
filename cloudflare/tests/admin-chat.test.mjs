@@ -15,7 +15,7 @@ async function fixture(){
  const signals=[];
  const DB={prepare(sql){return {bind(...args){return {
    async first(){
-    if(sql.includes('FROM chat_admin_sessions'))return args[0]===digest?{expires_at:Date.now()+90_000,revoked_at:null}:null;
+    if(sql.includes('FROM chat_admin_sessions'))return args[0]===digest?{expires_at:Date.now()+90_000,revoked_at:null,last_seen_at:Date.now()}:null;
     if(sql==='SELECT seq FROM chat_messages WHERE seq=?')return rows.find(m=>m.seq===args[0])??null;
 
     throw Error('Unexpected first: '+sql);

@@ -38,8 +38,8 @@ class FakeD1{
    throw Error('Unexpected DB batch '+first.sql);
  }
  async first(sql,args){
-   if(sql.startsWith('SELECT expires_at,revoked_at FROM chat_admin_sessions'))
-     return {expires_at:Date.now()+100000,revoked_at:null};
+   if(sql.startsWith('SELECT expires_at,revoked_at,last_seen_at FROM chat_admin_sessions'))
+     return {expires_at:Date.now()+100000,revoked_at:null,last_seen_at:Date.now()};
    if(sql.startsWith('SELECT actor_id,display_name FROM chat_members'))
      return args[0]===actor?this.member:null;
    throw Error('Unexpected D1 first '+sql);
