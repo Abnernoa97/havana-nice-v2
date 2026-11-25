@@ -8,12 +8,12 @@ import NativeChatVoiceMessage from './NativeChatVoiceMessage';
 type Media=NonNullable<ChatMessage['media']>;
 
 export default function NativeChatMediaView({
- media,session,compact=false,onOpen,canRepair=false,
-}:{media:Media;session:ChatSession;compact?:boolean;onOpen?:(assetId:string)=>void;canRepair?:boolean}){
+ media,session,compact=false,wide=false,onOpen,canRepair=false,
+}:{media:Media;session:ChatSession;compact?:boolean;wide?:boolean;onOpen?:(assetId:string)=>void;canRepair?:boolean}){
  const {width:screenWidth,height:screenHeight}=useWindowDimensions();
  const width=useMemo(()=>Math.max(170,Math.min(350,Math.floor(screenWidth*.85)-28)),[screenWidth]);
  // Compact tiles take their geometry from the gallery cell, never screen width.
- return <View style={compact?{width:'100%',aspectRatio:1}:{marginVertical:3,alignSelf:'flex-start',maxWidth:'100%'}}>
+ return <View style={compact?{width:'100%',aspectRatio:wide?2:1}:{marginVertical:3,alignSelf:'flex-start',maxWidth:'100%'}}>
    {media.kind==='audio'?<NativeChatVoiceMessage media={media} session={session}/>:
     media.kind==='photo'?
      <NativeChatPhoto media={media} session={session} width={width}

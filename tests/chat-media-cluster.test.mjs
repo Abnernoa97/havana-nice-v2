@@ -35,8 +35,11 @@ test('Member galleries have no outer frame or per-tile padding and preserve orig
  assert.doesNotMatch(native,/galleryCluster:\{[^}]*backgroundColor|galleryMine:\{[^}]*backgroundColor/);
  assert.match(native,/galleryBubble:\{[^}]*padding:0/);
  assert.match(native,/galleryGrid:\{[^}]*rowGap:3/);
+ assert.match(native,/galleryCluster:\{width:'68%',maxWidth:280/);
+ assert.match(native,/galleryWideCell:\{width:'100%'\}/);
+ assert.match(native,/galleryBubble:\{[^}]*backgroundColor:'transparent'/);
  assert.match(timeline,/style=\{compact\?styles\.galleryBubble:/);
- assert.match(media,/compact\?\{width:'100%',aspectRatio:1\}/);
+ assert.match(media,/compact\?\{width:'100%',aspectRatio:wide\?2:1\}/);
  assert.match(photo,/compact\?\{width:'100%',height:'100%',borderRadius:5\}/);
  assert.match(video,/compact\?\{width:'100%',height:'100%',borderRadius:5\}/);
  assert.doesNotMatch(web,/\.hn-chat-media-cluster(?:\.mine)?\{[^}]*background:/);

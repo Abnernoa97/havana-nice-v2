@@ -52,11 +52,14 @@ function NativeChatTimeline({
   const map=new Map<string,{items:ChatMessage[];first:boolean;last:boolean}>();
   for(const group of galleries){
    if(group.length===1){rows.push(group[0]!);continue;}
-   for(let i=0;i<group.length;i+=2){
-    const items=group.slice(i,i+2);
+   // Odd albums start with one full-width tile; every following row has two.
+   for(let i=0;i<group.length;){
+    const count=i===0&&group.length%2===1?1:2;
+    const items=group.slice(i,i+count);
     const lead=items[items.length-1]!;
     rows.push(lead);
-    map.set(lead.senderId+':'+lead.clientMessageId,{items,first:i===0,last:i+2>=group.length});
+    map.set(lead.senderId+':'+lead.clientMessageId,{items,first:i===0,last:i+count>=group.length});
+    i+=count;
    }
   }
   return {visibleMessages:rows.reverse(),groupLeads:map};
@@ -92,7 +95,7 @@ function NativeChatTimeline({
      <Text style={style}>{info.label}</Text></Pressable>
    :<Text style={style}>{info.label}</Text>;
  };
- const renderBubble=(message:ChatMessage,compact=false)=>{
+ const renderBubble=(message:ChatMessage,compact=false,wide=false)=>{
   const mine=message.senderId===session.actorId;
   const badges=display.reactionBadges.get(message.seq)??[];
   const online=connected&&onlineActorIds.has(message.senderId);
@@ -107,7 +110,7 @@ function NativeChatTimeline({
    </Text>:null}
    {!message.media?<Text style={[styles.bubbleText,mine&&styles.mineText,online&&styles.onlineText]}>
     {message.text}</Text>:null}
-   {message.media?<NativeChatMediaView media={message.media} session={session} compact={compact} canRepair={mine}
+   {message.media?<NativeChatMediaView media={message.media} session={session} compact={compact} wide={wide} canRepair={mine}
     onOpen={id=>{
      const selection=selectChatGalleryMedia(messages,{
       clientMessageId:message.clientMessageId,senderId:message.senderId,assetId:id,
@@ -172,7 +175,7 @@ function NativeChatTimeline({
      {!mine&&grouped.first&&<Text style={styles.gallerySender}>{message.senderName}</Text>}
      <View style={styles.galleryGrid}>
       {grouped.items.map(item=><View key={item.senderId+':'+item.clientMessageId}
-       style={styles.galleryCell}>{renderBubble(item,true)}</View>)}
+       style={[styles.galleryCell,grouped.items.length===1&&styles.galleryWideCell]}>{renderBubble(item,true,grouped.items.length===1)}</View>)}
      </View>
      {mine&&grouped.last&&delivery(message,true)}
     </View>;

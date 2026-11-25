@@ -13,8 +13,10 @@ test('Native Chat virtualizes messages instead of creating the complete history 
  // The grouped gallery must filter deleted messages before constructing cells,
  // retain one representative per two-column row, and invert chronology once.
  assert.match(timeline,/const galleries=useMemo\(\(\)=>groupChatMediaMessages\(messages\.filter\(message=>!message\.deletedAt\)\),\[messages\]\)/);
- assert.match(timeline,/for\(let i=0;i<group.length;i\+=2\)/);
- assert.match(timeline,/const items=group.slice\(i,i\+2\)/);
+ assert.match(timeline,/for\(let i=0;i<group.length;\)/);
+ assert.match(timeline,/const count=i===0&&group.length%2===1\?1:2/);
+ assert.match(timeline,/i\+=count/);
+ assert.match(timeline,/const items=group.slice\(i,i\+count\)/);
  assert.match(timeline,/visibleMessages:rows.reverse\(\)/);
  assert.match(timeline,/grouped.first&&<Text style=\{styles.gallerySender\}/);
  assert.match(timeline,/grouped.last&&delivery\(message,true\)/);
@@ -84,4 +86,31 @@ test('Native mosaic avoids redundant dimensions and Android photo fade',()=>{
  assert.match(photo,/if\(known\)\{setRatio\(known\);return;\}/);
  assert.match(photo,/<Image source=\{\{uri:photo\}\} fadeDuration=\{0\}/);
  assert.match(photo,/cacheWholePhoto\(media,signed\)/);
+});
+
+
+test('Odd albums have one wide first tile and complete two-column rows; even albums stay paired',()=>{
+ const timeline=read('apps/android/features/chat/NativeChatTimeline.tsx');
+ const start=timeline.indexOf('  const rows:ChatMessage[]=[];');
+ const end=timeline.indexOf(' },[galleries]);',start);
+ assert.ok(start>=0&&end>start);
+ const code=timeline.slice(start,end).replace('const rows:ChatMessage[]','const rows')
+  .replace('new Map<string,{items:ChatMessage[];first:boolean;last:boolean}>()','new Map()')
+  .replaceAll(']!;','];').replaceAll(']!);',']);');
+ const project=new Function('galleries',code);
+ for(let n=1;n<=101;n++){
+  const messages=Array.from({length:n},(_,i)=>({senderId:'a',clientMessageId:String(i),seq:i+1}));
+  const result=project([messages]);
+  assert.equal(result.visibleMessages.length,Math.ceil(n/2));
+  if(n===1){assert.equal(result.groupLeads.size,0);continue;}
+  const rows=[...result.visibleMessages].reverse().map(m=>result.groupLeads.get(m.senderId+':'+m.clientMessageId));
+  assert.equal(rows[0].items.length,n%2===1?1:2);
+  assert.ok(rows.slice(1).every(row=>row.items.length===2));
+  assert.deepEqual(rows.flatMap(row=>row.items),messages);
+  assert.equal(rows.filter(row=>row.first).length,1);
+  assert.equal(rows.filter(row=>row.last).length,1);
+  assert.ok(rows[0].first&&rows.at(-1).last);
+ }
+ assert.match(timeline,/grouped.items.length===1&&styles.galleryWideCell/);
+ assert.match(timeline,/renderBubble\(item,true,grouped.items.length===1\)/);
 });
