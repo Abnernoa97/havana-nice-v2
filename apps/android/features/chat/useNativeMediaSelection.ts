@@ -148,7 +148,7 @@ export function useNativeMediaSelection({
          selectedRef.current=saved;setSelectedMedia([...saved]);
        }
      }catch{}
-     if(Platform.OS!=='android')return;
+     if(Platform.OS!=='android'||!active||actorRef.current!==actorId||pickGeneration.current!==generation||pickingRef.current)return;
      try{
        // Expo officially requires this when Android destroys MainActivity
        // while the system camera/gallery is in the foreground.
@@ -159,7 +159,7 @@ export function useNativeMediaSelection({
          if(recovered&&active)onRecovered();
        }
      }catch{
-       if(active)setMediaError('No se pudo recuperar la foto de la cámara. Intenta tomarla otra vez.');
+       if(active&&actorRef.current===actorId&&pickGeneration.current===generation)setMediaError('No se pudo recuperar la selección. Intenta elegirla otra vez.');
      }
    })();
    return()=>{active=false;};
@@ -167,7 +167,7 @@ export function useNativeMediaSelection({
 
  const chooseNativeMedia=async(source:ChatMediaSource,kind?:ChatMediaKind)=>{
    onCloseMenu();setMediaError('');Keyboard.dismiss();
-   if(pickingRef.current||uploadBusy.current)return;
+   if(!actorId||pickingRef.current||uploadBusy.current)return;
    const free=CHAT_MEDIA_MAX_PER_SEND-selectedRef.current.length;
    if(free<1){setMediaError('Máximo 5 archivos entre Fotos y Video por envío.');return;}
    const generation=++pickGeneration.current;
@@ -176,6 +176,7 @@ export function useNativeMediaSelection({
    try{
      if(source==='camera'){
        const permission=await ImagePicker.requestCameraPermissionsAsync();
+       if(!current())return;
        if(!permission.granted){
          Alert.alert('Permiso de cámara','Permite el acceso a la cámara para tomar fotografías.');
          return;
@@ -205,7 +206,7 @@ export function useNativeMediaSelection({
            if(!current()||accepted)return;
            void ImagePicker.getPendingResultAsync().then(result=>{
              if(!current()||accepted||!result||!('assets' in result))return;
-             void accept(result).finally(()=>{if(current())stopPicking();});
+             void accept(result).catch(()=>{if(current())setMediaError('No se pudo preparar la selección recuperada.');}).finally(()=>{if(current())stopPicking();});
            }).catch(()=>{});
          },1200);
          returnedTimer=setTimeout(()=>{
