@@ -1,20 +1,22 @@
-import {useCallback,useEffect,useRef,useState} from 'react';
-import {AppState,Image} from 'react-native';
+import {useCallback,useEffect,useMemo,useRef,useState} from 'react';
+import {AppState} from 'react-native';
 import {fetch as expoFetch} from 'expo/fetch';
 import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
 import {File} from 'expo-file-system';
-import {deleteMyStory,getMemberStories,STORY_BATCH_MAX,type MemberStory,
+import {deleteMyStory,getMemberStories,MemberStoryApiError,STORY_BATCH_MAX,type MemberStory,
  HAVANA_V2_DEV_API_BASE_URL as API} from '@havana/shared';
+import {createNativeStoryRefreshGate} from './native-story-refresh-gate';
 
 // Native state controller is separate from Chat, Profile, and Family.
-export function useNativeStories(token:string,refreshVersion:number){
+export function useNativeStories(token:string,refreshVersion:number,visible:boolean){
  const [stories,setStories]=useState<MemberStory[]>([]);
  const [initialReady,setInitialReady]=useState(false);
  const [error,setError]=useState('');
  const [saving,setSaving]=useState(false);
  const publishing=useRef(false);
- const latest=useRef(0),mounted=useRef(true);
+ const gate=useMemo(()=>createNativeStoryRefreshGate(),[token]);
+ const previousRevision=useRef(refreshVersion);
  const grants=useRef(new Map<string,{url:string;createdAt:number;expiresAt:number;issuedAt:number}>());
  // Bounded recovery of expired/failed R2 photo capabilities. Never pin a
  // failed image URL for another eight minutes or retry indefinitely.
@@ -23,11 +25,10 @@ export function useNativeStories(token:string,refreshVersion:number){
  if(previousToken.current!==token){
   previousToken.current=token;grants.current.clear();failedPhotos.current.clear();
  }
- const refresh=useCallback(async()=>{
-  const seq=++latest.current;
+ const refresh=useCallback((force=false)=>gate.request(async(signal,isCurrent)=>{
   try{
-   const found=await getMemberStories(token);
-   if(!mounted.current||latest.current!==seq)return;
+   const found=await getMemberStories(token,API,signal);
+   if(!isCurrent()||previousToken.current!==token)return false;
    // Team reactions invalidate the roster, but an unchanged photo keeps its
    // original 10-minute capability for 8 minutes. Do not re-download R2.
    const now=Date.now(),ids=new Set(found.map(st=>st.id));
@@ -44,42 +45,47 @@ export function useNativeStories(token:string,refreshVersion:number){
     return st;
    });
    setStories(stable);setError('');setInitialReady(true);
-   // Warm the latest cover of each member before anyone opens a story.
-   const covers=new Map<string,MemberStory>();
-   for(const story of stable){
-    const prior=covers.get(story.actorId);
-    if(!prior||story.createdAt>prior.createdAt||
-     (story.createdAt===prior.createdAt&&story.id>prior.id))
-     covers.set(story.actorId,story);
-   }
-   for(const story of [...covers.values()].slice(0,10))
-    void Image.prefetch(story.photoUrl).catch(()=>{});
+   // Visible native cover Images own their downloads. The viewer retains
+   // look-ahead prefetch of the next photographs.
+   return true;
   }catch(e){
-   if(!mounted.current||latest.current!==seq)return;
+   if(!isCurrent()||previousToken.current!==token)return false;
    setInitialReady(true);
    setError(e instanceof Error?e.message:'No se pudieron cargar los estados.');
-   setStories(current=>current.filter(st=>st.expiresAt>Date.now()));
+   if(e instanceof MemberStoryApiError&&(e.status===401||e.status===403)){
+    grants.current.clear();failedPhotos.current.clear();setStories([]);
+   }else setStories(current=>current.filter(st=>st.expiresAt>Date.now()));
+   return false;
   }
- },[token]);
+ },force),[token,gate]);
  useEffect(()=>{setStories([]);setInitialReady(false);},[token]);
  useEffect(()=>{
-  mounted.current=true;void refresh();
-  const sub=AppState.addEventListener('change',s=>{if(s==='active')void refresh();});
-  // Family websocket can be lost on some Android phones while HOME remains
-  // visible. A foreground-only reconciliation keeps Android/PWA stories in
-  // the same team roster without another socket or constant R2 downloads.
+  if(!visible){gate.setActive(false);return;}
+  const foreground=AppState.currentState!=='background'&&AppState.currentState!=='inactive';
+  gate.setActive(foreground);void refresh();
+  const sub=AppState.addEventListener('change',s=>{
+   gate.setActive(s==='active');
+   if(s==='active')void refresh(true);
+  });
+  // The fallback exists only while HOME is visible; no hidden screen polling.
   const fallback=setInterval(()=>{
-   if(AppState.currentState==='active')void refresh();
+   if(AppState.currentState==='active')void refresh(true);
   },45_000);
-  return()=>{mounted.current=false;++latest.current;sub.remove();clearInterval(fallback);};
+  return()=>{gate.setActive(false);sub.remove();clearInterval(fallback);};
+ },[refresh,gate,visible]);
+ useEffect(()=>{
+  if(previousRevision.current===refreshVersion)return;
+  previousRevision.current=refreshVersion;
+  // While hidden this only marks the list dirty; no network traffic.
+  void refresh(true);
  },[refresh,refreshVersion]);
  useEffect(()=>{
-  if(!stories.length)return;
+  if(!visible||!stories.length)return;
   const next=Math.min(...stories.map(st=>st.expiresAt));
-  const timer=setTimeout(()=>{setStories(current=>current.filter(st=>st.expiresAt>Date.now()));void refresh();},
+  const timer=setTimeout(()=>{setStories(current=>current.filter(st=>st.expiresAt>Date.now()));void refresh(true);},
    Math.max(50,Math.min(next-Date.now()+50,2_147_483_000)));
   return()=>clearTimeout(timer);
- },[stories,refresh]);
+ },[stories,refresh,visible]);
  const prepare=useCallback(async(uri:string)=>{
   // Android native JPEG/resize: no large original in R2 or JS memory.
   const first=await ImageManipulator.manipulateAsync(uri,[{resize:{width:720}}],{
@@ -124,7 +130,7 @@ export function useNativeStories(token:string,refreshVersion:number){
    });
    const parsed=await reply.json().catch(()=>({error:'No se pudieron publicar los estados.'})) as {error?:string};
    if(!reply.ok)throw Error(parsed.error||'No se pudieron publicar los estados.');
-   await refresh();
+   await refresh(true);
   }catch(e){
    const message=e instanceof Error?e.message:'';
    // Never leak Expo transport internals to the HOME screen.
@@ -137,7 +143,7 @@ export function useNativeStories(token:string,refreshVersion:number){
  const remove=useCallback(async(id:string)=>{
   if(saving)return false;
   setSaving(true);
-  try{await deleteMyStory(token,id);setStories(current=>current.filter(st=>st.id!==id));await refresh();return true;}
+  try{await deleteMyStory(token,id);setStories(current=>current.filter(st=>st.id!==id));await refresh(true);return true;}
   catch(e){setError(e instanceof Error?e.message:'No se pudo eliminar.');return false;}
   finally{setSaving(false);}
  },[token,saving,refresh]);
@@ -155,11 +161,11 @@ export function useNativeStories(token:string,refreshVersion:number){
   // The currently cached grant failed: force a NEW signed URL, even if the
   // eight-minute pin would ordinarily keep the stale one.
   grants.current.delete(id);
-  void refresh();
+  void refresh(true);
  },[refresh]);
  const retryAll=useCallback(()=>{
   failedPhotos.current.clear();grants.current.clear();
-  void refresh();
+  void refresh(true);
  },[refresh]);
  return {stories:stories.filter(st=>st.expiresAt>Date.now()),initialReady,error,saving,publish,remove,refresh,retryPhoto,retryAll};
 }

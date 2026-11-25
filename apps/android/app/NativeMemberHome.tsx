@@ -86,7 +86,7 @@ function NativeMemberHome({displayName,actorId,token,active,calendarRevision=0,l
    accessibilityElementsHidden={!isHome}>
    <NativeStories token={token} actorId={actorId}
     displayName={displayName} profiles={profile.profiles}
-    canPublish={profile.phase==='ready'} refreshVersion={profile.liveVersion}/>
+    canPublish={profile.phase==='ready'} refreshVersion={profile.liveVersion} visible={isHome}/>
    <Image pointerEvents="none" source={{uri:STORIES_FADE}}
     resizeMode="stretch" style={styles.storiesFade}/>
   </View>

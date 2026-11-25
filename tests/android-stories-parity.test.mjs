@@ -1,3 +1,5 @@
+import {runInNewContext} from 'node:vm';
+import ts from 'typescript';
 import {inflateSync} from 'node:zlib';
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -211,4 +213,80 @@ test('Seven native gradient textures contain valid RGBA pixels, with feathered t
    }
   }
  }
+});
+
+test('Hidden Android stories retain metadata only, stop polling and never mount the viewer',()=>{
+ const shell=read('apps/android/app/NativeMemberHome.tsx');
+ const strip=read('apps/android/features/stories/NativeStories.tsx');
+ const hook=read('apps/android/features/stories/useNativeStories.ts');
+ const viewer=read('apps/android/features/stories/NativeStoryViewer.tsx');
+ assert.match(shell,/refreshVersion=\{profile\.liveVersion\} visible=\{isHome\}/);
+ assert.match(strip,/if\(!visible\)return null;/);
+ assert.match(strip,/useNativeStories\(token,refreshVersion,visible\)/);
+ assert.match(hook,/if\(!visible\)\{gate\.setActive\(false\);return;\}/);
+ assert.match(hook,/gate\.setActive\(false\);sub\.remove\(\);clearInterval\(fallback\)/);
+ assert.match(hook,/if\(!visible\|\|!stories\.length\)return/);
+ assert.doesNotMatch(hook,/Image\.prefetch/);
+ assert.match(viewer,/Image\.prefetch/);
+});
+const storyGateExports={};
+runInNewContext(ts.transpileModule(read('apps/android/features/stories/native-story-refresh-gate.ts'),{
+ compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}
+}).outputText,{exports:storyGateExports,AbortController,Date});
+const {createNativeStoryRefreshGate}=storyGateExports;
+test('Story refresh is on demand: no hidden reads, warm reopen, revision forces latest',async()=>{
+ let now=100,calls=0;
+ const gate=createNativeStoryRefreshGate(()=>now);
+ const load=async()=>{calls++;return true;};
+ await gate.request(load,true);assert.equal(calls,0);
+ gate.setActive(true);await gate.request(load);assert.equal(calls,1);
+ gate.setActive(false);gate.setActive(true);await gate.request(load);assert.equal(calls,1);
+ gate.setActive(false);await gate.request(load,true);assert.equal(calls,1);
+ gate.setActive(true);await gate.request(load);assert.equal(calls,2);
+ now+=45_001;await gate.request(load);assert.equal(calls,3);
+});
+test('Story gate coalesces overlapping requests and reconciles a forced invalidation once',async()=>{
+ const gate=createNativeStoryRefreshGate();gate.setActive(true);
+ let resolve,calls=0;const committed=[];
+ const load=async(_signal,current)=>{
+  const id=++calls;
+  if(id===1)await new Promise(r=>{resolve=r;});
+  if(current())committed.push(id);
+  return current();
+ };
+ const first=gate.request(load);await Promise.resolve();
+ assert.equal(gate.request(load),first);
+ assert.equal(gate.request(load,true),first);
+ assert.equal(gate.request(load,true),first);
+ resolve();await first;
+ assert.equal(calls,2);assert.equal(committed.join(','),'2');
+});
+test('Leaving Home aborts the read and prevents its old result from committing',async()=>{
+ const gate=createNativeStoryRefreshGate();gate.setActive(true);
+ let resolve,signal,oldCommitted=false;
+ const old=gate.request(async(s,current)=>{
+  signal=s;await new Promise(r=>{resolve=r;});
+  oldCommitted=current();return oldCommitted;
+ });
+ await Promise.resolve();gate.setActive(false);assert.equal(signal.aborted,true);
+ gate.setActive(true);let newCommitted=false;
+ await gate.request(async(_s,current)=>{newCommitted=current();return true;});
+ resolve();await old;
+ assert.equal(oldCommitted,false);assert.equal(newCommitted,true);
+});
+test('Failed story reads do not count as a fresh reusable response',async()=>{
+ const gate=createNativeStoryRefreshGate();gate.setActive(true);
+ let calls=0;await gate.request(async()=>{calls++;return false;});
+ await gate.request(async()=>{calls++;return true;});
+ assert.equal(calls,2);
+});
+
+test('Distinct story sessions never share the same in-flight request or cache',async()=>{
+ const a=createNativeStoryRefreshGate(),b=createNativeStoryRefreshGate();
+ let calls=0;const load=async()=>{calls++;return true;};
+ a.setActive(true);await a.request(load);
+ for(let i=0;i<20;i++)await b.request(load,true);
+ assert.equal(calls,1);
+ b.setActive(true);await b.request(load);
+ assert.equal(calls,2);
 });

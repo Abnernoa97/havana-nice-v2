@@ -32,12 +32,12 @@ const StoryAvatar=React.memo(function StoryAvatar({uri,profileUri,name,hasStory,
 });
 
 type Props={token:string;actorId:string;displayName:string;profiles:readonly MemberProfile[];
- canPublish:boolean;refreshVersion:number};
+ canPublish:boolean;refreshVersion:number;visible:boolean};
 
 // HOME story strip has ONE role: pick/add/open. The viewer owns only playback,
 // and comments/voice/reactions belong to their own native feature components.
-export default function NativeStories({token,actorId,displayName,profiles,canPublish,refreshVersion}:Props){
- const states=useNativeStories(token,refreshVersion);
+export default function NativeStories({token,actorId,displayName,profiles,canPublish,refreshVersion,visible}:Props){
+ const states=useNativeStories(token,refreshVersion,visible);
  const [viewerActor,setViewerActor]=useState<string|null>(null);
  const [seen,setSeen]=useState<string[]>(()=>readNativeSeenStoryIds(actorId));
  useEffect(()=>{setSeen(readNativeSeenStoryIds(actorId));},[actorId]);
@@ -63,7 +63,10 @@ export default function NativeStories({token,actorId,displayName,profiles,canPub
  },[profiles,states.stories]);
  const own=roster.find(p=>p.actorId===actorId);
  const others=roster.filter(p=>p.actorId!==actorId);
- useEffect(()=>{if(viewerActor&&!group.length)setViewerActor(null);},[viewerActor,group.length]);
+ useEffect(()=>{if(viewerActor&&(!visible||!group.length))setViewerActor(null);},[viewerActor,group.length,visible]);
+ // Keep only the small controller state while another module is visible.
+ // No hidden native Images, ScrollView, conversation or modal.
+ if(!visible)return null;
  const newest=(id:string)=>states.stories.filter(st=>st.actorId===id)
   .reduce<MemberStory|null>((best,s)=>!best||s.createdAt>best.createdAt||
    (s.createdAt===best.createdAt&&s.id>best.id)?s:best,null);

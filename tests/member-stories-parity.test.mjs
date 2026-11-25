@@ -49,7 +49,7 @@ test('Android uses the same story backend, a separate NativeStories UI and a sin
  assert.match(stories,/NativeStoryViewer/);
  assert.match(nativeHook,/\/api\/stories\/me\/batch/);
  assert.match(nativeHook,/ImageManipulator\.manipulateAsync/);
- assert.match(nativeHook,/getMemberStories\(token\)/);
+ assert.match(nativeHook,/getMemberStories\(token,API,signal\)/);
  assert.match(profileHook,/openFamilyRealtime\(token,false/);
  assert.match(profileHook,/setLiveVersion\(n=>n\+1\)/);
  assert.doesNotMatch(nativeHook+stories,/openFamilyRealtime|new WebSocket|startNamedChatSession|saveNativeLocalChat/);
