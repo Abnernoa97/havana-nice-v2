@@ -146,8 +146,12 @@ test('Institutional header is permanent outside Chat, with PWA gradients and nat
  assert.match(header,/>ESPACIO DEL EQUIPO<\/Text>/);
  assert.match(header,/\{displayName\}/);
  assert.doesNotMatch(header,/isHome|moduleTitle/);
- assert.match(motion,/useMotion\(4600,reduced\)/);
- assert.match(motion,/useMotion\(5300,reduced\)/);
+ const light=motion.slice(motion.indexOf('export function NativeHeaderLight'),motion.indexOf('export function NativeButtonLight'));
+ assert.match(light,/useMotion\(5300,reduced\)/);
+ assert.equal((light.match(/<Animated\.Image/g)||[]).length,1);
+ assert.doesNotMatch(light,/HEADER_STREAK|HEADER_GRADIENT|rotate:/);
+ assert.match(light,/width:glowWidth,height:glowHeight/);
+ assert.match(light,/outputRange:\[0,\.55,\.88,\.55,0\]/);
  assert.match(motion,/useNativeDriver:true,isInteraction:false/);
  for(const p of ['calendar/NativeCalendar','repertoire/NativeRepertoire'])assert.match(read('apps/android/features/'+p+'.tsx'),/<NativeButtonLight/);
 });
@@ -175,10 +179,10 @@ test('One native player for Chat and Family hides controls on play, restores on 
  assert.doesNotMatch(family,/pauseVideo:/);
 });
 
-test('Nine PWA-derived native gradient textures contain valid RGBA pixels, with feathered transparent glints',()=>{
+test('Seven native gradient textures contain valid RGBA pixels, with feathered transparent glints',()=>{
  const motion=read('apps/android/features/shared/NativeEmeraldMotion.tsx');
  const images=[...motion.matchAll(/const (\w+)='data:image\/png;base64,([^']+)'/g)];
- assert.equal(images.length,9);
+ assert.equal(images.length,7);
  for(const [,name,encoded] of images){
   const b=Buffer.from(encoded,'base64');
   assert.equal(b.subarray(0,8).toString('hex'),'89504e470d0a1a0a');
@@ -196,6 +200,15 @@ test('Nine PWA-derived native gradient textures contain valid RGBA pixels, with 
    assert.equal(pixels[middle+4],0,name+' left edge');
    assert.equal(pixels[middle+4*w],0,name+' right edge');
    assert.ok(pixels[middle+Math.floor(w/2)*4+4]>20,name+' visible center');
+   if(name==='HEADER_BLOOM'){
+    for(let y=0;y<h;y++){
+     const row=y*(w*4+1);
+     assert.equal(pixels[row+4],0);assert.equal(pixels[row+4*w],0);
+    }
+    for(let x=0;x<w;x++){
+     assert.equal(pixels[x*4+4],0);assert.equal(pixels[(h-1)*(w*4+1)+x*4+4],0);
+    }
+   }
   }
  }
 });
