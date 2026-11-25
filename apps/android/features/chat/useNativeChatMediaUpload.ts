@@ -2,8 +2,9 @@
 // The existing Chat controller remains the single owner of message reconciliation.
 import {useEffect,useRef,useState,type RefObject} from 'react';
 import {File} from 'expo-file-system';
-import {getChatMediaAvailability,uploadChatMediaBatch,type ChatSession} from '@havana/shared';
-import {uploadNativeChatFile} from '../../services/native-chat-r2-upload';
+import {getChatMediaAvailability,type ChatSession} from '@havana/shared';
+import {transferNativeVisualBatch,runNativeTransferStep} from './native-media-transfer';
+import {prepareNativeChatFile,uploadNativeChatFile} from '../../services/native-chat-r2-upload';
 import type {NativeQueuedMedia} from './useNativeMediaSelection';
 
 type Options={
@@ -29,14 +30,16 @@ export function useNativeChatMediaUpload({
  const [voiceSending,setVoiceSending]=useState(false);
  const [voiceError,setVoiceError]=useState('');
  const voiceRequest=useRef<AbortController|null>(null);
+ const batchRequest=useRef<AbortController|null>(null);
  useEffect(()=>{
-  voiceRef.current=null;setVoiceDraft(null);setVoiceSending(false);setVoiceError('');
-  return()=>{voiceRequest.current?.abort();voiceRequest.current=null;};
+  voiceRef.current=null;setVoiceDraft(null);setVoiceSending(false);setVoiceError('');setMediaUploading(false);setMediaProgress(0);
+  return()=>{voiceRequest.current?.abort();voiceRequest.current=null;
+   batchRequest.current?.abort();batchRequest.current=null;mediaUploadBusy.current=false;};
  },[session?.token]);
  useEffect(()=>{
   if(!session){setMediaReady(false);return;}
   let active=true;
-  void getChatMediaAvailability(session).then(enabled=>{
+  void runNativeTransferStep('Disponibilidad multimedia',12_000,()=>getChatMediaAvailability(session)).then(enabled=>{
    if(active)setMediaReady(enabled);
   }).catch(()=>{if(active)setMediaReady(false);});
   return()=>{active=false;};
@@ -75,8 +78,7 @@ export function useNativeChatMediaUpload({
    return false;
   }finally{
    // No old response may clear a new session's draft or update its interface.
-   mediaUploadBusy.current=false;
-   if(voiceRequest.current===ctl){voiceRequest.current=null;setVoiceSending(false);}
+   if(voiceRequest.current===ctl){mediaUploadBusy.current=false;voiceRequest.current=null;setVoiceSending(false);}
   }
  }
  function discardVoice(){
@@ -85,23 +87,23 @@ export function useNativeChatMediaUpload({
  }
  async function sendSelectedMedia(){
   if(!session||!selectedMedia.length||mediaUploadBusy.current)return;
-  if(!mediaReady){setMediaError('El almacenamiento R2 no está disponible.');return;}
+  const ctl=new AbortController();batchRequest.current=ctl;
+  const current=()=>batchRequest.current===ctl&&activeSession.current?.token===session.token;
   mediaUploadBusy.current=true;setMediaUploading(true);setMediaProgress(0);setMediaError('');
   try{
-   await uploadChatMediaBatch([...selectedMedia],{
-    sizeOf:item=>item.sizeBytes,
-    upload:(item,onSent)=>uploadNativeChatFile(session,item,onSent),
-    progress:setMediaProgress,
-    confirmed:item=>{
-     // Do not remove retryable originals or refresh a different member's Chat.
-     if(activeSession.current?.token!==session.token)return;
+   await transferNativeVisualBatch([...selectedMedia],{
+    prepare:(item,onSent)=>prepareNativeChatFile(session,item,onSent,ctl.signal),
+    progress:value=>{if(current())setMediaProgress(value);},
+    confirmed:(item)=>{
+     if(!current())return;
      confirmUploadedMedia(item.id);
-     syncLatest.current();
     },
-   });
+   },ctl.signal);
   }catch(e){
-   setMediaError(e instanceof Error?e.message:'Se interrumpió la carga. Reintenta solo lo pendiente.');
-  }finally{mediaUploadBusy.current=false;setMediaUploading(false);}
+   if(current())setMediaError(e instanceof Error?e.message:'Se interrumpió la carga. Reintenta solo lo pendiente.');
+  }finally{
+   if(current()){syncLatest.current();mediaUploadBusy.current=false;batchRequest.current=null;setMediaUploading(false);}
+  }
  }
  return {mediaReady,mediaUploading,mediaProgress,sendVoice,sendSelectedMedia,
   voiceDraft:voiceDraft?.token===session?.token?voiceDraft:null,voiceSending,voiceError,discardVoice};

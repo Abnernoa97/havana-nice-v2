@@ -107,8 +107,8 @@ function NativeMemberHome({displayName,actorId,token,active,calendarRevision=0,l
      </Pressable>;
    })}
   </View>
-  <Modal visible={checking||mustAdd||profileOpen} transparent animationType="fade"
-   onRequestClose={()=>{if(!mustAdd&&!checking)setProfileOpen(false);}}>
+  <Modal visible={mustAdd||profileOpen} transparent animationType="fade"
+   onRequestClose={()=>{if(!mustAdd)setProfileOpen(false);}}>
    <View style={styles.overlay}>
     <View style={styles.profileCard}>
      {checking?<ActivityIndicator size="large" color="#153d31"/>:<>

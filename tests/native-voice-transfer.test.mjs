@@ -38,12 +38,21 @@ test('Voice draft belongs to the session controller; the text composer does not 
  assert.match(voice,/voiceRef\.current=item;setVoiceDraft\(item\)/);
  assert.doesNotMatch(voice,/setMediaUploading/);
  assert.match(voice,/mediaUploadBusy\.current=true;setVoiceSending\(true\)/);
- assert.match(voice,/finally\{[\s\S]*?mediaUploadBusy\.current=false/);
+ assert.match(voice,/finally\{[\s\S]*?voiceRequest.current===ctl\)\{mediaUploadBusy.current=false/);
  assert.match(hook,/voiceRequest\.current\?\.abort\(\)/);
  assert.match(view,/sendVoice\(voiceDraft\.uri,voiceDraft\.id\)/);
  assert.match(view,/disabled=\{savingEdit\|\|mediaUploading\|\|\(!editing&&selectedMedia\.length>0&&voiceSending\)/);
  assert.doesNotMatch(recorder,/setPending/);
  assert.match(transport,/if\(picked\.kind==='audio'\)\{/);
- assert.match(transport,/body:file/);
+ assert.match(transport,/put:signal=>nativePut\(file,base\+'\/content'/);
+ assert.match(transport,/createUploadTask\(url/);
+ assert.match(transport,/signal\}:\{\}/);
  assert.match(transport,/\},25_000,ownerSignal\)/);
+});
+
+
+test('Home does not open a blocking profile-check modal on slow network',()=>{
+ const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
+ assert.match(read('apps/android/app/NativeMemberHome.tsx'),/Modal visible=\{mustAdd\|\|profileOpen\}/);
+ assert.match(read('apps/android/features/profile/useNativeMemberProfile.ts'),/8000/);
 });

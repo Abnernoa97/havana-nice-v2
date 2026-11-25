@@ -11,9 +11,10 @@ export async function transferNativeVoice(
  const ctl=new AbortController();
  let timer:ReturnType<typeof setTimeout>|undefined;
  let removeOwner=()=>{};
+ let stage='preparar';
  const interruption=new Promise<never>((_,reject)=>{
   const cancel=(message:string)=>{ctl.abort();reject(Error(message));};
-  timer=setTimeout(()=>cancel('El envío de voz tardó demasiado. Reintenta el mismo audio.'),timeoutMs);
+  timer=setTimeout(()=>cancel('El envío de voz tardó demasiado al '+stage+'. Reintenta el mismo audio.'),timeoutMs);
   const onAbort=()=>cancel('El acceso cambió. No se continuó el envío.');
   if(ownerSignal?.aborted)onAbort();
   else if(ownerSignal){
@@ -26,8 +27,8 @@ export async function transferNativeVoice(
   check();
   const started=await ops.start(ctl.signal);check();
   if(started.id!==id||started.multipart)throw Error('La sesión de voz no coincide con el archivo.');
-  if(!started.ready){await ops.put(ctl.signal);check();}
-  const result=await ops.send(ctl.signal);check();
+  if(!started.ready){stage='subir';await ops.put(ctl.signal);check();}
+  stage='confirmar';const result=await ops.send(ctl.signal);check();
   if(!Number.isSafeInteger(result.seq)||result.seq<=0)throw Error('No se pudo confirmar la nota de voz.');
   return {id,seq:result.seq};
  };

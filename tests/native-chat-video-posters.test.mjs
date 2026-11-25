@@ -10,7 +10,7 @@ test('Android loads a private JPEG independently of the player and produces boun
  assert.match(view,/\{poster\?<Image/);
  assert.match(view,/if\(!opened\)return/);
  assert.doesNotMatch(view,/generateThumbnailsAsync|createVideoPlayer/);
- assert.match(uploader,/if\(picked.kind==='video'\)await publishNativeVideoPoster\(session.token,id,picked.uri\)/);
+ assert.match(uploader,/if\(picked.kind==='video'\)await publishNativeVideoPoster\(session.token,id,picked.uri,4500,ownerSignal\)/);
  assert.match(maker,/generateThumbnailsAsync\(\[0\],\{maxWidth:640,maxHeight:640\}\)/);
  assert.match(maker,/MAX_BYTES=256\*1024/);
  assert.match(maker,/if\(extracting\|\|signal.aborted\)return null/);

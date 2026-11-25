@@ -16,8 +16,11 @@ export function useNativeMemberProfile(token:string,actorId:string,watchHome:boo
  const request=useRef(0),active=useRef(true);
  const refresh=useCallback(async()=>{
   const id=++request.current;
+  let timer:ReturnType<typeof setTimeout>|undefined;
   try{
-   const next=await getTeamProfiles(token);
+   const next=await Promise.race([getTeamProfiles(token),new Promise<never>((_,reject)=>{
+    timer=setTimeout(()=>reject(Error('Perfil sin respuesta')),8000);
+   })]);
    if(!active.current||request.current!==id)return;
    setProfiles(next);
    setPhase(next.some(p=>p.actorId===actorId&&p.photoUrl)?'ready':'missing');
@@ -30,12 +33,13 @@ export function useNativeMemberProfile(token:string,actorId:string,watchHome:boo
      if(active.current&&request.current===id)
       setProfiles(roster.map(p=>({...p,photoUrl:null})));
     }catch{}
+    if(!active.current||request.current!==id)return;
     setPhase('legacy');setError('');
    }else{
     setPhase('offline');
     setError('No se pudo consultar el perfil. Puedes seguir usando la aplicación.');
    }
-  }
+  }finally{if(timer!==undefined)clearTimeout(timer);}
  },[token,actorId]);
  useEffect(()=>{
   active.current=true;setProfiles([]);setPhase('checking');void refresh();
