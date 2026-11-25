@@ -51,3 +51,14 @@ test('Unavailable storage never shows an endless album spinner or private viewer
  assert.match(f,/const chosen=mediaReady&&focused!==null/);
  assert.match(f,/if\(selected&&mediaReady\)/);
 });
+
+test('Album hero uses a feathered shade and a measured three-column grid separated from header',()=>{
+ const f=read('apps/android/features/family/NativeFamily.tsx');
+ assert.match(f,/ListHeaderComponentStyle=\{styles\.galleryHeader\}/);
+ assert.match(f,/galleryHeader:\{marginBottom:12\}/);
+ assert.match(f,/onLayout=\{e=>setGalleryWidth\(e\.nativeEvent\.layout\.width\)\}/);
+ assert.match(f,/width:tileSize,height:tileSize/);
+ const hero=f.slice(f.indexOf('<View style={styles.hero}>'),f.indexOf('ListEmptyComponent='));
+ assert.match(hero,/<NativeAlbumShade\/>/);
+ assert.doesNotMatch(f,/heroCaption:\{[^}]*backgroundColor/);
+});

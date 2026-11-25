@@ -153,7 +153,8 @@ test('Institutional header is permanent outside Chat, with PWA gradients and nat
  assert.equal((light.match(/<Animated\.Image/g)||[]).length,1);
  assert.doesNotMatch(light,/HEADER_STREAK|HEADER_GRADIENT|rotate:/);
  assert.match(light,/width:glowWidth,height:glowHeight/);
- assert.match(light,/outputRange:\[0,\.55,\.88,\.55,0\]/);
+ assert.match(light,/outputRange:\[0,\.66,\.98,\.66,0\]/);
+ assert.match(light,/glowWidth=width\*1\.08,glowHeight=height\*1\.92/);
  assert.match(motion,/useNativeDriver:true,isInteraction:false/);
  for(const p of ['calendar/NativeCalendar','repertoire/NativeRepertoire'])assert.match(read('apps/android/features/'+p+'.tsx'),/<NativeButtonLight/);
 });

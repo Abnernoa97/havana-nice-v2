@@ -33,10 +33,10 @@ export function NativeHeaderLight(){
  const {width,height}=size;
  // Single radial light: no solid rectangle, streak, rotation or moving base.
  // Explicit measured bounds avoid intrinsic Image sizing and percentage seams.
- const glowWidth=width*.83,glowHeight=height*1.65;
+ const glowWidth=width*1.08,glowHeight=height*1.92;
  const x=bloom.interpolate({inputRange:[0,.5,1],outputRange:[-glowWidth,(width-glowWidth)*.5,width]});
  const y=bloom.interpolate({inputRange:[0,.5,1],outputRange:[height*.12,-height*.12,height*.03]});
- const opacity=bloom.interpolate({inputRange:[0,.18,.5,.82,1],outputRange:[0,.55,.88,.55,0]});
+ const opacity=bloom.interpolate({inputRange:[0,.18,.5,.82,1],outputRange:[0,.66,.98,.66,0]});
  return <View pointerEvents="none" style={s.headerFill} onLayout={e=>{
   const {width,height}=e.nativeEvent.layout;
   setSize(old=>old.width===width&&old.height===height?old:{width,height});

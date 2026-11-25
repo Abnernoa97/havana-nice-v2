@@ -54,3 +54,19 @@ test('PWA and native use one restoration decision while retaining their own sock
  assert.doesNotMatch(platformSocket,/setTimeout|retry|\.onmessage|localStorage|sessionStorage|AsyncStorage/);
  assert.doesNotMatch(native,/new NativeWebSocket\(/);
 });
+
+test('Android launch retains recovery validation, removes unused health fetch and defers only initial connection',()=>{
+ const native=readFileSync(new URL('../apps/android/features/chat/useNativeChatController.ts',import.meta.url),'utf8');
+ assert.doesNotMatch(native,/fetchBackendHealth|setApiState/);
+ assert.match(native,/const access=await recoverChatAccess\(saved\.session,restoreNamedChatSession\)/);
+ assert.match(native,/if \(access\.state==='revoked'\)/);
+ assert.match(native,/startupConnect\.current=approved/);
+ assert.match(native,/if\(restoringAccess\|\|!approved\|\|session\?\.token!==approved\.token\)return/);
+ assert.match(native,/const frame=requestAnimationFrame/);
+ assert.match(native,/startupConnect\.current!==approved\|\|activeSession\.current\?\.token!==approved\.token/);
+ assert.match(native,/if\(appLifecycle\.current==='active'&&!socket\.current\)connectLatest\.current\(approved\)/);
+ assert.match(native,/return\(\)=>cancelAnimationFrame\(frame\)/);
+ assert.match(native,/function connect\(next: ChatSession\)[\s\S]{0,130}startupConnect\.current=null/);
+ assert.match(native,/restoreNamedChatSession\(currentSession\)/);
+ assert.match(native,/console\.info\('\[HAVANA startup\]',\{storageMs,validationMs,totalMs:Date\.now\(\)-started,outcome\}\)/);
+});

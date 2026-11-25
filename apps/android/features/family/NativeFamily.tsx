@@ -31,6 +31,8 @@ export default function NativeFamily({token,onBackHome,lists,bookTick}:{token:st
  const [filmChrome,setFilmChrome]=useState(true);
  useEffect(()=>{setFilmChrome(true);},[focused]);
  const {width:screenWidth}=useWindowDimensions();
+ const [galleryWidth,setGalleryWidth]=useState(0);
+ const tileSize=Math.max(1,Math.floor(((galleryWidth||screenWidth-40)-10)/3));
  const active=directory?.albums.find(a=>a.actorId===selected);
  const mediaReady=active?.mediaReady===true;
  const mediaLoading=mediaReady&&albumSnapshot.loading;
@@ -102,7 +104,7 @@ export default function NativeFamily({token,onBackHome,lists,bookTick}:{token:st
   });
   return()=>sub.remove();
  },[focused,selected]);
- return <View style={styles.root} {...albumBack.panHandlers}>
+ return <View style={styles.root} onLayout={e=>setGalleryWidth(e.nativeEvent.layout.width)} {...albumBack.panHandlers}>
   {!!error&&<Text accessibilityRole="alert" style={styles.error}>{error}</Text>}
   {(loading&&!directorySeen||selected&&!active&&loading)?<ActivityIndicator color="#917252"/>:active?
    <FlatList
@@ -117,13 +119,16 @@ export default function NativeFamily({token,onBackHome,lists,bookTick}:{token:st
     windowSize={5}
     removeClippedSubviews={false}
     keyboardShouldPersistTaps="handled"
+    ListHeaderComponentStyle={styles.galleryHeader}
     ListHeaderComponent={<>
      <Pressable accessibilityRole="button" accessibilityLabel="Regresar a Familia HAVANA NICE"
       onPress={back} style={styles.back}><Text style={styles.backArrow}>‹</Text></Pressable>
      <View style={styles.hero}>
+      <NativeAlbumGradient/>
       {cover?<Image source={{uri:cover,cache:'default'}} style={styles.heroImage}
        resizeMode="cover" fadeDuration={0}/>:
        <Text style={styles.monogram}>{active.name.slice(0,1).toUpperCase()}</Text>}
+      <NativeAlbumShade/>
       <View style={styles.heroCaption}>
        <Text style={styles.heroTitle}>{active.name}</Text>
        <Text style={styles.heroCount}>{familyAlbumCount(active)}</Text>
@@ -136,7 +141,7 @@ export default function NativeFamily({token,onBackHome,lists,bookTick}:{token:st
      :undefined}
     renderItem={({item,index})=><Pressable
      accessibilityRole="button" accessibilityLabel={'Abrir '+(item.kind==='photo'?'foto':'video')}
-     style={[styles.media,{width:(screenWidth-72)/3,height:(screenWidth-72)/3}]}
+     style={[styles.media,{width:tileSize,height:tileSize}]}
      onPress={()=>setFocused(index)}>
      {item.image?<Image source={{uri:item.image,cache:'default'}}
       style={styles.fill} resizeMode="cover" fadeDuration={0}/>:
@@ -190,7 +195,7 @@ const styles=StyleSheet.create({
  albumListContent:{paddingBottom:35},
  directoryContent:{paddingBottom:42},
  inlineBook:{marginTop:13,marginBottom:20,overflow:'hidden',borderRadius:12},
- galleryRow:{gap:5,marginBottom:5},
+ galleryHeader:{marginBottom:12},galleryRow:{gap:5,marginBottom:5},
  back:{marginBottom:13,alignSelf:'flex-start',minWidth:44,minHeight:44,paddingHorizontal:10,
   justifyContent:'center',alignItems:'center',borderRadius:24,borderColor:'#d2dfd0',borderWidth:1,
   backgroundColor:'#f7faf2'},
@@ -204,11 +209,10 @@ const styles=StyleSheet.create({
  fill:{width:'100%',height:'100%',position:'absolute'},monogram:{fontSize:72,color:'#ffffff36',fontFamily:'serif',fontStyle:'italic',textAlign:'center'},
  albumOverlay:{position:'absolute',bottom:0,left:0,right:0,paddingHorizontal:11,paddingVertical:12},
  albumName:{fontSize:17,color:'#fff',fontWeight:'700'},heroCount:{fontSize:12,color:'#fff',marginTop:4},
- hero:{width:'100%',aspectRatio:16/9,maxHeight:260,backgroundColor:'#756d60',
+ hero:{width:'100%',aspectRatio:16/9,maxHeight:260,backgroundColor:'#173d33',
   borderRadius:15,overflow:'hidden',justifyContent:'center'},
  heroImage:{width:'100%',height:'100%',position:'absolute'},
- heroCaption:{position:'absolute',bottom:0,left:0,right:0,padding:13,
-  backgroundColor:'rgba(17,17,17,.63)'},
+ heroCaption:{position:'absolute',bottom:0,left:0,right:0,padding:13},
  heroTitle:{color:'#fff',fontSize:25,fontWeight:'700'},
  gallery:{flexDirection:'row',flexWrap:'wrap',gap:5},media:{backgroundColor:'#ddd9d1',borderRadius:6,overflow:'hidden',justifyContent:'center'},
  play:{color:'#555',fontSize:30,textAlign:'center'},

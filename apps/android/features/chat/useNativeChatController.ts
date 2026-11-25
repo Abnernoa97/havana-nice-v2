@@ -4,7 +4,7 @@ import {useCallback,useEffect,useLayoutEffect,useRef,useState} from 'react';
 import {AppState,StatusBar,useWindowDimensions} from 'react-native';
 import {
   chatReactionPayload,chatTypingPayload,chatReadReceiptPayload,isActionableChatMessage,
-  logMemberActivity,fetchBackendHealth,getChatSnapshot,getOlderChatMessages,getChatMenuState,
+  logMemberActivity,getChatSnapshot,getOlderChatMessages,getChatMenuState,
   getChatMessagePermissions,checkChatEditDecision,chatEditPayload,chatDeletePayload,CHAT_EDIT_ACK_TIMEOUT_MS,setOutgoingChatStatus,projectOutgoingChatStatus,
   clearChatAckTimer,pauseChatOutbox,confirmChatOutgoingMessage,flushChatOutbox,newClientMessageId,createQueuedChatMessage,
   reconcileChatMessages,reconcileChatSnapshot,applyChatIncomingEvent,startNamedChatSession,
@@ -26,7 +26,6 @@ import {useNativeChatViewport} from './useNativeChatViewport';
 
 export function useNativeChatController(){
   const {width: viewportWidth, height: viewportHeight} = useWindowDimensions();
-  const [apiState, setApiState] = useState('conectando…');
   const [name, setName] = useState('');
   const [session, setSession] = useState<ChatSession | null>(null);
   // Access remains the same ChatSession; only the destination changes to HOME.
@@ -79,6 +78,7 @@ export function useNativeChatController(){
   const connectionTimers=useRef(new ChatConnectionTimers());
   const resumeGate=useRef(new ChatResumeGate());
   const startupGate=useRef(new ChatResumeGate());
+  const startupConnect=useRef<ChatSession|null>(null);
   const retryAttempts = useRef(0);
   const disposed = useRef(false);
   const connectLatest = useRef<(next: ChatSession) => void>(() => {});
@@ -110,6 +110,7 @@ export function useNativeChatController(){
 
 
   function revokeCurrentAccess() {
+    startupConnect.current=null;
     resumeGate.current.invalidate();
     startupGate.current.invalidate();
     clearSelectedMedia();
@@ -278,6 +279,7 @@ export function useNativeChatController(){
   // Do not put secrets in the URL or Sec-WebSocket-Protocol.
   function connect(next: ChatSession) {
     if (disposed.current) return;
+    startupConnect.current=null;
     resumeGate.current.invalidate();
     activeSession.current = next;
     persistLocal();
@@ -409,12 +411,17 @@ export function useNativeChatController(){
 
   useEffect(() => {
     disposed.current = false;
+    const started=Date.now();let storageMs=0,validationMs=0;
+    let outcome='no-session';
     void loadNativeLocalChat().then(async saved => {
+      storageMs=Date.now()-started;
       if (disposed.current) return;
       if (activeSession.current) {restoredStorage.current=true;persistLocal();return;}
       if (!saved?.session || chatSessionExpired(saved.session)) return;
       const restoration=startupGate.current.begin();
+      const validationStarted=Date.now();
       const access=await recoverChatAccess(saved.session,restoreNamedChatSession);
+      validationMs=Date.now()-validationStarted;outcome=access.state;
       if(disposed.current||!startupGate.current.isRequestCurrent(restoration)||
          activeSession.current)return;
       if (access.state==='revoked') {
@@ -442,11 +449,15 @@ export function useNativeChatController(){
         beforeEdit.current=null;
       }
       setName(approved.displayName);
-      if(appLifecycle.current==='active')connectLatest.current(approved);
-    }).catch(() => {}).finally(() => {restoredStorage.current=true;setRestoringAccess(false);});
-    void fetchBackendHealth()
-      .then(value => { if (!disposed.current) setApiState(value.ok ? 'conectada' : 'error'); })
-      .catch(() => { if (!disposed.current) setApiState('error'); });
+      // The validated session can render HOME before starting the socket/history.
+      // No extra validation, no new session or offline-policy change.
+      startupConnect.current=approved;
+    }).catch(() => {outcome='storage-error';}).finally(() => {
+      if(disposed.current)return;
+      restoredStorage.current=true;setRestoringAccess(false);
+      // Local diagnostic only: no token, names, message content or network telemetry.
+      console.info('[HAVANA startup]',{storageMs,validationMs,totalMs:Date.now()-started,outcome});
+    });
 
     const subscription = AppState.addEventListener('change', state => {
       appLifecycle.current = state;
@@ -483,6 +494,7 @@ export function useNativeChatController(){
 
     return () => {
       disposed.current = true;
+      startupConnect.current=null;
       resumeGate.current.invalidate();
       startupGate.current.invalidate();
       subscription.remove();
@@ -495,6 +507,19 @@ export function useNativeChatController(){
     };
   }, []);
 
+  // Start the restored Chat connection after the session has committed and the
+  // launch overlay is gone. Resume/retry/manual connect still own their usual paths.
+  useEffect(()=>{
+    const approved=startupConnect.current;
+    if(restoringAccess||!approved||session?.token!==approved.token)return;
+    const frame=requestAnimationFrame(()=>{
+      if(disposed.current||startupConnect.current!==approved||activeSession.current?.token!==approved.token)return;
+      startupConnect.current=null;
+      if(appLifecycle.current==='active'&&!socket.current)connectLatest.current(approved);
+    });
+    return()=>cancelAnimationFrame(frame);
+  },[restoringAccess,session?.token]);
+
   useEffect(() => {
     latestDraft.current = draft;
     if(!restoredStorage.current || !activeSession.current)return;
@@ -505,6 +530,7 @@ export function useNativeChatController(){
 
 
   function acceptApprovedSession(next: ChatSession) {
+    startupConnect.current=null;
     historyRequests.current.reset();setLoadingOlder(false);
     editingSnapshot.current=null;
     beforeEdit.current=null;
