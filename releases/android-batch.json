@@ -1,7 +1,7 @@
 {
   "approved": true,
   "releaseMode": "explicit-batch",
-  "version": "0.0.35",
-  "versionCode": 35,
-  "notes": "Lote autorizado tras QA general 0.0.34: pulido de portada/cuadrícula Familia y luz radial; eliminar consulta de salud sin consumidor; diferir conexión inicial restaurada tras commit; recuperación de primer plano toma propiedad; scroll de historial solo con lista montada. Auditoría de código completa, sin cambiar política de acceso, almacenamiento, FCM, Audio, BOOK 3D, PWA, backend ni flujo de mensajes. Conservar APK 0.0.34 como anterior; medir rendimiento físico y verificar reconexión. Chat voz, leído por, collage y posters pendientes de lote separado."
+  "version": "0.0.36",
+  "versionCode": 36,
+  "notes": "Lote Chat nativo P2.2-A–F aprobado por propietario el 25/11/2026: voz con reintento estable, leído por nombres, mosaicos compactos sin marco con primera miniatura horizontal en álbum impar, JPEG privados de videos y virtualización de filas sin consulta redundante de dimensiones. Conservar APK 0.0.35 como anterior con firma compatible. Sin cambios adicionales de runtime, backend, FCM, Familia, BOOK 3D ni Audio. Compilación y QA físico pendientes; no se certifica rendimiento físico."
 }
