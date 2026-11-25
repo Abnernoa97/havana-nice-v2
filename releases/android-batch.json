@@ -1,7 +1,7 @@
 {
   "approved": true,
   "releaseMode": "explicit-batch",
-  "version": "0.0.33",
-  "versionCode": 33,
-  "notes": "Corrección visual solicitada tras QA 0.0.32. Cabecera permanente como PWA excepto Chat, títulos de módulo debajo, botones suaves, tarjetas Familia y visor único nativo para Chat/Familia con controles ocultables. Sin cambios PWA, audio musical, BOOK 3D, servidor o sesión. Validar firma y QA físico."
+  "version": "0.0.34",
+  "versionCode": 34,
+  "notes": "Lote explícito solicitado por propietario antes de optimizar arranque. Cabecera con luz radial; Calendario y Repertorio bajo demanda; Familia reutiliza listados y canal de perfil; Estados suspendidos fuera de Inicio; bandeja y contador de avisos compartidos. Sin cambios de arranque/autorización, FCM, BOOK 3D, motor musical, visor, backend o PWA. Chat pendiente de lote separado (bloqueo voz, leído por, álbumes y posters). Conservar 0.0.33 como APK anterior. QA físico pendiente."
 }

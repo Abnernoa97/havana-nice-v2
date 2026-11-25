@@ -74,6 +74,7 @@ jobs:
           node --test cloudflare/tests/calendar.test.mjs cloudflare/tests/calendar-realtime.test.mjs cloudflare/tests/member-notifications.test.mjs cloudflare/tests/audio-api.test.mjs
           node --test cloudflare/tests/push-center.test.mjs tests/native-push-integrity.test.mjs tests/firebase-android-config.test.mjs
           node --test tests/calendar-free-text-ui.test.mjs tests/member-notifications-parity.test.mjs tests/android-pwa-parity.test.mjs
+          node --test tests/native-family-virtualization.test.mjs tests/family-realtime-parity.test.mjs
 
       - name: Guard native Chat, HOME, Audio, Stories and the untouched BOOK 3D
         run: |
