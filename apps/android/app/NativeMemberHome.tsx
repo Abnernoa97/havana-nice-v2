@@ -28,7 +28,8 @@ function NativeMemberHome({displayName,actorId,token,active,calendarRevision=0,l
  },[familyLists]);
  useEffect(()=>()=>familyLists.invalidate(),[familyLists]);
  const profile=useNativeMemberProfile(token,actorId,true,onFamilySignal);
- const unreadNotices=useNativeUnreadNotices(token,profile.liveVersion+calendarRevision);
+ const activity=useNativeUnreadNotices(token,profile.liveVersion+calendarRevision,active==='notices');
+ const unreadNotices=activity.unread;
  const [profileOpen,setProfileOpen]=useState(false);
  const isHome=active==='home';
  const selected=MEMBER_MODULES.find(item=>item.id===active);
@@ -70,7 +71,7 @@ function NativeMemberHome({displayName,actorId,token,active,calendarRevision=0,l
     active==='repertoire'?<NativeRepertoire token={token} calendarRevision={calendarRevision} list={lists.repertoire}/>:
     active==='musicians'?<NativeMusicians token={token}/>:
     active==='family'?<NativeFamily token={token} onBackHome={()=>onNavigate('home')} lists={familyLists} bookTick={familyRevision}/>:
-    active==='notices'?<NativeNotices token={token} calendarRevision={calendarRevision} push={push}/>:
+    active==='notices'?<NativeNotices activity={activity} push={push}/>:
     active==='audio'?null:<View style={styles.pending}>
      <Text style={styles.pendingTitle}>Módulo en preparación</Text>
      <Text style={styles.pendingDescription}>Esta sección estará disponible próximamente.</Text>

@@ -85,7 +85,7 @@ test('Unread private notification count is visible on both platforms',()=>{
  assert.match(pwa,/hn-notices-count/);
  assert.match(native,/styles\.unreadBadge/);
  assert.match(webHook,/getMemberNotices\(token\)/);
- assert.match(phoneHook,/getMemberNotices\(token\)/);
+ assert.match(phoneHook,/getMemberNotices\(token,API,signal\)/);
  assert.doesNotMatch(webHook+phoneHook,/new WebSocket|localStorage|PushNotification/);
 });
 

@@ -1,76 +1,17 @@
-import React,{useCallback,useEffect,useRef,useState} from 'react';
-import {AppState,Linking,Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
+import React from 'react';
+import {Linking,Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
 import type {NativePushControl} from './useNativePush';
-import {getMemberNotices,markMemberNoticesRead,memberNoticeMessage,
- openFamilyRealtime,FAMILY_WS_HANDSHAKE_TIMEOUT_MS,
- type MemberNotice,type MemberNoticeInbox} from '@havana/shared';
+import type {NativeNoticeActivity} from './useNativeUnreadNotices';
+import {memberNoticeMessage} from '@havana/shared';
 
-// One existing musician session, one notification-only Familia stream while this
-// tab is active. Never create a second Chat owner or persist private inbox data.
-export default function NativeNotices({token,calendarRevision=0,push}:{token:string;calendarRevision?:number;push:NativePushControl}){
- const [inbox,setInbox]=useState<MemberNoticeInbox>({items:[],unread:0});
- const [loading,setLoading]=useState(true);
- const [error,setError]=useState('');
- const id=useRef(0);
- const refresh=useCallback(async()=>{
-  const ticket=++id.current;
-  try{const result=await getMemberNotices(token);
-   if(ticket===id.current){setInbox(result);setError('');}
-  }catch(e){if(ticket===id.current)setError(
-   e instanceof Error?e.message:'No se pudieron cargar las notificaciones.');}
-  finally{if(ticket===id.current)setLoading(false);}
- },[token]);
- useEffect(()=>{
-  setLoading(true);setInbox({items:[],unread:0});void refresh();
-  let mounted=true,socket:WebSocket|null=null;
-  let retry:ReturnType<typeof setTimeout>|null=null;
-  let watchdog:ReturnType<typeof setTimeout>|null=null;
-  let delay=1000;
-  const clear=()=>{
-   if(retry){clearTimeout(retry);retry=null;}
-   if(watchdog){clearTimeout(watchdog);watchdog=null;}
-  };
-  const connect=()=>{
-   if(!mounted||AppState.currentState!=='active'||socket)return;
-   clear();
-   try{
-    const opened=openFamilyRealtime(token,false,event=>{
-     if(mounted&&socket===opened&&
-      (event.type==='family.ready'||event.type==='family.invalidate'))void refresh();
-    });
-    socket=opened;
-    watchdog=setTimeout(()=>{
-     if(socket!==opened||opened.readyState===WebSocket.OPEN)return;
-     socket=null;try{opened.close();}catch{}
-     clear();if(mounted){retry=setTimeout(connect,delay);delay=Math.min(12000,delay*2);}
-    },FAMILY_WS_HANDSHAKE_TIMEOUT_MS);
-    opened.onopen=()=>{if(socket===opened){clear();delay=1000;}};
-    opened.onclose=()=>{if(socket!==opened)return;
-     socket=null;clear();
-     if(mounted&&AppState.currentState==='active'){
-      retry=setTimeout(connect,delay);delay=Math.min(12000,delay*2);
-     }
-    };
-    opened.onerror=()=>{if(socket===opened)opened.close();};
-   }catch{retry=setTimeout(connect,delay);delay=Math.min(12000,delay*2);}
-  };
-  connect();
-  const sub=AppState.addEventListener('change',state=>{
-   if(state==='active'){void refresh();connect();}
-   else{clear();const old=socket;socket=null;old?.close();}
-  });
-  return()=>{mounted=false;++id.current;clear();socket?.close();sub.remove();};
- },[token,refresh]);
- useEffect(()=>{if(calendarRevision>0)void refresh();},[calendarRevision,refresh]);
- const mark=async(item?:MemberNotice)=>{
-  try{await markMemberNoticesRead(token,item?.id);await refresh();}
-  catch(e){setError(e instanceof Error?e.message:'No se pudo marcar como leído.');}
- };
+// Presentation only: the same authorized inbox drives the bottom badge.
+export default function NativeNotices({activity,push}:{activity:NativeNoticeActivity;push:NativePushControl}){
+ const {inbox,loading,error,marking,refresh,mark}=activity;
  return <View style={s.root}>
   <View style={s.head}>
    <View><Text style={s.title}>Tu actividad</Text>
     <Text style={s.subtitle}>{inbox.unread} nuevas</Text></View>
-   <Pressable accessibilityRole="button" onPress={()=>void refresh()}
+   <Pressable accessibilityRole="button" onPress={()=>void refresh(true)}
     style={s.refresh}><Text style={s.link}>Actualizar</Text></Pressable>
   </View>
   <View style={s.pushCard} accessibilityLabel="Notificaciones del teléfono">
@@ -102,7 +43,7 @@ export default function NativeNotices({token,calendarRevision=0,push}:{token:str
    {!!push.testStatus&&<Text style={s.pushInfo}>{push.testStatus}</Text>}
   </View>
   {inbox.unread>0&&<Pressable accessibilityRole="button"
-   style={s.readAll} onPress={()=>void mark()}>
+   style={s.readAll} disabled={marking} onPress={()=>void mark()}>
    <Text style={s.readAllLabel}>Marcar todas como leídas</Text>
   </Pressable>}
   {!!error&&<Text style={s.error}>{error}</Text>}
@@ -123,7 +64,7 @@ export default function NativeNotices({token,calendarRevision=0,push}:{token:str
      </View>
      {!item.readAt&&<Pressable accessibilityRole="button"
       accessibilityLabel={'Marcar leída la notificación de '+item.name}
-      onPress={()=>void mark(item)} style={s.mark}>
+      disabled={marking} onPress={()=>void mark(item.id)} style={s.mark}>
       <Text style={s.markLabel}>Leída</Text>
      </Pressable>}
     </View>)}
