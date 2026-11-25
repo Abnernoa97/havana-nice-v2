@@ -131,6 +131,8 @@ test('Native foreground inbox owns one polling loop, no push changes or screen f
  assert.match(home,/const unreadNotices=activity\.unread/);
  assert.match(home,/<NativeNotices activity=\{activity\} push=\{push\}/);
  assert.match(hook,/useMemo\(\(\)=>createNativeNoticeInbox/);
+ assert.match(hook,/const update=\(state:string\|null\|undefined\)=>/);
+ assert.match(hook,/store\.setActive\(state==='active'\)/);
  assert.match(hook,/getMemberNotices\(token,API,signal\)/);
  assert.match(hook,/store\.setActive\(false\);listener\.remove\(\);clearInterval\(fallback\)/);
  assert.equal((hook.match(/setInterval\(/g)||[]).length,1);

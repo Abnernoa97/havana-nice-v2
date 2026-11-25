@@ -16,7 +16,7 @@ export function useNativeUnreadNotices(token:string,revision:number,visible:bool
  const snapshot=useSyncExternalStore(store.subscribe,store.getSnapshot);
  const previous=useRef({store,revision});
  useEffect(()=>{
-  const update=(state:string|null)=>{
+  const update=(state:string|null|undefined)=>{
    store.setActive(state==='active');
    if(state==='active')void store.refresh(true);
   };

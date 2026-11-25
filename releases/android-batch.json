@@ -3,5 +3,5 @@
   "releaseMode": "explicit-batch",
   "version": "0.0.34",
   "versionCode": 34,
-  "notes": "Lote explícito solicitado por propietario antes de optimizar arranque. Cabecera con luz radial; Calendario y Repertorio bajo demanda; Familia reutiliza listados y canal de perfil; Estados suspendidos fuera de Inicio; bandeja y contador de avisos compartidos. Sin cambios de arranque/autorización, FCM, BOOK 3D, motor musical, visor, backend o PWA. Chat pendiente de lote separado (bloqueo voz, leído por, álbumes y posters). Conservar 0.0.33 como APK anterior. QA físico pendiente."
+  "notes": "Lote explícito solicitado por propietario antes de optimizar arranque. Cabecera con luz radial; Calendario y Repertorio bajo demanda; Familia reutiliza listados y canal de perfil; Estados suspendidos fuera de Inicio; bandeja y contador de avisos compartidos. Sin cambios de arranque/autorización, FCM, BOOK 3D, motor musical, visor, backend o PWA. Chat pendiente de lote separado (bloqueo voz, leído por, álbumes y posters). Conservar 0.0.33 como APK anterior. QA físico pendiente. Reintento del mismo lote: corregir TS2345 de AppState.currentState (undefined al iniciar), sin cambio de comportamiento ni incremento de versión."
 }
