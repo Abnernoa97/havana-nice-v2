@@ -98,7 +98,7 @@ export function useNativeChatController(){
   const editTimeout = useRef<ReturnType<typeof setTimeout>|null>(null);
   const [savingEdit,setSavingEdit] = useState(false);
   // Upload owns only multimedia progress; Chat session and transport stay here.
-  const {mediaReady,mediaUploading,mediaProgress,sendVoice,sendSelectedMedia}=
+  const {mediaReady,mediaUploading,mediaProgress,sendVoice,sendSelectedMedia,voiceDraft,voiceSending,voiceError,discardVoice}=
     useNativeChatMediaUpload({
       session,activeSession,selectedMedia,mediaUploadBusy,setMediaError,
       confirmUploadedMedia,syncLatest,
@@ -670,5 +670,5 @@ export function useNativeChatController(){
       maxWidth:220,menuHeight:64,
     });
 
-  return {iosBackPan,keyboardOpen,session,activeScreen,restoringAccess,name,setName,join,joining,error,messages,onlineActorIds,connection,reactions,receipts,hasMore,loadingOlder,scroll,onTimelineContentChange,onTimelineScrollBeginDrag,onTimelineScroll,onTimelineScrollEndDrag,onTimelineLoadOlder,onTimelineReply,onTimelineLongPress,onTimelineRetry,menuMessage,menuLeft,menuTop,menuWidth,setMenuMessage,setReactionBurst,reactionBurstId,react,retryAttempts,connect,editing,savingEdit,finishEditing,replyTo,setReplyTo,typing,selectedMedia,mediaUploading,mediaProgress,mediaReady,removeSelectedMedia,mediaError,sendVoice,draft,draftFieldHeight,setDraftFieldHeight,typeText,mediaPicking,chooseNativeMedia,sendSelectedMedia,send,composerPanel,setComposerPanel,navigateTo,reactionBurst};
+  return {iosBackPan,keyboardOpen,session,activeScreen,restoringAccess,name,setName,join,joining,error,messages,onlineActorIds,connection,reactions,receipts,hasMore,loadingOlder,scroll,onTimelineContentChange,onTimelineScrollBeginDrag,onTimelineScroll,onTimelineScrollEndDrag,onTimelineLoadOlder,onTimelineReply,onTimelineLongPress,onTimelineRetry,menuMessage,menuLeft,menuTop,menuWidth,setMenuMessage,setReactionBurst,reactionBurstId,react,retryAttempts,connect,editing,savingEdit,finishEditing,replyTo,setReplyTo,typing,selectedMedia,mediaUploading,mediaProgress,mediaReady,removeSelectedMedia,mediaError,sendVoice,voiceDraft,voiceSending,voiceError,discardVoice,draft,draftFieldHeight,setDraftFieldHeight,typeText,mediaPicking,chooseNativeMedia,sendSelectedMedia,send,composerPanel,setComposerPanel,navigateTo,reactionBurst};
 }

@@ -1,6 +1,6 @@
 // Native upload UI state only: no new Chat session, WebSocket, queue or R2 transport.
 // The existing Chat controller remains the single owner of message reconciliation.
-import {useEffect,useState,type RefObject} from 'react';
+import {useEffect,useRef,useState,type RefObject} from 'react';
 import {File} from 'expo-file-system';
 import {getChatMediaAvailability,uploadChatMediaBatch,type ChatSession} from '@havana/shared';
 import {uploadNativeChatFile} from '../../services/native-chat-r2-upload';
@@ -23,6 +23,16 @@ export function useNativeChatMediaUpload({
  const [mediaReady,setMediaReady]=useState(false);
  const [mediaUploading,setMediaUploading]=useState(false);
  const [mediaProgress,setMediaProgress]=useState(0);
+ type VoiceDraft={uri:string;id:string;token:string};
+ const voiceRef=useRef<VoiceDraft|null>(null);
+ const [voiceDraft,setVoiceDraft]=useState<VoiceDraft|null>(null);
+ const [voiceSending,setVoiceSending]=useState(false);
+ const [voiceError,setVoiceError]=useState('');
+ const voiceRequest=useRef<AbortController|null>(null);
+ useEffect(()=>{
+  voiceRef.current=null;setVoiceDraft(null);setVoiceSending(false);setVoiceError('');
+  return()=>{voiceRequest.current?.abort();voiceRequest.current=null;};
+ },[session?.token]);
  useEffect(()=>{
   if(!session){setMediaReady(false);return;}
   let active=true;
@@ -33,23 +43,45 @@ export function useNativeChatMediaUpload({
  },[session?.token]);
 
  async function sendVoice(uri:string,id:string):Promise<boolean>{
-  if(!session||mediaUploadBusy.current||!mediaReady)return false;
-  const file=new File(uri);
-  if(!file.exists||file.size<=0||file.size>3_000_000){
-   setMediaError('El audio está vacío o es mayor a 3 MB.');return false;
-  }
-  mediaUploadBusy.current=true;setMediaUploading(true);setMediaError('');
+  if(!session||activeSession.current?.token!==session.token||voiceRequest.current)return false;
+  const prior=voiceRef.current;
+  if(prior&&prior.id!==id)return false;
+  const item={uri,id,token:session.token};
+  voiceRef.current=item;setVoiceDraft(item);setVoiceError('');
+  if(mediaUploadBusy.current){setVoiceError('Audio pendiente. Reintenta cuando termine la otra carga.');return false;}
+  // An explicit retry checks authorization/storage at the bounded start endpoint,
+  // even if a previous availability GET failed during a network outage.
+  let file:File;
+  try{
+   file=new File(uri);
+   if(!file.exists||file.size<=0||file.size>3_000_000)throw Error('El audio está vacío o es mayor a 3 MB.');
+  }catch(e){setVoiceError(e instanceof Error?e.message:'No se encontró la grabación.');return false;}
+  const ctl=new AbortController();voiceRequest.current=ctl;
+  // The shared media lock serializes R2 uploads only. Text can still be sent.
+  mediaUploadBusy.current=true;setVoiceSending(true);
+  const current=()=>voiceRequest.current===ctl&&activeSession.current?.token===item.token;
   try{
    await uploadNativeChatFile(session,{
     id,kind:'audio',source:'camera',uri,mimeType:'audio/mp4',
     sizeBytes:file.size,name:'Voz.m4a'
-   },()=>{});
-   if(activeSession.current?.token===session.token)syncLatest.current();
+   },()=>{},ctl.signal);
+   if(current()){
+    voiceRef.current=null;setVoiceDraft(null);setVoiceError('');
+    syncLatest.current();
+   }
    return true;
   }catch(e){
-   setMediaError(e instanceof Error?e.message:'No se pudo enviar el audio.');
+   if(current())setVoiceError(e instanceof Error?e.message:'No se pudo enviar el audio. Reintenta.');
    return false;
-  }finally{mediaUploadBusy.current=false;setMediaUploading(false);}
+  }finally{
+   // No old response may clear a new session's draft or update its interface.
+   mediaUploadBusy.current=false;
+   if(voiceRequest.current===ctl){voiceRequest.current=null;setVoiceSending(false);}
+  }
+ }
+ function discardVoice(){
+  if(voiceRequest.current)return;
+  voiceRef.current=null;setVoiceDraft(null);setVoiceError('');
  }
  async function sendSelectedMedia(){
   if(!session||!selectedMedia.length||mediaUploadBusy.current)return;
@@ -71,5 +103,6 @@ export function useNativeChatMediaUpload({
    setMediaError(e instanceof Error?e.message:'Se interrumpió la carga. Reintenta solo lo pendiente.');
   }finally{mediaUploadBusy.current=false;setMediaUploading(false);}
  }
- return {mediaReady,mediaUploading,mediaProgress,sendVoice,sendSelectedMedia};
+ return {mediaReady,mediaUploading,mediaProgress,sendVoice,sendSelectedMedia,
+  voiceDraft:voiceDraft?.token===session?.token?voiceDraft:null,voiceSending,voiceError,discardVoice};
 }

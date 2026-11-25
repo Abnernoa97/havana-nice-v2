@@ -19,7 +19,7 @@ import type {useNativeChatController} from './useNativeChatController';
 import type {ChatEmoji,ChatMessage} from '@havana/shared';
 
 export default function NativeChatSurface({ui}:{ui:ReturnType<typeof useNativeChatController>}){
-  const {iosBackPan,keyboardOpen,session,activeScreen,restoringAccess,name,setName,join,joining,error,messages,onlineActorIds,connection,reactions,receipts,hasMore,loadingOlder,scroll,onTimelineContentChange,onTimelineScrollBeginDrag,onTimelineScroll,onTimelineScrollEndDrag,onTimelineLoadOlder,onTimelineReply,onTimelineLongPress,onTimelineRetry,menuMessage,menuLeft,menuTop,menuWidth,setMenuMessage,setReactionBurst,reactionBurstId,react,retryAttempts,connect,editing,savingEdit,finishEditing,replyTo,setReplyTo,typing,selectedMedia,mediaUploading,mediaProgress,mediaReady,removeSelectedMedia,mediaError,sendVoice,draft,draftFieldHeight,setDraftFieldHeight,typeText,mediaPicking,chooseNativeMedia,sendSelectedMedia,send,composerPanel,setComposerPanel,navigateTo,reactionBurst}=ui;
+  const {iosBackPan,keyboardOpen,session,activeScreen,restoringAccess,name,setName,join,joining,error,messages,onlineActorIds,connection,reactions,receipts,hasMore,loadingOlder,scroll,onTimelineContentChange,onTimelineScrollBeginDrag,onTimelineScroll,onTimelineScrollEndDrag,onTimelineLoadOlder,onTimelineReply,onTimelineLongPress,onTimelineRetry,menuMessage,menuLeft,menuTop,menuWidth,setMenuMessage,setReactionBurst,reactionBurstId,react,retryAttempts,connect,editing,savingEdit,finishEditing,replyTo,setReplyTo,typing,selectedMedia,mediaUploading,mediaProgress,mediaReady,removeSelectedMedia,mediaError,sendVoice,voiceDraft,voiceSending,voiceError,discardVoice,draft,draftFieldHeight,setDraftFieldHeight,typeText,mediaPicking,chooseNativeMedia,sendSelectedMedia,send,composerPanel,setComposerPanel,navigateTo,reactionBurst}=ui;
   const calendarSignals=useNativeCalendarSignals(session?.token);
   const push=useNativePush(session?.token??null,navigateTo);
   const reactWithEffect=(message:ChatMessage,emoji:ChatEmoji,origin:{x:number;y:number})=>{
@@ -109,6 +109,13 @@ export default function NativeChatSurface({ui}:{ui:ReturnType<typeof useNativeCh
                onRemove={item=>removeSelectedMedia(item.id)}
              />}
               {!!mediaError&&<Text style={styles.mediaError}>{mediaError}</Text>}
+              {voiceDraft&&<View style={styles.replyPreview}>
+                <Text style={styles.replyPreviewText}>{voiceSending?'Enviando nota de voz…':voiceError||'Nota de voz pendiente'}</Text>
+                {!voiceSending&&<>
+                 <Pressable accessibilityRole="button" onPress={()=>void sendVoice(voiceDraft.uri,voiceDraft.id)}><Text style={styles.replyCancel}>Reintentar</Text></Pressable>
+                 <Pressable accessibilityRole="button" onPress={discardVoice}><Text style={styles.replyCancel}>Descartar</Text></Pressable>
+                </>}
+              </View>}
              <View style={styles.composer}>
                <View style={styles.inputPill}>
                  <Pressable accessibilityRole="button" accessibilityLabel="Insertar emoji"
@@ -142,10 +149,10 @@ export default function NativeChatSurface({ui}:{ui:ReturnType<typeof useNativeCh
                </View>
                {draft.trim()||editing||selectedMedia.length>0
                  ?<Pressable accessibilityRole="button" accessibilityLabel={editing?'Guardar mensaje':selectedMedia.length?'Enviar archivos originales':'Enviar mensaje'}
-                    onPress={()=>selectedMedia.length&&!editing?void sendSelectedMedia():send()} disabled={savingEdit||mediaUploading||(!selectedMedia.length&&!draft.trim())} style={styles.sendCircle}>
+                    onPress={()=>selectedMedia.length&&!editing?void sendSelectedMedia():send()} disabled={savingEdit||mediaUploading||(!editing&&selectedMedia.length>0&&voiceSending)||(!selectedMedia.length&&!draft.trim())} style={styles.sendCircle}>
                     <NativeComposerIcon name="send" color="#fff"/>
                   </Pressable>
-                 :<NativeChatVoiceRecorder disabled={!mediaReady||mediaUploading}
+                 :<NativeChatVoiceRecorder disabled={!mediaReady||mediaUploading||!!voiceDraft||voiceSending}
                     onSend={sendVoice}/>}
              </View>
           </>

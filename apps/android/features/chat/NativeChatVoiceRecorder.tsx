@@ -16,22 +16,12 @@ export default function NativeChatVoiceRecorder({disabled,onSend}:{
  const recorder=useAudioRecorder(RecordingPresets.HIGH_QUALITY);
  const [recording,setRecording]=useState(false),[paused,setPaused]=useState(false),[busy,setBusy]=useState(false);
  const [seconds,setSeconds]=useState(0),[error,setError]=useState('');
- const [pending,setPending]=useState<{uri:string;id:string}|null>(null);
  const active=useRef(false),working=useRef(false),pausedRef=useRef(false);
  const tick=useRef<ReturnType<typeof setInterval>|null>(null);
  const deadline=useRef<ReturnType<typeof setTimeout>|null>(null);
  const clear=()=>{
   if(tick.current){clearInterval(tick.current);tick.current=null;}
   if(deadline.current){clearTimeout(deadline.current);deadline.current=null;}
- };
- const submit=async(item:{uri:string;id:string})=>{
-  setBusy(true);setError('');
-  try{
-   const sent=await onSend(item.uri,item.id);
-   if(sent)setPending(null);
-   else{setPending(item);setError('No se envió el audio. Reintentar.');}
-  }catch{setPending(item);setError('No se envió el audio. Reintentar.');}
-  finally{setBusy(false);}
  };
  const stop=async(discard:boolean)=>{
   if(!active.current||working.current)return;
@@ -41,9 +31,12 @@ export default function NativeChatVoiceRecorder({disabled,onSend}:{
    const uri=recorder.uri;
    setRecording(false);setPaused(false);pausedRef.current=false;
    // Restore playback audio mode for other Chat/Audio elements.
-   await setAudioModeAsync({allowsRecording:false,playsInSilentMode:true});
-   if(!discard&&uri)await submit({uri,id:uuid()});
-  }catch{setRecording(false);setError('No se pudo terminar la grabación.');}
+   await setAudioModeAsync({allowsRecording:false,playsInSilentMode:true}).catch(()=>{});
+   if(!discard&&uri){
+    // Session controller owns the finalized file and retry identity, not this view.
+    setBusy(true);void onSend(uri,uuid()).catch(()=>{setError('No se pudo preparar el audio.');}).finally(()=>setBusy(false));
+   }
+  }catch{setRecording(false);setPaused(false);pausedRef.current=false;void setAudioModeAsync({allowsRecording:false,playsInSilentMode:true}).catch(()=>{});setError('No se pudo terminar la grabación.');}
   finally{working.current=false;}
  };
  const start=async()=>{
@@ -58,7 +51,7 @@ export default function NativeChatVoiceRecorder({disabled,onSend}:{
    active.current=true;pausedRef.current=false;setRecording(true);setPaused(false);
    tick.current=setInterval(()=>{if(!pausedRef.current)setSeconds(n=>n+1);},1000);
    deadline.current=setTimeout(()=>{void stop(false);},45000);
-  }catch(e){setError(e instanceof Error?e.message:'No se pudo abrir el micrófono.');}
+  }catch(e){void setAudioModeAsync({allowsRecording:false,playsInSilentMode:true}).catch(()=>{});setError(e instanceof Error?e.message:'No se pudo abrir el micrófono.');}
   finally{working.current=false;}
  };
  const togglePause=()=>{
@@ -73,7 +66,7 @@ export default function NativeChatVoiceRecorder({disabled,onSend}:{
    }
   }catch{setError('No se pudo pausar el audio.');}
  };
- useEffect(()=>()=>{clear();if(active.current){active.current=false;void recorder.stop().catch(()=>{});}},[recorder]);
+ useEffect(()=>()=>{clear();if(active.current){active.current=false;void recorder.stop().catch(()=>{}).finally(()=>{void setAudioModeAsync({allowsRecording:false,playsInSilentMode:true}).catch(()=>{});});}},[recorder]);
  return <View style={s.root}>
   {recording?<View style={s.actions}>
    <Text style={s.time}>{paused?'Ⅱ':'●'} {Math.floor(seconds/60)}:{String(seconds%60).padStart(2,'0')}</Text>
@@ -83,13 +76,6 @@ export default function NativeChatVoiceRecorder({disabled,onSend}:{
      onPress={togglePause} style={s.action}><Text style={s.actionText}>{paused?'▶':'Ⅱ'}</Text></Pressable>
    <Pressable accessibilityRole="button" accessibilityLabel="Enviar nota de voz"
      onPress={()=>void stop(false)} style={s.action}><Text style={s.actionText}>➤</Text></Pressable>
-   </View>:pending?<View style={s.actions}>
-    <Pressable accessibilityRole="button" onPress={()=>{setPending(null);setError('');}} style={s.action}>
-     <Text style={s.actionText}>Descartar</Text>
-    </Pressable>
-    <Pressable accessibilityRole="button" disabled={busy} onPress={()=>void submit(pending)} style={s.action}>
-     <Text style={s.actionText}>Reintentar</Text>
-    </Pressable>
    </View>:<Pressable accessibilityRole="button" accessibilityLabel="Grabar mensaje de voz"
      disabled={disabled||busy} onPress={()=>void start()} style={s.mic}>
      <Text style={s.micText}>{busy?'…':'🎙'}</Text>

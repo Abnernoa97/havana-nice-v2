@@ -3,6 +3,7 @@
 // are streamed through expo/fetch. Exactly three concurrent parts per video.
 import {File,UploadType} from 'expo-file-system';
 import {fetch as expoFetch} from 'expo/fetch';
+import {transferNativeVoice,type VoiceStart} from '../features/chat/native-voice-transfer';
 import {HAVANA_V2_DEV_API_BASE_URL as API,type ChatSession,type ChatMediaSelection} from '@havana/shared';
 
 type NativeFile=(ChatMediaSelection|{kind:'audio';source:'camera';name:string;mimeType:string;sizeBytes:number;uri:string})&{id:string};
@@ -17,10 +18,10 @@ function uuid(){
   return (letter==='x'?random:(random&3|8)).toString(16);
  });
 }
-async function request<T>(url:string,token:string,method='GET',body?:unknown):Promise<T>{
+async function request<T>(url:string,token:string,method='GET',body?:unknown,signal?:AbortSignal):Promise<T>{
  const response=await fetch(url,{method,headers:{Authorization:'Bearer '+token,Accept:'application/json',
   ...(body===undefined?{}:{'Content-Type':'application/json'})},
-  ...(body===undefined?{}:{body:JSON.stringify(body)}),cache:'no-store'});
+  ...(body===undefined?{}:{body:JSON.stringify(body)}),cache:'no-store',...(signal?{signal}:{})});
  const result=await response.json().catch(()=>({error:'Respuesta del servidor no disponible'}));
  if(!response.ok)throw Error(result.error||'Error de conexión ('+response.status+')');
  return result as T;
@@ -52,7 +53,7 @@ async function putPart(file:File,start:number,end:number,url:string,token:string
  }
 }
 export async function uploadNativeChatFile(session:ChatSession,picked:NativeFile,
- onProgress:(sent:number,total:number)=>void):Promise<{id:string;seq:number}>{
+ onProgress:(sent:number,total:number)=>void,ownerSignal?:AbortSignal):Promise<{id:string;seq:number}>{
  const file=new File(picked.uri);
  if(!file.exists||file.size!==picked.sizeBytes||file.size<=0)
   throw Error('El original ya no está disponible. Selecciónalo de nuevo.');
@@ -62,6 +63,22 @@ export async function uploadNativeChatFile(session:ChatSession,picked:NativeFile
  const id=stable?picked.id:(ids.get(picked.id)||uuid());
  ids.set(picked.id,id);
  const base=API+'/api/chat/media/'+id;
+ if(picked.kind==='audio'){
+  // Stream the actual Expo File (Blob) through the same private R2 endpoint.
+  // Only voice uses this deadline; original photo/video transfer is unchanged.
+  const result=await transferNativeVoice(id,{
+   start:signal=>request<VoiceStart>(API+'/api/chat/media/start',session.token,'POST',{
+    id,kind:picked.kind,mimeType:picked.mimeType,sizeBytes:file.size,name:picked.name},signal),
+   put:async signal=>{
+    const response=await expoFetch(base+'/content',{method:'PUT',signal,
+     headers:{Authorization:'Bearer '+session.token,'Content-Type':picked.mimeType,'Content-Length':String(file.size)},body:file});
+    if(!response.ok){const body=await response.json().catch(()=>({error:'No se pudo enviar el audio'}));throw Error(body.error||'No se pudo enviar el audio.');}
+    onProgress(file.size,file.size);
+   },
+   send:signal=>request<{seq:number}>(base+'/send',session.token,'POST',{},signal),
+  },25_000,ownerSignal);
+  ids.delete(picked.id);return result;
+ }
  const started=await request<Start>(API+'/api/chat/media/start',session.token,'POST',{
   id,kind:picked.kind,mimeType:picked.mimeType,sizeBytes:file.size,name:picked.name});
  if(started.id!==id)throw Error('La sesión no coincide con el original.');
