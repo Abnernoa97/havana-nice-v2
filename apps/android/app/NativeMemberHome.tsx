@@ -9,16 +9,18 @@ import NativeFamily from '../features/family/NativeFamily';
 import {useNativeMemberProfile} from '../features/profile/useNativeMemberProfile';
 import NativeStories from '../features/stories/NativeStories';
 import NativeNotices from '../features/notices/NativeNotices';
+import type {CalendarEvent,RepertoireSong} from '@havana/shared';
+import type {NativeModuleList} from '../features/shared/native-module-list';
 import type {NativePushControl} from '../features/notices/useNativePush';
 import {useNativeUnreadNotices} from '../features/notices/useNativeUnreadNotices';
 import NativeAudioEditorialView from '../features/audio/NativeAudioEditorialView';
 
 type Props={displayName:string;actorId:string;token:string;push:NativePushControl;
- active:Exclude<MemberScreen,'chat'>;calendarRevision?:number;onNavigate:(screen:MemberScreen)=>void;};
+ active:Exclude<MemberScreen,'chat'>;calendarRevision?:number;lists:{calendar:NativeModuleList<CalendarEvent[]>;repertoire:NativeModuleList<RepertoireSong[]>};onNavigate:(screen:MemberScreen)=>void;};
 // Native navigation and independent native modules; Chat session never moves here.
 // Tiny embedded alpha gradient keeps the pinned Stories edge soft without a network asset.
 const STORIES_FADE='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAAwCAYAAADQMxCBAAAAOUlEQVR42n2JyQ0AIAzDrO4/MC1H+IEqUT6WnSBJBjQD/OCfbkB8t6gyDOhV9keOfIxsFzPbxTrQBqWZMlwxZHeoAAAAAElFTkSuQmCC';
-function NativeMemberHome({displayName,actorId,token,active,calendarRevision=0,onNavigate,push}:Props){
+function NativeMemberHome({displayName,actorId,token,active,calendarRevision=0,lists,onNavigate,push}:Props){
  const profile=useNativeMemberProfile(token,actorId,true);
  const unreadNotices=useNativeUnreadNotices(token,profile.liveVersion+calendarRevision);
  const [profileOpen,setProfileOpen]=useState(false);
@@ -58,8 +60,8 @@ function NativeMemberHome({displayName,actorId,token,active,calendarRevision=0,o
      onPress={()=>onNavigate('audio')} style={styles.openAudio}>
      <Text style={styles.openAudioLabel}>♫  Abrir Audio HAVANA NICE</Text>
    </Pressable>}
-   {active==='calendar'?<NativeCalendar token={token} calendarRevision={calendarRevision}/>:
-    active==='repertoire'?<NativeRepertoire token={token}/>:
+   {active==='calendar'?<NativeCalendar token={token} calendarRevision={calendarRevision} list={lists.calendar}/>:
+    active==='repertoire'?<NativeRepertoire token={token} calendarRevision={calendarRevision} list={lists.repertoire}/>:
     active==='musicians'?<NativeMusicians token={token}/>:
     active==='family'?<NativeFamily token={token} onBackHome={()=>onNavigate('home')}/>:
     active==='notices'?<NativeNotices token={token} calendarRevision={calendarRevision} push={push}/>:

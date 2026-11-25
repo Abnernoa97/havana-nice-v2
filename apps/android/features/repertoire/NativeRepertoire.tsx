@@ -1,16 +1,17 @@
-import React,{useCallback,useEffect,useRef,useState} from 'react';
+import React,{useEffect,useRef,useState,useSyncExternalStore} from 'react';
 import {AccessibilityInfo,Animated,Easing,LayoutAnimation,Linking,Platform,Pressable,StyleSheet,Text,UIManager,View} from 'react-native';
 import {NativeButtonLight} from '../shared/NativeEmeraldMotion';
-import {watchNativeRepertoire} from '../../services/native-calendar-live';
+import type {NativeModuleList} from '../shared/native-module-list';
 import {getRepertoireSongs,repertoireSection,REPERTOIRE_SECTIONS,safeRepertoireLink,
  type RepertoireSection,type RepertoireSong} from '@havana/shared';
 
-export default function NativeRepertoire({token}:{token:string}){
- const [songs,setSongs]=useState<RepertoireSong[]>([]);
+export default function NativeRepertoire({token,calendarRevision=0,list}:{token:string;calendarRevision?:number;list:NativeModuleList<RepertoireSong[]>}){
+ const snapshot=useSyncExternalStore(list.subscribe,list.getSnapshot);
+ const songs=snapshot.data??[];
+ const loading=snapshot.loading;
  const [open,setOpen]=useState<RepertoireSection|null>(null);
- const [loading,setLoading]=useState(true);
- const [error,setError]=useState('');
- const requestId=useRef(0);
+ const [linkError,setError]=useState('');
+ const error=snapshot.error||linkError;
  const shimmer=useRef(new Animated.Value(0)).current;
  const unfold=useRef(new Animated.Value(0)).current;
  const [reduceMotion,setReduceMotion]=useState(false);
@@ -39,19 +40,12 @@ export default function NativeRepertoire({token}:{token:string}){
   anim.start();
   return()=>anim.stop();
  },[open,reduceMotion,unfold]);
- const refresh=useCallback(async()=>{
-  const id=++requestId.current;
-  try{const next=await getRepertoireSongs(token);
-   if(id!==requestId.current)return;
-   setSongs(next);setError('');
-  }catch(e){if(id===requestId.current)setError(e instanceof Error?e.message:'No se pudo cargar Repertorio.');}
-  finally{if(id===requestId.current)setLoading(false);}
- },[token]);
+ // Reuse the shell's single CalendarRoom revision signal, including
+ // repertoire.invalidate. No extra WebSocket on opening this screen.
  useEffect(()=>{
-  setSongs([]);setOpen(null);setLoading(true);setError('');
-  const stop=watchNativeRepertoire(token,()=>void refresh());
-  return()=>{++requestId.current;stop();};
- },[token,refresh]);
+  void list.load(()=>getRepertoireSongs(token));
+ },[list,token,calendarRevision]);
+ useEffect(()=>{setOpen(null);setError('');},[token]);
  const visible=open?songs.filter(song=>repertoireSection(song.category)===open):[];
  const link=(value:string)=>{
   const url=safeRepertoireLink(value);

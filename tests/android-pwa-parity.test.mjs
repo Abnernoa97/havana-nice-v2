@@ -51,13 +51,15 @@ test('one private Repertoire invalidation channel synchronizes Admin, PWA and An
  assert.match(room,/type:'repertoire.invalidate'/);
  assert.match(browserTransport,/watchRepertoire\(token/);
  assert.match(browserTransport,/if\(message\.type==='calendar.invalidate'\)onInvalidate\('changed'\)/);
- assert.match(nativeTransport,/watchNativeRepertoire\(token/);
+ assert.match(nativeTransport,/if\(event\.type==='repertoire.invalidate'\)onInvalidate\(\)/);
  assert.match(nativeTransport,/if\(event\.type==='calendar.invalidate'\)onInvalidate\('changed'\)/);
  assert.match(admin,/void refreshAll\(\); \/\/ Carga D1 inmediata/);
  assert.match(admin,/watchRepertoire\(token,true/);
  assert.match(member,/void refresh\(\);/);
  assert.match(member,/watchRepertoire\(token,false/);
- assert.match(android,/watchNativeRepertoire\(token/);
+ assert.doesNotMatch(android,/watchNativeRepertoire|watchNativeCalendar|new WebSocket/);
+ assert.match(android,/list\.load\(\(\)=>getRepertoireSongs\(token\)\)/);
+ assert.match(read('apps/android/features/calendar/useNativeCalendarSignals.ts'),/lists\.invalidate\(\)/);
  for(const s of [admin,member,android])assert.doesNotMatch(s,/setInterval\(/);
 });
 test('Android HOME has same mobile destinations and visual navigation as PWA, not stale placeholders',()=>{
@@ -93,7 +95,8 @@ test('Android and PWA Repertorio share the catalog; assigned event setlists live
  for(const api of ['getRepertoireSongs','safeRepertoireLink','repertoireSection']){
   assert.ok(native.includes(api)&&pwa.includes(api),api);
  }
- assert.match(native,/watchNativeRepertoire\(token/);
+ assert.match(native,/calendarRevision/);
+ assert.doesNotMatch(native,/watchNativeRepertoire|watchNativeCalendar|new WebSocket/);
  assert.match(read('apps/android/services/native-calendar-live.ts'),/AppState\.addEventListener/);
  assert.match(nativeCalendar,/getCalendarEvents/);
  assert.match(pwaCalendar,/getCalendarEvents/);

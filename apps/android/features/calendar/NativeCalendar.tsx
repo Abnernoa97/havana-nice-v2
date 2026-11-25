@@ -1,44 +1,26 @@
-import React,{useCallback,useEffect,useRef,useState} from 'react';
+import React,{useEffect,useState,useSyncExternalStore} from 'react';
 import {LayoutAnimation,Linking,Platform,Pressable,StyleSheet,Text,UIManager,View} from 'react-native';
 import {getCalendarEvents,getEventRepertoire,calendarDate,calendarEventCompleted,safeCalendarMapUrl,safeRepertoireLink,HAVANA_V2_DEV_API_BASE_URL,type CalendarEvent,type RepertoireEventItem} from '@havana/shared';
 import {NativeButtonLight} from '../shared/NativeEmeraldMotion';
 import NativeBook from '../book/NativeBook';
+import type {NativeModuleList} from '../shared/native-module-list';
 
 // One authorized V2 session; no new identity, token persistence, WebView or Chat.
-export default function NativeCalendar({token,calendarRevision=0}:{token:string;calendarRevision?:number}){
- const [events,setEvents]=useState<CalendarEvent[]>([]);
+export default function NativeCalendar({token,calendarRevision=0,list}:{token:string;calendarRevision?:number;list:NativeModuleList<CalendarEvent[]>}){
+ const snapshot=useSyncExternalStore(list.subscribe,list.getSnapshot);
+ const events=snapshot.data??[];
+ const {loading,error,version:revision}=snapshot;
  const [open,setOpen]=useState<string|null>(null);
  const [view,setView]=useState<'upcoming'|'completed'>('upcoming');
  useEffect(()=>{if(Platform.OS==='android')UIManager.setLayoutAnimationEnabledExperimental?.(true);},[]);
- const [loading,setLoading]=useState(true);
- const [revision,setRevision]=useState(0);
- const [error,setError]=useState('');
- const pending=useRef<AbortController|null>(null);
- const refresh=useCallback(async()=>{
-  // A new server signal supersedes any older in-flight result.
-  pending.current?.abort();
-  const controller=new AbortController();pending.current=controller;
-  try{
-   const next=await getCalendarEvents(token,HAVANA_V2_DEV_API_BASE_URL,false,controller.signal);
-   if(!controller.signal.aborted){
-    setEvents(next);
-    // Collapse events that the musician can no longer access.
-    setOpen(previous=>previous&&next.some(item=>item.id===previous)?previous:null);
-    setRevision(n=>n+1);setError('');
-   }
-  }catch(e){
-   if(!controller.signal.aborted)setError(e instanceof Error?e.message:'No se pudo consultar Calendario.');
-  }finally{
-   if(pending.current===controller){
-    pending.current=null;if(!controller.signal.aborted)setLoading(false);
-   }
-  }
- },[token]);
- // The authenticated native shell owns the sole CalendarRoom connection.
+ // The session cache outlives this screen, not the authorized session.
+ // No request while closed, except one already-started small list may finish.
  useEffect(()=>{
-  void refresh();
-  return()=>{pending.current?.abort();pending.current=null;};
- },[refresh,calendarRevision]);
+  void list.load(signal=>getCalendarEvents(token,HAVANA_V2_DEV_API_BASE_URL,false,signal));
+ },[list,token,calendarRevision]);
+ useEffect(()=>{
+  if(snapshot.data)setOpen(previous=>previous&&snapshot.data!.some(item=>item.id===previous)?previous:null);
+ },[snapshot.data]);
  const [clock,setClock]=useState(Date.now());
  useEffect(()=>{
   let disposed=false;let timeout:ReturnType<typeof setTimeout>;

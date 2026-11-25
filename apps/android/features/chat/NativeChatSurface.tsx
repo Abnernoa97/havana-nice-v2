@@ -180,7 +180,7 @@ export default function NativeChatSurface({ui}:{ui:ReturnType<typeof useNativeCh
         </View>}
       </KeyboardAvoidingView>}
       {session&&activeScreen!=='chat'&&<NativeMemberHome token={session.token} actorId={session.actorId} displayName={session.displayName}
-        active={activeScreen} calendarRevision={calendarSignals.revision} onNavigate={navigateTo} push={push}/>}
+        active={activeScreen} calendarRevision={calendarSignals.revision} lists={calendarSignals.lists} onNavigate={navigateTo} push={push}/>}
       {session&&<NativeCalendarToast visible={calendarSignals.notice}
        onDismiss={calendarSignals.dismiss}/>}
       {/* Keep one system MediaSession mounted even when the user returns to Chat. */}

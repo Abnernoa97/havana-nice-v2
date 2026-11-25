@@ -194,3 +194,61 @@ test('Member Calendar shows one title and background calendar change alert acros
  assert.match(native,/setTimeout\(tick,60000\)/);
  assert.match(pwa,/setTimeout\(tick,60000\)/);
 });
+
+const nativeListsSource=read('apps/android/features/shared/native-module-list.ts');
+const nativeListsCompiled=ts.transpileModule(nativeListsSource,{compilerOptions:{
+ module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText;
+const nativeListsExports={};
+runInNewContext(nativeListsCompiled,{exports:nativeListsExports,AbortController,Date,Error});
+const {NativeModuleList,createNativeModuleLists}=nativeListsExports;
+test('native list survives screen unmount, reopens immediately, and fetches once within TTL',async()=>{
+ let now=100,calls=0;
+ const list=new NativeModuleList('error',45_000,()=>now);
+ const load=async()=>{calls++;return ['one'];};
+ const stop=list.subscribe(()=>{});
+ await list.load(load);stop();
+ assert.equal(list.getSnapshot().data[0],'one');
+ assert.equal(list.getSnapshot().loading,false);
+ await list.load(load);assert.equal(calls,1);
+ now+=45_001;await list.load(load);assert.equal(calls,2);
+});
+test('concurrent native module loads share exactly one in-flight promise',async()=>{
+ let resolve,calls=0;
+ const list=new NativeModuleList('error');
+ const loader=()=>{calls++;return new Promise(r=>{resolve=r;});};
+ const first=list.load(loader),second=list.load(loader);
+ assert.equal(first,second);await Promise.resolve();assert.equal(calls,1);
+ resolve(['song']);await first;
+ assert.equal(list.getSnapshot().data[0],'song');
+});
+test('realtime invalidation removes previous data, cancels calendar and rejects late commits',async()=>{
+ let resolve,signal;
+ const list=new NativeModuleList('error');
+ const old=list.load(s=>{signal=s;return new Promise(r=>{resolve=r;});});
+ await Promise.resolve();list.invalidate();
+ assert.equal(signal.aborted,true);assert.equal(list.getSnapshot().data,null);
+ await list.load(async()=>['new']);
+ resolve(['old']);await old;
+ assert.equal(list.getSnapshot().data[0],'new');
+ list.invalidate();assert.equal(list.getSnapshot().data,null);
+});
+test('native session lists isolate identities and never retain failed private data',async()=>{
+ const a=createNativeModuleLists(),b=createNativeModuleLists();
+ await a.calendar.load(async()=>['private A']);
+ assert.equal(b.calendar.getSnapshot().data,null);
+ a.invalidate();assert.equal(a.calendar.getSnapshot().data,null);
+ await a.calendar.load(async()=>{throw Error('401');});
+ assert.equal(a.calendar.getSnapshot().data,null);
+ assert.equal(a.calendar.getSnapshot().loading,false);
+ assert.equal(a.calendar.getSnapshot().error,'401');
+});
+test('native shell owns both session lists without mounting inactive screens',()=>{
+ const signal=read('apps/android/features/calendar/useNativeCalendarSignals.ts');
+ const home=read('apps/android/app/NativeMemberHome.tsx');
+ const shell=read('apps/android/features/chat/NativeChatSurface.tsx');
+ assert.match(signal,/useMemo\(\(\)=>createNativeModuleLists<CalendarEvent\[\],RepertoireSong\[\]>\(\),\[token\]\)/);
+ assert.match(signal,/lists\.invalidate\(\)/);
+ assert.match(shell,/lists=\{calendarSignals\.lists\}/);
+ assert.match(home,/active==='calendar'\?<NativeCalendar[^>]*list=\{lists\.calendar\}/);
+ assert.match(home,/active==='repertoire'\?<NativeRepertoire[^>]*list=\{lists\.repertoire\}/);
+});
