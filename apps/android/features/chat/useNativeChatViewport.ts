@@ -14,14 +14,14 @@ export function useNativeChatViewport(activeScreen:MemberScreen,sessionToken?:st
   const initialBottomAttempts = useRef(0);
   const userHasScrolled=useRef(false);
   function scheduleInitialBottom() {
-    if (!initialHistoryPending.current || !initialHistoryLoaded.current || userHasScrolled.current) return;
+    if (!scroll.current || !initialHistoryPending.current || !initialHistoryLoaded.current || userHasScrolled.current) return;
     // FlatList initially measures a virtualized subset of the history.
     // Keep landing on the real last bubble as later cells are measured.
     scroll.current?.scrollToOffset({offset:0,animated:false});
     if (initialBottomTimer.current) clearTimeout(initialBottomTimer.current);
     initialBottomTimer.current = setTimeout(() => {
       initialBottomTimer.current = null;
-      if (!initialHistoryPending.current || userHasScrolled.current) return;
+      if (!scroll.current || !initialHistoryPending.current || userHasScrolled.current) return;
       initialBottomAttempts.current+=1;
       scroll.current?.scrollToOffset({offset:0,animated:false});
       if(initialBottomAttempts.current<10)scheduleInitialBottom();

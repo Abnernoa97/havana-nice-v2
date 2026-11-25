@@ -61,3 +61,14 @@ test('Long pressing native Chat opens emoji actions directly from touch without 
  assert.match(menu,/onPressIn=\{\(\)=>\{backdropTouchStarted\.current=true;\}\}/);
  assert.doesNotMatch(menu,/openedAt|Date\.now\(\)-openedAt/);
 });
+
+test('History reception never schedules scroll work without a mounted native timeline',()=>{
+ const viewport=read('apps/android/features/chat/useNativeChatViewport.ts');
+ const controller=read('apps/android/features/chat/useNativeChatController.ts');
+ assert.match(viewport,/if \(!scroll\.current \|\| !initialHistoryPending\.current \|\| !initialHistoryLoaded\.current \|\| userHasScrolled\.current\) return;/);
+ assert.match(viewport,/if \(!scroll\.current \|\| !initialHistoryPending\.current \|\| userHasScrolled\.current\) return;/);
+ assert.match(controller,/if\(initialHistoryPending\.current&&scroll\.current\)requestAnimationFrame\(scheduleInitialBottom\)/);
+ assert.match(viewport,/if\(activeScreen!=='chat'\|\|!sessionToken\)return/);
+ assert.match(controller,/syncMessages\(next\)/);
+ assert.match(controller,/flushOutbox\(\)/);
+});

@@ -1,7 +1,7 @@
 {
   "approved": true,
   "releaseMode": "explicit-batch",
-  "version": "0.0.34",
-  "versionCode": 34,
-  "notes": "Lote explícito solicitado por propietario antes de optimizar arranque. Cabecera con luz radial; Calendario y Repertorio bajo demanda; Familia reutiliza listados y canal de perfil; Estados suspendidos fuera de Inicio; bandeja y contador de avisos compartidos. Sin cambios de arranque/autorización, FCM, BOOK 3D, motor musical, visor, backend o PWA. Chat pendiente de lote separado (bloqueo voz, leído por, álbumes y posters). Conservar 0.0.33 como APK anterior. QA físico pendiente. Reintento del mismo lote: corregir TS2345 de AppState.currentState (undefined al iniciar), sin cambio de comportamiento ni incremento de versión. Reintento: actualizar contrato HOME obsoleto y reforzarlo con comprobaciones del único dueño del socket Familia y la invalidación de caché. Ningún cambio de runtime."
+  "version": "0.0.35",
+  "versionCode": 35,
+  "notes": "Lote autorizado tras QA general 0.0.34: pulido de portada/cuadrícula Familia y luz radial; eliminar consulta de salud sin consumidor; diferir conexión inicial restaurada tras commit; recuperación de primer plano toma propiedad; scroll de historial solo con lista montada. Auditoría de código completa, sin cambiar política de acceso, almacenamiento, FCM, Audio, BOOK 3D, PWA, backend ni flujo de mensajes. Conservar APK 0.0.34 como anterior; medir rendimiento físico y verificar reconexión. Chat voz, leído por, collage y posters pendientes de lote separado."
 }

@@ -265,7 +265,7 @@ export function useNativeChatController(){
         setReceipts(readHistory);
         setHasMore(more);
         setMessages(before=>reconcileChatSnapshot(before,withoutRemovedChatMessages(history,removedSeq.current)));
-        if(initialHistoryPending.current)requestAnimationFrame(scheduleInitialBottom);
+        if(initialHistoryPending.current&&scroll.current)requestAnimationFrame(scheduleInitialBottom);
         sendReadReceipt(Math.max(0,...history.map(m=>m.seq)));
         flushOutbox();
       },
@@ -464,6 +464,8 @@ export function useNativeChatController(){
       if(state!=='active')resumeGate.current.invalidate();
       const currentSession = activeSession.current;
       if (state === 'active' && currentSession) {
+        // Foreground recovery now owns this connection; cancel deferred startup.
+        startupConnect.current=null;
         beginFreshChatViewport();
         const request=resumeGate.current.begin();
         const validResponse=()=>resumeGate.current.isCurrent(

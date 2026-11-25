@@ -68,5 +68,6 @@ test('Android launch retains recovery validation, removes unused health fetch an
  assert.match(native,/return\(\)=>cancelAnimationFrame\(frame\)/);
  assert.match(native,/function connect\(next: ChatSession\)[\s\S]{0,130}startupConnect\.current=null/);
  assert.match(native,/restoreNamedChatSession\(currentSession\)/);
+ assert.match(native,/if \(state === 'active' && currentSession\) \{[\s\S]{0,150}startupConnect\.current=null;/);
  assert.match(native,/console\.info\('\[HAVANA startup\]',\{storageMs,validationMs,totalMs:Date\.now\(\)-started,outcome\}\)/);
 });
