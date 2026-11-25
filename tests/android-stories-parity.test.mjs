@@ -1,3 +1,4 @@
+import {inflateSync} from 'node:zlib';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync,existsSync} from 'node:fs';
@@ -86,8 +87,8 @@ test('Only native HOME keeps the team story strip pinned, with Story API fallbac
  assert.match(shell,/<View style=\{\[styles\.storiesFixed,!isHome&&styles\.hiddenStories\]\}/);
  assert.match(shell,/hiddenStories:\{display:'none'\}/);
  assert.match(shell,/const isHome=active==='home'/);
- assert.match(shell,/<Text accessibilityRole="header" numberOfLines=\{1\} style=\{styles\.moduleTitle\}>/);
- assert.match(shell,/!isHome&&styles\.compactTop/);
+ assert.match(shell,/<Text accessibilityRole="header" style=\{\[styles\.moduleTitle/);
+ assert.doesNotMatch(shell,/compactTop|compactAvatar/);
  assert.match(shell,/<NativeStories token=\{token\} actorId=\{actorId\}/);
  assert.match(strip,/for\(const story of states\.stories\)/);
  assert.match(strip,/if\(!members\.has\(story\.actorId\)\)/);
@@ -136,35 +137,65 @@ test('Story track remains 3dp even inside a taller tap target and no solid top s
  assert.match(v,/complete:\{width:'100%',height:3,/);
  assert.match(v,/source=\{\{uri:TOP_FADE\}\}/);
 });
-test('Native header uses feathered local image textures and stops its motion outside HOME',()=>{
+test('Institutional header is permanent outside Chat, with PWA gradients and native motion',()=>{
  const shell=read('apps/android/app/NativeMemberHome.tsx');
- for(const name of ['HEADER_GRADIENT','HEADER_BLOOM','HEADER_STREAK'])
-  assert.ok(shell.includes("const "+name+"='data:image/png;base64,"));
- assert.match(shell,/<Animated.Image pointerEvents="none" source=\{\{uri:HEADER_BLOOM\}\}/);
- assert.match(shell,/<Animated.Image pointerEvents="none" source=\{\{uri:HEADER_STREAK\}\}/);
- assert.match(shell,/if\(!isHome\|\|reduceHeaderMotion\)return/);
- assert.match(shell,/useNativeDriver:true,isInteraction:false/);
- assert.doesNotMatch(shell,/headerBloom:\{[^}]*backgroundColor|headerShine:\{[^}]*backgroundColor/);
+ const motion=read('apps/android/features/shared/NativeEmeraldMotion.tsx');
+ const header=shell.slice(shell.indexOf(' const header='),shell.indexOf(' const content='));
+ assert.match(header,/<NativeHeaderLight\/>/);
+ assert.match(header,/>HAVANA NICE<\/Text>/);
+ assert.match(header,/>ESPACIO DEL EQUIPO<\/Text>/);
+ assert.match(header,/\{displayName\}/);
+ assert.doesNotMatch(header,/isHome|moduleTitle/);
+ assert.match(motion,/useMotion\(4600,reduced\)/);
+ assert.match(motion,/useMotion\(5300,reduced\)/);
+ assert.match(motion,/useNativeDriver:true,isInteraction:false/);
+ for(const p of ['calendar/NativeCalendar','repertoire/NativeRepertoire'])assert.match(read('apps/android/features/'+p+'.tsx'),/<NativeButtonLight/);
 });
-
-test('Native fullscreen gallery hides playback chrome immediately and reveals it on a tap, not a swipe',()=>{
- const film=read('apps/android/features/chat/NativeChatGallery.tsx');
- assert.match(film,/const \[controlsVisible,setControlsVisible\]=useState\(true\)/);
+test('One native player for Chat and Family hides controls on play, restores on tap, never on swipe',()=>{
+ const film=read('apps/android/features/shared/NativeMediaFilm.tsx');
  assert.match(film,/player.play\(\);setControlsVisible\(false\)/);
  assert.match(film,/!error&&controlsVisible&&<Pressable/);
  assert.match(film,/ready&&!error&&controlsVisible&&<View style=\{s.transport\}>/);
- assert.match(film,/if\(!tapMoved.current\)setControlsVisible\(v=>!v\)/);
+ assert.match(film,/if\(!tapMoved.current\)setControlsVisible\(v=>player\.playing\?!v:true\)/);
  assert.match(film,/player.addListener\('playToEnd'/);
  assert.match(film,/videoTap:\{position:'absolute',top:0,right:0,bottom:0,left:0,zIndex:1\}/);
  assert.doesNotMatch(film,/StyleSheet\.absoluteFillObject/);
- assert.match(film,/Math.abs\(dx\)>55&&Math.abs\(dx\)>Math.abs\(dy\)\*1.2/);
+ for(const p of ['chat/NativeChatGallery','chat/NativeChatVideo','family/NativeFamily']){
+  const view=read('apps/android/features/'+p+'.tsx');
+  assert.match(view,/<NativeMediaFilm/);
+  assert.doesNotMatch(view,/useVideoPlayer/);
+ }
+ assert.match(read('apps/android/features/chat/NativeChatGallery.tsx'),/Math.abs\(dx\)>55&&Math.abs\(dx\)>Math.abs\(dy\)\*1.2/);
+ const family=read('apps/android/features/family/NativeFamily.tsx');
+ assert.match(family,/onControlsChange=\{setFilmChrome\}/);
+ assert.match(family,/chosen\?\.kind!=='video'&&<View style=\{styles\.modalNav\}/);
+ assert.match(read('apps/android/features/chat/NativeChatGallery.tsx'),/onControlsChange=\{setFilmChrome\}/);
+ assert.match(family,/<NativeAlbumGradient\/>/);
+ assert.match(family,/<NativeAlbumShade\/>/);
+ assert.doesNotMatch(family,/pauseVideo:/);
 });
 
-test('Both native Chat video entrypoints reuse one fullscreen player',()=>{
- const gallery=read('apps/android/features/chat/NativeChatGallery.tsx');
- const video=read('apps/android/features/chat/NativeChatVideo.tsx');
- assert.match(video,/<NativeChatFilm key=\{signed\} url=\{signed\}/);
- assert.match(gallery,/<NativeChatFilm url=\{url\}/);
- assert.doesNotMatch(video,/useVideoPlayer/);
- assert.equal((gallery.match(/useVideoPlayer\(\{/g)||[]).length,1);
+test('Nine PWA-derived native gradient textures contain valid RGBA pixels, with feathered transparent glints',()=>{
+ const motion=read('apps/android/features/shared/NativeEmeraldMotion.tsx');
+ const images=[...motion.matchAll(/const (\w+)='data:image\/png;base64,([^']+)'/g)];
+ assert.equal(images.length,9);
+ for(const [,name,encoded] of images){
+  const b=Buffer.from(encoded,'base64');
+  assert.equal(b.subarray(0,8).toString('hex'),'89504e470d0a1a0a');
+  const w=b.readUInt32BE(16),h=b.readUInt32BE(20);
+  assert.equal(b[24],8);assert.equal(b[25],6);
+  const chunks=[];
+  for(let at=8;at<b.length;){
+   const n=b.readUInt32BE(at);if(b.toString('ascii',at+4,at+8)==='IDAT')chunks.push(b.subarray(at+8,at+8+n));
+   at+=n+12;
+  }
+  const pixels=inflateSync(Buffer.concat(chunks));
+  assert.equal(pixels.length,h*(w*4+1),name);
+  if(/BLOOM|STREAK|SHEEN/.test(name)){
+   const middle=Math.floor(h/2)*(w*4+1);
+   assert.equal(pixels[middle+4],0,name+' left edge');
+   assert.equal(pixels[middle+4*w],0,name+' right edge');
+   assert.ok(pixels[middle+Math.floor(w/2)*4+4]>20,name+' visible center');
+  }
+ }
 });

@@ -127,7 +127,8 @@ test('Android Familia reads the same albums, authorized grant URLs and real BOOK
  assert.match(reader,/from 'page-flip'/);
  assert.doesNotMatch(book,/localStorage|AsyncStorage|WebSocket|new PageFlip|\?token=/);
  assert.doesNotMatch(native,/No hay ediciones publicadas todavía/);
- assert.match(native,/VideoView/);
+ assert.match(native,/<NativeMediaFilm/);
+ assert.match(read('apps/android/features/shared/NativeMediaFilm.tsx'),/VideoView/);
  assert.doesNotMatch(native,/MEDIA_BUCKET|CHAT_ROOMS|startNamedChatSession|localStorage|Supabase|HAVANA_CLOUD/);
 });
 

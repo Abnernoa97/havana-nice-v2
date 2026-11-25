@@ -81,7 +81,7 @@ assert.deepEqual(children('apps/android'),
 // source of each module. Moved source files cannot survive as compatibility copies.
 assert.deepEqual(children('apps/android/app'),['NativeApp.tsx','NativeMemberHome.tsx']);
 assert.deepEqual(children('apps/android/features'),
- ['audio','book','calendar','chat','family','musicians','notices','profile','repertoire','stories']);
+ ['audio','book','calendar','chat','family','musicians','notices','profile','repertoire','shared','stories']);
 assert.deepEqual(children('apps/android/hooks'),['useNativeKeyboardVisibility.ts','useNativeMemberNavigation.ts']);
 assert.deepEqual(children('apps/android/storage'),['chatPendingMedia.ts','chatPhotoCache.ts','chatStorage.ts']);
 assert.deepEqual(children('apps/android/styles'),['chat-styles.ts']);

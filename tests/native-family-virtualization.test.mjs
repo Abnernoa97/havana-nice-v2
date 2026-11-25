@@ -20,20 +20,21 @@ test('Familia Android mounts a virtualized 3-column photo grid instead of all me
 test('HOME must not nest Familia FlatList inside its all-modules ScrollView',()=>{
  const home=read('apps/android/app/NativeMemberHome.tsx');
  assert.match(home,/active==='family'\s*\?<View style=\{\[styles\.root,styles\.content,styles\.familyViewport\]\}>\{content\}<\/View>/);
- assert.match(home,/:<ScrollView style=\{styles\.root\} contentContainerStyle=\{styles\.content\}>\{content\}<\/ScrollView>/);
+ assert.match(home,/<ScrollView style=\{styles\.root\} contentContainerStyle=\{styles\.content\}\s+keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator=\{false\}>\{content\}<\/ScrollView>/);
  assert.match(home,/familyViewport:\{flex:1,minHeight:0,paddingBottom:0\}/);
  assert.match(home,/active==='family'\?<NativeFamily token=\{token\} onBackHome=/);
 });
 test('Family stays private, modal video is only mounted on demand, BOOK unchanged',()=>{
  const f=read('apps/android/features/family/NativeFamily.tsx');
  const book=read('apps/android/features/book/NativeBook.tsx');
+ const film=read('apps/android/features/shared/NativeMediaFilm.tsx');
  assert.match(f,/openFamilyRealtime\(token,false/);
  assert.match(f,/getFamilyAlbumMedia\(token,actorId\)/);
  assert.match(f,/url\.pathname\.startsWith\('\/api\/family\/media\/'\)/);
  assert.match(f,/<NativeBook token=\{token\} refreshKey=\{bookTick\} embedded/);
- assert.match(f,/chosen\?\.kind==='video'\?<NativeVideo key=\{chosen\.id\} url=\{chosen\.file\}/);
- assert.match(f,/useVideoPlayer\(\{uri:url\}/);
- assert.match(f,/surfaceType="surfaceView"/);
+ assert.match(f,/chosen\?\.kind==='video'\?<NativeMediaFilm key=\{chosen\.id\} url=\{chosen\.file\}/);
+ assert.match(film,/useVideoPlayer\(\{uri:url\}/);
+ assert.match(film,/surfaceType="surfaceView"/);
  assert.match(book,/<WebView<object>/);
  assert.match(book,/bookContextDeliveryScript\(nativeContext\)/);
  assert.doesNotMatch(book,/injectedJavaScriptObject=/);

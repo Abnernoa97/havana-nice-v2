@@ -1,5 +1,6 @@
 import React,{useCallback,useEffect,useRef,useState} from 'react';
 import {AccessibilityInfo,Animated,Easing,LayoutAnimation,Linking,Platform,Pressable,StyleSheet,Text,UIManager,View} from 'react-native';
+import {NativeButtonLight} from '../shared/NativeEmeraldMotion';
 import {watchNativeRepertoire} from '../../services/native-calendar-live';
 import {getRepertoireSongs,repertoireSection,REPERTOIRE_SECTIONS,safeRepertoireLink,
  type RepertoireSection,type RepertoireSong} from '@havana/shared';
@@ -21,13 +22,13 @@ export default function NativeRepertoire({token}:{token:string}){
   return()=>{alive=false;subscription.remove();};
  },[]);
  useEffect(()=>{
-  if(reduceMotion){shimmer.stopAnimation();shimmer.setValue(0);return;}
+  if(reduceMotion||!open){shimmer.stopAnimation();shimmer.setValue(0);return;}
   const loop=Animated.loop(Animated.timing(shimmer,{
-   toValue:1,duration:4700,easing:Easing.linear,useNativeDriver:true
+   toValue:1,duration:4700,easing:Easing.linear,useNativeDriver:true,isInteraction:false
   }));
   loop.start();
   return()=>loop.stop();
- },[shimmer,reduceMotion]);
+ },[shimmer,reduceMotion,open]);
  useEffect(()=>{
   unfold.stopAnimation();
   if(!open||reduceMotion){unfold.setValue(open?1:0);return;}
@@ -60,9 +61,7 @@ export default function NativeRepertoire({token}:{token:string}){
   if(!reduceMotion)LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
   setOpen(v=>v===section?null:section);
  };
- const tintOpacity=shimmer.interpolate({inputRange:[0,.4,.8,1],outputRange:[.12,.34,.19,.12]});
- const glintOpacity=shimmer.interpolate({inputRange:[0,.1,.55,.75,1],outputRange:[.66,.85,.7,.2,0]});
- const glintTravel=shimmer.interpolate({inputRange:[0,1],outputRange:[-12,180]});
+ const glintOpacity=shimmer.interpolate({inputRange:[0,.1,.55,.75,1],outputRange:[.25,.45,.35,.1,0]});
  const waveTravel=shimmer.interpolate({inputRange:[0,.5,1],outputRange:[-31,22,-31]});
  const waveReverse=shimmer.interpolate({inputRange:[0,.5,1],outputRange:[23,-24,23]});
  const waveSheenTravel=shimmer.interpolate({inputRange:[0,1],outputRange:[-80,420]});
@@ -75,10 +74,7 @@ export default function NativeRepertoire({token}:{token:string}){
     accessibilityState={{expanded:open===section}}
     onPress={()=>changeSection(section)}
     style={[styles.tab,open===section&&styles.selectedTab]}>
-    <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill,
-     styles.tabTint,{opacity:tintOpacity}]}/>
-    {!reduceMotion&&<Animated.View pointerEvents="none" style={[styles.tabGlint,{
-     opacity:glintOpacity,transform:[{translateX:glintTravel},{rotate:'15deg'}]}]}/>}
+    <NativeButtonLight selected={open===section}/>
     <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.68}
      style={[styles.tabText,open===section&&styles.selectedTabText]}>{section}</Text>
    </Pressable>)}
@@ -118,8 +114,6 @@ const styles=StyleSheet.create({
   alignItems:'center',justifyContent:'center',overflow:'hidden',
   shadowColor:'#1a4a30',shadowOpacity:.1,shadowRadius:8,elevation:2},
  selectedTab:{backgroundColor:'#0b432f',borderColor:'#155e43'},
- tabTint:{backgroundColor:'#87bca0'},
- tabGlint:{position:'absolute',width:35,height:116,top:-25,left:0,backgroundColor:'#ffffff',borderRadius:10},
  tabText:{fontSize:11,fontWeight:'800',color:'#123b2d',textAlign:'center'},
  selectedTabText:{color:'#fffdf5'},
  reveal:{position:'relative',marginTop:2,borderTopLeftRadius:36,borderTopRightRadius:42,

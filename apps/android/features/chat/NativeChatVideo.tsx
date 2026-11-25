@@ -2,7 +2,7 @@
 // This keeps SurfaceView and the video decoder out of chat until the musician taps.
 import React,{useEffect,useState} from 'react';
 import {ActivityIndicator,Image,Modal,Pressable,StyleSheet,Text,View} from 'react-native';
-import {NativeChatFilm} from './NativeChatGallery';
+import NativeMediaFilm from '../shared/NativeMediaFilm';
 import type {ChatMessage,ChatSession} from '@havana/shared';
 import {requestNativeChatMediaUrl} from './native-chat-media-grant';
 type Media=NonNullable<ChatMessage['media']>;
@@ -20,6 +20,8 @@ export default function NativeChatVideo({media,session,width,compact=false,onOpe
  media:Media;session:ChatSession;width:number;compact?:boolean;onOpen?:(assetId:string)=>void;
 }){
  const [opened,setOpened]=useState(false);
+ const [filmChrome,setFilmChrome]=useState(true);
+ useEffect(()=>{setFilmChrome(true);},[opened]);
  const [signed,setSigned]=useState('');
  const [attempt,setAttempt]=useState(0);
  const [error,setError]=useState('');
@@ -41,9 +43,9 @@ export default function NativeChatVideo({media,session,width,compact=false,onOpe
   <Modal visible={!onOpen&&opened} animationType="fade" statusBarTranslucent
    onRequestClose={()=>setOpened(false)}>
    {signed?<View style={s.fullscreen}>
-    <NativeChatFilm key={signed} url={signed}/>
-    <Pressable accessibilityRole="button" accessibilityLabel="Cerrar video"
-     onPress={()=>setOpened(false)} style={s.close}><Text style={s.closeText}>×</Text></Pressable>
+    <NativeMediaFilm key={signed} url={signed} onControlsChange={setFilmChrome}/>
+    {filmChrome&&<Pressable accessibilityRole="button" accessibilityLabel="Cerrar video"
+     onPress={()=>setOpened(false)} style={s.close}><Text style={s.closeText}>×</Text></Pressable>}
    </View>:<View style={s.fullscreen}>
     <Pressable accessibilityRole="button" accessibilityLabel="Cerrar video"
      onPress={()=>setOpened(false)} style={s.close}><Text style={s.closeText}>×</Text></Pressable>

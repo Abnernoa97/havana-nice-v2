@@ -1,6 +1,7 @@
-import React,{useEffect,useRef,useState} from 'react';
-import {AccessibilityInfo,ActivityIndicator,Animated,Easing,Image,Modal,Platform,Pressable,ScrollView,StatusBar,StyleSheet,Text,useWindowDimensions,View} from 'react-native';
+import React,{useState} from 'react';
+import {ActivityIndicator,Image,Modal,Platform,Pressable,ScrollView,StatusBar,StyleSheet,Text,View} from 'react-native';
 import {MEMBER_MODULES,type MemberScreen} from '@havana/shared';
+import {NativeHeaderLight} from '../features/shared/NativeEmeraldMotion';
 import NativeCalendar from '../features/calendar/NativeCalendar';
 import NativeRepertoire from '../features/repertoire/NativeRepertoire';
 import NativeMusicians from '../features/musicians/NativeMusicians';
@@ -17,71 +18,28 @@ type Props={displayName:string;actorId:string;token:string;push:NativePushContro
 // Native navigation and independent native modules; Chat session never moves here.
 // Tiny embedded alpha gradient keeps the pinned Stories edge soft without a network asset.
 const STORIES_FADE='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAAwCAYAAADQMxCBAAAAOUlEQVR42n2JyQ0AIAzDrO4/MC1H+IEqUT6WnSBJBjQD/OCfbkB8t6gyDOhV9keOfIxsFzPbxTrQBqWZMlwxZHeoAAAAAElFTkSuQmCC';
-// Tiny locally embedded gradient textures. Unlike flat shapes these have
-// transparent feathered edges, like the PWA's radial bloom and light streak.
-// No browser container, new dependency, remote image or per-frame JS rendering.
-const HEADER_GRADIENT='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAFAAAAAgCAYAAACFM/9sAAAA90lEQVR42u3ZQQ6CMBAF0PpTU1IXnMEDeP9zsbCBYKIro5iSWKctDv2zKwHSvv4JBA7d5Xw3CWV9Z1quWxgXYxiWqAhIQAISkIAsAtaqz9c4Av6I+IS0mibuer8YT0PYHlIjXOz4VphWK96/pBN7wFu7VnK96gTmXHjpNsee8WqkEq3glYJEa3i5IdEqXi5ItI4nhQTxZPMC8WRp5McE4UaD6ZPNF8STtXQSYOv/hGMBANMnW4fVhnc8vbpgvo6bY1pN7fuOFxvXhHW9N9MQ6iQwR/rWsL45txSo672OT/opeLXbHlraN+dmSDek6lNY2r45F1vivg94RCXHSidV9QAAAABJRU5ErkJggg==';
-const HEADER_BLOOM='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADAAAAAgCAYAAABU1PscAAAA30lEQVR42u2XOwrDMAyG01J6iQ7Gk+7Ru/QqvaMmoyH36NLJBEWOHolBggwJtvJ/6GXf3t/Pc5nY7svklgAJkACT28PQFwyux6sAgHIfngUAxpHDSABOfN3Z2xifGFHEwAivgv3cOvAGgEFB5f+MgIBXCkkdl51vJPwXeqUQl+/lAGDVCLCcA729uvc1J3FwBNYIAG0E+p4uKVASzgXzCKCwE9FGwdKgLvRKoS2IxnQTOjCR0TuFkBHUhGlnIl5TxFw6NYXP0C6ERqfS047TWpDLXGhMBeWlPgESIAHmsh9NrSXTABca1QAAAABJRU5ErkJggg==';
-const HEADER_STREAK='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAFAAAAAQCAYAAACBSfjBAAABIElEQVR42u1YzY6CMBD+WvAvGs2a9eRRfBYf1vgAPgvqbU+7cbNGRBCmHkwToljQWCtu59TMwPSbb35KYVN/Biv3i2ti00lv0NLhd/73Hb40geNmuzDwT7fOz3VdxyUTidmkyQWWnyQuxOLvg/BhBJYh7d0kG3MRmdxOserNwJFm/8sqE+gBiHL0dUMJinPsDQALEwR61wxt7gzlmiC6cl1jvAMAiRB9leMG5x/3gI+IflV2h7E1ABwEbTNYNwCGABBQ+qV4vRTJdgY+sQKvZiSgVNq8FndWUp8KcdqEM2ULy+duBs+Y0r4jEZ+qhGWxGmvhsiTnVTUZOkSKsFTyFF6+UwvbGai7ArNf4v/lVvLQq9ytjn0E9meCbjERqC45AgteXIGotz/kAAAAAElFTkSuQmCC';
 function NativeMemberHome({displayName,actorId,token,active,calendarRevision=0,onNavigate,push}:Props){
  const profile=useNativeMemberProfile(token,actorId,true);
  const unreadNotices=useNativeUnreadNotices(token,profile.liveVersion+calendarRevision);
  const [profileOpen,setProfileOpen]=useState(false);
- const {width:screenWidth}=useWindowDimensions();
  const isHome=active==='home';
- const headerPhase=useRef(new Animated.Value(0)).current;
- const bloomPhase=useRef(new Animated.Value(0)).current;
- const [reduceHeaderMotion,setReduceHeaderMotion]=useState(false);
- useEffect(()=>{
-  let alive=true;
-  void AccessibilityInfo.isReduceMotionEnabled().then(v=>{if(alive)setReduceHeaderMotion(v);}).catch(()=>{});
-  const listener=AccessibilityInfo.addEventListener('reduceMotionChanged',setReduceHeaderMotion);
-  return()=>{alive=false;listener.remove();};
- },[]);
- useEffect(()=>{
-  headerPhase.setValue(0);bloomPhase.setValue(0);
-  if(!isHome||reduceHeaderMotion)return;
-  const streak=Animated.loop(Animated.timing(headerPhase,{
-   toValue:1,duration:4600,easing:Easing.linear,useNativeDriver:true,isInteraction:false
-  }));
-  const bloom=Animated.loop(Animated.sequence([
-   Animated.timing(bloomPhase,{toValue:1,duration:2650,easing:Easing.inOut(Easing.sin),useNativeDriver:true,isInteraction:false}),
-   Animated.timing(bloomPhase,{toValue:0,duration:2650,easing:Easing.inOut(Easing.sin),useNativeDriver:true,isInteraction:false}),
-  ]));
-  streak.start();bloom.start();
-  return()=>{streak.stop();bloom.stop();};
- },[headerPhase,bloomPhase,reduceHeaderMotion,isHome]);
- const headerShineTravel=headerPhase.interpolate({inputRange:[0,.75,1],outputRange:[0,screenWidth*1.225,screenWidth*1.225]});
- const headerShineOpacity=headerPhase.interpolate({inputRange:[0,.75,.85,1],outputRange:[.92,.78,0,0]});
- const headerBloomTravel=bloomPhase.interpolate({inputRange:[0,1],outputRange:[-screenWidth*.094,screenWidth*.975]});
- const headerBloomOpacity=bloomPhase.interpolate({inputRange:[0,1],outputRange:[.42,.9]});
  const selected=MEMBER_MODULES.find(item=>item.id===active);
  const mustAdd=profile.phase==='missing',checking=profile.phase==='checking';
  const avatar=(photo:string|null|undefined,name:string,size:number)=>
   photo?<Image source={{uri:photo}} style={{width:size,height:size,borderRadius:size/2}}/>:
    <Text style={styles.initial}>{name.charAt(0).toUpperCase()}</Text>;
  const header=<>
-  <View style={[styles.top,!isHome&&styles.compactTop]}>
-   {isHome&&<>
-    <Image pointerEvents="none" source={{uri:HEADER_GRADIENT}} resizeMode="stretch" style={styles.headerGradient}/>
-    {!reduceHeaderMotion&&<>
-     <Animated.Image pointerEvents="none" source={{uri:HEADER_BLOOM}} resizeMode="stretch" style={[styles.headerBloom,{
-      width:screenWidth*.78,opacity:headerBloomOpacity,transform:[{translateX:headerBloomTravel},{rotate:'-13deg'}]}]}/>
-     <Animated.Image pointerEvents="none" source={{uri:HEADER_STREAK}} resizeMode="stretch" style={[styles.headerShine,{
-      width:screenWidth*.5,opacity:headerShineOpacity,transform:[{translateX:headerShineTravel},{rotate:'-12deg'}]}]}/>
-    </>}
-   </>}
+  <View style={styles.top}>
+   <NativeHeaderLight/>
    <View style={styles.headerIdentity}>
-    {isHome?<><Text style={styles.brand}>HAVANA NICE</Text>
-     <Text style={styles.subheading}>ESPACIO DEL EQUIPO</Text></>:
-     <Text accessibilityRole="header" numberOfLines={1} style={styles.moduleTitle}>
-      {active==='family'?'Familia HAVANA NICE':active==='calendar'?'Calendario':selected?.label||'Módulo'}
-     </Text>}
+    <Text style={styles.brand}>HAVANA NICE</Text>
+    <Text style={styles.subheading}>ESPACIO DEL EQUIPO</Text>
    </View>
    <Pressable accessibilityRole="button" accessibilityLabel="Abrir mi perfil"
     onPress={()=>setProfileOpen(true)}
     disabled={profile.phase==='legacy'||profile.phase==='offline'||checking} style={styles.myProfile}>
-    <View style={[styles.headerAvatar,!isHome&&styles.compactAvatar]}>{avatar(profile.own?.photoUrl,displayName,isHome?36:28)}</View>
+    <View style={styles.headerAvatar}>{avatar(profile.own?.photoUrl,displayName,34)}</View>
+    <Text style={styles.profileName} numberOfLines={1}>{displayName}</Text>
    </Pressable>
   </View>
  </>;
@@ -92,7 +50,10 @@ function NativeMemberHome({displayName,actorId,token,active,calendarRevision=0,o
   </View>:<>
    {active!=='calendar'&&active!=='repertoire'&&active!=='family'&&<Pressable accessibilityRole="button" accessibilityLabel="Volver a Inicio"
     style={styles.back} onPress={()=>onNavigate('home')}><Text style={styles.backLabel}>‹ Inicio</Text></Pressable>}
-   {active!=='calendar'&&active!=='repertoire'&&active!=='family'&&<Text style={styles.lead}>{selected?.description}</Text>}
+   {active!=='audio'&&<Text accessibilityRole="header" style={[styles.moduleTitle,active==='family'&&styles.familyTitle]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>
+    {active==='family'?'Familia HAVANA NICE':active==='calendar'?'Calendario':selected?.label||'Módulo'}
+   </Text>}
+   {active!=='calendar'&&active!=='repertoire'&&active!=='family'&&active!=='audio'&&<Text style={styles.lead}>{selected?.description}</Text>}
    {active==='repertoire'&&<Pressable accessibilityRole="button" accessibilityLabel="Abrir Audio HAVANA NICE"
      onPress={()=>onNavigate('audio')} style={styles.openAudio}>
      <Text style={styles.openAudioLabel}>♫  Abrir Audio HAVANA NICE</Text>
@@ -108,7 +69,7 @@ function NativeMemberHome({displayName,actorId,token,active,calendarRevision=0,o
     </View>}
   </>}
  </>;
- return <View style={styles.screen}>
+ return <View style={[styles.screen,!isHome&&styles.internalScreen]}>
   {header}
   {/* Keep the same authorized story cache and grant state when changing
       modules, but remove the entire strip from layout and accessibility. */}
@@ -162,29 +123,24 @@ function NativeMemberHome({displayName,actorId,token,active,calendarRevision=0,o
  </View>;
 }
 const styles=StyleSheet.create({
- screen:{flex:1,backgroundColor:'#f7f0e8'},root:{flex:1,minHeight:0},
+ screen:{flex:1,backgroundColor:'#f7f0e8'},internalScreen:{backgroundColor:'#F7F4ED'},root:{flex:1,minHeight:0},
  storiesFixed:{backgroundColor:'#fff',paddingHorizontal:20,paddingBottom:0,zIndex:3},
  hiddenStories:{display:'none'},
   storiesFade:{position:'absolute',left:0,right:0,bottom:-29,height:36,zIndex:4},
  loungeInline:{marginHorizontal:-20,marginTop:0,backgroundColor:'#f7f0e8'},
  content:{paddingHorizontal:20,paddingTop:0,paddingBottom:24,flexGrow:1},
  familyViewport:{flex:1,minHeight:0,paddingBottom:0},
- top:{backgroundColor:'#0D2A23',paddingHorizontal:20,paddingBottom:16,
-  paddingTop:Platform.OS==='android'?(StatusBar.currentHeight||24)+12:16,
-  minHeight:95,marginHorizontal:0,marginTop:0,
+ top:{backgroundColor:'#0D2A23',paddingHorizontal:20,paddingBottom:17,
+  paddingTop:Platform.OS==='android'?(StatusBar.currentHeight||24)+20:20,
+  minHeight:90,marginHorizontal:0,marginTop:0,
   marginBottom:0,flexDirection:'row',justifyContent:'space-between',alignItems:'center',
   position:'relative',overflow:'hidden'},
- compactTop:{minHeight:0,paddingTop:Platform.OS==='android'?(StatusBar.currentHeight||24)+5:8,
-  paddingBottom:7,backgroundColor:'#0D2A23'},
  headerIdentity:{zIndex:1,flex:1,minWidth:0},
- headerGradient:{position:'absolute',top:0,left:0,right:0,bottom:0,width:'100%',height:'100%'},
- headerBloom:{position:'absolute',height:240,top:-65,left:'-35%'},
- headerShine:{position:'absolute',height:24,left:'-17%',top:'65%'},
- moduleTitle:{fontSize:19,fontWeight:'600',color:'#DBC59A'},
- compactAvatar:{width:32,height:32,borderRadius:16},
- brand:{fontFamily:'serif',fontSize:19,fontWeight:'700',letterSpacing:2,color:'#DBC59A'},
- subheading:{fontSize:11,letterSpacing:1.4,color:'#D3DED5',marginTop:8},
- myProfile:{padding:2,zIndex:1},headerAvatar:{width:40,height:40,borderRadius:20,
+ moduleTitle:{fontSize:43,fontWeight:'700',letterSpacing:-2.2,color:'#103c2f',marginTop:15,marginBottom:20},
+ familyTitle:{fontSize:34,lineHeight:37,letterSpacing:-1.5},
+ brand:{fontFamily:'serif',fontSize:17,fontWeight:'700',letterSpacing:2.7,color:'#DBC59A'},
+ subheading:{fontSize:10,letterSpacing:1.6,color:'#D3DED5',marginTop:8},
+ myProfile:{padding:2,zIndex:1,flexDirection:'row',alignItems:'center',gap:7,maxWidth:'34%'},profileName:{fontSize:11,color:'#f5f1e8',fontWeight:'600',flexShrink:1},headerAvatar:{width:38,height:38,borderRadius:19,
   borderWidth:2,borderColor:'#DBC59A',backgroundColor:'#f2f4ec',alignItems:'center',justifyContent:'center',overflow:'hidden'},
  initial:{fontSize:20,color:'#285343',fontWeight:'700'},
  bottomNav:{flexDirection:'row',backgroundColor:'#FFFCF7',borderTopWidth:1,borderColor:'#E4DDD1',paddingVertical:8},

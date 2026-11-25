@@ -1,6 +1,7 @@
 import React,{useCallback,useEffect,useRef,useState} from 'react';
 import {LayoutAnimation,Linking,Platform,Pressable,StyleSheet,Text,UIManager,View} from 'react-native';
 import {getCalendarEvents,getEventRepertoire,calendarDate,calendarEventCompleted,safeCalendarMapUrl,safeRepertoireLink,HAVANA_V2_DEV_API_BASE_URL,type CalendarEvent,type RepertoireEventItem} from '@havana/shared';
+import {NativeButtonLight} from '../shared/NativeEmeraldMotion';
 import NativeBook from '../book/NativeBook';
 
 // One authorized V2 session; no new identity, token persistence, WebView or Chat.
@@ -58,12 +59,14 @@ export default function NativeCalendar({token,calendarRevision=0}:{token:string;
    <Pressable accessibilityRole="button" accessibilityState={{selected:view==='upcoming'}}
     onPress={()=>setViewClosed('upcoming')}
     style={[styles.viewButton,view==='upcoming'&&styles.viewActive]}>
+    <NativeButtonLight selected={view==='upcoming'} pale/>
     <Text style={[styles.viewButtonText,view==='upcoming'&&styles.viewActiveText]}
      numberOfLines={2}>Eventos por realizar  {upcoming.length}</Text>
    </Pressable>
    <Pressable accessibilityRole="button" accessibilityState={{selected:view==='completed'}}
     onPress={()=>setViewClosed('completed')}
     style={[styles.viewButton,view==='completed'&&styles.viewActive]}>
+    <NativeButtonLight selected={view==='completed'} pale/>
     <Text style={[styles.viewButtonText,view==='completed'&&styles.viewActiveText]}
      numberOfLines={2}>Eventos realizados  {completed.length}</Text>
    </Pressable>
@@ -158,7 +161,7 @@ const styles=StyleSheet.create({
  viewButtons:{flexDirection:'row',gap:8,marginTop:2,marginBottom:12},
  viewButton:{flex:1,minWidth:0,minHeight:58,paddingVertical:11,paddingHorizontal:5,
   alignItems:'center',justifyContent:'center',borderWidth:1,borderColor:'#b6cdb9',
-  borderRadius:15,backgroundColor:'#dfebe0'},
+  borderRadius:15,backgroundColor:'#dfebe0',overflow:'hidden'},
  viewActive:{backgroundColor:'#144b36',borderColor:'#154c38'},
  viewButtonText:{fontSize:12,fontWeight:'800',color:'#214c38',textAlign:'center'},
  viewActiveText:{color:'#fffdf5'},

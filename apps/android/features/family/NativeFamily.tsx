@@ -1,6 +1,7 @@
 import React,{useCallback,useEffect,useMemo,useRef,useState} from 'react';
 import {ActivityIndicator,AppState,BackHandler,FlatList,Image,Modal,PanResponder,Pressable,ScrollView,StyleSheet,Text,View,useWindowDimensions} from 'react-native';
-import {useVideoPlayer,VideoView} from 'expo-video';
+import NativeMediaFilm from '../shared/NativeMediaFilm';
+import {NativeAlbumGradient,NativeAlbumShade} from '../shared/NativeEmeraldMotion';
 import NativeBook from '../book/NativeBook';
 import {getFamilyDirectory,getFamilyAlbumMedia,familyAlbumCount,HAVANA_V2_DEV_API_BASE_URL,openFamilyRealtime,FAMILY_WS_HANDSHAKE_TIMEOUT_MS,
  type FamilyAlbum,type FamilyDirectory,type FamilyMediaItem} from '@havana/shared';
@@ -16,34 +17,18 @@ function privateUrl(value:string|null|undefined):string|null{
  }catch{return null;}
 }
 type ReadyMedia={id:string;kind:'photo'|'video';image:string|null;file:string};
-function NativeVideo({url,width,height}:{url:string;width:number;height:number}){
- const player=useVideoPlayer({uri:url},instance=>{instance.loop=false;});
- const [playing,setPlaying]=useState(false);
- useEffect(()=>{
-  const a=player.addListener('playingChange',e=>setPlaying(e.isPlaying));
-  const b=player.addListener('playToEnd',()=>setPlaying(false));
-  return()=>{a.remove();b.remove();};
- },[player]);
- const toggle=()=>{if(playing)player.pause();else player.play();};
- return <View style={{width,height,backgroundColor:'#050805',justifyContent:'center',alignItems:'center'}}>
-  <VideoView player={player} nativeControls={false} contentFit="contain"
-   surfaceType="surfaceView" style={{width:'100%',height:'100%'}}/>
-  {!playing?<Pressable accessibilityRole="button" accessibilityLabel="Reproducir video"
-   onPress={toggle} style={styles.centerPlay}><Text style={styles.centerPlayLabel}>▶</Text></Pressable>:
-   <Pressable accessibilityRole="button" accessibilityLabel="Pausar video"
-    onPress={toggle} style={styles.pauseVideo}><Text style={styles.pauseVideoLabel}>Ⅱ</Text></Pressable>}
- </View>;
-}
 export default function NativeFamily({token,onBackHome}:{token:string;onBackHome?:()=>void}){
  const [directory,setDirectory]=useState<FamilyDirectory|null>(null);
  const [selected,setSelected]=useState<string|null>(null);
  const [bookTick,setBookTick]=useState(0);
  const [items,setItems]=useState<FamilyMediaItem[]>([]);
  const [focused,setFocused]=useState<number|null>(null);
+ const [filmChrome,setFilmChrome]=useState(true);
+ useEffect(()=>{setFilmChrome(true);},[focused]);
  const [loading,setLoading]=useState(true);
  const [mediaLoading,setMediaLoading]=useState(false);
  const [error,setError]=useState('');
- const {width:screenWidth,height:screenHeight}=useWindowDimensions();
+ const {width:screenWidth}=useWindowDimensions();
  const generation=useRef(0),mediaGeneration=useRef(0);
  // Temporary signed grants, reused in memory during this musician session.
  // Never write R2 media URLs or private files to persistent storage.
@@ -258,9 +243,11 @@ export default function NativeFamily({token,onBackHome}:{token:string;onBackHome
      const image=privateUrl(album.coverUrl);
      return <Pressable key={album.actorId} accessibilityRole="button" style={styles.album}
       onPress={()=>open(album)}>
+      <NativeAlbumGradient/>
       {image?<Image source={{uri:image,cache:'default'}}
        style={styles.fill} resizeMode="cover" fadeDuration={0}/>:
        <Text style={styles.monogram}>{album.name.slice(0,1).toUpperCase()}</Text>}
+      <NativeAlbumShade/>
       <View style={styles.albumOverlay}><Text style={styles.albumName}>{album.name}</Text>
        <Text style={styles.heroCount}>{familyAlbumCount(album)}</Text></View>
      </Pressable>;
@@ -272,20 +259,20 @@ export default function NativeFamily({token,onBackHome}:{token:string;onBackHome
   <Modal visible={chosen!==null} animationType="fade" statusBarTranslucent
    onRequestClose={()=>setFocused(null)}>
    <View style={styles.modal} {...mediaPan.panHandlers}>
-    <View style={styles.modalHeader}>
+    {(chosen?.kind!=='video'||filmChrome)&&<View style={styles.modalHeader}>
      <Text style={styles.modalCounter}>{focused===null?'':(focused+1)+' / '+ready.length}</Text>
      <Pressable accessibilityRole="button" accessibilityLabel="Cerrar visor"
       onPress={()=>setFocused(null)}><Text style={styles.close}>✕</Text></Pressable>
-    </View>
+    </View>}
     <View style={styles.modalContent}>
      {chosen?.kind==='photo'?<Image source={{uri:chosen.file}} resizeMode="contain"
-      style={{width:screenWidth,height:Math.max(200,screenHeight-185)}}/>:
-      chosen?.kind==='video'?<NativeVideo key={chosen.id} url={chosen.file} width={screenWidth} height={Math.max(300,screenHeight-138)}/>:null}
+      style={{width:'100%',height:'100%'}}/>:
+      chosen?.kind==='video'?<NativeMediaFilm key={chosen.id} url={chosen.file} posterUrl={chosen.image} onControlsChange={setFilmChrome}/>:null}
     </View>
-    <View style={styles.modalNav}>
+    {chosen?.kind!=='video'&&<View style={styles.modalNav}>
      <Pressable accessibilityRole="button" onPress={()=>change(-1)}><Text style={styles.navIcon}>‹</Text></Pressable>
      <Pressable accessibilityRole="button" onPress={()=>change(1)}><Text style={styles.navIcon}>›</Text></Pressable>
-    </View>
+    </View>}
    </View>
   </Modal>
  </View>;
@@ -306,10 +293,10 @@ const styles=StyleSheet.create({
  action:{color:'#856243',fontWeight:'700',fontSize:13},error:{color:'#b23d2e',fontSize:13},
  empty:{fontSize:13,color:'#81756b',lineHeight:20,marginVertical:8},
  albums:{flexDirection:'row',flexWrap:'wrap',gap:11},
- album:{width:'48%',aspectRatio:1,backgroundColor:'#675f51',borderRadius:14,overflow:'hidden',justifyContent:'center'},
- fill:{width:'100%',height:'100%',position:'absolute'},monogram:{fontSize:65,color:'#e4ddd0',fontWeight:'700',textAlign:'center'},
- albumOverlay:{position:'absolute',bottom:0,left:0,right:0,padding:13,backgroundColor:'rgba(17,17,17,.66)'},
- albumName:{fontSize:19,color:'#fff',fontWeight:'700'},heroCount:{fontSize:12,color:'#fff',marginTop:4},
+ album:{width:'48%',aspectRatio:1,backgroundColor:'#173d33',borderRadius:14,overflow:'hidden',justifyContent:'center'},
+ fill:{width:'100%',height:'100%',position:'absolute'},monogram:{fontSize:72,color:'#ffffff36',fontFamily:'serif',fontStyle:'italic',textAlign:'center'},
+ albumOverlay:{position:'absolute',bottom:0,left:0,right:0,paddingHorizontal:11,paddingVertical:12},
+ albumName:{fontSize:17,color:'#fff',fontWeight:'700'},heroCount:{fontSize:12,color:'#fff',marginTop:4},
  hero:{width:'100%',aspectRatio:16/9,maxHeight:260,backgroundColor:'#756d60',
   borderRadius:15,overflow:'hidden',justifyContent:'center'},
  heroImage:{width:'100%',height:'100%',position:'absolute'},
@@ -322,15 +309,9 @@ const styles=StyleSheet.create({
  bookButton:{padding:24,backgroundColor:'#ede6dc',borderRadius:15,gap:10,marginTop:12},
  bookName:{color:'#3c3833',fontSize:25,fontWeight:'800'},
  modal:{flex:1,backgroundColor:'#101010',justifyContent:'space-between'},
- modalHeader:{paddingTop:48,paddingHorizontal:24,flexDirection:'row',justifyContent:'space-between',alignItems:'center'},
+ modalHeader:{position:'absolute',top:0,left:0,right:0,zIndex:5,paddingTop:48,paddingHorizontal:24,flexDirection:'row',justifyContent:'space-between',alignItems:'center'},
  modalCounter:{color:'#fff',fontSize:14},close:{color:'#fff',fontSize:25},
  modalContent:{flex:1,justifyContent:'center',alignItems:'center'},
- centerPlay:{position:'absolute',width:72,height:72,borderRadius:36,borderWidth:2,
-  borderColor:'#ffffffaa',backgroundColor:'#1a4739dd',alignItems:'center',justifyContent:'center'},
- centerPlayLabel:{fontSize:32,color:'#fff',marginLeft:5},
- pauseVideo:{position:'absolute',right:14,bottom:14,width:44,height:44,borderRadius:22,
-  backgroundColor:'#163d32cc',alignItems:'center',justifyContent:'center'},
- pauseVideoLabel:{color:'#fff',fontSize:19},
- modalNav:{flexDirection:'row',justifyContent:'space-around',paddingBottom:35},
+ modalNav:{position:'absolute',left:0,right:0,bottom:0,zIndex:5,flexDirection:'row',justifyContent:'space-around',paddingBottom:8,backgroundColor:'#101010a0'},
  navIcon:{color:'#fff',fontSize:38}
 });
