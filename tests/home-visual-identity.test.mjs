@@ -48,7 +48,15 @@ test('Android HOME presentation keeps one session and direct native modules',()=
  assert.match(app,/active==='family'[\s\S]*?familyViewport/);
  assert.match(app,/active==='calendar'\?<NativeCalendar token=\{token\}/);
  assert.match(app,/onPress=\{\(\)=>onNavigate\(dest\)\}/);
- assert.match(app,/useNativeMemberProfile\(token,actorId,true\)/);
+ // The same authenticated profile owner now also dispatches Family cache invalidations.
+ assert.match(app,/useNativeMemberProfile\(token,actorId,true,onFamilySignal\)/);
+ assert.match(app,/const onFamilySignal=useCallback\(\(\)=>\{\s*familyLists\.invalidate\(\);setFamilyRevision/);
+ const profile=read('apps/android/features/profile/useNativeMemberProfile.ts');
+ const family=read('apps/android/features/family/NativeFamily.tsx');
+ assert.equal((profile.match(/openFamilyRealtime\(token,false,/g)||[]).length,1);
+ assert.match(profile,/onFamilySignal\?\.\(\);void refresh\(\);setLiveVersion/);
+ assert.match(profile,/if\(!watchHome\)return/);
+ assert.doesNotMatch(family,/openFamilyRealtime\(|new WebSocket/);
  assert.match(app,/NativeStories token=\{token\}/);
  assert.doesNotMatch(app,/new WebSocket|startNamedChatSession|WebView|AsyncStorage/);
 });
