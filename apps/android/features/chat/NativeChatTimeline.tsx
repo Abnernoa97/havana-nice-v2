@@ -45,11 +45,21 @@ function NativeChatTimeline({
  const liveRenderData=useMemo(()=>({display,onlineActorIds,connected}),
    [display,onlineActorIds,connected]);
  const galleries=useMemo(()=>groupChatMediaMessages(messages.filter(message=>!message.deletedAt)),[messages]);
- const visibleMessages=useMemo(()=>galleries.map(group=>group[group.length-1]!).reverse(),[galleries]);
- const groupLeads=useMemo(()=>{
-  const map=new Map<string,ChatMessage[]>();
-  for(const group of galleries)if(group.length>1)map.set(group[group.length-1]!.clientMessageId,group);
-  return map;
+ // A logical album can contain hundreds of items. Virtualize its two-column
+ // rows rather than mounting an entire album as one FlatList cell.
+ const {visibleMessages,groupLeads}=useMemo(()=>{
+  const rows:ChatMessage[]=[];
+  const map=new Map<string,{items:ChatMessage[];first:boolean;last:boolean}>();
+  for(const group of galleries){
+   if(group.length===1){rows.push(group[0]!);continue;}
+   for(let i=0;i<group.length;i+=2){
+    const items=group.slice(i,i+2);
+    const lead=items[items.length-1]!;
+    rows.push(lead);
+    map.set(lead.senderId+':'+lead.clientMessageId,{items,first:i===0,last:i+2>=group.length});
+   }
+  }
+  return {visibleMessages:rows.reverse(),groupLeads:map};
  },[galleries]);
 
  const selected=readerSeq===null?null:messages.find(message=>message.seq===readerSeq);
@@ -155,16 +165,16 @@ function NativeChatTimeline({
     ?<Text style={styles.empty}>¡Hola! Envía el primer mensaje. Aparecerá en los dos dispositivos.</Text>
     :undefined}
    renderItem={({item:message})=>{
-    const grouped=groupLeads.get(message.clientMessageId);
+    const grouped=groupLeads.get(message.senderId+':'+message.clientMessageId);
     if(!grouped)return renderBubble(message);
     const mine=message.senderId===session.actorId;
-    return <View style={[styles.galleryCluster,mine?styles.galleryMine:styles.galleryTheirs]}>
-     {!mine&&<Text style={styles.gallerySender}>{message.senderName}</Text>}
+    return <View style={[styles.galleryCluster,mine?styles.galleryMine:styles.galleryTheirs,!grouped.last&&{marginBottom:3}]}>
+     {!mine&&grouped.first&&<Text style={styles.gallerySender}>{message.senderName}</Text>}
      <View style={styles.galleryGrid}>
-      {grouped.map(item=><View key={item.senderId+':'+item.clientMessageId}
+      {grouped.items.map(item=><View key={item.senderId+':'+item.clientMessageId}
        style={styles.galleryCell}>{renderBubble(item,true)}</View>)}
      </View>
-     {mine&&delivery(message,true)}
+     {mine&&grouped.last&&delivery(message,true)}
     </View>;
    }}
   />

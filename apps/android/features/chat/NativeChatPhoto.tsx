@@ -26,9 +26,11 @@ export default function NativeChatPhoto({
      // in parallel instead of blocking the image's first render.
      if(!active)return;
      setPhoto(uri);
+     // Square mosaic cells do not use the original aspect ratio.
+     if(compact)return;
      const key=media.assetId+':'+media.sizeBytes;
      const known=photoRatios.get(key);
-     if(known)setRatio(known);
+     if(known){setRatio(known);return;}
      Image.getSize(uri,(w,h)=>{
        if(active){
          const next=w>0&&h>0?w/h:1;
@@ -50,14 +52,14 @@ export default function NativeChatPhoto({
      if(active)display(local);
    })().catch(()=>{if(active&&!abort.signal.aborted)setError('Archivo no disponible');});
    return()=>{active=false;abort.abort();};
- },[media.assetId,media.sizeBytes,media.mimeType,session.token]);
+ },[media.assetId,media.sizeBytes,media.mimeType,session.token,compact]);
 
  return <>
    {photo?
      <Pressable accessibilityLabel="Ampliar fotografía" accessibilityRole="button"
        onPress={()=>onOpen?onOpen(media.assetId):setEnlarged(true)}
        style={compact?{width:'100%',height:'100%'}:undefined}>
-       <Image source={{uri:photo}} resizeMode={compact?'cover':'contain'}
+       <Image source={{uri:photo}} fadeDuration={0} resizeMode={compact?'cover':'contain'}
          style={compact?{width:'100%',height:'100%',borderRadius:5}:{width,height,borderRadius:12}}/>
      </Pressable>:
      error?(compact?<Pressable accessibilityRole="button" accessibilityLabel="Abrir fotografía original"

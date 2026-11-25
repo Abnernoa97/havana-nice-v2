@@ -6,18 +6,22 @@ const read=path=>path==='apps/android/app/NativeApp.tsx'?
   readNativeSource(import.meta.url):readFileSync(new URL('../'+path,import.meta.url),'utf8');
 test('Native Chat virtualizes messages instead of creating the complete history tree',()=>{
  const timeline=read('apps/android/features/chat/NativeChatTimeline.tsx');
- assert.match(timeline,/import \{FlatList,/);
+ assert.match(timeline,/import \{[^}]*\bFlatList\b[^}]*\} from 'react-native'/);
  assert.match(timeline,/<FlatList/);
  assert.match(timeline,/data=\{visibleMessages\}/);
  assert.match(timeline,/\binverted\b/);
  // The grouped gallery must filter deleted messages before constructing cells,
- // retain one representative per group, and invert chronological order once.
+ // retain one representative per two-column row, and invert chronology once.
  assert.match(timeline,/const galleries=useMemo\(\(\)=>groupChatMediaMessages\(messages\.filter\(message=>!message\.deletedAt\)\),\[messages\]\)/);
- assert.match(timeline,/const visibleMessages=useMemo\(\(\)=>galleries\.map\(group=>group\[group\.length-1\]!\)\.reverse\(\),\[galleries\]\)/);
+ assert.match(timeline,/for\(let i=0;i<group.length;i\+=2\)/);
+ assert.match(timeline,/const items=group.slice\(i,i\+2\)/);
+ assert.match(timeline,/visibleMessages:rows.reverse\(\)/);
+ assert.match(timeline,/grouped.first&&<Text style=\{styles.gallerySender\}/);
+ assert.match(timeline,/grouped.last&&delivery\(message,true\)/);
  assert.match(timeline,/ListFooterComponent=\{<>/);
- assert.match(timeline,/groupLeads\.get\(message\.clientMessageId\)/);
+ assert.match(timeline,/groupLeads\.get\(message\.senderId\+':'\+message\.clientMessageId\)/);
  assert.match(timeline,/if\(!grouped\)return renderBubble\(message\)/);
- assert.match(timeline,/grouped\.map\(item=>/);
+ assert.match(timeline,/grouped\.items\.map\(item=>/);
  assert.match(timeline,/keyExtractor=\{message=>message.senderId\+':'\+message.clientMessageId\}/);
  assert.match(timeline,/initialNumToRender=\{10\}/);
  assert.match(timeline,/maxToRenderPerBatch=\{8\}/);
@@ -71,4 +75,13 @@ test('History reception never schedules scroll work without a mounted native tim
  assert.match(viewport,/if\(activeScreen!=='chat'\|\|!sessionToken\)return/);
  assert.match(controller,/syncMessages\(next\)/);
  assert.match(controller,/flushOutbox\(\)/);
+});
+
+
+test('Native mosaic avoids redundant dimensions and Android photo fade',()=>{
+ const photo=read('apps/android/features/chat/NativeChatPhoto.tsx');
+ assert.match(photo,/setPhoto\(uri\);[\s\S]*?if\(compact\)return;[\s\S]*?Image.getSize\(uri/);
+ assert.match(photo,/if\(known\)\{setRatio\(known\);return;\}/);
+ assert.match(photo,/<Image source=\{\{uri:photo\}\} fadeDuration=\{0\}/);
+ assert.match(photo,/cacheWholePhoto\(media,signed\)/);
 });
