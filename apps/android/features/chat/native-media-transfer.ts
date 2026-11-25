@@ -25,7 +25,7 @@ export type NativePreparedMedia={publish:()=>Promise<{id:string;seq:number}>};
 export async function transferNativeVisualBatch<T extends {id:string;kind:string;sizeBytes:number}>(
  items:readonly T[],ops:{
   prepare:(item:T,progress:(bytes:number)=>void)=>Promise<NativePreparedMedia>;
-  confirmed:(item:T,result:{id:string;seq:number})=>void;
+  confirmed:(item:T,result:{id:string;seq:number})=>void|Promise<void>;
   progress:(percent:number)=>void;
  },signal:AbortSignal):Promise<void>{
  const total=items.reduce((sum,item)=>sum+item.sizeBytes,0);
@@ -49,7 +49,7 @@ export async function transferNativeVisualBatch<T extends {id:string;kind:string
     const item=group[n]!,prepared=await pending[n]!;
     ensure();if(!prepared.ok)throw prepared.error;
     const result=await prepared.value.publish();ensure();
-    ops.confirmed(item,result);bytes.set(item.id,item.sizeBytes);report();
+    await ops.confirmed(item,result);bytes.set(item.id,item.sizeBytes);report();
    }
   }finally{await Promise.all(pending);}
   i+=count;

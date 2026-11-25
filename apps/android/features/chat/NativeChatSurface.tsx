@@ -19,7 +19,12 @@ import type {useNativeChatController} from './useNativeChatController';
 import type {ChatEmoji,ChatMessage} from '@havana/shared';
 
 export default function NativeChatSurface({ui}:{ui:ReturnType<typeof useNativeChatController>}){
-  const {iosBackPan,keyboardOpen,session,activeScreen,restoringAccess,name,setName,join,joining,error,messages,onlineActorIds,connection,reactions,receipts,hasMore,loadingOlder,scroll,onTimelineContentChange,onTimelineScrollBeginDrag,onTimelineScroll,onTimelineScrollEndDrag,onTimelineLoadOlder,onTimelineReply,onTimelineLongPress,onTimelineRetry,onReadVisible,menuMessage,menuLeft,menuTop,menuWidth,setMenuMessage,setReactionBurst,reactionBurstId,react,retryAttempts,connect,editing,savingEdit,finishEditing,replyTo,setReplyTo,typing,selectedMedia,mediaUploading,mediaProgress,mediaReady,removeSelectedMedia,mediaError,sendVoice,voiceDraft,voiceSending,voiceError,discardVoice,draft,draftFieldHeight,setDraftFieldHeight,typeText,mediaPicking,chooseNativeMedia,sendSelectedMedia,send,composerPanel,setComposerPanel,navigateTo,reactionBurst}=ui;
+  const {iosBackPan,keyboardOpen,session,activeScreen,restoringAccess,name,setName,join,joining,error,messages,onlineActorIds,connection,reactions,receipts,hasMore,loadingOlder,scroll,onTimelineContentChange,onTimelineScrollBeginDrag,onTimelineScroll,onTimelineScrollEndDrag,onTimelineLoadOlder,onTimelineReply,onTimelineLongPress,onTimelineRetry,onReadVisible,menuMessage,menuLeft,menuTop,menuWidth,setMenuMessage,setReactionBurst,reactionBurstId,react,retryAttempts,connect,editing,savingEdit,finishEditing,replyTo,setReplyTo,typing,selectedMedia,mediaUploading,mediaProgress,mediaReady,removeSelectedMedia,mediaError,sendVoice,voiceDraft,voiceSending,voiceError,discardVoice,cancelMediaUpload,cancelVoice,draft,draftFieldHeight,setDraftFieldHeight,typeText,mediaPicking,chooseNativeMedia,sendSelectedMedia,send,composerPanel,setComposerPanel,navigateTo,reactionBurst}=ui;
+  const pendingMedia=React.useMemo(()=>{
+   if(!mediaUploading)return [];
+   const committed=new Set(messages.filter(m=>m.senderId===session?.actorId&&!m.pending&&m.seq>0).map(m=>m.clientMessageId));
+   return selectedMedia.filter(item=>!committed.has(item.id));
+  },[mediaUploading,selectedMedia,messages,session?.actorId]);
   const calendarSignals=useNativeCalendarSignals(session?.token);
   const push=useNativePush(session?.token??null,navigateTo);
   const reactWithEffect=(message:ChatMessage,emoji:ChatEmoji,origin:{x:number;y:number})=>{
@@ -75,6 +80,7 @@ export default function NativeChatSurface({ui}:{ui:ReturnType<typeof useNativeCh
               onLoadOlder={onTimelineLoadOlder} onReply={onTimelineReply}
               onMessageLongPress={onTimelineLongPress}
               onQuickReact={reactWithEffect} onRetry={onTimelineRetry}
+              pendingMedia={pendingMedia} pendingProgress={mediaProgress} onCancelPending={cancelMediaUpload}
             />
             <NativeChatMessageMenu message={menuMessage} actorId={session.actorId}
               connection={connection} reactions={reactions}
@@ -103,18 +109,18 @@ export default function NativeChatSurface({ui}:{ui:ReturnType<typeof useNativeCh
             {typing ? <View style={styles.typingIndicator} accessibilityLiveRegion="polite">
                <Text style={styles.typingIndicatorText}>{typing}</Text>
              </View> : null}
-             {selectedMedia.length>0&&<NativeChatMediaQueuePreview
+             {selectedMedia.length>0&&!mediaUploading&&<NativeChatMediaQueuePreview
                selectedMedia={selectedMedia} mediaUploading={mediaUploading}
                mediaProgress={mediaProgress} mediaReady={mediaReady}
                onRemove={item=>removeSelectedMedia(item.id)}
              />}
               {!!mediaError&&<Text style={styles.mediaError}>{mediaError}</Text>}
-              {voiceDraft&&<View style={styles.replyPreview}>
+              {voiceDraft&&<View style={styles.voiceStatus}>
                 <Text style={styles.replyPreviewText}>{voiceSending?'Enviando nota de voz…':voiceError||'Nota de voz pendiente'}</Text>
-                {!voiceSending&&<>
+                {voiceSending?<Pressable accessibilityRole="button" onPress={cancelVoice}><Text style={styles.replyCancel}>Cancelar</Text></Pressable>:<View style={styles.voiceStatusActions}>
                  <Pressable accessibilityRole="button" onPress={()=>void sendVoice(voiceDraft.uri,voiceDraft.id)}><Text style={styles.replyCancel}>Reintentar</Text></Pressable>
                  <Pressable accessibilityRole="button" onPress={discardVoice}><Text style={styles.replyCancel}>Descartar</Text></Pressable>
-                </>}
+                </View>}
               </View>}
              <View style={styles.composer}>
                <View style={styles.inputPill}>
@@ -134,7 +140,7 @@ export default function NativeChatSurface({ui}:{ui:ReturnType<typeof useNativeCh
                      });
                    }}
                    scrollEnabled={draftFieldHeight>=132} textAlignVertical="top"
-                   placeholder={connection==='en vivo'?'Mensaje':'Sin conexión: se enviará después…'}
+                   placeholder={connection==='en vivo'?'Mensaje':'Sin conexión…'}
                    placeholderTextColor="#85898a"/>
                  <Pressable accessibilityRole="button" accessibilityLabel="Adjuntar fotografía o video"
                    accessibilityState={{expanded:composerPanel==='attachments'}} style={styles.composerIcon}
@@ -147,12 +153,12 @@ export default function NativeChatSurface({ui}:{ui:ReturnType<typeof useNativeCh
                    <NativeComposerIcon name="camera"/>
                  </Pressable>
                </View>
-               {draft.trim()||editing||selectedMedia.length>0
-                 ?<Pressable accessibilityRole="button" accessibilityLabel={editing?'Guardar mensaje':selectedMedia.length?'Enviar archivos originales':'Enviar mensaje'}
-                    onPress={()=>selectedMedia.length&&!editing?void sendSelectedMedia():send()} disabled={savingEdit||mediaUploading||(!editing&&selectedMedia.length>0&&voiceSending)||(!selectedMedia.length&&!draft.trim())} style={styles.sendCircle}>
+               {draft.trim()||editing||(!mediaUploading&&selectedMedia.length>0)
+                 ?<Pressable accessibilityRole="button" accessibilityLabel={editing?'Guardar mensaje':!mediaUploading&&selectedMedia.length?'Enviar archivos originales':'Enviar mensaje'}
+                    onPress={()=>selectedMedia.length&&!editing&&!mediaUploading?void sendSelectedMedia():send()} disabled={savingEdit||(!editing&&!mediaUploading&&selectedMedia.length>0&&voiceSending)||((mediaUploading||!selectedMedia.length)&&!draft.trim())} style={styles.sendCircle}>
                     <NativeComposerIcon name="send" color="#fff"/>
                   </Pressable>
-                 :<NativeChatVoiceRecorder disabled={!mediaReady||mediaUploading||!!voiceDraft||voiceSending}
+                 :<NativeChatVoiceRecorder disabled={mediaUploading||!!voiceDraft||voiceSending}
                     onSend={sendVoice}/>}
              </View>
           </>

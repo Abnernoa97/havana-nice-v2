@@ -7,6 +7,8 @@ import {
 import SwipeableBubble,{type BubbleAnchor} from './SwipeableBubble';
 import NativeChatMediaView from './NativeChatMediaView';
 import NativeChatGallery from './NativeChatGallery';
+import NativeChatMediaQueuePreview from './NativeChatMediaQueuePreview';
+import type {NativeQueuedMedia} from './useNativeMediaSelection';
 import {styles} from '../../styles/chat-styles';
 
 // Only visible-window cells mount media/video; one NativeApp owns the socket,
@@ -32,11 +34,15 @@ type Props={
  onQuickReact:(message:ChatMessage,emoji:ChatEmoji,origin:{x:number;y:number})=>void;
  onRetry:(clientMessageId:string)=>void;
  onReadVisible:(seq:number)=>void;
+ pendingMedia:NativeQueuedMedia[];
+ pendingProgress:number;
+ onCancelPending:()=>void;
 };
 function NativeChatTimeline({
  messages,session,onlineActorIds,connected,reactions,receipts,hasMore,loadingOlder,
  scrollRef,onContentSizeChange,onLayout,onScrollBeginDrag,onScroll,onScrollEndDrag,
  onLoadOlder,onReply,onMessageLongPress,onQuickReact,onRetry,onReadVisible,
+ pendingMedia,pendingProgress,onCancelPending,
 }:Props){
  const [gallery,setGallery]=useState<{items:NonNullable<ChatMessage['media']>[];initial:number}|null>(null);
  const [readerSeq,setReaderSeq]=useState<number|null>(null);
@@ -160,6 +166,9 @@ function NativeChatTimeline({
    onScrollEndDrag={onScrollEndDrag}
    onMomentumScrollEnd={onScrollEndDrag}
    scrollEventThrottle={16}
+   ListHeaderComponent={pendingMedia.length?<NativeChatMediaQueuePreview
+    selectedMedia={pendingMedia} mediaUploading={true} mediaProgress={pendingProgress} mediaReady={true}
+    onRemove={()=>{}} inTimeline onCancel={onCancelPending}/>:null}
    ListFooterComponent={<>
     {hasMore?<Pressable style={styles.loadMore} disabled={loadingOlder}
       onPress={()=>void onLoadOlder()}><Text style={styles.loadMoreText}>{loadingOlder?'Cargando…':'Cargar mensajes anteriores'}</Text></Pressable>:null}

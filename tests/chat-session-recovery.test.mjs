@@ -34,7 +34,7 @@ test('PWA and native use one restoration decision while retaining their own sock
  const shared=read('packages/shared/src/index.ts');
  for(const src of [web,native]){
   assert.match(src,/chatSessionExpired\(saved\.session\)/);
-  assert.match(src,/recoverChatAccess\(saved\.session,restoreNamedChatSession\)/);
+  assert.match(src,src===web?/recoverChatAccess\(saved\.session,restoreNamedChatSession\)/:/recoverChatAccess\(saved\.session,value=>runNativeTransferStep/);
   assert.match(src,/access\.state==='revoked'/);
   assert.match(src,/const approved=access\.session/);
   assert.match(src,/restoreChatOfflineOutbox\(saved\.outbox/);
@@ -58,7 +58,7 @@ test('PWA and native use one restoration decision while retaining their own sock
 test('Android launch retains recovery validation, removes unused health fetch and defers only initial connection',()=>{
  const native=readFileSync(new URL('../apps/android/features/chat/useNativeChatController.ts',import.meta.url),'utf8');
  assert.doesNotMatch(native,/fetchBackendHealth|setApiState/);
- assert.match(native,/const access=await recoverChatAccess\(saved\.session,restoreNamedChatSession\)/);
+ assert.match(native,/const access=await recoverChatAccess\(saved\.session,value=>runNativeTransferStep/);
  assert.match(native,/if \(access\.state==='revoked'\)/);
  assert.match(native,/startupConnect\.current=approved/);
  assert.match(native,/if\(restoringAccess\|\|!approved\|\|session\?\.token!==approved\.token\)return/);

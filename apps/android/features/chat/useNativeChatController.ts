@@ -19,6 +19,7 @@ import type {BubbleAnchor} from './SwipeableBubble';
 import type {ReactionShowerBurst} from './NativeChatReactionShower';
 import {openNativeChatSocket} from '../../services/native-chat-socket';
 import {useNativeMediaSelection} from './useNativeMediaSelection';
+import {runNativeTransferStep} from './native-media-transfer';
 import {useNativeChatMediaUpload} from './useNativeChatMediaUpload';
 import {useNativeKeyboardVisibility} from '../../hooks/useNativeKeyboardVisibility';
 import {useNativeMemberNavigation} from '../../hooks/useNativeMemberNavigation';
@@ -97,11 +98,21 @@ export function useNativeChatController(){
   const editPending = useRef<{seq:number;text:string}|null>(null);
   const editTimeout = useRef<ReturnType<typeof setTimeout>|null>(null);
   const [savingEdit,setSavingEdit] = useState(false);
+  // Paint a committed HTTP sequence immediately; never invent a receipt.
+  function confirmMediaMessage(media:NonNullable<ChatMessage['media']>,seq:number){
+    const owner=activeSession.current;if(!owner||removedSeq.current.has(seq))return;
+    const message:ChatMessage={seq,clientMessageId:media.assetId,senderId:owner.actorId,
+      senderName:owner.displayName,text:media.kind==='audio'?'Audio':media.kind==='photo'?'Foto':'Video',
+      sentAt:new Date().toISOString(),media};
+    setMessages(before=>removedSeq.current.has(seq)||before.some(m=>m.seq===seq||
+      (m.senderId===owner.actorId&&m.clientMessageId===media.assetId&&!m.pending))?before:
+      reconcileChatMessages(before,[message]));
+  }
   // Upload owns only multimedia progress; Chat session and transport stay here.
-  const {mediaReady,mediaUploading,mediaProgress,sendVoice,sendSelectedMedia,voiceDraft,voiceSending,voiceError,discardVoice}=
+  const {mediaReady,mediaUploading,mediaProgress,sendVoice,sendSelectedMedia,cancelMediaUpload,cancelVoice,voiceDraft,voiceSending,voiceError,discardVoice}=
     useNativeChatMediaUpload({
       session,activeSession,selectedMedia,mediaUploadBusy,setMediaError,
-      confirmUploadedMedia,syncLatest,
+      confirmUploadedMedia,confirmMediaMessage,syncLatest,
     });
 
   // Android 16: keep the legacy navigation padding only when the IME is hidden.
@@ -428,7 +439,7 @@ export function useNativeChatController(){
       if (!saved?.session || chatSessionExpired(saved.session)) return;
       const restoration=startupGate.current.begin();
       const validationStarted=Date.now();
-      const access=await recoverChatAccess(saved.session,restoreNamedChatSession);
+      const access=await recoverChatAccess(saved.session,value=>runNativeTransferStep('Restaurar acceso',8000,()=>restoreNamedChatSession(value)));
       validationMs=Date.now()-validationStarted;outcome=access.state;
       if(disposed.current||!startupGate.current.isRequestCurrent(restoration)||
          activeSession.current)return;
@@ -480,7 +491,7 @@ export function useNativeChatController(){
           request,currentSession.token,activeSession.current?.token,
           !disposed.current&&appLifecycle.current==='active'
         );
-        void restoreNamedChatSession(currentSession).then(valid => {
+        void runNativeTransferStep('Restaurar conexión',8000,()=>restoreNamedChatSession(currentSession)).then(valid => {
           if(!validResponse())return;
           if (!valid) {revokeCurrentAccess();return;}
           const ws = socket.current;
@@ -678,5 +689,5 @@ export function useNativeChatController(){
       maxWidth:220,menuHeight:64,
     });
 
-  return {iosBackPan,keyboardOpen,session,activeScreen,restoringAccess,name,setName,join,joining,error,messages,onlineActorIds,connection,reactions,receipts,hasMore,loadingOlder,scroll,onTimelineContentChange,onTimelineScrollBeginDrag,onTimelineScroll,onTimelineScrollEndDrag,onTimelineLoadOlder,onTimelineReply,onTimelineLongPress,onTimelineRetry,onReadVisible,menuMessage,menuLeft,menuTop,menuWidth,setMenuMessage,setReactionBurst,reactionBurstId,react,retryAttempts,connect,editing,savingEdit,finishEditing,replyTo,setReplyTo,typing,selectedMedia,mediaUploading,mediaProgress,mediaReady,removeSelectedMedia,mediaError,sendVoice,voiceDraft,voiceSending,voiceError,discardVoice,draft,draftFieldHeight,setDraftFieldHeight,typeText,mediaPicking,chooseNativeMedia,sendSelectedMedia,send,composerPanel,setComposerPanel,navigateTo,reactionBurst};
+  return {iosBackPan,keyboardOpen,session,activeScreen,restoringAccess,name,setName,join,joining,error,messages,onlineActorIds,connection,reactions,receipts,hasMore,loadingOlder,scroll,onTimelineContentChange,onTimelineScrollBeginDrag,onTimelineScroll,onTimelineScrollEndDrag,onTimelineLoadOlder,onTimelineReply,onTimelineLongPress,onTimelineRetry,onReadVisible,menuMessage,menuLeft,menuTop,menuWidth,setMenuMessage,setReactionBurst,reactionBurstId,react,retryAttempts,connect,editing,savingEdit,finishEditing,replyTo,setReplyTo,typing,selectedMedia,mediaUploading,mediaProgress,mediaReady,removeSelectedMedia,mediaError,sendVoice,voiceDraft,voiceSending,voiceError,discardVoice,cancelMediaUpload,cancelVoice,draft,draftFieldHeight,setDraftFieldHeight,typeText,mediaPicking,chooseNativeMedia,sendSelectedMedia,send,composerPanel,setComposerPanel,navigateTo,reactionBurst};
 }

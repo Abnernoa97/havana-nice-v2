@@ -2,9 +2,10 @@
 // The existing Chat controller remains the single owner of message reconciliation.
 import {useEffect,useRef,useState,type RefObject} from 'react';
 import {File} from 'expo-file-system';
-import {getChatMediaAvailability,type ChatSession} from '@havana/shared';
+import {getChatMediaAvailability,type ChatSession,type ChatMessage} from '@havana/shared';
 import {transferNativeVisualBatch,runNativeTransferStep} from './native-media-transfer';
 import {prepareNativeChatFile,uploadNativeChatFile} from '../../services/native-chat-r2-upload';
+import {seedConfirmedNativePhoto} from '../../storage/chatPhotoCache';
 import type {NativeQueuedMedia} from './useNativeMediaSelection';
 
 type Options={
@@ -14,12 +15,13 @@ type Options={
  mediaUploadBusy:RefObject<boolean>;
  setMediaError:(message:string)=>void;
  confirmUploadedMedia:(id:string)=>void;
+ confirmMediaMessage:(media:NonNullable<ChatMessage['media']>,seq:number)=>void;
  syncLatest:RefObject<()=>void>;
 };
 
 export function useNativeChatMediaUpload({
  session,activeSession,selectedMedia,mediaUploadBusy,setMediaError,
- confirmUploadedMedia,syncLatest,
+ confirmUploadedMedia,confirmMediaMessage,syncLatest,
 }:Options){
  const [mediaReady,setMediaReady]=useState(false);
  const [mediaUploading,setMediaUploading]=useState(false);
@@ -64,11 +66,12 @@ export function useNativeChatMediaUpload({
   mediaUploadBusy.current=true;setVoiceSending(true);
   const current=()=>voiceRequest.current===ctl&&activeSession.current?.token===item.token;
   try{
-   await uploadNativeChatFile(session,{
+   const result=await uploadNativeChatFile(session,{
     id,kind:'audio',source:'camera',uri,mimeType:'audio/mp4',
     sizeBytes:file.size,name:'Voz.m4a'
    },()=>{},ctl.signal);
    if(current()){
+    confirmMediaMessage({assetId:result.id,kind:'audio',mimeType:'audio/mp4',sizeBytes:file.size,name:'Voz.m4a'},result.seq);
     voiceRef.current=null;setVoiceDraft(null);setVoiceError('');
     syncLatest.current();
    }
@@ -94,8 +97,12 @@ export function useNativeChatMediaUpload({
    await transferNativeVisualBatch([...selectedMedia],{
     prepare:(item,onSent)=>prepareNativeChatFile(session,item,onSent,ctl.signal),
     progress:value=>{if(current())setMediaProgress(value);},
-    confirmed:(item)=>{
+    confirmed:async(item,result)=>{
      if(!current())return;
+     const media={assetId:result.id,kind:item.kind,mimeType:item.mimeType,sizeBytes:item.sizeBytes,name:item.name};
+     if(item.kind==='photo')await seedConfirmedNativePhoto(media,item.uri);
+     if(!current())return;
+     confirmMediaMessage(media,result.seq);
      confirmUploadedMedia(item.id);
     },
    },ctl.signal);
@@ -105,6 +112,8 @@ export function useNativeChatMediaUpload({
    if(current()){syncLatest.current();mediaUploadBusy.current=false;batchRequest.current=null;setMediaUploading(false);}
   }
  }
- return {mediaReady,mediaUploading,mediaProgress,sendVoice,sendSelectedMedia,
+ const cancelMediaUpload=()=>batchRequest.current?.abort();
+ const cancelVoice=()=>voiceRequest.current?.abort();
+ return {mediaReady,mediaUploading,mediaProgress,sendVoice,sendSelectedMedia,cancelMediaUpload,cancelVoice,
   voiceDraft:voiceDraft?.token===session?.token?voiceDraft:null,voiceSending,voiceError,discardVoice};
 }

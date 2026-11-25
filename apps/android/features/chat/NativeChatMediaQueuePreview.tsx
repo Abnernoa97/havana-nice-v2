@@ -2,6 +2,7 @@
 import React from 'react';
 import {View,Text,Pressable,ScrollView,Image,StyleSheet} from 'react-native';
 import {CHAT_MEDIA_MAX_PER_SEND} from '@havana/shared';
+import {styles} from '../../styles/chat-styles';
 import type {NativeQueuedMedia} from './useNativeMediaSelection';
 
 type Props={
@@ -10,15 +11,34 @@ type Props={
  mediaProgress:number;
  mediaReady:boolean;
  onRemove:(item:NativeQueuedMedia)=>void;
+ inTimeline?:boolean;
+ onCancel?:()=>void;
 };
 export default function NativeChatMediaQueuePreview({
- selectedMedia,mediaUploading,mediaProgress,mediaReady,onRemove
+ selectedMedia,mediaUploading,mediaProgress,mediaReady,onRemove,inTimeline=false,onCancel
 }:Props){
+ if(inTimeline)return <View style={[styles.galleryCluster,styles.galleryMine]} accessibilityLabel="Archivos pendientes de envío">
+  <View style={styles.galleryGrid}>
+   {selectedMedia.map((item,index)=>{
+    const wide=index===0&&selectedMedia.length%2===1;
+    return <View key={item.id} style={[styles.galleryCell,wide&&styles.galleryWideCell]}>
+     <View style={[s.pendingTile,{aspectRatio:wide?2:1}]}>
+      {item.kind==='photo'?<Image source={{uri:item.uri}} style={s.pendingPhoto} resizeMode="cover" resizeMethod="resize" fadeDuration={0}/>:<Text style={s.videoPlay}>▶</Text>}
+      <View style={s.pendingMark}><Text style={s.pendingMarkText}>↗</Text></View>
+     </View>
+    </View>;
+   })}
+  </View>
+  <View style={s.pendingStatus}>
+   <Text style={s.caption}>{mediaProgress===0?'Preparando…':'Enviando '+mediaProgress+' %'}</Text>
+   <Pressable accessibilityRole="button" onPress={onCancel}><Text style={s.pendingCancel}>Cancelar</Text></Pressable>
+  </View>
+ </View>;
  return <View style={s.root} accessibilityLabel="Archivos para enviar">
   <View style={s.heading}>
    <Text style={s.caption}>{selectedMedia.length}/{CHAT_MEDIA_MAX_PER_SEND} archivos</Text>
    <Text style={s.caption} accessibilityLiveRegion="polite">
-    {mediaUploading?'Enviando '+mediaProgress+' %':mediaReady?'Listos para enviar':'Almacenamiento no disponible'}
+    {mediaUploading?'Enviando '+mediaProgress+' %':mediaReady?'Listos para enviar':'Listos para reintentar'}
    </Text>
   </View>
   <ScrollView horizontal style={s.strip} contentContainerStyle={s.items}
@@ -26,7 +46,7 @@ export default function NativeChatMediaQueuePreview({
    {selectedMedia.map(item=><View key={item.id} style={s.tile}
     accessibilityLabel={item.kind==='photo'?'Fotografía seleccionada':'Video seleccionado'}>
     {item.kind==='photo'?
-     <Image source={{uri:item.uri}} style={s.thumb} resizeMode="cover"/>:
+     <Image source={{uri:item.uri}} style={s.thumb} resizeMode="cover" resizeMethod="resize" fadeDuration={0}/>:
      <View style={[s.thumb,s.video]}><Text style={s.videoPlay}>▶</Text></View>}
     <Pressable accessibilityRole="button" disabled={mediaUploading}
      accessibilityLabel={'Quitar '+item.name} onPress={()=>onRemove(item)} style={s.close}>
@@ -40,6 +60,12 @@ export default function NativeChatMediaQueuePreview({
  </View>;
 }
 const s=StyleSheet.create({
+ pendingTile:{width:'100%',borderRadius:5,overflow:'hidden',backgroundColor:'#264636',alignItems:'center',justifyContent:'center'},
+ pendingPhoto:{width:'100%',height:'100%'},
+ pendingMark:{position:'absolute',right:5,bottom:5,paddingHorizontal:5,borderRadius:5,backgroundColor:'#153d31dd'},
+ pendingMarkText:{color:'#fff',fontSize:11},
+ pendingStatus:{flexDirection:'row',justifyContent:'space-between',alignItems:'center',paddingTop:4},
+ pendingCancel:{fontSize:11,color:'#87573d',fontWeight:'600'},
  root:{backgroundColor:'#f8f6f0',paddingHorizontal:12,paddingVertical:7,gap:6},
  heading:{flexDirection:'row',justifyContent:'space-between',alignItems:'center'},
  caption:{fontSize:10,color:'#736b61'},

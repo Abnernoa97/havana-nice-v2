@@ -124,6 +124,8 @@ export const styles = StyleSheet.create({
   actionText: {fontSize:11,color:'#8d8b81'},
   replyPreview: {flexDirection:'row',justifyContent:'space-between',paddingHorizontal:18,paddingVertical:8,borderTopWidth:1,borderColor:'#d9cebd'},
   replyPreviewText: {fontSize:12,color:'#565247',flex:1},
+  voiceStatus:{paddingHorizontal:18,paddingVertical:8,borderTopWidth:1,borderColor:'#d9cebd',gap:7},
+  voiceStatusActions:{flexDirection:'row',justifyContent:'flex-end',gap:18},
   typingIndicator: {paddingHorizontal:18,paddingTop:5,paddingBottom:5,backgroundColor:'#F3EDDF'},
   typingIndicatorText: {color:'#69675e',fontSize:12},
   replyCancel: {fontSize:12,color:'#8a5a3c',fontWeight:'700'},

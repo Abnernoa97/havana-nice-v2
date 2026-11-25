@@ -60,3 +60,28 @@ export async function cacheWholePhoto(media:Media,remoteUrl:string){
  finally{if(pendingPhotos.get(key)===work)pendingPhotos.delete(key);}
 }
 
+
+// Seed only a server-confirmed sender photo; preserve the selected original.
+export async function seedConfirmedNativePhoto(media:Media,uri:string):Promise<void>{
+ if(media.kind!=='photo'||media.sizeBytes<=0||media.sizeBytes>10*1024*1024)return;
+ const key=identifier(media.assetId)+':'+media.sizeBytes;
+ if(pendingPhotos.has(key))return;
+ const work=(async()=>{
+  const cached=photoPath(media);
+  if(cached.exists&&cached.size===media.sizeBytes)return cached.uri;
+  if(cached.exists)cached.delete();
+  const source=new File(uri);
+  if(!source.exists||source.size!==media.sizeBytes)throw Error('Original no disponible');
+  const temporary=new File(Paths.cache,'hn-v2-photo-transfer-'+identifier(media.assetId)+'-'+Date.now()+'.part');
+  try{
+   await source.copy(temporary);
+   if(!temporary.exists||temporary.size!==media.sizeBytes)throw Error('Copia incompleta');
+   await temporary.move(cached);
+   if(!cached.exists||cached.size!==media.sizeBytes)throw Error('Copia no verificada');
+   return cached.uri;
+  }finally{if(temporary.exists&&temporary.uri!==cached.uri)try{temporary.delete();}catch{}}
+ })();
+ pendingPhotos.set(key,work);
+ try{await work;}catch{/* Already committed on R2. */}
+ finally{if(pendingPhotos.get(key)===work)pendingPhotos.delete(key);}
+}

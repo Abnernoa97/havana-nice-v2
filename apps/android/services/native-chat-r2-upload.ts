@@ -1,8 +1,7 @@
 // HAVANA NICE V2 · same Chat/R2 protocol as the PWA, with native file streaming.
 // Direct files (including voice) use the native cancellable binary uploader.
 // Large videos use bounded 5 MiB parts; no encoded full-file copies.
-import {File,UploadType} from 'expo-file-system';
-import {fetch as expoFetch} from 'expo/fetch';
+import {File,Paths,UploadType} from 'expo-file-system';
 import {runNativeTransferStep,type NativePreparedMedia} from '../features/chat/native-media-transfer';
 import {transferNativeVoice,type VoiceStart} from '../features/chat/native-voice-transfer';
 import {publishNativeVideoPoster} from './native-chat-video-poster';
@@ -46,17 +45,22 @@ async function nativePut(file:File,url:string,token:string,mimeType:string,
   ensure(signal);onProgress?.(file.size);
  }finally{task.release();}
 }
+// Same binary transport for multipart, at most two 5 MiB chunks in flight.
+let partSerial=0;
 async function putPart(file:File,start:number,end:number,url:string,token:string,mimeType:string,signal:AbortSignal){
  ensure(signal);
- // expo/fetch supports Expo File.slice Blob bodies without loading the full file.
- const blob=file.slice(start,end,mimeType);
- const result=await expoFetch(url,{method:'PUT',signal,
-  headers:{Authorization:'Bearer '+token,'Content-Type':mimeType,'Content-Length':String(end-start)},
-  body:blob});
- if(!result.ok){
-  const body=await result.json().catch(()=>({error:'No se guardó el fragmento'}));
-  throw Error(body.error||'Error enviando fragmento ('+result.status+')');
- }
+ const temporary=new File(Paths.cache,'hn-v2-chat-upload-part-'+Date.now()+'-'+(++partSerial)+'.part');
+ try{
+  const handle=file.open();
+  let bytes:Uint8Array;
+  try{handle.offset=start;bytes=await handle.readBytes(end-start);}
+  finally{handle.close();}
+  ensure(signal);
+  if(bytes.length!==end-start)throw Error('Fragmento original incompleto.');
+  temporary.create();await temporary.write(bytes);ensure(signal);
+  if(temporary.size!==end-start)throw Error('Fragmento temporal incompleto.');
+  await nativePut(temporary,url,token,mimeType,undefined,signal);
+ }finally{try{if(temporary.exists)temporary.delete();}catch{}}
 }
 export async function uploadNativeChatFile(session:ChatSession,picked:NativeFile,
  onProgress:(sent:number,total:number)=>void,ownerSignal?:AbortSignal):Promise<{id:string;seq:number}>{
@@ -103,16 +107,16 @@ export async function prepareNativeChatFile(session:ChatSession,picked:NativeFil
  if(!started.ready){
   if(!started.multipart){
    let failure:unknown=null;
-   for(let attempt=0;attempt<4;attempt++){
+   for(let attempt=0;attempt<2;attempt++){
     if(attempt>0){
      ensure(ownerSignal);
      const state=await control<Start>('Verificar archivo',base);
      if(state.ready){failure=null;break;}
      await wait([450,1200,2500][attempt-1]??2500);
     }
-    try{await runNativeTransferStep('Subir archivo',90_000,signal=>nativePut(file,base+'/content',session.token,picked.mimeType,
+    try{await runNativeTransferStep('Subir archivo',60_000,signal=>nativePut(file,base+'/content',session.token,picked.mimeType,
      sent=>onProgress(sent,file.size),signal),ownerSignal);failure=null;break;}
-    catch(e){ensure(ownerSignal);failure=e;}
+    catch(e){ensure(ownerSignal);failure=e;if(e instanceof Error&&e.message.includes('tardó demasiado'))break;}
    }
    if(failure)throw failure;
   }else{
@@ -135,13 +139,13 @@ export async function prepareNativeChatFile(session:ChatSession,picked:NativeFil
        await runNativeTransferStep('Subir parte de video',90_000,signal=>putPart(file,from,to,base+'/parts/'+(index+1),session.token,picked.mimeType,signal),ownerSignal);
        progress[index]=to-from;report();break;
       }catch(e){
-       if(ownerSignal?.aborted||attempt===4){firstFailure=e;break;}
+       if(ownerSignal?.aborted||attempt===4||(e instanceof Error&&e.message.includes('tardó demasiado'))){firstFailure=e;break;}
        await wait([350,900,1800,3200][attempt]??3200);
       }
      }
     }
    };
-   await Promise.all(Array.from({length:Math.min(3,total)},()=>worker()));
+   await Promise.all(Array.from({length:Math.min(2,total)},()=>worker()));
    ensure(ownerSignal);if(firstFailure)throw firstFailure;
    await control('Finalizar video',base+'/complete','POST',{});
   }
