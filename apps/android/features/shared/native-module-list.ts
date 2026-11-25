@@ -50,3 +50,18 @@ export function createNativeModuleLists<C,R>(){
  const repertoire=new NativeModuleList<R>('No se pudo cargar Repertorio.');
  return {calendar,repertoire,invalidate:()=>{calendar.invalidate();repertoire.invalidate();}};
 }
+
+// Family metadata only. Owned by the authorized non-Chat shell; there is no
+// persistent file cache, and no second notification connection.
+export function createNativeFamilyLists<D,A>(){
+ const directory=new NativeModuleList<D>('No se pudo abrir Familia HAVANA NICE.');
+ const albums=new Map<string,NativeModuleList<A>>();
+ const empty=new NativeModuleList<A>('No se pudo cargar el álbum.');
+ return {directory,album:(actorId:string|null)=>{
+  if(actorId===null)return empty;
+  let list=albums.get(actorId);
+  if(!list){list=new NativeModuleList<A>('No se pudo cargar el álbum.');albums.set(actorId,list);}
+  return list;
+ },invalidate:()=>{directory.invalidate();for(const list of albums.values())list.invalidate();}};
+}
+export type NativeFamilyLists<D,A>=ReturnType<typeof createNativeFamilyLists<D,A>>;

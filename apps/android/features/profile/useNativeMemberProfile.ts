@@ -7,7 +7,7 @@ import {getMusicianDirectory,getTeamProfiles,MemberProfileApiError,
  type MemberProfile} from '@havana/shared';
 
 type Phase='checking'|'ready'|'missing'|'legacy'|'offline';
-export function useNativeMemberProfile(token:string,actorId:string,watchHome:boolean){
+export function useNativeMemberProfile(token:string,actorId:string,watchHome:boolean,onFamilySignal?:()=>void){
  const [profiles,setProfiles]=useState<MemberProfile[]>([]);
  const [phase,setPhase]=useState<Phase>('checking');
  const [error,setError]=useState('');
@@ -44,7 +44,7 @@ export function useNativeMemberProfile(token:string,actorId:string,watchHome:boo
   });
   return()=>{active.current=false;++request.current;subscription.remove();};
  },[refresh]);
- // One notification-only family socket while HOME is active, never a second Chat.
+ // One notification-only family socket for the non-Chat shell, shared with Familia.
  useEffect(()=>{
   if(!watchHome)return;
   let alive=true,socket:WebSocket|null=null;
@@ -60,7 +60,7 @@ export function useNativeMemberProfile(token:string,actorId:string,watchHome:boo
    try{
     const next=openFamilyRealtime(token,false,event=>{
      if(alive&&socket===next&&(event.type==='family.ready'||event.type==='family.invalidate')){
-      void refresh();setLiveVersion(n=>n+1);
+      onFamilySignal?.();void refresh();setLiveVersion(n=>n+1);
      }
     });
     socket=next;
@@ -73,7 +73,8 @@ export function useNativeMemberProfile(token:string,actorId:string,watchHome:boo
      }
     },FAMILY_WS_HANDSHAKE_TIMEOUT_MS);
     next.onopen=()=>{if(socket===next){if(watchdog)clearTimeout(watchdog);watchdog=null;delay=1000;}};
-    next.onclose=()=>{if(socket!==next)return;socket=null;clear();
+    next.onclose=event=>{if(socket!==next)return;socket=null;clear();
+     if(event.code===4003)onFamilySignal?.();
      if(alive&&AppState.currentState==='active'){
       retry=setTimeout(connect,delay);delay=Math.min(12000,delay*2);
      }
@@ -84,10 +85,10 @@ export function useNativeMemberProfile(token:string,actorId:string,watchHome:boo
   const stop=()=>{clear();const previous=socket;socket=null;if(previous)previous.close();};
   connect();
   const sub=AppState.addEventListener('change',state=>{
-   if(state==='active'){void refresh();connect();}else stop();
+   if(state==='active'){onFamilySignal?.();void refresh();connect();}else stop();
   });
   return()=>{alive=false;stop();sub.remove();};
- },[token,watchHome,refresh]);
+ },[token,watchHome,refresh,onFamilySignal]);
  const choosePhoto=useCallback(async()=>{
   if(saving)return;
   setError('');

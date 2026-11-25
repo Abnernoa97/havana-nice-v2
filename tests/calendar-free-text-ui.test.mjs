@@ -252,3 +252,28 @@ test('native shell owns both session lists without mounting inactive screens',()
  assert.match(home,/active==='calendar'\?<NativeCalendar[^>]*list=\{lists\.calendar\}/);
  assert.match(home,/active==='repertoire'\?<NativeRepertoire[^>]*list=\{lists\.repertoire\}/);
 });
+
+test('Family reuses one list per album and isolates it from other albums and shells',async()=>{
+ const {createNativeFamilyLists}=nativeListsExports;
+ const a=createNativeFamilyLists(),b=createNativeFamilyLists();
+ let calls=0;const first=a.album('a');
+ await first.load(async()=>{calls++;return ['photo'];});
+ await a.album('a').load(async()=>{calls++;return ['duplicate'];});
+ assert.equal(first,a.album('a'));assert.equal(calls,1);
+ assert.equal(a.album('b').getSnapshot().data,null);
+ assert.equal(b.album('a').getSnapshot().data,null);
+ a.invalidate();assert.equal(first.getSnapshot().data,null);
+});
+test('Family invalidation cancels all pending metadata results, including a non-abortable old album request',async()=>{
+ const {createNativeFamilyLists}=nativeListsExports;
+ const cache=createNativeFamilyLists();
+ await cache.directory.load(async()=>['cover']);
+ let resolve;
+ const album=cache.album('a');
+ const old=album.load(()=>new Promise(r=>{resolve=r;}));
+ await Promise.resolve();cache.invalidate();
+ assert.equal(cache.directory.getSnapshot().data,null);
+ await album.load(async()=>['new']);
+ resolve(['deleted']);await old;
+ assert.equal(album.getSnapshot().data[0],'new');
+});

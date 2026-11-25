@@ -28,7 +28,9 @@ test('Family stays private, modal video is only mounted on demand, BOOK unchange
  const f=read('apps/android/features/family/NativeFamily.tsx');
  const book=read('apps/android/features/book/NativeBook.tsx');
  const film=read('apps/android/features/shared/NativeMediaFilm.tsx');
- assert.match(f,/openFamilyRealtime\(token,false/);
+ assert.doesNotMatch(f,/openFamilyRealtime\(|new WebSocket\(/);
+ assert.match(read('apps/android/features/profile/useNativeMemberProfile.ts'),/openFamilyRealtime\(token,false/);
+ assert.match(f,/lists\.directory\.load\(\(\)=>getFamilyDirectory\(token\)\)/);
  assert.match(f,/getFamilyAlbumMedia\(token,actorId\)/);
  assert.match(f,/url\.pathname\.startsWith\('\/api\/family\/media\/'\)/);
  assert.match(f,/<NativeBook token=\{token\} refreshKey=\{bookTick\} embedded/);
@@ -40,4 +42,12 @@ test('Family stays private, modal video is only mounted on demand, BOOK unchange
  assert.doesNotMatch(book,/injectedJavaScriptObject=/);
  assert.doesNotMatch(book,/Linking\.|Alert\.alert/);
  assert.doesNotMatch(f,/new WebSocket\(|localStorage|AsyncStorage|\.put\(/);
+});
+
+test('Unavailable storage never shows an endless album spinner or private viewer',()=>{
+ const f=read('apps/android/features/family/NativeFamily.tsx');
+ assert.match(f,/const mediaLoading=mediaReady&&albumSnapshot\.loading/);
+ assert.match(f,/const items=mediaReady\?\(albumSnapshot\.data\?\?\[\]\):\[\]/);
+ assert.match(f,/const chosen=mediaReady&&focused!==null/);
+ assert.match(f,/if\(selected&&mediaReady\)/);
 });

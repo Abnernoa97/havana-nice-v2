@@ -33,26 +33,29 @@ test('Both PWA Family screens refresh albums and media on the one live signal',(
  assert.doesNotMatch(admin,/new WebSocket/);
 });
 
-test('Android Familia uses the same socket, with one AppState-aware connection and no polling',()=>{
+test('Android Familia shares the shell profile connection, with no second socket or polling',()=>{
  const native=read('apps/android/features/family/NativeFamily.tsx');
- assert.match(native,/openFamilyRealtime\(token,false,event=>/);
- assert.match(native,/event\.type==='family.ready'\|\|event\.type==='family.invalidate'/);
- assert.match(native,/AppState\.addEventListener\('change',state=>/);
- assert.match(native,/socket\?\.close\(\)/);
- assert.match(native,/if\(selectedRef\.current\)void loadAlbum\(selectedRef\.current,force\)/);
- assert.doesNotMatch(native,/setInterval|WebView|new WebSocket/);
- assert.match(native,/getFamilyDirectory\(token\)/);
+ const profile=read('apps/android/features/profile/useNativeMemberProfile.ts');
+ const home=read('apps/android/app/NativeMemberHome.tsx');
+ assert.match(profile,/openFamilyRealtime\(token,false,event=>/);
+ assert.match(profile,/event\.type==='family.ready'\|\|event\.type==='family.invalidate'/);
+ assert.match(profile,/AppState\.addEventListener\('change',state=>/);
+ assert.match(profile,/onFamilySignal\?\.\(\);void refresh\(\)/);
+ assert.match(home,/familyLists\.invalidate\(\);setFamilyRevision/);
+ assert.match(home,/lists=\{familyLists\} bookTick=\{familyRevision\}/);
+ assert.match(native,/lists\.directory\.load\(\(\)=>getFamilyDirectory\(token\)\)/);
+ assert.match(native,/albumList\.load\(async\(\)=>\(await getFamilyAlbumMedia\(token,actorId\)\)\.items\)/);
+ assert.doesNotMatch(native,/setInterval|WebView|new WebSocket|openFamilyRealtime\(/);
 });
-
 test('Family transport reconnects after an iPhone or Android handshake stalls',()=>{
  const shared=read('packages/shared/src/family-realtime.ts');
  const index=read('packages/shared/src/index.ts');
  assert.match(shared,/FAMILY_WS_HANDSHAKE_TIMEOUT_MS=9000/);
  assert.match(index,/openFamilyRealtime,FAMILY_WS_HANDSHAKE_TIMEOUT_MS/);
- for(const source of [read('apps/pwa/src/services/use-family-live.ts'),read('apps/android/features/family/NativeFamily.tsx')]){
+ for(const source of [read('apps/pwa/src/services/use-family-live.ts'),read('apps/android/features/profile/useNativeMemberProfile.ts')]){
   assert.match(source,/watchdog=setTimeout/);
   assert.match(source,/FAMILY_WS_HANDSHAKE_TIMEOUT_MS/);
-  assert.match(source,/opened.readyState===WebSocket.OPEN/);
+  assert.match(source,/(opened|next)\.readyState===WebSocket.OPEN/);
   assert.doesNotMatch(source,/setInterval/);
  }
 });

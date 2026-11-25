@@ -83,7 +83,7 @@ test('Only native HOME keeps the team story strip pinned, with Story API fallbac
  const shell=read('apps/android/app/NativeMemberHome.tsx');
  const strip=read('apps/android/features/stories/NativeStories.tsx');
  const profile=read('apps/android/features/profile/useNativeMemberProfile.ts');
- assert.match(shell,/useNativeMemberProfile\(token,actorId,true\)/);
+ assert.match(shell,/useNativeMemberProfile\(token,actorId,true,onFamilySignal\)/);
  assert.match(shell,/<View style=\{\[styles\.storiesFixed,!isHome&&styles\.hiddenStories\]\}/);
  assert.match(shell,/hiddenStories:\{display:'none'\}/);
  assert.match(shell,/const isHome=active==='home'/);

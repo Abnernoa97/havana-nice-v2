@@ -1,9 +1,10 @@
-import React,{useCallback,useEffect,useMemo,useRef,useState} from 'react';
-import {ActivityIndicator,AppState,BackHandler,FlatList,Image,Modal,PanResponder,Pressable,ScrollView,StyleSheet,Text,View,useWindowDimensions} from 'react-native';
+import React,{useEffect,useMemo,useRef,useState,useSyncExternalStore} from 'react';
+import {ActivityIndicator,BackHandler,FlatList,Image,Modal,PanResponder,Pressable,ScrollView,StyleSheet,Text,View,useWindowDimensions} from 'react-native';
 import NativeMediaFilm from '../shared/NativeMediaFilm';
 import {NativeAlbumGradient,NativeAlbumShade} from '../shared/NativeEmeraldMotion';
 import NativeBook from '../book/NativeBook';
-import {getFamilyDirectory,getFamilyAlbumMedia,familyAlbumCount,HAVANA_V2_DEV_API_BASE_URL,openFamilyRealtime,FAMILY_WS_HANDSHAKE_TIMEOUT_MS,
+import type {NativeFamilyLists} from '../shared/native-module-list';
+import {getFamilyDirectory,getFamilyAlbumMedia,familyAlbumCount,HAVANA_V2_DEV_API_BASE_URL,
  type FamilyAlbum,type FamilyDirectory,type FamilyMediaItem} from '@havana/shared';
 
 // Reuse the same short-lived private Family grants as PWA; no public R2 URL.
@@ -17,152 +18,57 @@ function privateUrl(value:string|null|undefined):string|null{
  }catch{return null;}
 }
 type ReadyMedia={id:string;kind:'photo'|'video';image:string|null;file:string};
-export default function NativeFamily({token,onBackHome}:{token:string;onBackHome?:()=>void}){
- const [directory,setDirectory]=useState<FamilyDirectory|null>(null);
+export default function NativeFamily({token,onBackHome,lists,bookTick}:{token:string;onBackHome?:()=>void;lists:NativeFamilyLists<FamilyDirectory,FamilyMediaItem[]>;bookTick:number}){
+ const snapshot=useSyncExternalStore(lists.directory.subscribe,lists.directory.getSnapshot);
+ const directory=snapshot.data;
+ const loading=snapshot.loading;
+ const [directorySeen,setDirectorySeen]=useState(()=>directory!==null);
  const [selected,setSelected]=useState<string|null>(null);
- const [bookTick,setBookTick]=useState(0);
- const [items,setItems]=useState<FamilyMediaItem[]>([]);
+ const albumList=useMemo(()=>lists.album(selected),[lists,selected]);
+ const albumSnapshot=useSyncExternalStore(albumList.subscribe,albumList.getSnapshot);
+ const error=snapshot.error||(selected?albumSnapshot.error:'');
  const [focused,setFocused]=useState<number|null>(null);
  const [filmChrome,setFilmChrome]=useState(true);
  useEffect(()=>{setFilmChrome(true);},[focused]);
- const [loading,setLoading]=useState(true);
- const [mediaLoading,setMediaLoading]=useState(false);
- const [error,setError]=useState('');
  const {width:screenWidth}=useWindowDimensions();
- const generation=useRef(0),mediaGeneration=useRef(0);
- // Temporary signed grants, reused in memory during this musician session.
- // Never write R2 media URLs or private files to persistent storage.
- const albumCache=useRef(new Map<string,{at:number;items:FamilyMediaItem[]}>());
- const selectedRef=useRef<string|null>(null);
- selectedRef.current=selected;
- const refresh=useCallback(async()=>{
-  const id=++generation.current;
-  try{
-   const data=await getFamilyDirectory(token);
-   if(id!==generation.current)return;
-   setDirectory(data);setError('');
-   // Start fetching the first visible album covers before the user taps.
-   for(const album of data.albums.slice(0,5)){
-    const cover=privateUrl(album.coverUrl);
-    if(cover)void Image.prefetch(cover).catch(()=>{});
-   }
-  }catch(e){if(id===generation.current)setError(e instanceof Error?e.message:'No se pudo abrir Familia HAVANA NICE.');}
-  finally{if(id===generation.current)setLoading(false);}
- },[token]);
- const loadAlbum=useCallback(async(actorId:string,force=false)=>{
-  const id=++mediaGeneration.current;
-  const cached=albumCache.current.get(actorId);
-  if(!force&&cached&&Date.now()-cached.at<4*60_000){
-   setItems(cached.items);setMediaLoading(false);return;
-  }
-  // Keep the previous media visible on a realtime refresh.
-  if(!cached)setMediaLoading(true);
-  try{
-   const data=await getFamilyAlbumMedia(token,actorId);
-   if(id!==mediaGeneration.current)return;
-   albumCache.current.set(actorId,{items:data.items,at:Date.now()});
-   setItems(data.items);setError('');
-   // Photo JPEGs and video posters only; never prefetch video originals.
-   for(const item of data.items.slice(0,8)){
-    const thumbnail=privateUrl(item.thumbnailUrl);
-    if(thumbnail)void Image.prefetch(thumbnail).catch(()=>{});
-   }
-  }catch(e){
-   if(id===mediaGeneration.current)setError(e instanceof Error?e.message:'No se pudo cargar el álbum.');
-  }finally{if(id===mediaGeneration.current)setMediaLoading(false);}
- },[token]);
+ const active=directory?.albums.find(a=>a.actorId===selected);
+ const mediaReady=active?.mediaReady===true;
+ const mediaLoading=mediaReady&&albumSnapshot.loading;
+ const items=mediaReady?(albumSnapshot.data??[]):[];
+ // The already existing profile connection supplies bookTick on ready,
+ // reconnect, foreground and invalidation. No extra Family socket.
  useEffect(()=>{
-  // One Familia notification-only WebSocket while this module is mounted.
-  // Chat and Calendar retain their own existing controllers and backend.
-  let active=true,socket:WebSocket|null=null;
-  let timer:ReturnType<typeof setTimeout>|null=null;
-  let watchdog:ReturnType<typeof setTimeout>|null=null;
-  let retryDelay=1000;
-  const clear=()=>{
-   if(timer!==null){clearTimeout(timer);timer=null;}
-   if(watchdog!==null){clearTimeout(watchdog);watchdog=null;}
-  };
-  const synchronize=(force=false)=>{
-   setBookTick(value=>value+1);
-   void refresh();
-   if(force)albumCache.current.clear();
-   if(selectedRef.current)void loadAlbum(selectedRef.current,force);
-  };
-  const connect=()=>{
-   if(!active||AppState.currentState==='background'||AppState.currentState==='inactive')return;
-   if(socket&&(socket.readyState===WebSocket.OPEN||socket.readyState===WebSocket.CONNECTING))return;
-   clear();
-   try{
-    const opened=openFamilyRealtime(token,false,event=>{
-     if(!active||socket!==opened)return;
-     if(event.type==='family.ready'||event.type==='family.invalidate')
-      synchronize(event.type==='family.invalidate');
-    });
-    socket=opened;
-    watchdog=setTimeout(()=>{
-     if(!active||socket!==opened||opened.readyState===WebSocket.OPEN)return;
-     socket=null;try{opened.close();}catch{}
-     clear();
-     if(AppState.currentState==='active'){
-      timer=setTimeout(connect,retryDelay);
-      retryDelay=Math.min(20000,retryDelay*2);
-     }
-    },FAMILY_WS_HANDSHAKE_TIMEOUT_MS);
-    opened.onopen=()=>{
-     if(active&&socket===opened){
-      if(watchdog!==null){clearTimeout(watchdog);watchdog=null;}
-      retryDelay=1000;
-     }
-    };
-    opened.onclose=event=>{
-     if(!active||socket!==opened)return;
-     socket=null;
-     if(watchdog!==null){clearTimeout(watchdog);watchdog=null;}
-     if(event.code===4003)return;
-     if(AppState.currentState==='active'){
-      clear();timer=setTimeout(connect,retryDelay);
-      retryDelay=Math.min(20000,retryDelay*2);
-     }
-    };
-    opened.onerror=()=>{if(active&&socket===opened)opened.close();};
-   }catch{
-    clear();timer=setTimeout(connect,retryDelay);
-    retryDelay=Math.min(20000,retryDelay*2);
+  void lists.directory.load(()=>getFamilyDirectory(token));
+ },[lists,token,bookTick]);
+ useEffect(()=>{
+  if(directory){
+   setDirectorySeen(true);
+   if(selected&&!directory.albums.some(a=>a.actorId===selected)){
+    setSelected(null);setFocused(null);
    }
-  };
-  albumCache.current.clear();
-  setSelected(null);setDirectory(null);setItems([]);setLoading(true);
-  synchronize();
-  connect();
-  const sub=AppState.addEventListener('change',state=>{
-   if(state==='active'){synchronize();connect();}
-   else{
-    clear();
-    const old=socket;socket=null;
-    if(old&&old.readyState!==WebSocket.CLOSED)old.close();
-   }
-  });
-  return()=>{
-   active=false;clear();++generation.current;++mediaGeneration.current;
-   sub.remove();socket?.close();
-  };
- },[token,refresh,loadAlbum]);
+  }
+ },[directory,selected]);
+ useEffect(()=>{
+  if(selected&&mediaReady){
+   const actorId=selected;
+   void albumList.load(async()=>(await getFamilyAlbumMedia(token,actorId)).items);
+  }
+ },[albumList,token,selected,mediaReady,bookTick]);
+ // Never continue showing a private file after the server invalidates its list.
+ useEffect(()=>{setFocused(null);},[bookTick]);
+ // The actual visible Image components own the cover/thumbnail downloads.
+ // Do not enqueue the same images a second time with Image.prefetch.
  const open=(album:FamilyAlbum)=>{
   setSelected(album.actorId);setFocused(null);
-  const cached=albumCache.current.get(album.actorId);
-  if(cached&&Date.now()-cached.at<4*60_000)setItems(cached.items);
-  else setItems([]);
-  if(album.mediaReady)void loadAlbum(album.actorId);
  };
- const back=()=>{++mediaGeneration.current;setSelected(null);setFocused(null);};
- const active=directory?.albums.find(a=>a.actorId===selected);
+ const back=()=>{setSelected(null);setFocused(null);};
  const cover=privateUrl(active?.coverUrl);
  const ready=useMemo<ReadyMedia[]>(()=>items.flatMap(item=>{
   const url=privateUrl(item.fileUrl);
   return url?[{id:item.id,kind:item.kind,
    image:privateUrl(item.thumbnailUrl)|| (item.kind==='photo'?url:null),file:url}]:[];
  }),[items]);
- const chosen=focused!==null?ready[focused]:null;
+ const chosen=mediaReady&&focused!==null?(ready[focused]??null):null;
  const change=(step:number)=>setFocused(current=>current===null||!ready.length?null:
   (current+step+ready.length)%ready.length);
  const actions=useRef({back:()=>{},home:()=>{},change:(step:number)=>{},close:()=>{},
@@ -198,7 +104,7 @@ export default function NativeFamily({token,onBackHome}:{token:string;onBackHome
  },[focused,selected]);
  return <View style={styles.root} {...albumBack.panHandlers}>
   {!!error&&<Text accessibilityRole="alert" style={styles.error}>{error}</Text>}
-  {loading?<ActivityIndicator color="#917252"/>:active?
+  {(loading&&!directorySeen||selected&&!active&&loading)?<ActivityIndicator color="#917252"/>:active?
    <FlatList
     style={styles.albumList}
     contentContainerStyle={styles.albumListContent}
@@ -239,6 +145,7 @@ export default function NativeFamily({token,onBackHome}:{token:string;onBackHome
     </Pressable>}
    />:
    <ScrollView style={styles.albumList} contentContainerStyle={styles.directoryContent}>
+    {loading&&<ActivityIndicator color="#917252"/>}
     <View style={styles.albums}>{directory?.albums.map(album=>{
      const image=privateUrl(album.coverUrl);
      return <Pressable key={album.actorId} accessibilityRole="button" style={styles.album}

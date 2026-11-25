@@ -1,4 +1,4 @@
-import React,{useState} from 'react';
+import React,{useCallback,useEffect,useMemo,useState} from 'react';
 import {ActivityIndicator,Image,Modal,Platform,Pressable,ScrollView,StatusBar,StyleSheet,Text,View} from 'react-native';
 import {MEMBER_MODULES,type MemberScreen} from '@havana/shared';
 import {NativeHeaderLight} from '../features/shared/NativeEmeraldMotion';
@@ -9,8 +9,8 @@ import NativeFamily from '../features/family/NativeFamily';
 import {useNativeMemberProfile} from '../features/profile/useNativeMemberProfile';
 import NativeStories from '../features/stories/NativeStories';
 import NativeNotices from '../features/notices/NativeNotices';
-import type {CalendarEvent,RepertoireSong} from '@havana/shared';
-import type {NativeModuleList} from '../features/shared/native-module-list';
+import type {CalendarEvent,RepertoireSong,FamilyDirectory,FamilyMediaItem} from '@havana/shared';
+import {createNativeFamilyLists,type NativeModuleList} from '../features/shared/native-module-list';
 import type {NativePushControl} from '../features/notices/useNativePush';
 import {useNativeUnreadNotices} from '../features/notices/useNativeUnreadNotices';
 import NativeAudioEditorialView from '../features/audio/NativeAudioEditorialView';
@@ -21,7 +21,13 @@ type Props={displayName:string;actorId:string;token:string;push:NativePushContro
 // Tiny embedded alpha gradient keeps the pinned Stories edge soft without a network asset.
 const STORIES_FADE='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAAwCAYAAADQMxCBAAAAOUlEQVR42n2JyQ0AIAzDrO4/MC1H+IEqUT6WnSBJBjQD/OCfbkB8t6gyDOhV9keOfIxsFzPbxTrQBqWZMlwxZHeoAAAAAElFTkSuQmCC';
 function NativeMemberHome({displayName,actorId,token,active,calendarRevision=0,lists,onNavigate,push}:Props){
- const profile=useNativeMemberProfile(token,actorId,true);
+ const familyLists=useMemo(()=>createNativeFamilyLists<FamilyDirectory,FamilyMediaItem[]>(),[token]);
+ const [familyRevision,setFamilyRevision]=useState(0);
+ const onFamilySignal=useCallback(()=>{
+  familyLists.invalidate();setFamilyRevision(n=>n+1);
+ },[familyLists]);
+ useEffect(()=>()=>familyLists.invalidate(),[familyLists]);
+ const profile=useNativeMemberProfile(token,actorId,true,onFamilySignal);
  const unreadNotices=useNativeUnreadNotices(token,profile.liveVersion+calendarRevision);
  const [profileOpen,setProfileOpen]=useState(false);
  const isHome=active==='home';
@@ -63,7 +69,7 @@ function NativeMemberHome({displayName,actorId,token,active,calendarRevision=0,l
    {active==='calendar'?<NativeCalendar token={token} calendarRevision={calendarRevision} list={lists.calendar}/>:
     active==='repertoire'?<NativeRepertoire token={token} calendarRevision={calendarRevision} list={lists.repertoire}/>:
     active==='musicians'?<NativeMusicians token={token}/>:
-    active==='family'?<NativeFamily token={token} onBackHome={()=>onNavigate('home')}/>:
+    active==='family'?<NativeFamily token={token} onBackHome={()=>onNavigate('home')} lists={familyLists} bookTick={familyRevision}/>:
     active==='notices'?<NativeNotices token={token} calendarRevision={calendarRevision} push={push}/>:
     active==='audio'?null:<View style={styles.pending}>
      <Text style={styles.pendingTitle}>Módulo en preparación</Text>
