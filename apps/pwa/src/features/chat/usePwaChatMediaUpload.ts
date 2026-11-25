@@ -61,6 +61,7 @@ export function usePwaChatMediaUpload({
       const {uploadChatFile}=await import('../../services/chat-media-upload');
       const {createChatPhotoThumbnail}=await import('./chat-photo-preview');
       const {storeChatPhotoPreview}=await import('./chat-photo-thumbnail-cache');
+      const {makeChatVideoPoster}=await import('./chat-video-poster');
       await uploadChatMediaBatch([...mediaQueue.current],{
         sizeOf:item=>item.file.size,
         upload:(item,onSent)=>{
@@ -72,7 +73,7 @@ export function usePwaChatMediaUpload({
             ).catch(()=>{});
           }
           return uploadChatFile(session,item.file,item.selection.kind,onSent,item.id,
-            ()=>item.videoPoster?.blob??null).then(result=>{
+            ()=>item.selection.kind==='video'?(item.videoPoster?.blob??makeChatVideoPoster(item.file)):null).then(result=>{
              // The sender sees the cover instantly from private cache.
              // The remote JPEG is optional and may roll out separately.
              if(item.videoPoster?.blob)

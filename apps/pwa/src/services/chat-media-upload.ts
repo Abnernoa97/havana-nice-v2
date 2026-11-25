@@ -35,7 +35,7 @@ function putBlob(token:string,url:string,blob:Blob,onProgress:(value:number)=>vo
 export async function uploadChatFile(
  session:ChatSession,file:File,kind:'photo'|'video'|'audio',
  onProgress:(loaded:number,total:number)=>void,stableId?:string,
- getPoster?:()=>Blob|null,
+ getPoster?:()=>Blob|null|Promise<Blob|null>,
 ):Promise<{id:string;seq:number;posterUploaded:boolean}>{
  // Idempotent across iOS camera restarts: the queued item owns its R2 ID.
  // WeakMap remains a safe fallback for older direct-upload callers.
@@ -101,13 +101,13 @@ export async function uploadChatFile(
  // Best effort JPEG alongside original MOV. Never prevent message confirmation.
  let posterUploaded=false;
  if(kind==='video'){
-   const poster=getPoster?.();
-   if(poster?.type==='image/jpeg'&&poster.size<=256*1024){
-     try{
+   try{
+     const poster=await getPoster?.();
+     if(poster?.type==='image/jpeg'&&poster.size>0&&poster.size<=256*1024){
        await putBlob(session.token,base+id+'/poster',poster,()=>{},2400);
        posterUploaded=true;
-     }catch{/* Keep the video and existing play-button fallback. */}
-   }
+     }
+   }catch{/* Keep the video and existing play-button fallback. */}
  }
  const sent=await json(base+id+'/send',session.token,'POST',{}) as {seq?:number};
  if(!Number.isSafeInteger(sent.seq)||!sent.seq)throw new Error('No se confirmó el mensaje.');

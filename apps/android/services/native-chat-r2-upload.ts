@@ -4,6 +4,7 @@
 import {File,UploadType} from 'expo-file-system';
 import {fetch as expoFetch} from 'expo/fetch';
 import {transferNativeVoice,type VoiceStart} from '../features/chat/native-voice-transfer';
+import {publishNativeVideoPoster} from './native-chat-video-poster';
 import {HAVANA_V2_DEV_API_BASE_URL as API,type ChatSession,type ChatMediaSelection} from '@havana/shared';
 
 type NativeFile=(ChatMediaSelection|{kind:'audio';source:'camera';name:string;mimeType:string;sizeBytes:number;uri:string})&{id:string};
@@ -128,6 +129,8 @@ export async function uploadNativeChatFile(session:ChatSession,picked:NativeFile
   }
  }
  onProgress(file.size,file.size);
+ // The original is confirmed first; a JPEG failure never prevents sending it.
+ if(picked.kind==='video')await publishNativeVideoPoster(session.token,id,picked.uri);
  const message=await request<{seq:number}>(base+'/send',session.token,'POST',{});
  if(!Number.isSafeInteger(message.seq)||message.seq<=0)
   throw Error('No se pudo confirmar el mensaje enviado.');

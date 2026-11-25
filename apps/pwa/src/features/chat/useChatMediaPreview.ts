@@ -11,6 +11,8 @@ export function useChatMediaPreview(media:ChatMedia,token:string){
  const surface=useRef<HTMLDivElement|null>(null);
  const [photoRequested,setPhotoRequested]=useState(false);
  const [poster,setPoster]=useState('');
+ const [posterMissing,setPosterMissing]=useState(false);
+ const [posterRevision,setPosterRevision]=useState(0);
  const [preview,setPreview]=useState('');
  const [error,setError]=useState('');
 
@@ -71,7 +73,7 @@ export function useChatMediaPreview(media:ChatMedia,token:string){
    let alive=true;
    let coverUrl='';
    const abort=new AbortController();
-   setPoster('');
+   setPoster('');setPosterMissing(false);
    void (async()=>{
      const immediate=peekChatPhotoPreview(token,media);
      let jpeg=immediate??await loadChatPhotoPreview(token,media);
@@ -80,7 +82,7 @@ export function useChatMediaPreview(media:ChatMedia,token:string){
        const grant=await requestChatMediaUrl(media.assetId,token,abort.signal);
        const response=await fetch(chatVideoPosterUrl(grant),{
          signal:abort.signal,cache:'no-store'});
-       if(!response.ok)return; // Old video or missing JPEG: keep the play tile.
+       if(!response.ok){if(alive&&response.status===404)setPosterMissing(true);return;}
        jpeg=await response.blob();
        if(!alive||abort.signal.aborted||jpeg.type!=='image/jpeg'||
          jpeg.size===0||jpeg.size>256*1024)return;
@@ -93,7 +95,7 @@ export function useChatMediaPreview(media:ChatMedia,token:string){
      alive=false;abort.abort();
      if(coverUrl)URL.revokeObjectURL(coverUrl);
    };
- },[photoRequested,media.assetId,media.sizeBytes,media.kind,token]);
+ },[photoRequested,media.assetId,media.sizeBytes,media.kind,token,posterRevision]);
 
- return {surface,preview,poster,error};
+ return {surface,preview,poster,error,posterMissing,reloadPoster:()=>setPosterRevision(n=>n+1)};
 }

@@ -97,7 +97,7 @@ function NativeChatTimeline({
    </Text>:null}
    {!message.media?<Text style={[styles.bubbleText,mine&&styles.mineText,online&&styles.onlineText]}>
     {message.text}</Text>:null}
-   {message.media?<NativeChatMediaView media={message.media} session={session} compact={compact}
+   {message.media?<NativeChatMediaView media={message.media} session={session} compact={compact} canRepair={mine}
     onOpen={id=>{
      const selection=selectChatGalleryMedia(messages,{
       clientMessageId:message.clientMessageId,senderId:message.senderId,assetId:id,

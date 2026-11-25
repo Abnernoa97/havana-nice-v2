@@ -257,7 +257,7 @@ function ChatTimeline({
                   ↪ {display.replySnippets.get(message.replyToSeq)||'Mensaje anterior'}
                  </div>}
                  {!message.media&&<div>{message.text}</div>}
-                 {message.media&&<ChatMediaView media={message.media} token={token} compact={tiled}
+                 {message.media&&<ChatMediaView media={message.media} token={token} compact={tiled} canRepair={owned}
                   onOpen={id=>{
                    const selection=selectChatGalleryMedia(messages,{
                     clientMessageId:message.clientMessageId,senderId:message.senderId,assetId:id,

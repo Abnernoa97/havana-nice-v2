@@ -296,3 +296,6 @@ button.hn-chat-delivery,button.hn-chat-group-delivery{cursor:pointer;font-family
 
 /* Clear delete action inside the compact voice recorder. */
 .hn-chat-voice-actions button:first-of-type{color:#a23936}
+
+.hn-chat-media:has(.hn-chat-repair-poster){position:relative}
+.hn-chat-repair-poster{position:absolute;bottom:5px;right:5px;z-index:3;border:0;border-radius:9px;background:#0a1d17dd;color:white;padding:5px 8px;font-size:10px;cursor:pointer}

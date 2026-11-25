@@ -284,7 +284,9 @@ test('video JPEG posters use one isolated decoder, same private R2 grant and scr
  const css=read('apps/pwa/src/styles/chat/chat.css');
  assert.match(maker,/VIDEO_POSTER_MAX_EDGE=640/);
  assert.match(maker,/VIDEO_POSTER_MAX_BYTES=256\*1024/);
- assert.match(maker,/setTimeout\(\(\)=>finish\(null\),2400\)/);
+ assert.match(maker,/extractPoster\(url,false,2400,signal\)/);
+ assert.match(maker,/setTimeout\(\(\)=>finish\(null\),timeoutMs\)/);
+ assert.match(maker,/decoderTail=task.catch/);
  assert.match(maker,/URL\.revokeObjectURL\(url\)/);
  assert.match(pick,/posterChain\.current=posterChain\.current\.catch/);
  assert.match(pick,/prepareVideoPoster\(item,actorId\)/);
