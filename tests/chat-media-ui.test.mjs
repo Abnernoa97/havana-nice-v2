@@ -229,6 +229,7 @@ test('Native photos and videos run in separate modules with preserved quality',(
   const media=read('apps/android/features/chat/NativeChatMediaView.tsx');
   const photo=read('apps/android/features/chat/NativeChatPhoto.tsx');
   const video=read('apps/android/features/chat/NativeChatVideo.tsx');
+  const film=read('apps/android/features/chat/NativeChatGallery.tsx');
   const grant=read('apps/android/features/chat/native-chat-media-grant.ts');
   const cache=read('apps/android/storage/chatPhotoCache.ts');
   const packageManifest=JSON.parse(read('apps/android/package.json'));
@@ -239,11 +240,13 @@ test('Native photos and videos run in separate modules with preserved quality',(
   assert.match(photo,/setPhoto\(uri\)/);
   assert.match(photo,/<Modal visible=\{!onOpen&&enlarged&&!!photo\}/);
   assert.match(photo,/cacheWholePhoto\(media,signed\)/);
-  assert.match(video,/useVideoPlayer/);
-  assert.match(video,/<VideoView player=\{player\} nativeControls/);
-  assert.match(video,/surfaceType="surfaceView"/);
-  assert.doesNotMatch(video,/surfaceType="textureView"/);
-   assert.match(video,/player\.addListener\('statusChange'/);
+  assert.match(film,/useVideoPlayer/);
+  assert.match(film,/<VideoView player=\{player\} nativeControls/);
+  assert.match(film,/surfaceType="surfaceView"/);
+  assert.doesNotMatch(film,/surfaceType="textureView"/);
+  assert.match(video,/<NativeChatFilm key=\{signed\} url=\{signed\}/);
+  assert.doesNotMatch(video,/useVideoPlayer/);
+   assert.match(film,/player\.addListener\('statusChange'/);
    assert.match(video,/onPress=\{\(\)=>setAttempt/);
   assert.match(grant,/Authorization:'Bearer '\+token/);
   assert.match(cache,/File\.downloadFileAsync/);

@@ -11,11 +11,14 @@ const time=(n:number)=>{
  if(!Number.isFinite(n)||n<0)return '0:00';
  const s=Math.floor(n);return Math.floor(s/60)+':'+String(s%60).padStart(2,'0');
 };
-function Film({url}:{url:string}){
+export function NativeChatFilm({url}:{url:string}){
  const {width,height}=useWindowDimensions();
  const player=useVideoPlayer({uri:url},p=>{p.loop=false;p.timeUpdateEventInterval=.2;});
  const [playing,setPlaying]=useState(false),[at,setAt]=useState(0),[duration,setDuration]=useState(0);
  const [bar,setBar]=useState(0);
+ const [controlsVisible,setControlsVisible]=useState(true);
+ const tapStart=useRef<{x:number;y:number}|null>(null);
+ const tapMoved=useRef(false);
  const [ready,setReady]=useState(false),[error,setError]=useState(false),[posterOk,setPosterOk]=useState(true);
  useEffect(()=>{
   const a=player.addListener('playingChange',e=>setPlaying(e.isPlaying));
@@ -25,7 +28,8 @@ function Film({url}:{url:string}){
    if(event.status==='readyToPlay'){setReady(true);setDuration(player.duration);}
    if(event.status==='error'){setError(true);setReady(false);}
   });
-  return()=>{player.pause();a.remove();b.remove();c.remove();d.remove();};
+  const e=player.addListener('playToEnd',()=>{setPlaying(false);setControlsVisible(true);});
+  return()=>{player.pause();a.remove();b.remove();c.remove();d.remove();e.remove();};
  },[player]);
  const poster=(()=>{
   try{
@@ -42,15 +46,25 @@ function Film({url}:{url:string}){
    style={{position:'absolute',width,height:Math.max(220,height-90)}}/>}
   {!ready&&!error&&<ActivityIndicator color="#fff" style={s.loading}/>}
   {error&&<Text style={s.videoError}>No se pudo reproducir este video.</Text>}
-  {!error&&<Pressable accessibilityRole="button" accessibilityLabel={playing?'Pausar':'Reproducir'}
-   style={s.play} onPress={()=>{if(playing)player.pause();else player.play();}}>
+  {!error&&<Pressable accessibilityRole="button"
+   accessibilityLabel={controlsVisible?'Ocultar controles del video':'Mostrar controles del video'}
+   style={s.videoTap}
+   onTouchStart={e=>{tapStart.current={x:e.nativeEvent.pageX,y:e.nativeEvent.pageY};tapMoved.current=false;}}
+   onTouchMove={e=>{const start=tapStart.current;if(start&&Math.hypot(e.nativeEvent.pageX-start.x,e.nativeEvent.pageY-start.y)>12)tapMoved.current=true;}}
+   onPress={()=>{if(!tapMoved.current)setControlsVisible(v=>!v);}}/>}
+  {!error&&controlsVisible&&<Pressable accessibilityRole="button" accessibilityLabel={playing?'Pausar':'Reproducir'}
+   style={s.play} onPress={()=>{
+    if(playing){player.pause();setControlsVisible(true);}
+    else{if(player.duration>0&&player.currentTime>=player.duration-.1)player.currentTime=0;
+     player.play();setControlsVisible(false);}
+   }}>
    <Text style={s.playText}>{playing?'Ⅱ':'▶'}</Text>
   </Pressable>}
-  {ready&&<View style={s.transport}>
+  {ready&&!error&&controlsVisible&&<View style={s.transport}>
    <Text style={s.time}>{time(at)}</Text>
    <Pressable accessibilityRole="adjustable" accessibilityLabel="Tiempo de video"
     style={s.bar} onLayout={e=>setBar(e.nativeEvent.layout.width)}
-    onPress={e=>{if(duration>0&&bar>0)player.currentTime=duration*e.nativeEvent.locationX/bar;}}>
+    onPress={e=>{if(duration>0&&bar>0)player.currentTime=Math.max(0,Math.min(duration,duration*e.nativeEvent.locationX/bar));}}>
     <View style={s.track}>
      <View style={[s.fill,{width:(Math.min(100,at/Math.max(duration,1)*100)+'%') as `${number}%`}]}/>
     </View>
@@ -82,7 +96,7 @@ function Frame({media,session,warmUrl}:{media:Media;session:ChatSession;warmUrl?
  if(!url)return <ActivityIndicator size="large" color="#fff"/>;
  if(media.kind==='photo')return <Image source={{uri:url}} resizeMode="contain" fadeDuration={0}
   style={{width,height:Math.max(200,height-100)}}/>;
- return <Film url={url}/>;
+ return <NativeChatFilm url={url}/>;
 }
 export default function NativeChatGallery({items,initial,session,onClose}:{
  items:Media[];initial:number;session:ChatSession;onClose:()=>void;
@@ -134,16 +148,17 @@ const s=StyleSheet.create({
  close:{position:'absolute',top:46,left:13,width:44,height:44,borderRadius:22,
   backgroundColor:'#17382dcb',alignItems:'center',justifyContent:'center',zIndex:5},
  x:{color:'#fff',fontSize:28},
- counter:{position:'absolute',top:60,left:78,color:'#fffc',fontSize:12},
+ counter:{position:'absolute',zIndex:5,top:60,left:78,color:'#fffc',fontSize:12},
  status:{color:'#fff',fontSize:14},
  loading:{position:'absolute',top:'41%',alignSelf:'center'},
  videoError:{position:'absolute',top:'47%',textAlign:'center',color:'#fff',fontSize:13},
- film:{flex:1,alignItems:'center',justifyContent:'center'},
- play:{position:'absolute',top:'44%',width:68,height:68,borderRadius:34,
+ film:{flex:1,width:'100%',alignItems:'center',justifyContent:'center'},
+ videoTap:{...StyleSheet.absoluteFillObject,zIndex:1},
+ play:{position:'absolute',zIndex:2,top:'44%',width:68,height:68,borderRadius:34,
   backgroundColor:'#193c30c9',alignItems:'center',justifyContent:'center',
   borderWidth:1,borderColor:'#ffffff80'},
  playText:{fontSize:30,color:'#fff'},
- transport:{position:'absolute',left:12,right:12,bottom:35,flexDirection:'row',
+ transport:{position:'absolute',zIndex:2,left:12,right:12,bottom:35,flexDirection:'row',
   backgroundColor:'#15251fe3',alignItems:'center',gap:10,borderRadius:23,padding:11},
  time:{color:'#fff',fontSize:11},
  bar:{flex:1,height:30,justifyContent:'center'},

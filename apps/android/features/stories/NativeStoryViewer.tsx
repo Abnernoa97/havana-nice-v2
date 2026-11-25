@@ -9,6 +9,7 @@ type Props={stories:readonly MemberStory[];actorId:string;token:string;version:n
  onClose:()=>void;onDelete:(id:string)=>Promise<boolean>;onPhotoError:(id:string)=>void;
  onViewed:(id:string)=>void};
 
+const TOP_FADE='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAAgCAYAAADT5RIaAAAAM0lEQVR42nXHuQ0AIRAAMbP03wgVHp9EdAEIkpEHSuAL1F3PtJdaoF/2yNg1AjMjZSR/LFOjG0r8XgtZAAAAAElFTkSuQmCC';
 // Entirely native: ONE stable bitmap, animated progress + floating social controls.
 export default function NativeStoryViewer({stories,actorId,token,version,
  onClose,onDelete,onPhotoError,onViewed}:Props){
@@ -78,7 +79,7 @@ export default function NativeStoryViewer({stories,actorId,token,version,
    {!!current&&<View style={s.frame}>
     <NativeStoryPhoto key={current.id} uri={current.photoUrl} onError={photoFailed}
      onReady={photoReady}/>
-    <View pointerEvents="none" style={s.topShade}/>
+    <Image pointerEvents="none" source={{uri:TOP_FADE}} resizeMode="stretch" style={s.topShade}/>
     <View style={s.progressRow} accessibilityLabel={'Estado '+(position+1)+' de '+stories.length}>
      {stories.map((story,i)=><Pressable key={story.id} accessibilityRole="button"
       accessibilityLabel={'Ver foto '+(i+1)+' de '+stories.length}
@@ -124,17 +125,17 @@ export default function NativeStoryViewer({stories,actorId,token,version,
 }
 const s=StyleSheet.create({
  screen:{flex:1,backgroundColor:'#080f0a',
-  paddingTop:Platform.OS==='android'?(StatusBar.currentHeight||24)+6:0,
+  paddingTop:Platform.OS==='android'?(StatusBar.currentHeight||24)+2:0,
   paddingBottom:Platform.OS==='android'?48:0},
  frame:{flex:1,position:'relative',overflow:'hidden',backgroundColor:'#0b100d'},
- topShade:{position:'absolute',top:0,left:0,right:0,height:115,
-  backgroundColor:'rgba(0,0,0,.65)',zIndex:5},
- progressRow:{position:'absolute',left:12,right:12,top:2,height:23,
+ topShade:{position:'absolute',top:0,left:0,right:0,width:'100%',height:78,zIndex:5},
+ progressRow:{position:'absolute',left:13,right:13,top:0,height:16,
   flexDirection:'row',gap:4,zIndex:12},
- progressTouch:{flex:1,height:23,justifyContent:'center'},
- progressTrack:{flex:1,height:4,borderRadius:3,backgroundColor:'#ffffff66',overflow:'hidden'},
- complete:{width:'100%',height:4,backgroundColor:'#fff',borderRadius:3},
- toolbar:{position:'absolute',top:23,left:16,right:13,zIndex:11,
+ progressTouch:{flex:1,height:16,justifyContent:'center'},
+ // Fixed visual height: the accessible tap area must never stretch the track.
+ progressTrack:{width:'100%',height:3,borderRadius:2,backgroundColor:'#ffffff55',overflow:'hidden'},
+ complete:{width:'100%',height:3,backgroundColor:'#fff',borderRadius:2},
+ toolbar:{position:'absolute',top:17,left:16,right:13,zIndex:11,
   flexDirection:'row',alignItems:'center',justifyContent:'space-between'},
  name:{fontWeight:'800',fontSize:16,color:'#fff'},
  info:{fontSize:11,color:'#ddd',marginTop:3},

@@ -78,13 +78,16 @@ test('Native image compression, strict version and incremental signing gate',()=
  assert.match(workflow,/HAVANA-NICE-V2-LATEST.apk/);
 });
 
-test('Every native musician section keeps the team story strip pinned, with Story API fallback',()=>{
+test('Only native HOME keeps the team story strip pinned, with Story API fallback',()=>{
  const shell=read('apps/android/app/NativeMemberHome.tsx');
  const strip=read('apps/android/features/stories/NativeStories.tsx');
  const profile=read('apps/android/features/profile/useNativeMemberProfile.ts');
  assert.match(shell,/useNativeMemberProfile\(token,actorId,true\)/);
- assert.match(shell,/<View style=\{styles\.storiesFixed\}>/);
- assert.doesNotMatch(shell,/active==='home'&&<View style=\{styles\.storiesFixed\}>/);
+ assert.match(shell,/<View style=\{\[styles\.storiesFixed,!isHome&&styles\.hiddenStories\]\}/);
+ assert.match(shell,/hiddenStories:\{display:'none'\}/);
+ assert.match(shell,/const isHome=active==='home'/);
+ assert.match(shell,/<Text accessibilityRole="header" numberOfLines=\{1\} style=\{styles\.moduleTitle\}>/);
+ assert.match(shell,/!isHome&&styles\.compactTop/);
  assert.match(shell,/<NativeStories token=\{token\} actorId=\{actorId\}/);
  assert.match(strip,/for\(const story of states\.stories\)/);
  assert.match(strip,/if\(!members\.has\(story\.actorId\)\)/);
@@ -123,4 +126,43 @@ test('Native unread state badges persist by musician and disappear after an actu
  assert.match(seen,/getItemSync/);
  assert.match(seen,/setItemSync/);
  assert.doesNotMatch(strip,/>ESTADO<\/Text>/);
+});
+
+test('Story track remains 3dp even inside a taller tap target and no solid top slab',()=>{
+ const v=read('apps/android/features/stories/NativeStoryViewer.tsx');
+ assert.match(v,/progressTouch:\{flex:1,height:16,justifyContent:'center'\}/);
+ assert.match(v,/progressTrack:\{width:'100%',height:3,/);
+ assert.doesNotMatch(v,/progressTrack:\{flex:1/);
+ assert.match(v,/complete:\{width:'100%',height:3,/);
+ assert.match(v,/source=\{\{uri:TOP_FADE\}\}/);
+});
+test('Native header uses feathered local image textures and stops its motion outside HOME',()=>{
+ const shell=read('apps/android/app/NativeMemberHome.tsx');
+ for(const name of ['HEADER_GRADIENT','HEADER_BLOOM','HEADER_STREAK'])
+  assert.ok(shell.includes("const "+name+"='data:image/png;base64,"));
+ assert.match(shell,/<Animated.Image pointerEvents="none" source=\{\{uri:HEADER_BLOOM\}\}/);
+ assert.match(shell,/<Animated.Image pointerEvents="none" source=\{\{uri:HEADER_STREAK\}\}/);
+ assert.match(shell,/if\(!isHome\|\|reduceHeaderMotion\)return/);
+ assert.match(shell,/useNativeDriver:true,isInteraction:false/);
+ assert.doesNotMatch(shell,/headerBloom:\{[^}]*backgroundColor|headerShine:\{[^}]*backgroundColor/);
+});
+
+test('Native fullscreen gallery hides playback chrome immediately and reveals it on a tap, not a swipe',()=>{
+ const film=read('apps/android/features/chat/NativeChatGallery.tsx');
+ assert.match(film,/const \[controlsVisible,setControlsVisible\]=useState\(true\)/);
+ assert.match(film,/player.play\(\);setControlsVisible\(false\)/);
+ assert.match(film,/!error&&controlsVisible&&<Pressable/);
+ assert.match(film,/ready&&!error&&controlsVisible&&<View style=\{s.transport\}>/);
+ assert.match(film,/if\(!tapMoved.current\)setControlsVisible\(v=>!v\)/);
+ assert.match(film,/player.addListener\('playToEnd'/);
+ assert.match(film,/Math.abs\(dx\)>55&&Math.abs\(dx\)>Math.abs\(dy\)\*1.2/);
+});
+
+test('Both native Chat video entrypoints reuse one fullscreen player',()=>{
+ const gallery=read('apps/android/features/chat/NativeChatGallery.tsx');
+ const video=read('apps/android/features/chat/NativeChatVideo.tsx');
+ assert.match(video,/<NativeChatFilm key=\{signed\} url=\{signed\}/);
+ assert.match(gallery,/<NativeChatFilm url=\{url\}/);
+ assert.doesNotMatch(video,/useVideoPlayer/);
+ assert.equal((gallery.match(/useVideoPlayer\(\{/g)||[]).length,1);
 });
