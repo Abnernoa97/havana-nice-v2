@@ -169,7 +169,7 @@ function NativeChatTimeline({
    scrollEventThrottle={16}
    ListHeaderComponent={pendingUploading?<NativeChatMediaQueuePreview
     selectedMedia={pendingMedia} mediaUploading={true} mediaProgress={pendingProgress} mediaReady={true}
-    onRemove={()=>{}} inTimeline onCancel={onCancelPending}/>:null}
+    onRemove={()=>{}} inTimeline onCancel={onCancelPending}/>:undefined}
    ListFooterComponent={<>
     {hasMore?<Pressable style={styles.loadMore} disabled={loadingOlder}
       onPress={()=>void onLoadOlder()}><Text style={styles.loadMoreText}>{loadingOlder?'Cargando…':'Cargar mensajes anteriores'}</Text></Pressable>:null}

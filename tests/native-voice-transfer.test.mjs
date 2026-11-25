@@ -93,7 +93,7 @@ test('Only real acknowledged sequences replace immediate local pending mosaics',
  const controller=read('apps/android/features/chat/useNativeChatController.ts');
  const upload=read('apps/android/features/chat/useNativeChatMediaUpload.ts');
  assert.match(view,/selectedMedia.filter\(item=>!committed.has\(item.id\)\)/);
- assert.match(timeline,/ListHeaderComponent=\{pendingUploading\?/);
+ assert.match(timeline,/ListHeaderComponent=\{pendingUploading\?[\s\S]*?onCancel=\{onCancelPending\}\/>:undefined\}/);
  assert.match(controller,/confirmMediaMessage\(media:NonNullable/);
  assert.match(upload,/confirmMediaMessage\(media,result.seq\)/);
  assert.match(upload,/confirmUploadedMedia\(item.id\)/);
