@@ -1,5 +1,5 @@
 import React,{memo,useEffect,useMemo,useRef,useState,type RefObject} from 'react';
-import {AppState,FlatList,Modal,View,Text,Pressable,type ViewToken,type NativeScrollEvent,type NativeSyntheticEvent} from 'react-native';
+import {AppState,FlatList,Modal,View,Text,Pressable,type NativeScrollEvent,type NativeSyntheticEvent} from 'react-native';
 import {
  buildChatDisplayIndex,groupChatMediaMessages,selectChatGalleryMedia,
  type ChatMessage,type ChatReaction,type ChatReadReceipt,type ChatSession,type ChatEmoji,
@@ -73,7 +73,7 @@ function NativeChatTimeline({
  const readRef=useRef({onReadVisible,readEnabled});
  readRef.current={onReadVisible,readEnabled};
  const viewabilityConfig=useRef({itemVisiblePercentThreshold:50,minimumViewTime:250}).current;
- const onViewableItemsChanged=useRef(({viewableItems}:{viewableItems:ViewToken[]})=>{
+ const onViewableItemsChanged=useRef(({viewableItems}:{viewableItems:ReadonlyArray<{item:unknown;isViewable:boolean}>})=>{
   viewed.current=viewableItems.reduce((max,entry)=>{
    const item=entry.item as ChatMessage;
    return entry.isViewable&&item&&!item.pending&&!item.deletedAt&&item.seq>0?Math.max(max,item.seq):max;

@@ -7,7 +7,7 @@ type Props={
   children:ReactNode;
   className:string;
   messageKey?:string;
-  readSeq?:number;
+  readSeq?:number|undefined;
   onSwipeRight:()=>void;
   onLongPress:(anchor:MessageAnchor)=>void;
 };
