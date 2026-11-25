@@ -10,9 +10,14 @@ test('Native Chat virtualizes messages instead of creating the complete history 
  assert.match(timeline,/<FlatList/);
  assert.match(timeline,/data=\{visibleMessages\}/);
  assert.match(timeline,/\binverted\b/);
- assert.match(timeline,/\.filter\(message=>!message\.deletedAt\)\.reverse\(\)/);
+ // The grouped gallery must filter deleted messages before constructing cells,
+ // retain one representative per group, and invert chronological order once.
+ assert.match(timeline,/const galleries=useMemo\(\(\)=>groupChatMediaMessages\(messages\.filter\(message=>!message\.deletedAt\)\),\[messages\]\)/);
+ assert.match(timeline,/const visibleMessages=useMemo\(\(\)=>galleries\.map\(group=>group\[group\.length-1\]!\)\.reverse\(\),\[galleries\]\)/);
  assert.match(timeline,/ListFooterComponent=\{<>/);
- assert.match(timeline,/useMemo\(\s*\(\)=>messages\.filter\(message=>!message\.deletedAt\)/);
+ assert.match(timeline,/groupLeads\.get\(message\.clientMessageId\)/);
+ assert.match(timeline,/if\(!grouped\)return renderBubble\(message\)/);
+ assert.match(timeline,/grouped\.map\(item=>/);
  assert.match(timeline,/keyExtractor=\{message=>message.senderId\+':'\+message.clientMessageId\}/);
  assert.match(timeline,/initialNumToRender=\{10\}/);
  assert.match(timeline,/maxToRenderPerBatch=\{8\}/);
