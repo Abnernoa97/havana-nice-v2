@@ -1,6 +1,6 @@
 # HAVANA NICE V2 — PLAN MAESTRO ÚNICO
 
-**Estado vigente: 23 de noviembre de 2026.** Una sola fuente de verdad para pendientes y decisiones. Historial de versiones, pruebas y cambios anteriores en Git. La [auditoría del 23/11](./AUDITORIA-DEPURACION-2026-11-23.md) documenta hallazgos y límites; [CONTINUIDAD-EXACTA.md](./CONTINUIDAD-EXACTA.md) describe arquitectura y despliegues.
+**Estado vigente: 24 de noviembre de 2026.** Una sola fuente de verdad para pendientes y decisiones. Historial de versiones, pruebas y cambios anteriores en Git. La [auditoría del 23/11](./AUDITORIA-DEPURACION-2026-11-23.md) documenta hallazgos y límites; [CONTINUIDAD-EXACTA.md](./CONTINUIDAD-EXACTA.md) describe arquitectura y despliegues.
 
 ## 1. Estado comprobado
 
@@ -53,7 +53,7 @@ Evidencia de producción (23/11, 22:40–23:00 CDMX): 9 estados, 897606 bytes en
 
 
 - [ ] **P1 · QA físico del Chat:** fotos, videos, mosaicos, gesto horizontal, notas de voz, carga fría y caliente en Android/iPhone; medir tiempos reales y memoria, no aproximaciones.
-- [ ] **P2 · APK:** solo después de validar todos los cambios nativos y aprobar un lote explícito; firmar sobre la instalación 0.0.30, preservar rollback y datos. No recompilar por cambios de documentación o CSS web.
+- [ ] **P2 · APK 0.0.31 (lote aprobado 24/11):** base ee20242, 29 archivos nativos y 12 compartidos distintos de la APK 0.0.30. Validar export, Gradle, firma compatible, versionCode 31 y pruebas físicas encima de 0.0.30. Audio: pausa únicamente al iniciar interacción de voz de Chat; diseño, motor y BOOK 3D intactos. PWA funcional reportada por usuario, congelar su código; no desplegar Worker. La comprobación general #45308818630 compiló Wrangler pero rechazó referencias legítimas de Firebase por la regla antigua de Google Drive; se acota el guard a excepciones FCM exactas, sin relajar otros controles. No declarar APK publicada hasta confirmar el workflow y los hashes del Release.
 - [ ] **P3 · Historial remoto de galería:** añadir navegación y solicitud segura de páginas anteriores cuando el visor alcance un extremo. Hoy solo abarca los archivos ya cargados en el cliente.
 - [ ] **P4 · Controladores grandes:** Android mantiene subida multimedia aislada; PWA y Android comparten esquema offline, historial/snapshot, reglas de edición/borrado, elegibilidad de acciones y timeout de confirmación. Se mantienen los controladores principales como únicos dueños de sesión/ACK/socket. Pendiente: QA físico de reconexión, scroll y notificaciones; separar estados por bloques pequeños y probados, nunca crear un segundo dueño de sesión.
 - [ ] **P5 · CSS y lógica histórica:** contrastar selectores con consumidores vivos y breakpoints reales. No confundir media queries o compatibilidades de Admin con código muerto. Refactorizar únicamente con regresiones y QA visual.

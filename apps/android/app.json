@@ -2,13 +2,13 @@
   "expo": {
     "name": "HAVANA NICE V2",
     "slug": "havana-nice-v2",
-    "version": "0.0.30",
+    "version": "0.0.31",
     "orientation": "portrait",
     "userInterfaceStyle": "automatic",
     "android": {
       "package": "com.havananice.v2",
       "softwareKeyboardLayoutMode": "resize",
-      "versionCode": 30,
+      "versionCode": 31,
       "adaptiveIcon": {
         "foregroundImage": "../pwa/public/icons/havana-nice-512.png",
         "backgroundColor": "#0D2A23"

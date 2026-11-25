@@ -29,10 +29,22 @@ for(const [name,pattern] of mustAppear)
 
 for(const [name,re] of [
   ['periodic gallery polling',/setInterval\s*\(/],
+  // Firebase is not the retired Drive bridge. Remove only the exact FCM
+  // OAuth scope, token endpoint, API route and hostname literals before
+  // checking all remaining Google API references. Do not allow other hosts
+  // or paths (in particular Drive) through the guard.
   ['previous Google Drive media bridge',/googleapis\.com|www\.googleapis\.com/],
   ['previous Supabase bridge',/supabase\.co/],
   ['legacy alternative token hashes',/\b(?:async )?function\s+(?:hash2?|hash3|digest|sha256)\s*\(/],
-])assert.doesNotMatch(source,re,'Compiled Worker contains '+name);
+]){
+  const checked=name==='previous Google Drive media bridge'
+    ?source.replace(/(["'])https:\/\/www\.googleapis\.com\/auth\/firebase\.messaging\1/g,'')
+      .replace(/(["'])https:\/\/oauth2\.googleapis\.com\/token\1/g,'')
+      .replace(/(["'])https:\/\/fcm\.googleapis\.com\/v1\/projects\/\1/g,'')
+      .replace(/(["'])fcm\.googleapis\.com\1/g,'')
+    :source;
+  assert.doesNotMatch(checked,re,'Compiled Worker contains '+name);
+}
 
 assert.equal((source.match(/\bfunction sha256Hex\s*\(/g)||[]).length,1,
   'Compiled Worker must contain one and only one shared SHA-256 helper');
