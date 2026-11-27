@@ -106,7 +106,7 @@ export function useNativeMediaSelection({
        name,mimeType,sizeBytes:sizeBytes!});
    }
    // Video files must be durable and byte-verified before appearing ready.
-   // Camera and the Android Files picker share this same staging lane.
+   // Camera and the normal Android photo/video gallery share this staging lane.
    if(additions.some(item=>item.kind==='video')){
      const staged:NativeQueuedMedia[]=[];
      const preparation=stagingChain.current.catch(()=>{}).then(async()=>{
@@ -208,19 +208,6 @@ export function useNativeMediaSelection({
        }
      }
      if(!current())return;
-     // Android video gallery uses the SDK 58 system Files picker. It returns
-     // originals without the image-picker video import pipeline. No new library.
-     if(Platform.OS==='android'&&source==='gallery'&&kind==='video'){
-       const picked=await File.pickFileAsync({multipleFiles:true,mimeTypes:['video/mp4','video/quicktime']});
-       if(!current()||picked.canceled)return;
-       if(picked.result.length>free){setMediaError('Máximo 5 archivos entre Fotos y Video por envío.');return;}
-       const assets:ImagePicker.ImagePickerAsset[]=picked.result.map(file=>({
-         uri:file.uri,type:'video',fileName:file.name,fileSize:file.size,
-         mimeType:file.type||(/\.mov$/i.test(file.name)?'video/quicktime':'video/mp4'),width:0,height:0,
-       }));
-       await appendAssets(assets,source);
-       return;
-     }
      // Android can return from the system picker without settling the JS
      // promise after activity recreation. Recover once on foreground, not
      // while the user is still selecting. Both paths share this generation.
@@ -259,6 +246,7 @@ export function useNativeMediaSelection({
      const options:ImagePicker.ImagePickerOptions={
        mediaTypes:source==='camera'?['images','videos']:kind==='photo'?['images']:['videos'],
        allowsEditing:false,quality:1,
+       ...(source==='gallery'&&kind==='video'?{defaultTab:'photos' as const,legacy:false}:{}),
        allowsMultipleSelection:source==='gallery',
        selectionLimit:source==='gallery'?free:1,
      };

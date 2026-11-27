@@ -74,7 +74,7 @@ export async function stageNativePendingVideo(item:PendingNativeChatMedia,curren
  if(item.kind!=='video'||!current())throw Error('Selección cancelada.');
  const source=new File(item.uri);
  if(!source.exists||source.size!==item.sizeBytes||source.size<=0)
-  throw Error('No se puede leer el video original. Elígelo desde Archivos.');
+  throw Error('No se puede leer el video original. Elígelo de nuevo desde la galería.');
  if(isNativePendingStaged(item))return item;
  if(Paths.availableDiskSpace<item.sizeBytes+VIDEO_FREE_SPACE_RESERVE)
   throw Error('No hay espacio libre suficiente para proteger este video.');
