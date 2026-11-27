@@ -141,7 +141,7 @@ test('Native Chat preserves original bytes and private R2 endpoints with bounded
  const binary=read('apps/android/services/native-chat-binary-upload.ts');
  const batch=read('apps/android/features/chat/native-media-transfer.ts');
  const pwa=read('apps/pwa/src/services/chat-media-upload.ts');
- assert.match(android,/prepareNativeChatFile\(session,item,onSent,ctl.signal\)/);
+ assert.match(android,/prepareNativeChatFile\(session,ready,\(sent,total\)=>onSent\(sent\/Math.max\(1,total\)\*item.sizeBytes\),ctl.signal\)/);
  assert.match(android,/uploadNativeChatFile\(session,\{/);
  assert.doesNotMatch(android,/Almacenamiento multimedia no configurado/);
  assert.match(android,/mediaUploading/);
@@ -170,7 +170,7 @@ test('Native Chat preserves original bytes and private R2 endpoints with bounded
  assert.match(helper,/control<Start>\('Recuperar avance del video',base\)/);
  assert.match(helper,/if\(completed.size!==total\)throw Error/);
  assert.doesNotMatch(helper,/temporary\.|readBytes|writeBytes|FileMode|Paths\.cache/);
- assert.match(batch,/items\[i\]\?\.kind==='photo'&&items\[i\+1\]\?\.kind==='photo'\?2:1/);
+ assert.match(batch,/items\[i\+1\]&&items\[i\]\?\.kind===items\[i\+1\]\?\.kind\?2:1/);
  assert.match(pwa,/Math\.min\(3,begin\.partCount\)/);
  assert.match(helper,/\/api\/chat\/media\/start/);
  assert.match(helper,/\/complete/);

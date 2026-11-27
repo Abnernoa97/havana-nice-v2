@@ -61,7 +61,7 @@ test('Home does not open a blocking profile-check modal on slow network',()=>{
 });
 
 
-test('Two photos prepare concurrently but publish in selection order; videos are isolated',async()=>{
+test('Two photos prepare concurrently but publish in selection order; mixed kinds are isolated',async()=>{
  const items=[{id:'a',kind:'photo',sizeBytes:10},{id:'b',kind:'photo',sizeBytes:10},{id:'c',kind:'video',sizeBytes:20},{id:'d',kind:'photo',sizeBytes:10}];
  const events=[],progress=[];let active=0,peak=0;
  await transferNativeVisualBatch(items,{
@@ -97,4 +97,25 @@ test('Only real acknowledged sequences replace immediate local pending mosaics',
  assert.match(controller,/confirmMediaMessage\(media:NonNullable/);
  assert.match(upload,/confirmMediaMessage\(media,result.seq\)/);
  assert.match(upload,/confirmUploadedMedia\(item.id\)/);
+});
+
+
+test('Adjacent videos overlap preparation but never publish out of order',async()=>{
+ const items=['a','b'].map(id=>({id,kind:'video',sizeBytes:10}));
+ const events=[];let releaseFirst,releaseSecond;
+ const first=new Promise(r=>{releaseFirst=r;});
+ const second=new Promise(r=>{releaseSecond=r;});
+ const task=transferNativeVisualBatch(items,{
+  prepare:async(item,report)=>{
+   events.push('prepare:'+item.id);
+   await (item.id==='a'?first:second);report(item.sizeBytes);
+   return {publish:async()=>{events.push('publish:'+item.id);return {id:item.id,seq:item.id==='a'?1:2};}};
+  },confirmed:item=>events.push('confirm:'+item.id),progress:()=>{}
+ },new AbortController().signal);
+ await new Promise(r=>setImmediate(r));
+ assert.deepEqual(events,['prepare:a','prepare:b']);
+ releaseSecond();await new Promise(r=>setImmediate(r));
+ assert.deepEqual(events,['prepare:a','prepare:b']);
+ releaseFirst();await task;
+ assert.deepEqual(events,['prepare:a','prepare:b','publish:a','confirm:a','publish:b','confirm:b']);
 });

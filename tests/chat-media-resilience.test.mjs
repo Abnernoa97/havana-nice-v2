@@ -321,11 +321,13 @@ test('Large Android videos enter the queue only after a verified durable native 
  assert.match(picker,/kind==='photo'\?\['images'\]:\['videos'\]/);
  assert.match(picker,/defaultTab:'photos' as const,legacy:false/);
  assert.match(picker,/if\(kind==='video'\|\|!Number.isSafeInteger\(sizeBytes\)/);
- assert.match(picker,/staged.push\(await stageNativePendingVideo\(optimized,current\)\)/);
+ assert.match(picker,/const protectedItem=await stageNativePendingVideo\(item,current\)/);
+ assert.match(picker,/staged.push\(protectedItem\)/);
  assert.ok(picker.indexOf('await preparation;')<picker.indexOf('selectedRef.current=[...selectedRef.current,...additions]'));
  assert.match(picker,/if\(!current\(\)\)throw Error\('Selección cancelada\.'\)/);
  assert.match(picker,/for\(const item of staged\)if\(item.kind==='video'\)discardNativePendingMedia\(item\)/);
- assert.match(stage,/Paths.availableDiskSpace<item.sizeBytes\+VIDEO_FREE_SPACE_RESERVE/);
+ assert.match(stage,/Paths.availableDiskSpace<\(ownedPickerCopy\?0:item.sizeBytes\)\+VIDEO_FREE_SPACE_RESERVE/);
+ assert.match(stage,/if\(ownedPickerCopy\)await source.move\(destination\)/);
  assert.match(stage,/await source.copy\(destination\)/);
  assert.match(stage,/destination.size!==item.sizeBytes/);
  assert.match(stage,/return \{\.\.\.item,uri:destination.uri\}/);

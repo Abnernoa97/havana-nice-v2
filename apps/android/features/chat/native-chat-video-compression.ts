@@ -35,6 +35,7 @@ export async function optimizeNativeChatVideo(item:PendingNativeChatMedia,
  let poll:ReturnType<typeof setInterval>|undefined;
  try{
   onProgress(-1);
+  const began=Date.now();
   const task=native.compress(item.uri,output.uri,item.id,shortSide,bitrate);
   poll=setInterval(()=>{
    if(finished||polling)return;
@@ -51,6 +52,7 @@ export async function optimizeNativeChatVideo(item:PendingNativeChatMedia,
   if(!current())throw Error('Selección cancelada.');
   if(!output.exists||!Number.isSafeInteger(size)||size<=0||output.size!==size)
    throw Error('El video comprimido quedó incompleto.');
+  console.info('[HN video] encode input='+item.sizeBytes+' output='+size+' ms='+(Date.now()-began));
   if(size>=item.sizeBytes*.9)return item; // Do not send a larger or barely smaller file.
   keeping=true;
   return {...item,uri:output.uri,mimeType:'video/mp4',sizeBytes:size,
