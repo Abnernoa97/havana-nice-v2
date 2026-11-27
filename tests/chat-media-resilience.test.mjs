@@ -321,7 +321,7 @@ test('Large Android videos enter the queue only after a verified durable native 
  assert.match(picker,/kind==='photo'\?\['images'\]:\['videos'\]/);
  assert.match(picker,/defaultTab:'photos' as const,legacy:false/);
  assert.match(picker,/if\(kind==='video'\|\|!Number.isSafeInteger\(sizeBytes\)/);
- assert.match(picker,/staged.push\(await stageNativePendingVideo\(item,current\)\)/);
+ assert.match(picker,/staged.push\(await stageNativePendingVideo\(optimized,current\)\)/);
  assert.ok(picker.indexOf('await preparation;')<picker.indexOf('selectedRef.current=[...selectedRef.current,...additions]'));
  assert.match(picker,/if\(!current\(\)\)throw Error\('Selección cancelada\.'\)/);
  assert.match(picker,/for\(const item of staged\)if\(item.kind==='video'\)discardNativePendingMedia\(item\)/);

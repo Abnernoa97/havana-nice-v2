@@ -4,6 +4,7 @@ import {useEffect,useLayoutEffect,useRef,useState} from 'react';
 import {Alert,AppState,Keyboard,Platform} from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import {File} from 'expo-file-system';
+import {optimizeNativeChatVideo} from './native-chat-video-compression';
 import {validateChatMediaSelection,CHAT_MEDIA_MAX_PER_SEND,
  type ChatMediaKind,type ChatMediaSource,type ChatMediaSelection} from '@havana/shared';
 import {
@@ -28,6 +29,7 @@ export function useNativeMediaSelection({
  const [selectedMedia,setSelectedMedia]=useState<NativeQueuedMedia[]>([]);
  const [mediaError,setMediaError]=useState('');
  const [mediaPicking,setMediaPicking]=useState(false);
+ const [mediaPreparation,setMediaPreparation]=useState('');
  const selectedRef=useRef<NativeQueuedMedia[]>([]);
  const actorRef=useRef(actorId);
  actorRef.current=actorId;
@@ -46,7 +48,7 @@ export function useNativeMediaSelection({
  const mounted=useRef(true);
  const foregroundCleanup=useRef<(()=>void)|null>(null);
  useEffect(()=>{mounted.current=true;return()=>{mounted.current=false;foregroundCleanup.current?.();++pickGeneration.current;};},[]);
- const stopPicking=()=>{foregroundCleanup.current?.();foregroundCleanup.current=null;pickingRef.current=false;setMediaPicking(false);};
+ const stopPicking=()=>{foregroundCleanup.current?.();foregroundCleanup.current=null;pickingRef.current=false;setMediaPicking(false);setMediaPreparation('');};
  const cancelNativePicking=()=>{++pickGeneration.current;stopPicking();};
  useEffect(()=>{cancelNativePicking();},[actorId]);
  const stagingChain=useRef<Promise<void>>(Promise.resolve());
@@ -87,6 +89,7 @@ export function useNativeMediaSelection({
      return false;
    }
    const additions:NativeQueuedMedia[]=[];
+   const dimensions=new Map<string,{width:number;height:number}>();
    for(const asset of assets){
      const kind:ChatMediaKind=asset.type==='video'||asset.mimeType?.startsWith('video/')?'video':'photo';
      const name=asset.fileName||('havana-'+Date.now()+(kind==='photo'?'.jpg':'.mp4'));
@@ -102,18 +105,32 @@ export function useNativeMediaSelection({
      }
      const issue=validateChatMediaSelection({kind,name,mimeType,sizeBytes:sizeBytes||0});
      if(issue){setMediaError(name+': '+issue);return false;}
-     additions.push({id:newMediaSelectionId(),kind,source,uri:asset.uri,
-       name,mimeType,sizeBytes:sizeBytes!});
+     const id=newMediaSelectionId();
+     if(kind==='video')dimensions.set(id,{width:asset.width,height:asset.height});
+     additions.push({id,kind,source,uri:asset.uri,name,mimeType,sizeBytes:sizeBytes!});
    }
    // Video files must be durable and byte-verified before appearing ready.
    // Camera and the normal Android photo/video gallery share this staging lane.
-   if(additions.some(item=>item.kind==='video')){
+   const hasVideo=additions.some(item=>item.kind==='video');
+   if(hasVideo){
      const staged:NativeQueuedMedia[]=[];
+     const videoCount=additions.filter(item=>item.kind==='video').length;
+     let videoIndex=0;
      const preparation=stagingChain.current.catch(()=>{}).then(async()=>{
        for(const item of additions){
          if(!current())throw Error('Selección cancelada.');
-         if(item.kind==='video')staged.push(await stageNativePendingVideo(item,current));
-         else staged.push(item);
+         if(item.kind==='video'){
+           const number=++videoIndex;
+           const label=(phase:string)=>{if(current())setMediaPreparation(phase+' · '+number+'/'+videoCount);};
+           label('Preparando video');
+           const optimized=await optimizeNativeChatVideo(item,dimensions.get(item.id),current,percent=>
+             label(percent<0?'Comprimiendo video':'Comprimiendo video '+percent+' %'));
+           try{
+             if(!current())throw Error('Selección cancelada.');
+             label('Protegiendo video');
+             staged.push(await stageNativePendingVideo(optimized,current));
+           }catch(error){if(optimized.uri!==item.uri)discardNativePendingMedia(optimized);throw error;}
+         }else staged.push(item);
        }
      });
      stagingChain.current=preparation.catch(()=>{});
@@ -128,11 +145,24 @@ export function useNativeMediaSelection({
        return false;
      }
    }
-   // Paint the picker-owned files first, before any secondary disk copy or
-   // SQLite operation. The exact same UUID survives preparation and sending.
+   // For video the chosen bytes and UUID must be durable before any R2 start.
+   // Photo-only selection still paints immediately and persists asynchronously.
+   if(hasVideo){
+     const next=[...selectedRef.current,...additions];
+     try{
+       const saved=writeChain.current.catch(()=>{}).then(()=>storeNativePendingMedia(actorId,next));
+       writeChain.current=saved;await saved;
+       if(!current())throw Error('Selección cancelada.');
+     }catch(error){
+       for(const item of additions)if(item.kind==='video')discardNativePendingMedia(item);
+       if(current())setMediaError('No se pudo guardar el video preparado. Selecciónalo otra vez.');
+       return false;
+     }
+   }
+   // The exact same UUID survives preparation and sending.
    selectedRef.current=[...selectedRef.current,...additions];
    setSelectedMedia([...selectedRef.current]);setMediaError('');
-   persist(selectedRef.current);
+   if(!hasVideo)persist(selectedRef.current);
    const owner=actorId;
    // One serial staging lane, never blocks selection/send. Source remains
    // untouched so a transfer already reading it is safe if its URI is promoted.
@@ -258,6 +288,6 @@ export function useNativeMediaSelection({
      if(current())setMediaError('No se pudo abrir la cámara o la galería. Inténtalo de nuevo.');
    }finally{if(current())stopPicking();}
  };
- return {selectedMedia,mediaError,setMediaError,mediaPicking,
+ return {selectedMedia,mediaError,setMediaError,mediaPicking,mediaPreparation,
    confirmUploadedMedia,removeSelectedMedia,clearSelectedMedia,chooseNativeMedia,cancelNativePicking};
 }

@@ -75,8 +75,11 @@ assert.doesNotMatch(pwaHome,/new WebSocket|startNamedChatSession|restoreNamedCha
 assert.doesNotMatch(pwaView,/startNamedChatSession|restoreNamedChatSession|openChatSocket|saveLocalChat|new WebSocket/);
 
 assert.deepEqual(children('apps/android'),
- ['App.tsx','app','app.json','features','google-services.json','hooks','package.json','services','storage','styles','tsconfig.json'],
+ ['App.tsx','app','app.json','features','google-services.json','hooks','modules','package.json','services','storage','styles','tsconfig.json'],
  'Android must keep one Expo entry and grouped modules');
+assert.deepEqual(children('apps/android/modules'),['havana-video-compression']);
+const compressorConfig=JSON.parse(readFileSync(join(rootDir,'apps/android/modules/havana-video-compression/expo-module.config.json'),'utf8'));
+assert.deepEqual(compressorConfig.android.modules,['expo.modules.havanavideo.HavanaVideoCompressionModule']);
 // Android must retain exactly one Expo entry, one navigation owner, and one
 // source of each module. Moved source files cannot survive as compatibility copies.
 assert.deepEqual(children('apps/android/app'),['NativeApp.tsx','NativeMemberHome.tsx']);
