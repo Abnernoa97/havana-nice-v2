@@ -107,9 +107,7 @@ export async function preserveNativePendingMedia(
    const extension=item.mimeType==='image/heic'?'.heic':
      item.mimeType==='image/heif'?'.heif':
      item.mimeType==='image/png'?'.png':
-     item.mimeType==='image/webp'?'.webp':
-     item.mimeType==='video/quicktime'?'.mov':
-     item.kind==='video'?'.mp4':'.jpg';
+     item.mimeType==='image/webp'?'.webp':'.jpg';
    const id=item.id.replace(/[^a-zA-Z0-9_-]/g,'').slice(0,70);
    const destination=new File(Paths.document,PREFIX+id+extension);
    try{
