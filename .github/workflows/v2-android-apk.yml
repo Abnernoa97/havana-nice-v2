@@ -84,6 +84,12 @@ jobs:
           node --experimental-strip-types --test tests/native-book-bridge.test.mjs tests/chat-session-recovery.test.mjs tests/chat-offline-policy.test.mjs
           node --test tests/member-stories-parity.test.mjs tests/android-stories-parity.test.mjs tests/cross-device-stories-notices.test.mjs
 
+      - name: Verify the local video compressor is autolinked
+        working-directory: apps/android
+        run: |
+          npx --no-install expo-modules-autolinking resolve --platform android > "$RUNNER_TEMP/hn-expo-modules.json"
+          grep -F 'expo.modules.havanavideo.HavanaVideoCompressionModule' "$RUNNER_TEMP/hn-expo-modules.json"
+
       - name: Export the actual production Android JS and images before Gradle
         run: npm run export -w @havana/android
 

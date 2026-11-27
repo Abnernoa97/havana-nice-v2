@@ -1,7 +1,7 @@
 {
   "approved": true,
   "releaseMode": "explicit-batch",
-  "version": "0.0.39",
-  "versionCode": 39,
-  "notes": "Lote Android P2.2-K autorizado 27/11/2026: selección nativa de videos, tamaño real y copia privada verificada antes de admitir archivos grandes; protección según espacio libre y limpieza al cancelar. Mantener originales, UUID y multipart existente. Preservar APK 0.0.38. Fotos, voz, FCM, PWA, Worker, BOOK 3D y Audio sin cambios en sus motores. QA físico pendiente con videos de 202.6 y 371.6 MB; causa completa de interrupciones no confirmada."
+  "version": "0.0.40",
+  "versionCode": 40,
+  "notes": "Autorización 27/11/2026, P2.2-L/M: galería normal Android para video; compresión local Media3 Transformer de nuevos videos >25 MiB a MP4 H.264/AAC hasta 720p, 1.8 Mb/s, sin modificar originales; un trabajo a la vez, progreso, cancelación y salida durable antes de iniciar R2; multipart secuencial 5 MiB y reintentos con estado confirmado. Preservar 0.0.39. Pruebas nativas y QA físico pendientes; fotos, voz, FCM, PWA, Worker, BOOK y Audio intactos."
 }
