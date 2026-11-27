@@ -159,7 +159,7 @@ export default function NativeChatSurface({ui}:{ui:ReturnType<typeof useNativeCh
                </View>
                {draft.trim()||editing||(!mediaUploading&&selectedMedia.length>0)
                  ?<Pressable accessibilityRole="button" accessibilityLabel={editing?'Guardar mensaje':!mediaUploading&&selectedMedia.length?'Enviar archivos originales':'Enviar mensaje'}
-                    onPress={()=>selectedMedia.length&&!editing&&!mediaUploading?void sendSelectedMedia():send()} disabled={savingEdit||(!editing&&!mediaUploading&&selectedMedia.length>0&&voiceSending)||((mediaUploading||!selectedMedia.length)&&!draft.trim())} style={styles.sendCircle}>
+                    onPress={()=>selectedMedia.length&&!editing&&!mediaUploading?void sendSelectedMedia():send()} disabled={savingEdit||(!editing&&!mediaUploading&&selectedMedia.length>0&&voiceSending)||((mediaUploading||!selectedMedia.length)&&!draft.trim())||(!editing&&mediaPicking&&selectedMedia.length>0)} style={styles.sendCircle}>
                     <NativeComposerIcon name="send" color="#fff"/>
                   </Pressable>
                  :<NativeChatVoiceRecorder disabled={mediaUploading||!!voiceDraft||voiceSending}

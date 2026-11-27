@@ -309,3 +309,26 @@ test('video JPEG posters use one isolated decoder, same private R2 grant and scr
  assert.match(root,/match\[2\]==='poster'/);
  assert.match(css,/\.hn-chat-video-poster\{/);
 });
+
+
+test('Large Android videos enter the queue only after a verified durable native copy',()=>{
+ const picker=read('apps/android/features/chat/useNativeMediaSelection.ts');
+ const store=read('apps/android/storage/chatPendingMedia.ts');
+ const surface=read('apps/android/features/chat/NativeChatSurface.tsx');
+ const stage=store.slice(store.indexOf('export async function stageNativePendingVideo'),store.indexOf('export async function preserveNativePendingMedia'));
+ assert.match(picker,/File\.pickFileAsync\(\{multipleFiles:true,mimeTypes:\['video\/mp4','video\/quicktime'\]\}\)/);
+ assert.match(picker,/picked.result.length>free/);
+ assert.match(picker,/if\(kind==='video'\|\|!Number.isSafeInteger\(sizeBytes\)/);
+ assert.match(picker,/staged.push\(await stageNativePendingVideo\(item,current\)\)/);
+ assert.ok(picker.indexOf('await preparation;')<picker.indexOf('selectedRef.current=[...selectedRef.current,...additions]'));
+ assert.match(picker,/if\(!current\(\)\)throw Error\('Selección cancelada\.'\)/);
+ assert.match(picker,/for\(const item of staged\)if\(item.kind==='video'\)discardNativePendingMedia\(item\)/);
+ assert.match(stage,/Paths.availableDiskSpace<item.sizeBytes\+VIDEO_FREE_SPACE_RESERVE/);
+ assert.match(stage,/await source.copy\(destination\)/);
+ assert.match(stage,/destination.size!==item.sizeBytes/);
+ assert.match(stage,/return \{\.\.\.item,uri:destination.uri\}/);
+ assert.match(stage,/if\(destination.exists\)destination.delete\(\)/);
+ assert.doesNotMatch(stage,/COPY_BUDGET|readBytes|base64|transcod|source.delete/);
+ assert.match(store,/items.filter\(item=>item.kind==='photo'&&isNativePendingStaged\(item\)\)/);
+ assert.match(surface,/!editing&&mediaPicking&&selectedMedia.length>0/);
+});

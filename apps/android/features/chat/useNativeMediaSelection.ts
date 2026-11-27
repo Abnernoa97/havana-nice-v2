@@ -8,7 +8,7 @@ import {validateChatMediaSelection,CHAT_MEDIA_MAX_PER_SEND,
  type ChatMediaKind,type ChatMediaSource,type ChatMediaSelection} from '@havana/shared';
 import {
  loadNativePendingMedia,storeNativePendingMedia,preserveNativePendingMedia,
- discardNativePendingMedia,clearNativePendingMedia,isNativePendingStaged,
+ discardNativePendingMedia,clearNativePendingMedia,isNativePendingStaged,stageNativePendingVideo,
 } from '../../storage/chatPendingMedia';
 
 export type NativeQueuedMedia=ChatMediaSelection&{id:string};
@@ -79,6 +79,8 @@ export function useNativeMediaSelection({
    assets:ImagePicker.ImagePickerAsset[],source:ChatMediaSource,
  ):Promise<boolean>=>{
    if(!actorId||actorRef.current!==actorId)return false;
+   const generation=pickGeneration.current;
+   const current=()=>mounted.current&&actorRef.current===actorId&&pickGeneration.current===generation;
    const free=CHAT_MEDIA_MAX_PER_SEND-selectedRef.current.length;
    if(assets.length>free){
      setMediaError('Máximo 5 archivos entre Fotos y Video por envío.');
@@ -95,13 +97,36 @@ export function useNativeMediaSelection({
         /\.png$/i.test(name)?'image/png':
         /\.webp$/i.test(name)?'image/webp':'image/jpeg')).toLowerCase();
      let sizeBytes=asset.fileSize;
-     if(!Number.isSafeInteger(sizeBytes)||!sizeBytes){
+     if(kind==='video'||!Number.isSafeInteger(sizeBytes)||!sizeBytes){
        try{sizeBytes=new File(asset.uri).size;}catch{sizeBytes=0;}
      }
      const issue=validateChatMediaSelection({kind,name,mimeType,sizeBytes:sizeBytes||0});
      if(issue){setMediaError(name+': '+issue);return false;}
      additions.push({id:newMediaSelectionId(),kind,source,uri:asset.uri,
        name,mimeType,sizeBytes:sizeBytes!});
+   }
+   // Video files must be durable and byte-verified before appearing ready.
+   // Camera and the Android Files picker share this same staging lane.
+   if(additions.some(item=>item.kind==='video')){
+     const staged:NativeQueuedMedia[]=[];
+     const preparation=stagingChain.current.catch(()=>{}).then(async()=>{
+       for(const item of additions){
+         if(!current())throw Error('Selección cancelada.');
+         if(item.kind==='video')staged.push(await stageNativePendingVideo(item,current));
+         else staged.push(item);
+       }
+     });
+     stagingChain.current=preparation.catch(()=>{});
+     try{
+       await preparation;
+       if(!current())throw Error('Selección cancelada.');
+       if(uploadBusy.current)throw Error('Termina el envío actual antes de agregar videos.');
+       additions.splice(0,additions.length,...staged);
+     }catch(error){
+       for(const item of staged)if(item.kind==='video')discardNativePendingMedia(item);
+       if(current())setMediaError(error instanceof Error?error.message:'No se pudo proteger el video original.');
+       return false;
+     }
    }
    // Paint the picker-owned files first, before any secondary disk copy or
    // SQLite operation. The exact same UUID survives preparation and sending.
@@ -115,7 +140,7 @@ export function useNativeMediaSelection({
      if(!mounted.current||actorRef.current!==owner)return;
      const live=additions.filter(item=>selectedRef.current.some(current=>current.id===item.id));
      if(!live.length)return;
-     const existingBytes=selectedRef.current.filter(item=>!live.some(add=>add.id===item.id)&&isNativePendingStaged(item))
+     const existingBytes=selectedRef.current.filter(item=>item.kind==='photo'&&!live.some(add=>add.id===item.id)&&isNativePendingStaged(item))
        .reduce((sum,item)=>sum+item.sizeBytes,0);
      const preserved=await preserveNativePendingMedia(live,existingBytes);
      const replacements=new Map(preserved.items.map(item=>[item.id,item]));
@@ -183,6 +208,19 @@ export function useNativeMediaSelection({
        }
      }
      if(!current())return;
+     // Android video gallery uses the SDK 58 system Files picker. It returns
+     // originals without the image-picker video import pipeline. No new library.
+     if(Platform.OS==='android'&&source==='gallery'&&kind==='video'){
+       const picked=await File.pickFileAsync({multipleFiles:true,mimeTypes:['video/mp4','video/quicktime']});
+       if(!current()||picked.canceled)return;
+       if(picked.result.length>free){setMediaError('Máximo 5 archivos entre Fotos y Video por envío.');return;}
+       const assets:ImagePicker.ImagePickerAsset[]=picked.result.map(file=>({
+         uri:file.uri,type:'video',fileName:file.name,fileSize:file.size,
+         mimeType:file.type||(/\.mov$/i.test(file.name)?'video/quicktime':'video/mp4'),width:0,height:0,
+       }));
+       await appendAssets(assets,source);
+       return;
+     }
      // Android can return from the system picker without settling the JS
      // promise after activity recreation. Recover once on foreground, not
      // while the user is still selecting. Both paths share this generation.
