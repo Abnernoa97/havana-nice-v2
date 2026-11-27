@@ -6,14 +6,14 @@ import {Platform} from 'react-native';
 import type {PendingNativeChatMedia} from '../../storage/chatPendingMedia';
 
 type Compressor={
- compress:(input:string,output:string,id:string,shortSide:number)=>Promise<number>;
+ compress:(input:string,output:string,id:string,shortSide:number,bitrate:number)=>Promise<number>;
  progress:(id:string)=>Promise<number>;
  cancel:(id:string)=>Promise<void>;
 };
-const COMPRESS_ABOVE=25*1024*1024;
+const COMPRESS_ABOVE=12*1024*1024;
 const FREE_RESERVE=64*1024*1024;
 export async function optimizeNativeChatVideo(item:PendingNativeChatMedia,
- dimensions:{width:number;height:number}|undefined,current:()=>boolean,
+ dimensions:{width:number;height:number;durationMs?:number}|undefined,current:()=>boolean,
  onProgress:(percent:number)=>void):Promise<PendingNativeChatMedia>{
  if(Platform.OS!=='android'||item.kind!=='video'||item.sizeBytes<=COMPRESS_ABOVE)return item;
  if(!current())throw Error('Selección cancelada.');
@@ -24,12 +24,18 @@ export async function optimizeNativeChatVideo(item:PendingNativeChatMedia,
  const output=new File(Paths.document,'hn-v2-chat-pending-'+item.id+'-optimized.mp4');
  const width=dimensions?.width||0,height=dimensions?.height||0;
  const short=Math.min(width,height),long=Math.max(width,height);
- const shortSide=short>0&&long>0?Math.max(2,2*Math.floor(Math.min(720,short,short*1280/long)/2)):720;
+ const seconds=(dimensions?.durationMs||0)/1000;
+ const brief=seconds>0&&seconds<=30;
+ const target=brief?720:540,maxLong=brief?1280:960;
+ const bitrate=brief?1_100_000:seconds>180?700_000:850_000;
+ const shortSide=short>0&&long>0?Math.max(2,2*Math.floor(Math.min(target,short,short*maxLong/long)/2)):target;
+ // Already compact recordings do not benefit from another lossy encode.
+ if(seconds>0&&item.sizeBytes<=(bitrate+96_000)*seconds/8*1.15)return item;
  let polling=false,finished=false,keeping=false,last=-2,lastActivity=Date.now();
  let poll:ReturnType<typeof setInterval>|undefined;
  try{
   onProgress(-1);
-  const task=native.compress(item.uri,output.uri,item.id,shortSide);
+  const task=native.compress(item.uri,output.uri,item.id,shortSide,bitrate);
   poll=setInterval(()=>{
    if(finished||polling)return;
    if(!current()||Date.now()-lastActivity>180_000){

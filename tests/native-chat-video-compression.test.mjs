@@ -15,12 +15,13 @@ test('New large Android video selections are optimized locally before admission 
  assert.match(native,/Name\("HavanaVideoCompression"\)/);
  assert.match(native,/setVideoMimeType\(MimeTypes.VIDEO_H264\)/);
  assert.match(native,/setAudioMimeType\(MimeTypes.AUDIO_AAC\)/);
- assert.match(native,/setBitrate\(1_800_000\)/);
+ assert.match(native,/setBitrate\(bitrate.coerceIn\(500_000, 1_100_000\)\)/);
+ assert.match(native,/AudioEncoderSettings.Builder\(\).setBitrate\(96_000\)/);
  assert.match(native,/Presentation.createForShortSide/);
  assert.match(native,/transformer.start\(edited, file.absolutePath\)/);
  assert.match(native,/transformer.cancel\(\)/);
  assert.match(native,/file.parentFile == context.filesDir.canonicalFile/);
- assert.match(helper,/COMPRESS_ABOVE=25\*1024\*1024/);
+ assert.match(helper,/COMPRESS_ABOVE=12\*1024\*1024/);
  assert.match(helper,/item.sizeBytes<=COMPRESS_ABOVE\)return item/);
  assert.match(helper,/size>=item.sizeBytes\*\.9\)return item/);
  assert.match(helper,/sizeBytes:size/);
@@ -43,8 +44,8 @@ test('Compression orchestration keeps small videos, accepts smaller outputs and 
   delete(){deleted.push(this.uri);files.delete(this.uri);}
  }
  const native={
-  compress:async(input,output,id,shortSide)=>{
-   calls++;assert.equal(shortSide,720);
+  compress:async(input,output,id,shortSide,bitrate)=>{
+   calls++;assert.equal(shortSide,540);assert.equal(bitrate,850_000);
    files.set(output,size);
    if(fail)throw Error('encoder');
    return size;

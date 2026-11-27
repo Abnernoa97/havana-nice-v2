@@ -1,7 +1,8 @@
 // HAVANA NICE V2 · same Chat/R2 protocol as the PWA, with native file streaming.
 // Direct files (including voice) use the native cancellable binary uploader.
-// Large videos use sequential 5 MiB parts and bounded 256 KiB I/O.
-import {File,Paths,FileMode,UploadType} from 'expo-file-system';
+// Videos stream file ranges directly through the native HTTP client.
+import {File} from 'expo-file-system';
+import {requireOptionalNativeModule} from 'expo';
 import {nativePut} from './native-chat-binary-upload';
 import {runNativeTransferStep,type NativePreparedMedia} from '../features/chat/native-media-transfer';
 import {transferNativeVoice,type VoiceStart} from '../features/chat/native-voice-transfer';
@@ -29,38 +30,41 @@ async function request<T>(url:string,token:string,method='GET',body?:unknown,sig
  if(!response.ok)throw Error(result.error||'Error de conexión ('+response.status+')');
  return result as T;
 }
-// One video part at a time. Use small read/write buffers and the SDK's
-// immediate native upload API, not overlapping disposable task objects.
-const VIDEO_IO_BUFFER=256*1024;
-let partSerial=0;
-async function putPart(file:File,start:number,end:number,url:string,token:string,mimeType:string,signal:AbortSignal){
+type NativeVideoTransport={
+ uploadRange:(uri:string,url:string,token:string,mime:string,start:number,length:number,key:string)=>Promise<{bytes:number;elapsedMs:number}>;
+ uploadProgress:(key:string)=>Promise<number>;
+ cancelUpload:(key:string)=>Promise<void>;
+};
+let rangeSerial=0;
+async function putVideoRange(file:File,start:number,end:number,url:string,token:string,mimeType:string,signal:AbortSignal,onProgress:(bytes:number)=>void){
  ensure(signal);
- const temporary=new File(Paths.cache,'hn-v2-chat-upload-part-'+Date.now()+'-'+(++partSerial)+'.part');
+ const native=requireOptionalNativeModule<NativeVideoTransport>('HavanaVideoCompression');
+ if(!native)throw Error('El transporte nativo de video no está disponible.');
+ const key='range-'+Date.now()+'-'+(++rangeSerial);
+ const cancel=()=>{void native.cancelUpload(key).catch(()=>{});};
+ signal.addEventListener('abort',cancel,{once:true});
+ let polling=false,finished=false;
+ let timer:ReturnType<typeof setInterval>|undefined;
  try{
-  temporary.create();
-  const input=file.open(FileMode.ReadOnly);
-  try{
-   input.offset=start;
-   const output=temporary.open(FileMode.WriteOnly);
-   try{
-    let remaining=end-start;
-    while(remaining>0){
-     ensure(signal);
-     const bytes=await input.readBytes(Math.min(VIDEO_IO_BUFFER,remaining));
-     if(!bytes.length||bytes.length>remaining)throw Error('Fragmento original incompleto.');
-     ensure(signal);
-     await output.writeBytes(bytes);
-     remaining-=bytes.length;
-    }
-   }finally{output.close();}
-  }finally{input.close();}
+  const work=native.uploadRange(file.uri,url,token,mimeType,start,end-start,key);
+  if(signal.aborted)cancel();
+  timer=setInterval(()=>{
+   if(finished||polling||signal.aborted)return;
+   polling=true;
+   void native.uploadProgress(key).then(bytes=>{
+    if(!finished&&!signal.aborted&&Number.isFinite(bytes))onProgress(Math.min(end-start,Math.max(0,bytes)));
+   }).catch(()=>{}).finally(()=>{polling=false;});
+  },500);
+  const result=await work;
   ensure(signal);
-  if(temporary.size!==end-start)throw Error('Fragmento temporal incompleto.');
-  const result=await temporary.upload(url,{httpMethod:'PUT',uploadType:UploadType.BINARY_CONTENT,
-   headers:{Authorization:'Bearer '+token,'Content-Type':mimeType,'Content-Length':String(temporary.size)},signal});
-  if(result.status<200||result.status>=300)throw Error('El servidor rechazó una parte del video ('+result.status+').');
-  ensure(signal);
- }finally{try{if(temporary.exists)temporary.delete();}catch{}}
+  if(result.bytes!==end-start)throw Error('Rango de video incompleto.');
+  onProgress(result.bytes);
+  if(result.elapsedMs>0)console.info('[HN video] range bytes='+result.bytes+' ms='+result.elapsedMs+
+   ' Mbps='+((result.bytes*8/result.elapsedMs)/1000).toFixed(2));
+ }finally{
+  finished=true;if(timer!==undefined)clearInterval(timer);
+  signal.removeEventListener('abort',cancel);
+ }
 }
 export async function uploadNativeChatFile(session:ChatSession,picked:NativeFile,
  onProgress:(sent:number,total:number)=>void,ownerSignal?:AbortSignal):Promise<{id:string;seq:number}>{
@@ -114,8 +118,9 @@ export async function prepareNativeChatFile(session:ChatSession,picked:NativeFil
      if(state.ready){failure=null;break;}
      await wait([450,1200,2500][attempt-1]??2500);
     }
-    try{await runNativeTransferStep('Subir archivo',60_000,signal=>nativePut(file,base+'/content',session.token,picked.mimeType,
-     sent=>onProgress(sent,file.size),signal),ownerSignal);failure=null;break;}
+    try{await runNativeTransferStep('Subir archivo',picked.kind==='video'?90_000:60_000,signal=>picked.kind==='video'?
+     putVideoRange(file,0,file.size,base+'/content',session.token,picked.mimeType,signal,sent=>onProgress(sent,file.size)):
+     nativePut(file,base+'/content',session.token,picked.mimeType,sent=>onProgress(sent,file.size),signal),ownerSignal);failure=null;break;}
     catch(e){ensure(ownerSignal);failure=e;if(e instanceof Error&&e.message.includes('tardó demasiado'))break;}
    }
    if(failure)throw failure;
@@ -123,36 +128,45 @@ export async function prepareNativeChatFile(session:ChatSession,picked:NativeFil
    const size=started.partSize,total=started.partCount;
    if(size!==5*1024*1024||total!==Math.ceil(file.size/size))
     throw Error('Partes R2 incompatibles con el archivo original.');
-   const completed=new Set(started.completedParts||[]);
+   const completed=new Set((started.completedParts||[]).filter(n=>Number.isInteger(n)&&n>=1&&n<=total));
+   const inflight=new Map<number,number>();
    const bytesFor=(index:number)=>Math.min(size,file.size-index*size);
-   const report=()=>onProgress([...completed].reduce((sum,number)=>
-    number>=1&&number<=total?sum+bytesFor(number-1):sum,0),file.size);
+   const report=()=>onProgress([...completed].reduce((sum,number)=>sum+bytesFor(number-1),0)+
+    [...inflight].reduce((sum,[number,bytes])=>completed.has(number)?sum:sum+bytes,0),file.size);
    report();
-   // After an ambiguous timeout or cancellation, reconcile R2 state before
-   // retrying the same part. Never upload a confirmed part again unnecessarily.
-   for(let index=0;index<total;index++){
-    ensure(ownerSignal);
-    const number=index+1;
-    if(completed.has(number))continue;
-    const from=index*size,to=Math.min(file.size,from+size);
+   const transfer=async(number:number)=>{
+    if(completed.has(number))return;
+    const index=number-1,from=index*size,to=Math.min(file.size,from+size);
     for(let attempt=0;attempt<4;attempt++){
+     ensure(ownerSignal);
+     if(completed.has(number))return;
      try{
       await runNativeTransferStep('Video: parte '+number+'/'+total,90_000,
-       signal=>putPart(file,from,to,base+'/parts/'+number,session.token,picked.mimeType,signal),ownerSignal);
-      completed.add(number);report();break;
+       signal=>putVideoRange(file,from,to,base+'/parts/'+number,session.token,picked.mimeType,signal,
+        bytes=>{inflight.set(number,bytes);report();}),ownerSignal);
+      completed.add(number);inflight.delete(number);report();return;
      }catch(error){
-      ensure(ownerSignal);
+      inflight.delete(number);ensure(ownerSignal);
       try{
        const state=await control<Start>('Recuperar avance del video',base);
        if(state.id!==id)throw Error('Identificador de video incorrecto.');
-       for(const part of state.completedParts||[])if(part>=1&&part<=total)completed.add(part);
+       for(const part of state.completedParts||[])if(Number.isInteger(part)&&part>=1&&part<=total)completed.add(part);
        report();
       }catch{ensure(ownerSignal);}
-      if(completed.has(number))break;
+      if(completed.has(number))return;
       if(attempt===3)throw Error('Video: parte '+number+'/'+total+' pendiente. '+(error instanceof Error?error.message:'Conexión interrumpida.')+' Reintenta para continuar.');
       await wait([500,1500,3500][attempt]??3500);
      }
     }
+   };
+   // At most two in a wave, and the shared native dispatcher limits both
+   // videos together. Wait for both responses before starting another wave.
+   for(let index=0;index<total;index+=2){
+    ensure(ownerSignal);
+    const numbers=[index+1,index+2].filter(number=>number<=total&&!completed.has(number));
+    const results=await Promise.allSettled(numbers.map(transfer));
+    const failed=results.find(result=>result.status==='rejected');
+    if(failed?.status==='rejected')throw failed.reason;
    }
    ensure(ownerSignal);
    if(completed.size!==total)throw Error('Faltan fragmentos del video. Reintenta para continuar.');
