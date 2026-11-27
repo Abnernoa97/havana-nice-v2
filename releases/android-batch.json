@@ -1,7 +1,7 @@
 {
   "approved": true,
   "releaseMode": "explicit-batch",
-  "version": "0.0.40",
-  "versionCode": 40,
-  "notes": "Autorización 27/11/2026, P2.2-L/M: galería normal Android para video; compresión local Media3 Transformer de nuevos videos >25 MiB a MP4 H.264/AAC hasta 720p, 1.8 Mb/s, sin modificar originales; un trabajo a la vez, progreso, cancelación y salida durable antes de iniciar R2; multipart secuencial 5 MiB y reintentos con estado confirmado. Preservar 0.0.39. Pruebas nativas y QA físico pendientes; fotos, voz, FCM, PWA, Worker, BOOK y Audio intactos."
+  "version": "0.0.41",
+  "versionCode": 41,
+  "notes": "Autorización 27/11/2026 P2.2-N: video Android usa un cliente OkHttp nativo y streaming por rango de 64 KiB, sin archivos temporales JS, dos solicitudes globales y recuperación de partes. Un codificador Media3 solapado con transferencia, bitrate adaptativo 700k–1.1M, AAC 96k, 540p/720p, umbral 12 MiB. Miniaturas privadas, UUID y archivo optimizado persistidos antes de R2, selección galería normal. 95 aserciones, 6 simulaciones multipart y 9 de compresión superadas. Preservar APK 0.0.40. Sin tocar PWA, Worker, BOOK, Audio ni motores de fotos/voz/FCM. QA físico y velocidad real pendientes."
 }
