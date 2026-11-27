@@ -6,7 +6,9 @@ import {
  CHAT_MEDIA_MAX_PER_SEND,validateChatMediaSelection,type ChatMediaSelection,
 } from '@havana/shared';
 
-export type PendingNativeChatMedia=ChatMediaSelection&{id:string};
+export type PendingNativeChatMedia=ChatMediaSelection&{id:string;posterUri?:string;
+ // Only NEW selections carry this marker. Older/retried R2 objects must keep their exact bytes.
+ videoInput?:{width:number;height:number;durationMs?:number}};
 type Stored={actorId:string;updatedAt:number;items:readonly PendingNativeChatMedia[]};
 const KEY='hn-v2-chat-media-draft-v1';
 const TTL=24*60*60*1000;
@@ -34,8 +36,10 @@ export function isNativePendingStaged(item:PendingNativeChatMedia):boolean{
  return item.uri.startsWith(root+PREFIX);
 }
 function removeStagedFile(item:PendingNativeChatMedia){
- if(!isNativePendingStaged(item))return;
- try{const file=new File(item.uri);if(file.exists)file.delete();}catch{}
+ if(isNativePendingStaged(item))try{const file=new File(item.uri);if(file.exists)file.delete();}catch{}
+ const root=Paths.document.uri.replace(/\/$/,'')+'/';
+ if(item.posterUri===root+PREFIX+item.id+'-poster.jpg')
+  try{const poster=new File(item.posterUri);if(poster.exists)poster.delete();}catch{}
 }
 export function discardNativePendingMedia(item:PendingNativeChatMedia):void{
  removeStagedFile(item);
@@ -76,13 +80,18 @@ export async function stageNativePendingVideo(item:PendingNativeChatMedia,curren
  if(!source.exists||source.size!==item.sizeBytes||source.size<=0)
   throw Error('No se puede leer el video original. Elígelo de nuevo desde la galería.');
  if(isNativePendingStaged(item))return item;
- if(Paths.availableDiskSpace<item.sizeBytes+VIDEO_FREE_SPACE_RESERVE)
+ const pickerRoot=Paths.cache.uri.replace(/\/$/,'')+'/ImagePicker/';
+ // Move only Expo's own private picker copy; never move the gallery original.
+ const ownedPickerCopy=item.uri.startsWith(pickerRoot)&&!item.uri.slice(pickerRoot.length).includes('/')&&
+  !item.uri.slice(pickerRoot.length).includes('..');
+ if(Paths.availableDiskSpace<(ownedPickerCopy?0:item.sizeBytes)+VIDEO_FREE_SPACE_RESERVE)
   throw Error('No hay espacio libre suficiente para proteger este video.');
  const id=item.id.replace(/[^a-zA-Z0-9_-]/g,'').slice(0,70);
  const extension=item.mimeType==='video/quicktime'?'.mov':'.mp4';
  const destination=new File(Paths.document,PREFIX+id+extension);
  try{
-  await source.copy(destination);
+  if(ownedPickerCopy)await source.move(destination);
+  else await source.copy(destination);
   if(!current())throw Error('Selección cancelada.');
   if(!destination.exists||destination.size!==item.sizeBytes)throw Error('La copia del video quedó incompleta.');
   return {...item,uri:destination.uri};

@@ -19,7 +19,7 @@ import type {useNativeChatController} from './useNativeChatController';
 import type {ChatEmoji,ChatMessage} from '@havana/shared';
 
 export default function NativeChatSurface({ui}:{ui:ReturnType<typeof useNativeChatController>}){
-  const {iosBackPan,keyboardOpen,session,activeScreen,restoringAccess,name,setName,join,joining,error,messages,onlineActorIds,connection,reactions,receipts,hasMore,loadingOlder,scroll,onTimelineContentChange,onTimelineScrollBeginDrag,onTimelineScroll,onTimelineScrollEndDrag,onTimelineLoadOlder,onTimelineReply,onTimelineLongPress,onTimelineRetry,onReadVisible,menuMessage,menuLeft,menuTop,menuWidth,setMenuMessage,setReactionBurst,reactionBurstId,react,retryAttempts,connect,editing,savingEdit,finishEditing,replyTo,setReplyTo,typing,selectedMedia,mediaUploading,mediaProgress,mediaReady,removeSelectedMedia,mediaError,sendVoice,voiceDraft,voiceSending,voiceError,discardVoice,cancelMediaUpload,cancelVoice,draft,draftFieldHeight,setDraftFieldHeight,typeText,mediaPicking,mediaPreparation,chooseNativeMedia,cancelNativePicking,sendSelectedMedia,send,composerPanel,setComposerPanel,navigateTo,reactionBurst}=ui;
+  const {iosBackPan,keyboardOpen,session,activeScreen,restoringAccess,name,setName,join,joining,error,messages,onlineActorIds,connection,reactions,receipts,hasMore,loadingOlder,scroll,onTimelineContentChange,onTimelineScrollBeginDrag,onTimelineScroll,onTimelineScrollEndDrag,onTimelineLoadOlder,onTimelineReply,onTimelineLongPress,onTimelineRetry,onReadVisible,menuMessage,menuLeft,menuTop,menuWidth,setMenuMessage,setReactionBurst,reactionBurstId,react,retryAttempts,connect,editing,savingEdit,finishEditing,replyTo,setReplyTo,typing,selectedMedia,mediaUploading,mediaProgress,mediaEncoding,mediaReady,removeSelectedMedia,mediaError,sendVoice,voiceDraft,voiceSending,voiceError,discardVoice,cancelMediaUpload,cancelVoice,draft,draftFieldHeight,setDraftFieldHeight,typeText,mediaPicking,mediaPreparation,chooseNativeMedia,cancelNativePicking,sendSelectedMedia,send,composerPanel,setComposerPanel,navigateTo,reactionBurst}=ui;
   const pendingMedia=React.useMemo(()=>{
    if(!mediaUploading)return [];
    const committed=new Set(messages.filter(m=>m.senderId===session?.actorId&&!m.pending&&m.seq>0).map(m=>m.clientMessageId));
@@ -80,7 +80,7 @@ export default function NativeChatSurface({ui}:{ui:ReturnType<typeof useNativeCh
               onLoadOlder={onTimelineLoadOlder} onReply={onTimelineReply}
               onMessageLongPress={onTimelineLongPress}
               onQuickReact={reactWithEffect} onRetry={onTimelineRetry}
-              pendingMedia={pendingMedia} pendingUploading={mediaUploading} pendingProgress={mediaProgress} onCancelPending={cancelMediaUpload}
+              pendingMedia={pendingMedia} pendingUploading={mediaUploading} pendingProgress={mediaProgress} pendingEncoding={mediaEncoding} onCancelPending={cancelMediaUpload}
             />
             <NativeChatMessageMenu message={menuMessage} actorId={session.actorId}
               connection={connection} reactions={reactions}

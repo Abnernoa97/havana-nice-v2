@@ -9,13 +9,14 @@ type Props={
  selectedMedia:NativeQueuedMedia[];
  mediaUploading:boolean;
  mediaProgress:number;
+ mediaEncoding?:string;
  mediaReady:boolean;
  onRemove:(item:NativeQueuedMedia)=>void;
  inTimeline?:boolean;
  onCancel?:()=>void;
 };
 export default function NativeChatMediaQueuePreview({
- selectedMedia,mediaUploading,mediaProgress,mediaReady,onRemove,inTimeline=false,onCancel
+ selectedMedia,mediaUploading,mediaProgress,mediaEncoding,mediaReady,onRemove,inTimeline=false,onCancel
 }:Props){
  if(inTimeline)return <View style={[styles.galleryCluster,styles.galleryMine]} accessibilityLabel="Archivos pendientes de envío">
   <View style={styles.galleryGrid}>
@@ -23,14 +24,15 @@ export default function NativeChatMediaQueuePreview({
     const wide=index===0&&selectedMedia.length%2===1;
     return <View key={item.id} style={[styles.galleryCell,wide&&styles.galleryWideCell]}>
      <View style={[s.pendingTile,{aspectRatio:wide?2:1}]}>
-      {item.kind==='photo'?<Image source={{uri:item.uri}} style={s.pendingPhoto} resizeMode="cover" resizeMethod="resize" fadeDuration={0}/>:<Text style={s.videoPlay}>▶</Text>}
+      {item.kind==='photo'||item.posterUri?<Image source={{uri:item.kind==='photo'?item.uri:item.posterUri}} style={s.pendingPhoto} resizeMode="cover" resizeMethod="resize" fadeDuration={0}/>:null}
+      {item.kind==='video'&&<View style={s.videoBadge}><Text style={s.videoPlay}>▶</Text></View>}
       <View style={s.pendingMark}><Text style={s.pendingMarkText}>↗</Text></View>
      </View>
     </View>;
    })}
   </View>
   <View style={s.pendingStatus}>
-   <Text style={s.caption}>{!selectedMedia.length?'Confirmando…':mediaProgress===0?'Preparando…':'Enviando '+mediaProgress+' %'}</Text>
+   <Text style={s.caption}>{!selectedMedia.length?'Confirmando…':mediaEncoding?(mediaProgress>0?'Enviando '+mediaProgress+' % · '+mediaEncoding:mediaEncoding):mediaProgress===0?'Preparando…':'Enviando '+mediaProgress+' %'}</Text>
    <Pressable accessibilityRole="button" onPress={onCancel}><Text style={s.pendingCancel}>Cancelar</Text></Pressable>
   </View>
  </View>;
@@ -47,7 +49,7 @@ export default function NativeChatMediaQueuePreview({
     accessibilityLabel={item.kind==='photo'?'Fotografía seleccionada':'Video seleccionado'}>
     {item.kind==='photo'?
      <Image source={{uri:item.uri}} style={s.thumb} resizeMode="cover" resizeMethod="resize" fadeDuration={0}/>:
-     <View style={[s.thumb,s.video]}><Text style={s.videoPlay}>▶</Text></View>}
+     <View style={[s.thumb,s.video]}>{item.posterUri&&<Image source={{uri:item.posterUri}} style={s.pendingPhoto} resizeMode="cover" fadeDuration={0}/>}<View style={s.videoBadge}><Text style={s.videoPlay}>▶</Text></View></View>}
     <Pressable accessibilityRole="button" disabled={mediaUploading}
      accessibilityLabel={'Quitar '+item.name} onPress={()=>onRemove(item)} style={s.close}>
      <Text style={s.closeText}>×</Text>
@@ -74,7 +76,8 @@ const s=StyleSheet.create({
  tile:{width:77,height:77,position:'relative'},
  thumb:{width:77,height:77,borderRadius:11,backgroundColor:'#e5dfd7'},
  video:{alignItems:'center',justifyContent:'center',backgroundColor:'#264636'},
- videoPlay:{fontSize:24,color:'#fff'},
+ videoBadge:{position:'absolute',alignSelf:'center',width:34,height:34,borderRadius:17,alignItems:'center',justifyContent:'center',backgroundColor:'#10291dcc'},
+ videoPlay:{fontSize:17,color:'#fff'},
  close:{position:'absolute',top:2,right:2,width:23,height:23,borderRadius:13,
   alignItems:'center',justifyContent:'center',backgroundColor:'#16241ce8',borderWidth:1,
   borderColor:'#ffffffaa'},

@@ -7,9 +7,10 @@ import {nativePut} from './native-chat-binary-upload';
 import {runNativeTransferStep,type NativePreparedMedia} from '../features/chat/native-media-transfer';
 import {transferNativeVoice,type VoiceStart} from '../features/chat/native-voice-transfer';
 import {publishNativeVideoPoster} from './native-chat-video-poster';
-import {HAVANA_V2_DEV_API_BASE_URL as API,type ChatSession,type ChatMediaSelection} from '@havana/shared';
+import type {PendingNativeChatMedia} from '../storage/chatPendingMedia';
+import {HAVANA_V2_DEV_API_BASE_URL as API,type ChatSession} from '@havana/shared';
 
-type NativeFile=(ChatMediaSelection|{kind:'audio';source:'camera';name:string;mimeType:string;sizeBytes:number;uri:string})&{id:string};
+type NativeFile=PendingNativeChatMedia|{id:string;kind:'audio';source:'camera';name:string;mimeType:string;sizeBytes:number;uri:string};
 type Start={id:string;ready:boolean;multipart:boolean;partSize:number;
  partCount:number;completedParts:number[];sent?:boolean};
 const ids=new Map<string,string>();
@@ -175,7 +176,7 @@ export async function prepareNativeChatFile(session:ChatSession,picked:NativeFil
  }
  onProgress(file.size,file.size);
  // The original is confirmed first; a JPEG failure never prevents sending it.
- if(picked.kind==='video')await publishNativeVideoPoster(session.token,id,picked.uri,4500,ownerSignal);
+ if(picked.kind==='video')await publishNativeVideoPoster(session.token,id,picked.uri,4500,ownerSignal,picked.posterUri);
  ensure(ownerSignal);
  return {publish:async()=>{
   ensure(ownerSignal);

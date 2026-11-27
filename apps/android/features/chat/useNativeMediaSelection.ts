@@ -4,15 +4,16 @@ import {useEffect,useLayoutEffect,useRef,useState} from 'react';
 import {Alert,AppState,Keyboard,Platform} from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import {File} from 'expo-file-system';
-import {optimizeNativeChatVideo} from './native-chat-video-compression';
+import {createNativeVideoDraftPoster} from '../../services/native-chat-video-poster';
+import type {PendingNativeChatMedia} from '../../storage/chatPendingMedia';
 import {validateChatMediaSelection,CHAT_MEDIA_MAX_PER_SEND,
- type ChatMediaKind,type ChatMediaSource,type ChatMediaSelection} from '@havana/shared';
+ type ChatMediaKind,type ChatMediaSource} from '@havana/shared';
 import {
  loadNativePendingMedia,storeNativePendingMedia,preserveNativePendingMedia,
  discardNativePendingMedia,clearNativePendingMedia,isNativePendingStaged,stageNativePendingVideo,
 } from '../../storage/chatPendingMedia';
 
-export type NativeQueuedMedia=ChatMediaSelection&{id:string};
+export type NativeQueuedMedia=PendingNativeChatMedia;
 const newMediaSelectionId=()=> 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,letter=>{
  const random=Math.floor(Math.random()*16);
  return (letter==='x'?random:(random&3|8)).toString(16);
@@ -61,6 +62,26 @@ export function useNativeMediaSelection({
        setMediaError('Archivos listos. No se pudo proteger la selección para recuperarla tras un reinicio.');
    });
  };
+ // Commit transformed bytes BEFORE R2 start. This is the existing draft owner,
+ // not a second queue. Old UUIDs without videoInput are never re-encoded.
+ const commitPreparedVideo=async(item:NativeQueuedMedia):Promise<void>=>{
+   const prior=selectedRef.current.find(value=>value.id===item.id);
+   if(!actorId||actorRef.current!==actorId||!prior?.videoInput)
+     throw Error('La selección de video cambió.');
+   selectedRef.current=selectedRef.current.map(value=>value.id===item.id?item:value);
+   setSelectedMedia([...selectedRef.current]);
+   const snapshot=[...selectedRef.current];
+   const saved=writeChain.current.catch(()=>{}).then(()=>storeNativePendingMedia(actorId,snapshot));
+   writeChain.current=saved;
+   try{await saved;}catch(error){
+     if(actorRef.current===actorId&&selectedRef.current.some(value=>value===item)){
+       selectedRef.current=selectedRef.current.map(value=>value===item?prior:value);
+       setSelectedMedia([...selectedRef.current]);persist(selectedRef.current);
+     }
+     throw error;
+   }
+   if(prior.uri!==item.uri)discardNativePendingMedia({...prior,posterUri:undefined});
+ };
  const confirmUploadedMedia=(id:string)=>{
    const removed=selectedRef.current.find(item=>item.id===id);
    selectedRef.current=selectedRef.current.filter(item=>item.id!==id);
@@ -89,7 +110,6 @@ export function useNativeMediaSelection({
      return false;
    }
    const additions:NativeQueuedMedia[]=[];
-   const dimensions=new Map<string,{width:number;height:number}>();
    for(const asset of assets){
      const kind:ChatMediaKind=asset.type==='video'||asset.mimeType?.startsWith('video/')?'video':'photo';
      const name=asset.fileName||('havana-'+Date.now()+(kind==='photo'?'.jpg':'.mp4'));
@@ -106,8 +126,8 @@ export function useNativeMediaSelection({
      const issue=validateChatMediaSelection({kind,name,mimeType,sizeBytes:sizeBytes||0});
      if(issue){setMediaError(name+': '+issue);return false;}
      const id=newMediaSelectionId();
-     if(kind==='video')dimensions.set(id,{width:asset.width,height:asset.height});
-     additions.push({id,kind,source,uri:asset.uri,name,mimeType,sizeBytes:sizeBytes!});
+     additions.push({id,kind,source,uri:asset.uri,name,mimeType,sizeBytes:sizeBytes!,
+       ...(kind==='video'?{videoInput:{width:asset.width,height:asset.height,durationMs:asset.duration??undefined}}:{})});
    }
    // Video files must be durable and byte-verified before appearing ready.
    // Camera and the normal Android photo/video gallery share this staging lane.
@@ -123,13 +143,12 @@ export function useNativeMediaSelection({
            const number=++videoIndex;
            const label=(phase:string)=>{if(current())setMediaPreparation(phase+' · '+number+'/'+videoCount);};
            label('Preparando video');
-           const optimized=await optimizeNativeChatVideo(item,dimensions.get(item.id),current,percent=>
-             label(percent<0?'Comprimiendo video':'Comprimiendo video '+percent+' %'));
-           try{
-             if(!current())throw Error('Selección cancelada.');
-             label('Protegiendo video');
-             staged.push(await stageNativePendingVideo(optimized,current));
-           }catch(error){if(optimized.uri!==item.uri)discardNativePendingMedia(optimized);throw error;}
+           const protectedItem=await stageNativePendingVideo(item,current);
+           staged.push(protectedItem);
+           // Small optional local cover, reuse it later for R2. No full decoder in the UI.
+           const posterUri=await createNativeVideoDraftPoster(protectedItem.id,protectedItem.uri,current);
+           if(posterUri)protectedItem.posterUri=posterUri;
+           if(!current())throw Error('Selección cancelada.');
          }else staged.push(item);
        }
      });
@@ -168,7 +187,7 @@ export function useNativeMediaSelection({
    // untouched so a transfer already reading it is safe if its URI is promoted.
    stagingChain.current=stagingChain.current.catch(()=>{}).then(async()=>{
      if(!mounted.current||actorRef.current!==owner)return;
-     const live=additions.filter(item=>selectedRef.current.some(current=>current.id===item.id));
+     const live=additions.filter(item=>item.kind==='photo'&&selectedRef.current.some(current=>current.id===item.id));
      if(!live.length)return;
      const existingBytes=selectedRef.current.filter(item=>item.kind==='photo'&&!live.some(add=>add.id===item.id)&&isNativePendingStaged(item))
        .reduce((sum,item)=>sum+item.sizeBytes,0);
@@ -289,5 +308,5 @@ export function useNativeMediaSelection({
    }finally{if(current())stopPicking();}
  };
  return {selectedMedia,mediaError,setMediaError,mediaPicking,mediaPreparation,
-   confirmUploadedMedia,removeSelectedMedia,clearSelectedMedia,chooseNativeMedia,cancelNativePicking};
+   confirmUploadedMedia,commitPreparedVideo,removeSelectedMedia,clearSelectedMedia,chooseNativeMedia,cancelNativePicking};
 }

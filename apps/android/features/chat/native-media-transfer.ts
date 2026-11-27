@@ -20,7 +20,8 @@ export async function runNativeTransferStep<T>(label:string,timeoutMs:number,
 }
 
 export type NativePreparedMedia={publish:()=>Promise<{id:string;seq:number}>};
-// Two photographs may upload at once; videos are alone. Publish in original
+// Two adjacent same-kind files may prepare at once. Video encoding is serial
+// and the native HTTP dispatcher bounds all video requests to two. Publish in original
 // selection order, retain unconfirmed originals, and never abandon a sibling task.
 export async function transferNativeVisualBatch<T extends {id:string;kind:string;sizeBytes:number}>(
  items:readonly T[],ops:{
@@ -38,7 +39,7 @@ export async function transferNativeVisualBatch<T extends {id:string;kind:string
  const ensure=()=>{if(signal.aborted)throw Error('Envío cancelado.');};
  for(let i=0;i<items.length;){
   ensure();
-  const count=items[i]?.kind==='photo'&&items[i+1]?.kind==='photo'?2:1;
+  const count=items[i+1]&&items[i]?.kind===items[i+1]?.kind?2:1;
   const group=items.slice(i,i+count);
   const pending=group.map(item=>Promise.resolve().then(()=>ops.prepare(item,sent=>{
    if(!Number.isFinite(sent)||signal.aborted)return;

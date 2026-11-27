@@ -7,6 +7,8 @@ import {transferNativeVisualBatch,runNativeTransferStep} from './native-media-tr
 import {prepareNativeChatFile,uploadNativeChatFile} from '../../services/native-chat-r2-upload';
 import {seedConfirmedNativePhoto} from '../../storage/chatPhotoCache';
 import type {NativeQueuedMedia} from './useNativeMediaSelection';
+import {optimizeNativeChatVideo} from './native-chat-video-compression';
+import {discardNativePendingMedia} from '../../storage/chatPendingMedia';
 
 type Options={
  session:ChatSession|null;
@@ -15,17 +17,19 @@ type Options={
  mediaUploadBusy:RefObject<boolean>;
  setMediaError:(message:string)=>void;
  confirmUploadedMedia:(id:string)=>void;
+ commitPreparedVideo:(item:NativeQueuedMedia)=>Promise<void>;
  confirmMediaMessage:(media:NonNullable<ChatMessage['media']>,seq:number)=>void;
  syncLatest:RefObject<()=>void>;
 };
 
 export function useNativeChatMediaUpload({
  session,activeSession,selectedMedia,mediaUploadBusy,setMediaError,
- confirmUploadedMedia,confirmMediaMessage,syncLatest,
+ confirmUploadedMedia,commitPreparedVideo,confirmMediaMessage,syncLatest,
 }:Options){
  const [mediaReady,setMediaReady]=useState(false);
  const [mediaUploading,setMediaUploading]=useState(false);
  const [mediaProgress,setMediaProgress]=useState(0);
+ const [mediaEncoding,setMediaEncoding]=useState('');
  type VoiceDraft={uri:string;id:string;token:string};
  const voiceRef=useRef<VoiceDraft|null>(null);
  const [voiceDraft,setVoiceDraft]=useState<VoiceDraft|null>(null);
@@ -34,7 +38,7 @@ export function useNativeChatMediaUpload({
  const voiceRequest=useRef<AbortController|null>(null);
  const batchRequest=useRef<AbortController|null>(null);
  useEffect(()=>{
-  voiceRef.current=null;setVoiceDraft(null);setVoiceSending(false);setVoiceError('');setMediaUploading(false);setMediaProgress(0);
+  voiceRef.current=null;setVoiceDraft(null);setVoiceSending(false);setVoiceError('');setMediaUploading(false);setMediaProgress(0);setMediaEncoding('');
   return()=>{voiceRequest.current?.abort();voiceRequest.current=null;
    batchRequest.current?.abort();batchRequest.current=null;mediaUploadBusy.current=false;};
  },[session?.token]);
@@ -93,13 +97,47 @@ export function useNativeChatMediaUpload({
   const ctl=new AbortController();batchRequest.current=ctl;
   const current=()=>batchRequest.current===ctl&&activeSession.current?.token===session.token;
   mediaUploadBusy.current=true;setMediaUploading(true);setMediaProgress(0);setMediaError('');
+  // Existing batch owns all work. Only one encoder; next video can be
+  // encoded while the previous video uses the two native network lanes.
+  let compressionTail:Promise<void>=Promise.resolve();
+  const preparedItems=new Map<string,NativeQueuedMedia>();
+  const videos=selectedMedia.filter(item=>item.kind==='video');
+  const prepare=async(item:NativeQueuedMedia):Promise<NativeQueuedMedia>=>{
+   if(!item.videoInput)return item;
+   const task=compressionTail.then(async()=>{
+    const live=()=>current()&&!ctl.signal.aborted;
+    if(!live())throw Error('Envío cancelado.');
+    const n=videos.findIndex(video=>video.id===item.id)+1;
+    let optimized:NativeQueuedMedia|undefined,committed=false;
+    try{
+     optimized=await optimizeNativeChatVideo(item,item.videoInput,live,percent=>{
+      if(live())setMediaEncoding('Comprimiendo '+n+'/'+videos.length+(percent>=0?' · '+percent+' %':''));
+     });
+     if(!live())throw Error('Envío cancelado.');
+     const next={...optimized,videoInput:undefined};
+     await commitPreparedVideo(next);committed=true;
+     return next;
+    }finally{
+     if(!committed&&optimized&&optimized.uri!==item.uri)discardNativePendingMedia({...optimized,posterUri:undefined});
+     if(current())setMediaEncoding('');
+    }
+   });
+   compressionTail=task.then(()=>{},()=>{});
+   return task;
+  };
   try{
    await transferNativeVisualBatch([...selectedMedia],{
-    prepare:(item,onSent)=>prepareNativeChatFile(session,item,onSent,ctl.signal),
+    prepare:async(item,onSent)=>{
+     const ready=await prepare(item);
+     if(!current()||ctl.signal.aborted)throw Error('Envío cancelado.');
+     preparedItems.set(item.id,ready);
+     return prepareNativeChatFile(session,ready,(sent,total)=>onSent(sent/Math.max(1,total)*item.sizeBytes),ctl.signal);
+    },
     progress:value=>{if(current())setMediaProgress(value);},
     confirmed:async(item,result)=>{
      if(!current())return;
-     const media={assetId:result.id,kind:item.kind,mimeType:item.mimeType,sizeBytes:item.sizeBytes,name:item.name};
+     const ready=preparedItems.get(item.id)??item;
+     const media={assetId:result.id,kind:ready.kind,mimeType:ready.mimeType,sizeBytes:ready.sizeBytes,name:ready.name};
      if(item.kind==='photo')await seedConfirmedNativePhoto(media,item.uri);
      if(!current())return;
      confirmMediaMessage(media,result.seq);
@@ -109,11 +147,11 @@ export function useNativeChatMediaUpload({
   }catch(e){
    if(current())setMediaError(e instanceof Error?e.message:'Se interrumpió la carga. Reintenta solo lo pendiente.');
   }finally{
-   if(current()){syncLatest.current();mediaUploadBusy.current=false;batchRequest.current=null;setMediaUploading(false);}
+   if(current()){syncLatest.current();mediaUploadBusy.current=false;batchRequest.current=null;setMediaUploading(false);setMediaEncoding('');}
   }
  }
  const cancelMediaUpload=()=>batchRequest.current?.abort();
  const cancelVoice=()=>voiceRequest.current?.abort();
- return {mediaReady,mediaUploading,mediaProgress,sendVoice,sendSelectedMedia,cancelMediaUpload,cancelVoice,
+ return {mediaReady,mediaUploading,mediaProgress,mediaEncoding,sendVoice,sendSelectedMedia,cancelMediaUpload,cancelVoice,
   voiceDraft:voiceDraft?.token===session?.token?voiceDraft:null,voiceSending,voiceError,discardVoice};
 }

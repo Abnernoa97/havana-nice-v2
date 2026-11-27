@@ -1,6 +1,6 @@
 // Optional private JPEG derivative. Only sender upload or explicit owner repair
 // may instantiate a native thumbnail extractor; timeline reads never do.
-import {File} from 'expo-file-system';
+import {File,Paths} from 'expo-file-system';
 import {nativePut} from './native-chat-binary-upload';
 import {createVideoPlayer} from 'expo-video';
 import {ImageManipulator,SaveFormat} from 'expo-image-manipulator';
@@ -36,7 +36,25 @@ async function extractJpeg(uri:string,signal:AbortSignal):Promise<File|null>{
  finally{remove(jpeg);release(rendered);release(context);release(thumbnail);release(player);extracting=false;}
 }
 
-export async function publishNativeVideoPoster(token:string,id:string,uri:string,timeoutMs=4500,ownerSignal?:AbortSignal):Promise<boolean>{
+// A draft cover belongs to the same private queue and UUID as its video.
+export async function createNativeVideoDraftPoster(id:string,uri:string,current:()=>boolean):Promise<string|undefined>{
+ if(!current())return;
+ const ctl=new AbortController();
+ let timer:ReturnType<typeof setTimeout>|undefined;
+ const interrupted=new Promise<null>(resolve=>{timer=setTimeout(()=>{ctl.abort();resolve(null);},1500);});
+ let jpeg:File|null=null,target:File|null=null,keep=false;
+ try{
+  jpeg=await Promise.race([extractJpeg(uri,ctl.signal),interrupted]);
+  if(!jpeg||!current())return;
+  target=new File(Paths.document,'hn-v2-chat-pending-'+id+'-poster.jpg');
+  await jpeg.copy(target);
+  if(!current()||!target.exists||target.size!==jpeg.size)return;
+  keep=true;return target.uri;
+ }catch{return;}
+ finally{ctl.abort();if(timer!==undefined)clearTimeout(timer);remove(jpeg);if(!keep)remove(target);}
+}
+
+export async function publishNativeVideoPoster(token:string,id:string,uri:string,timeoutMs=4500,ownerSignal?:AbortSignal,localPosterUri?:string):Promise<boolean>{
  const ctl=new AbortController();
  let timer:ReturnType<typeof setTimeout>|undefined;
  const onAbort=()=>ctl.abort();
@@ -47,13 +65,17 @@ export async function publishNativeVideoPoster(token:string,id:string,uri:string
   timer=setTimeout(()=>ctl.abort(),timeoutMs);
  });
  const work=async()=>{
-  let file:File|null=null;
+  let file:File|null=null,owned=false;
   try{
-   file=await extractJpeg(uri,ctl.signal);
+   if(localPosterUri){
+    const local=new File(localPosterUri);
+    if(local.exists&&local.size>=3&&local.size<=MAX_BYTES)file=local;
+   }
+   if(!file){file=await extractJpeg(uri,ctl.signal);owned=true;}
    if(!file||ctl.signal.aborted)return false;
    await nativePut(file,API+'/api/chat/media/'+encodeURIComponent(id)+'/poster',token,'image/jpeg',undefined,ctl.signal);
    return !ctl.signal.aborted;
-  }catch{return false;}finally{remove(file);}
+  }catch{return false;}finally{if(owned)remove(file);}
  };
  try{return await Promise.race([work(),interrupted]);}
  finally{if(timer!==undefined)clearTimeout(timer);ownerSignal?.removeEventListener('abort',onAbort);}
