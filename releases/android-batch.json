@@ -1,7 +1,7 @@
 {
   "approved": true,
   "releaseMode": "explicit-batch",
-  "version": "0.0.38",
-  "versionCode": 38,
-  "notes": "Lote Android P2.2-J autorizado 27/11/2026: eliminar ciclo de registros FCM, deduplicar y serializar registros por sesión y dispositivo, usar el token del evento sin volver a solicitarlo. Preservar APK 0.0.37. Sin cambios de Chat, PWA, Worker, BOOK 3D ni Audio. Validar físicamente notificaciones y envío multimedia; causalidad del timeout aún no confirmada."
+  "version": "0.0.39",
+  "versionCode": 39,
+  "notes": "Lote Android P2.2-K autorizado 27/11/2026: selección nativa de videos, tamaño real y copia privada verificada antes de admitir archivos grandes; protección según espacio libre y limpieza al cancelar. Mantener originales, UUID y multipart existente. Preservar APK 0.0.38. Fotos, voz, FCM, PWA, Worker, BOOK 3D y Audio sin cambios en sus motores. QA físico pendiente con videos de 202.6 y 371.6 MB; causa completa de interrupciones no confirmada."
 }
