@@ -8,6 +8,8 @@ import {HAVANA_V2_DEV_API_BASE_URL as API,type MemberScreen} from '@havana/share
 
 export const HAVANA_PUSH_CHANNEL='havana-team-activity';
 const PUSH_DISABLED_KEY='havana-v2:android-push-disabled';
+const REGISTRATION_REFRESH_MS=24*60*60*1000;
+const REGISTRATION_RETRY_MS=30_000;
 type PushState='checking'|'ready'|'enabled'|'blocked'|'pending'|'unavailable'|'error';
 type Config={androidReady:boolean};
 
@@ -67,25 +69,47 @@ export function useNativePush(token:string|null,onNavigate:(screen:MemberScreen)
  const liveSession=useRef<string|null>(token);
  liveSession.current=token;
  const optedOut=useRef(false);
- const sync=useCallback(async(currentToken:string)=>{
-  await ensureChannel(); // Android 13+ requires channel before requesting FCM token.
-  const credential=(await Notifications.getDevicePushTokenAsync()).data;
+ const lastBoundAt=useRef(0);
+ const lastAttempt=useRef<{session:string;device:string;at:number}|null>(null);
+ const syncTail=useRef<Promise<void>>(Promise.resolve());
+ const pendingSync=useRef(new Map<string,Promise<void>>());
+ const sync=useCallback((currentToken:string,suppliedCredential?:string,force=false):Promise<void>=>{
+  // The SDK can emit a token event while reading it. Never read a token
+  // from the listener; accept its credential directly and dedupe by identity.
+  if(liveSession.current!==currentToken||optedOut.current)return Promise.resolve();
+  const key=JSON.stringify([currentToken,suppliedCredential??null]);
+  const pending=pendingSync.current.get(key);if(pending)return pending;
+  const work=syncTail.current.catch(()=>{}).then(async()=>{
+  if(liveSession.current!==currentToken||optedOut.current)return;
+  if(suppliedCredential===undefined)await ensureChannel();
+  const credential=suppliedCredential??(await Notifications.getDevicePushTokenAsync()).data;
   if(typeof credential!=='string'||credential.length<32)
    throw Error('Firebase no entregó un identificador válido.');
   // Stop a delayed Firebase callback from re-enrolling a signed-out user.
   if(liveSession.current!==currentToken||optedOut.current)return;
+  const known=registered.current;
+  if(!force&&known?.session===currentToken&&known.device===credential&&Date.now()-lastBoundAt.current<REGISTRATION_REFRESH_MS){
+   enabledSession.current=currentToken;setState('enabled');setError('');return;
+  }
+  const attempt=lastAttempt.current;
+  if(!force&&attempt?.session===currentToken&&attempt.device===credential&&Date.now()-attempt.at<REGISTRATION_RETRY_MS)return;
+  lastAttempt.current={session:currentToken,device:credential,at:Date.now()};
   await bindFcm(currentToken,credential);
   if(liveSession.current!==currentToken||optedOut.current){
    await revokeFcm(currentToken,credential).catch(()=>{});
    return;
   }
   const prior=registered.current;
-  registered.current={session:currentToken,device:credential};
+  registered.current={session:currentToken,device:credential};lastBoundAt.current=Date.now();
   enabledSession.current=currentToken;
   setState('enabled');setError('');
   // Revoke the replaced token only after the new token has committed.
   if(prior&&(prior.session!==currentToken||prior.device!==credential))
    await revokeFcm(prior.session,prior.device).catch(()=>{});
+  });
+  const tracked=work.finally(()=>{if(pendingSync.current.get(key)===tracked)pendingSync.current.delete(key);});
+  pendingSync.current.set(key,tracked);syncTail.current=tracked;
+  return tracked;
  },[]);
  useEffect(()=>{
   if(Platform.OS!=='android'){setState('unavailable');return;}
@@ -122,8 +146,9 @@ export function useNativePush(token:string|null,onNavigate:(screen:MemberScreen)
    }
   })();
   const renewed=Notifications.addPushTokenListener(next=>{
-   if(active&&enabledSession.current===token&&typeof next.data==='string')
-    void sync(token).catch(()=>{
+   if(active&&enabledSession.current===token&&typeof next.data==='string'&&
+      registered.current?.device!==next.data)
+    void sync(token,next.data).catch(()=>{
      if(active)setError('No se pudo actualizar el registro de notificaciones.');
     });
   });
@@ -165,7 +190,7 @@ export function useNativePush(token:string|null,onNavigate:(screen:MemberScreen)
    }
    await Storage.removeItem(PUSH_DISABLED_KEY);
    optedOut.current=false;
-   await sync(token);
+   await sync(token,undefined,true);
   }catch{
    setState('error');setError('No se pudieron activar los avisos del teléfono.');
   }
@@ -173,12 +198,17 @@ export function useNativePush(token:string|null,onNavigate:(screen:MemberScreen)
  const disable=useCallback(async()=>{
   const prior=registered.current;
   if(!token||!prior||prior.session!==token)return;
+  optedOut.current=true;
   try{
-   await revokeFcm(token,prior.device);
+   // Wait for any in-flight bind to settle; prevent a delayed renewal from
+   // registering again after the user's explicit opt-out.
+   await syncTail.current.catch(()=>{});
+   if(liveSession.current!==token)return;
+   const latest=registered.current;
+   await revokeFcm(token,latest?.session===token?latest.device:prior.device);
    await Storage.setItem(PUSH_DISABLED_KEY,'1');
-   optedOut.current=true;
    registered.current=null;enabledSession.current=null;setError('');setState('ready');
-  }catch{setError('No se pudo desvincular este teléfono.');}
+  }catch{if(liveSession.current===token){optedOut.current=false;setError('No se pudo desvincular este teléfono.');}}
  },[token]);
  const test=useCallback(async()=>{
   if(!token||state!=='enabled')return;

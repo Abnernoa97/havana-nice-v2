@@ -54,3 +54,18 @@ test('Worker provider channel matches the Android channel and iPhone uses standa
  assert.match(sw,/registration\.showNotification/);
  assert.match(sw,/notificationclick/);
 });
+
+
+test('FCM token callbacks never request a new token and repeated events do not register repeatedly',()=>{
+ const hook=read('apps/android/features/notices/useNativePush.ts');
+ const listener=hook.slice(hook.indexOf('const renewed=Notifications.addPushTokenListener'),hook.indexOf('const onResponse='));
+ assert.match(listener,/sync\(token,next.data\)/);
+ assert.match(listener,/registered.current\?\.device!==next.data/);
+ assert.doesNotMatch(listener,/getDevicePushTokenAsync|sync\(token\)/);
+ assert.match(hook,/pendingSync.current.get\(key\);if\(pending\)return pending/);
+ assert.match(hook,/syncTail.current.catch\(\(\)=>\{\}\).then/);
+ assert.match(hook,/suppliedCredential\?\?\(await Notifications.getDevicePushTokenAsync\(\)\).data/);
+ assert.match(hook,/known.device===credential&&Date.now\(\)-lastBoundAt.current<REGISTRATION_REFRESH_MS/);
+ assert.match(hook,/Date.now\(\)-attempt.at<REGISTRATION_RETRY_MS/);
+ assert.match(hook,/optedOut.current=true;[\s\S]*?await syncTail.current.catch/);
+});
